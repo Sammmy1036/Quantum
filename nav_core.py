@@ -106,7 +106,7 @@ def classify(name: str, category: str = "") -> str:
         return "om"
     if re.match(r"^(arc|cru|hur|mic)-l\d$|^p\d_l\d$", n):
         return "lpoint"
-    if "jump point" in n or "jumppoint" in n:
+    if "jump point" in n or "jumppoint" in n or n.endswith(" gateway"):
         return "jump"
     if any(k in n for k in ("station", "r&r", "port ", "everus harbor", "baijini point", "seraphim",
                             "port olisar", "port tressler")):

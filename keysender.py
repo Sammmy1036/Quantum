@@ -131,11 +131,16 @@ class ShowLocationSender:
     """Hotkey + timer. configure() can be called any time; changes apply immediately."""
 
     def __init__(self):
-        self.hotkey = ""            # "F9", or "" for off
+        self.hotkey = ""            # show/hide Quantum: "F9", or "" for off
+        self.loc_hotkey = ""        # type /showlocation: "F10", or "" for off
         self.interval = 0           # seconds, 0 = off
         self.open_chat = "enter"    # "enter" = press Enter to open chat first, "none" = chat already open
         self.action = "overlay"     # hotkey: "overlay" = show/hide Quantum over the game, "showlocation" = type it
         self.on_overlay = None      # set by the app: toggles the window, returns a short result
+        self.qt_only = True         # the timer only runs during quantum travel
+        self.on_arrival = False     # ...and optionally sends once when a jump ends
+        self.qt_policy = None       # set by the app: -> {"send", "interval", "reason", "arrived"}
+        self._arrival_sent = None
         self.last_sent = None
         self.last_result = "idle"
         self.events = []            # recent attempts, newest last, shown in Settings for troubleshooting
@@ -147,21 +152,32 @@ class ShowLocationSender:
         self._timer.start()
 
     # ------------------------------------------------------------ settings
-    def configure(self, hotkey=None, interval=None, open_chat=None, action=None):
-        if action in ("overlay", "showlocation"):
-            self.action = action
+    def configure(self, hotkey=None, interval=None, open_chat=None, action=None, qt_only=None,
+                  loc_hotkey=None, on_arrival=None):
+        """hotkey = show/hide Quantum, loc_hotkey = type /showlocation ("F1".."F12" or "" for off).
+        interval = seconds between automatic /showlocations during quantum travel (0 = off)."""
+        if qt_only is not None:
+            self.qt_only = True               # "always" mode was dropped: quantum travel only
+        if on_arrival is not None:
+            self.on_arrival = bool(on_arrival)
+        if action == "showlocation" and hotkey and loc_hotkey is None:
+            loc_hotkey, hotkey = hotkey, ""   # old single-hotkey setting that typed /showlocation
         if interval is not None:
             self.interval = max(0, int(interval))
-            if self.interval and self.interval < 20:
-                self.interval = 20                  # don't hammer the chat
+            if self.interval and self.interval < 5:
+                self.interval = 5                   # typing takes about a second; don't flood the chat
         if open_chat in ("enter", "none"):
             self.open_chat = open_chat
-        if hotkey is not None and hotkey != self.hotkey:
+        new_hk = hotkey if hotkey is not None else self.hotkey
+        new_loc = loc_hotkey if loc_hotkey is not None else self.loc_hotkey
+        new_hk = new_hk if new_hk in FKEYS else ""
+        new_loc = new_loc if new_loc in FKEYS and new_loc != new_hk else ""
+        if (new_hk, new_loc) != (self.hotkey, self.loc_hotkey) or (AVAILABLE and not self._hk_thread and (new_hk or new_loc)):
             self._stop_hotkey()
-            self.hotkey = hotkey if hotkey in FKEYS else ""
-            if self.hotkey and AVAILABLE:
+            self.hotkey, self.loc_hotkey = new_hk, new_loc
+            if (self.hotkey or self.loc_hotkey) and AVAILABLE:
                 self._hk_stop = threading.Event()
-                self._hk_thread = threading.Thread(target=self._hotkey_loop, args=(self.hotkey,), daemon=True)
+                self._hk_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
                 self._hk_thread.start()
 
     def _event(self, text):
@@ -170,7 +186,8 @@ class ShowLocationSender:
         return text
 
     def status(self):
-        return {"available": AVAILABLE, "hotkey": self.hotkey, "interval": self.interval, "action": self.action,
+        return {"available": AVAILABLE, "hotkey": self.hotkey, "loc_hotkey": self.loc_hotkey,
+                "interval": self.interval, "qt_only": True, "on_arrival": self.on_arrival,
                 "open_chat": self.open_chat, "last_sent": self.last_sent, "last_result": self.last_result,
                 "events": self.events, "admin": we_are_admin() if AVAILABLE else False}
 
@@ -209,26 +226,30 @@ class ShowLocationSender:
         threading.Thread(target=lambda: (time.sleep(delay), self.send("test")), daemon=True).start()
 
     # ------------------------------------------------------------ hotkey thread
-    def _hotkey_loop(self, key):
-        """Watch the key's physical state. Star Citizen reads the keyboard through raw input with
-        system hotkeys switched off while it has focus, so RegisterHotKey never fires in game; polling
-        the key state (as game overlays do) works whether or not the game is focused."""
-        vk, stop = FKEYS[key], self._hk_stop
-        self._event(f"{key} is ready (works in game)")
-        was_down, last = False, 0.0
+    def _hotkey_loop(self):
+        """Watch both keys' physical state. Star Citizen reads the keyboard through raw input with system
+        hotkeys switched off while it has focus, so RegisterHotKey never fires in game; polling the key
+        state (as game overlays do) works whether or not the game is focused."""
+        keys = {k: act for k, act in ((self.hotkey, "overlay"), (self.loc_hotkey, "showlocation")) if k}
+        stop = self._hk_stop
+        self._event(" · ".join(f"{k}: {'show/hide Quantum' if a == 'overlay' else '/showlocation'}"
+                               for k, a in keys.items()) + " ready (works in game)")
+        state = {k: [False, 0.0] for k in keys}
         while not stop.wait(0.015):
-            down = bool(user32.GetAsyncKeyState(vk) & 0x8000)
-            if down and not was_down and time.time() - last > 0.3:      # one press = one action
-                last = time.time()
-                if self.action == "overlay" and self.on_overlay:
-                    try:
-                        self._event(f"{key}: Quantum {self.on_overlay()}")
-                    except Exception as e:
-                        self._event(f"{key}: couldn't toggle the overlay ({e})")
-                else:
-                    self._event(f"{key} pressed")
-                    threading.Thread(target=self.send, args=(key,), daemon=True).start()
-            was_down = down
+            for key, act in keys.items():
+                down = bool(user32.GetAsyncKeyState(FKEYS[key]) & 0x8000)
+                was, last = state[key]
+                if down and not was and time.time() - last > 0.3:      # one press = one action
+                    state[key][1] = time.time()
+                    if act == "overlay" and self.on_overlay:
+                        try:
+                            self._event(f"{key}: Quantum {self.on_overlay()}")
+                        except Exception as e:
+                            self._event(f"{key}: couldn't toggle the overlay ({e})")
+                    elif act == "showlocation":
+                        self._event(f"{key} pressed")
+                        threading.Thread(target=self.send, args=(key,), daemon=True).start()
+                state[key][0] = down
 
     def _stop_hotkey(self):
         if self._hk_thread:
@@ -238,18 +259,24 @@ class ShowLocationSender:
 
     # ------------------------------------------------------------ timer thread
     def _timer_loop(self):
+        """Automatic /showlocation, only during quantum travel. The app decides what counts (see
+        Api._qt_policy): never while landed, taking off or near a surface; a slow check while a jump is
+        plotted; the chosen interval once readings show quantum speed."""
         while not self._stop.wait(1):
-            if self.interval and (self.last_sent is None or time.time() - self.last_sent >= self.interval):
+            if not self.interval or not self.qt_policy:
+                continue
+            pol = self.qt_policy(self.interval) or {}
+            if self.on_arrival and pol.get("arrived") and pol["arrived"] != self._arrival_sent:
                 if game_in_focus():
-                    self.send("timer")
+                    self._arrival_sent = pol["arrived"]
+                    self.send("quantum arrival")
+                continue
+            if not pol.get("send"):
+                self.last_result = f"timer: {pol.get('reason', 'waiting for quantum travel')}"
+                continue
+            every = pol.get("interval") or self.interval
+            if self.last_sent is None or time.time() - self.last_sent >= every:
+                if game_in_focus():
+                    self.send(f"quantum travel ({pol.get('reason', '')})")
                 else:
                     self.last_result = "timer: waiting for Star Citizen to be the focused window"
-
-
-def relaunch_as_admin(script_path):
-    """Start a second copy of Quantum with administrator rights (Windows asks for permission)."""
-    if not AVAILABLE:
-        return False
-    import sys
-    rc = ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f'"{script_path}"', None, 1)
-    return rc > 32

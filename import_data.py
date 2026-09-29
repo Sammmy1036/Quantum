@@ -20,7 +20,7 @@ from pathlib import Path
 
 from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist
 
-HERE = Path(__file__).parent
+HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 DB_PATH = HERE / "locations.json"
 VALALOL_URL = "https://raw.githubusercontent.com/Valalol/Star-Citizen-Navigation/main/Database.json"
 STARNAV_API = "https://crates.io/api/v1/crates/starnav"
@@ -122,8 +122,10 @@ def main():
             add_loc(Location(c["name"].replace("_", "-"), "space", pos, None, notes="Lagrange point",
                              source="db", system="Pyro", category="lpoint"))
         if c["cont_type"] == "JumpPoint" and abs(pos[0]) + abs(pos[1]) > 0:
-            add_loc(Location(c["name"].replace("JumpPoint", "Jump Point"), "space", pos, None,
-                             notes="Jump point", source="db", system=c["system"], qt=True, category="jump"))
+            to = c["name"].replace("JumpPoint", "").strip()
+            add_loc(Location(f"{to} Gateway", "space", pos, None,            # what the game calls them
+                             notes=f"Gateway: jump point to {to}", source="db", system=c["system"], qt=True,
+                             category="jump"))
     # Checkmate sits at Pyro II L4; the dataset has no coordinates for it, so pin it to the L-point.
     l4 = db.locations.get("P2-L4")
     if l4:
@@ -163,7 +165,8 @@ def main():
 
     db.locations.update(keep)
     from app import apply_calibrations
-    for cal in (HERE / "builtin_calibrations.json", HERE / "calibrations.json"):   # shipped, then yours
+    res = Path(getattr(sys, "_MEIPASS", HERE))
+    for cal in (res / "builtin_calibrations.json", HERE / "calibrations.json"):   # shipped, then yours
         if cal.exists():
             applied, _ = apply_calibrations(db, json.loads(cal.read_text(encoding="utf-8")))
             if applied:

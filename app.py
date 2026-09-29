@@ -7,7 +7,9 @@ Read-only data sources; nothing touches the game process:
   - locations.json                -> map database (run import_data.py once)
 """
 import json
+import os
 import math
+import sys
 import threading
 import time
 from pathlib import Path
@@ -25,7 +27,11 @@ import overlay
 from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
 
-HERE = Path(__file__).parent
+FROZEN = getattr(sys, "frozen", False)
+# Your data (locations, settings, calibrations, logs learned) lives next to Quantum.exe when packaged,
+# next to app.py otherwise. The bundled files (ui/, assets/, shipped calibrations) live in RES.
+HERE = Path(sys.executable).parent if FROZEN else Path(__file__).resolve().parent
+RES = Path(getattr(sys, "_MEIPASS", HERE))
 DB_PATH = HERE / "locations.json"
 MISSIONS_PATH = HERE / "missions.json"
 SETTINGS_PATH = HERE / "settings.json"
@@ -36,7 +42,7 @@ CAL_PATH = HERE / "calibrations.json"
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
                "Orison": "August Dunlow Spaceport", "Lorville": "Lorville", "Levski": "Levski"}
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
-BUILTIN_CAL_PATH = HERE / "builtin_calibrations.json"   # shared alignments shipped with Quantum   # your planet alignments + evidence; shareable
+BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum   # your planet alignments + evidence; shareable
 
 
 class Api:
@@ -46,6 +52,7 @@ class Api:
         self._lock = threading.RLock()
         self._db = NavDB.load(DB_PATH)
         self._db.path = DB_PATH
+        self._renamed = rename_gateways(self._db)
         for path in (BUILTIN_CAL_PATH, CAL_PATH):   # shipped alignments first, then yours / shared ones
             if not path.exists():
                 continue
@@ -58,6 +65,12 @@ class Api:
         self._settings = self._load_settings()
         # The route is a list of tasks. A task is a plain visit, or one contract objective at a place.
         # Consecutive tasks at the same place form one stop; a place can come back later in the trip.
+        ren = self._renamed
+        for st in self._settings.get("route_tasks") or []:
+            st["place"] = ren.get(st.get("place"), st.get("place"))
+        self._settings["route"] = [ren.get(n, n) for n in self._settings.get("route", [])]
+        if self._settings.get("guide") in ren:
+            self._settings["guide"] = ren[self._settings["guide"]]
         saved = self._settings.get("route_tasks") or [{"place": n, "task": "visit"} for n in self._settings.get("route", [])]
         self._route = [t for t in saved if t.get("place") in self._db.locations]
         self._guide = self._settings.get("guide") if self._settings.get("guide") in self._db.locations else None
@@ -71,6 +84,9 @@ class Api:
         self._wiki = wiki.load(WIKI_PATH)
         self._service_records = services.load(SERVICES_PATH)
         self._services = services.match(self._service_records, self._db.locations)
+        self._log_cleared = None
+        if self._settings.get("clear_log_on_start"):
+            self._log_cleared = clear_game_log(self._settings.get("log_path"))
         self._tracker = ContractTracker(MISSIONS_PATH, self._db, self._settings.get("log_path"))
         self._tracker.start()
         self._watcher = ClipboardWatcher(self._on_position)
@@ -79,10 +95,12 @@ class Api:
         self._sender = ShowLocationSender()
         self._sender.on_overlay = lambda: overlay.toggle(restore_cb=self._restore_window,
                                                          after_show_cb=self._nudge_redraw)
-        a = {"hotkey": "F9", "interval": 0, "open_chat": "enter", "action": "overlay", **self._settings.get("autoloc", {})}
-        if "action" not in self._settings.get("autoloc", {}):
-            a["action"] = "overlay"              # F9 now shows/hides Quantum by default
-        self._sender.configure(a["hotkey"], a["interval"], a["open_chat"], a["action"])
+        a = {"hotkey": "F9", "loc_hotkey": "", "interval": 0, "open_chat": "enter", "on_arrival": False,
+             **self._settings.get("autoloc", {})}
+        if a.get("action") == "showlocation" and not a.get("loc_hotkey"):
+            a["loc_hotkey"], a["hotkey"] = a["hotkey"], "F9" if a["hotkey"] != "F9" else ""
+        # Automatic /showlocation was removed: the log can't tell reliably when a quantum jump is under way.
+        self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False)
 
     # ------------------------------------------------------------ internals
     def _load_settings(self):
@@ -105,6 +123,19 @@ class Api:
             self._try_autocal()
 
     def _travel_view(self, cur, t):
+        v = self._travel_view_base(cur, t)
+        if v is None:
+            return v
+        tr, now = self._tracker, time.time()
+        if tr.activity and now - tr.activity["at"] < 1800:
+            v["activity"] = tr.activity
+        if tr.vehicle and now - tr.vehicle["at"] < 6 * 3600:
+            v["vehicle"] = tr.vehicle
+        if tr.armistice:
+            v["armistice"] = tr.armistice[0]
+        return v
+
+    def _travel_view_base(self, cur, t):
         q = self._tracker.qt or {}
         known = sum(1 for d in self._tracker.dest_ids.values() if not d.get("ambiguous"))
         base = {"known_ids": len(self._tracker.loc_ids), "known_jumps": known}
@@ -146,23 +177,41 @@ class Api:
             self._tracker.learn_dest(q["dest"], best, "reading")
 
     def _auto_arrive(self, cur):
-        """Arriving (landing/docking) at the next stop ticks it off. Stops with contract jobs stay until
-        the job itself completes; they're marked as reached instead."""
-        if not cur or not cur.get("landing") or not cur.get("place"):
-            return
-        key = (cur.get("id"), cur.get("at"))
-        if key == self._arrive_seen:
-            return
-        self._arrive_seen = key
+        """Tick off the next stop when you get there. Evidence, from the log or a /showlocation:
+          - landing or docking at that place (or anywhere in that city),
+          - a quantum jump arriving at a destination known to be that place,
+          - a /showlocation within reach of it (1.5 km on the ground, 30 km in space).
+        Stops with contract jobs stay until the job itself completes; they're marked as reached."""
         stops = self._stops()
-        if not stops or stops[0]["place"] != cur["place"]:
+        if not stops:
             return
+        target = stops[0]["place"]
+        L = self._db.locations.get(target)
+        if not L:
+            return
+        evidence = None
+        if cur and cur.get("landing") and cur.get("place"):
+            here = self._db.locations.get(cur["place"])
+            same_city = here and L.body and here.body == L.body and \
+                classify(here.name, here.category) == "city" and dist(here.pos, L.pos) < 30_000
+            if cur["place"] == target or same_city:
+                evidence = ("landed", cur.get("id"), cur.get("at"))
+        if not evidence and cur and cur.get("jump") and cur.get("near") == target:
+            evidence = ("jump", cur.get("jump"), cur.get("at"))
+        if not evidence and self._player and self._player_sys == L.system:
+            reach = 1_500 if L.kind == "surface" else 30_000
+            if dist(self._db.global_pos(L, self._player_t), self._player) < reach:
+                evidence = ("reading", target, round(self._player_t))
+        if not evidence or evidence == self._arrive_seen:
+            return
+        self._arrive_seen = evidence
+        at = evidence[2] or time.time()
         if all(tk["task"] == "visit" for tk in stops[0]["tasks"]):
             self._set_from_stops(stops[1:])
             self._save_settings()
-            self._arrived_note = {"place": cur["place"], "at": cur["at"], "advanced": True}
-        else:
-            self._arrived_note = {"place": cur["place"], "at": cur["at"], "advanced": False}
+            self._arrived_note = {"place": target, "at": at, "advanced": True}
+        elif not self._arrived_note or self._arrived_note.get("place") != target:
+            self._arrived_note = {"place": target, "at": at, "advanced": False}
 
     def _try_autocal(self):
         """Line a planet up from a /showlocation taken where the log says you are.
@@ -393,7 +442,10 @@ class Api:
             live = {"now": t, "static_version": self._static_version, "route": names,
                     "player": None, "next": None, "legs": [], "total": 0.0, "guide": None,
                     "contracts": [], "contracts_version": self._tracker.version,
-                    "log": {"path": self._tracker.log_path, "status": self._tracker.status},
+                    "log": {"path": self._tracker.log_path, "status": self._tracker.status,
+                            "clear_on_start": bool(self._settings.get("clear_log_on_start")),
+                            "game_running": self._tracker.game_running, "note": self._tracker.log_note,
+                            "cleared": self._log_cleared},
                     "where": self._tracker.where,
                     "travel": self._travel_view(cur, t),
                     "arrived": self._arrived_note}
@@ -785,22 +837,22 @@ class Api:
                 self._static_version += 1
             return res
 
-    def set_autoloc(self, hotkey=None, interval=None, open_chat=None, action=None):
-        """Hotkey ("F1"-"F12" or "" for off) and what it does ("overlay" or "showlocation"), timer in
-        seconds (0 = off), and whether to press Enter to open chat first."""
-        self._sender.configure(hotkey, interval, open_chat, action)
+    def set_autoloc(self, hotkey=None, interval=None, open_chat=None, loc_hotkey=None, *_ignored):
+        """hotkey: show/hide Quantum. loc_hotkey: type /showlocation. (interval is ignored: no automatic
+        /showlocation any more.)"""
+        self._sender.configure(hotkey, 0, open_chat, None, True, loc_hotkey, False)
         st = self._sender.status()
-        self._settings["autoloc"] = {k: st[k] for k in ("hotkey", "interval", "open_chat", "action")}
+        self._settings["autoloc"] = {k: st[k] for k in ("hotkey", "loc_hotkey", "open_chat")}
         self._save_settings()
         return st
 
-    def relaunch_admin(self):
-        """Restart Quantum with administrator rights so its keystrokes reach an elevated game."""
-        import keysender
-        if keysender.relaunch_as_admin(str(HERE / "app.py")):
-            threading.Timer(1.0, lambda: webview.windows[0].destroy()).start()
-            return {"ok": True}
-        return {"ok": False, "error": "Windows didn't allow it (or you said no)"}
+    def set_option(self, key, value):
+        """Simple on/off settings shown in the Settings panel."""
+        if key not in ("clear_log_on_start",):
+            return {"ok": False}
+        self._settings[key] = bool(value)
+        self._save_settings()
+        return {"ok": True}
 
     def test_autoloc(self, delay=5):
         self._sender.send_after(delay)
@@ -1005,6 +1057,55 @@ class Api:
         return self.set_log_path(res[0]) if res else {"ok": False, "error": "cancelled"}
 
 
+def rename_gateways(db):
+    """In game the jump points between systems are called Gateways ("Pyro Gateway"). Rename older
+    "Pyro Jump Point" entries so saved data keeps working. Returns {old name: new name}."""
+    out = {}
+    for name in list(db.locations):
+        loc = db.locations[name]
+        if loc.category == "jump" and name.endswith(" Jump Point"):
+            new = name[: -len(" Jump Point")] + " Gateway"
+            if new in db.locations:
+                continue
+            loc.name = new
+            if not loc.notes or loc.notes == "Jump point":
+                loc.notes = f"Gateway: jump point to {new[: -len(' Gateway')]}"
+            db.locations[new] = db.locations.pop(name)
+            out[name] = new
+    return out
+
+
+def star_citizen_running():
+    """Is StarCitizen.exe running? (Windows; elsewhere assume not.)"""
+    if os.name != "nt":
+        return False
+    try:
+        import subprocess
+        out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq StarCitizen.exe", "/NH"], capture_output=True,
+                             text=True, timeout=10, creationflags=0x08000000).stdout   # no console window
+        return "starcitizen.exe" in out.lower()
+    except Exception:
+        return True                          # can't tell: play it safe and leave the log alone
+
+
+def clear_game_log(path=None):
+    """Empty Game.log so Quantum starts reading from a clean slate. Never while the game is running
+    (it's writing to it). Star Citizen keeps its own copies of old logs in the logbackups folder.
+    Your contracts, learned places and calibrations are stored by Quantum and aren't affected."""
+    from gamelog import default_log_paths
+    path = path or next((p for p in default_log_paths() if os.path.isfile(p)), None)
+    if not path or not os.path.isfile(path):
+        return {"ok": False, "reason": "Game.log not found"}
+    if star_citizen_running():
+        return {"ok": False, "reason": "Star Citizen is running"}
+    try:
+        size = os.path.getsize(path)
+        open(path, "w").close()
+        return {"ok": True, "bytes": size, "path": path}
+    except OSError as e:
+        return {"ok": False, "reason": str(e)}
+
+
 def apply_calibrations(db, data):
     """Apply a calibration file to the database. A planet already calibrated more recently is kept."""
     applied, skipped = [], []
@@ -1031,15 +1132,28 @@ def apply_calibrations(db, data):
 
 
 def main():
+    if "--import" in sys.argv:          # Quantum.exe --import : download / refresh the map data
+        if FROZEN and os.name == "nt":  # the exe has no console of its own: open one for the progress
+            import ctypes
+            ctypes.windll.kernel32.AllocConsole()
+            sys.stdout = sys.stderr = open("CONOUT$", "w", buffering=1)
+        import import_data
+        sys.argv = [a for a in sys.argv if a != "--import"]
+        import_data.main()
+        if FROZEN:
+            input("\nPress Enter to close.")
+        return
+    overlay.set_app_id()                 # own taskbar icon instead of Python's
     api = Api()
     if not api._db.bodies:
-        print("Tip: run `python import_data.py` once to load Stanton, Pyro and Nyx.")
+        print("Tip: run `python import_data.py` (or Quantum.exe --import) once to load Stanton, Pyro and Nyx.")
     print("Quantum by microTech - the verse, in your reach.")
-    window = webview.create_window("Quantum", str(HERE / "ui" / "index.html"), js_api=api,
+    window = webview.create_window("Quantum", str(RES / "ui" / "index.html"), js_api=api,
                                    width=1600, height=960, min_size=(1150, 720),
                                    background_color="#05080f")
     window.events.closed += api.shutdown
-    webview.start()
+    icon = RES / "assets" / "quantum.ico"
+    webview.start(func=lambda: overlay.set_window_icon(icon))
 
 
 if __name__ == "__main__":

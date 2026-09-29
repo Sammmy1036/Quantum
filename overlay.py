@@ -113,6 +113,42 @@ if AVAILABLE:
             return "shown"
         return ("shown on top, but Windows kept the game focused: click Quantum to use it. If it doesn't "
                 "appear at all, set the game to Borderless, or restart Quantum as administrator")
+    def set_app_id(app_id="microTech.Quantum"):
+        """Group Quantum under its own taskbar icon (not Python's). Call before the window opens."""
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        except Exception:
+            pass
+
+    def set_window_icon(ico_path, title=WINDOW_TITLE, wait=15.0):
+        """Give the Quantum window the Quantum icon (title bar, taskbar, Alt-Tab)."""
+        import time
+        user32.LoadImageW.argtypes = (wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT, ctypes.c_int,
+                                      ctypes.c_int, wintypes.UINT)
+        user32.LoadImageW.restype = wintypes.HANDLE
+        user32.SendMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+        deadline = time.time() + wait
+        hwnd = None
+        while time.time() < deadline and not hwnd:
+            hwnd = user32.FindWindowW(None, title)
+            if not hwnd:
+                time.sleep(0.2)
+        if not hwnd:
+            return False
+        LR_LOADFROMFILE, IMAGE_ICON, WM_SETICON = 0x10, 1, 0x80
+        big = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, 256, 256, LR_LOADFROMFILE)
+        small = user32.LoadImageW(None, str(ico_path), IMAGE_ICON, 16, 16, LR_LOADFROMFILE)
+        if big:
+            user32.SendMessageW(hwnd, WM_SETICON, 1, big)
+        if small:
+            user32.SendMessageW(hwnd, WM_SETICON, 0, small)
+        return bool(big or small)
 else:
+    def set_app_id(app_id="microTech.Quantum"):
+        pass
+
+    def set_window_icon(ico_path, title=WINDOW_TITLE, wait=15.0):
+        return False
+
     def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None):
         return "Only works on Windows"

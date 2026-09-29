@@ -110,6 +110,20 @@ def match(records, locations):
                 continue
         best = max(cands, key=lambda r: len(r["amenities"]))  # prefer the record that has the details
         out[name] = best
+    # A city's spaceport is the same place as far as services go ("New Babbage Interstellar Spaceport"
+    # has New Babbage's amenities), but the data lists them under the city only.
+    for name, loc in locations.items():
+        if "spaceport" not in name.lower() or (name in out and out[name]["amenities"]) or not loc.body:
+            continue
+        best, bd = None, 60_000.0
+        for other, r in out.items():
+            o = locations.get(other)
+            if o and o.body == loc.body and r["amenities"] and "spaceport" not in other.lower():
+                d = sum((a - b) ** 2 for a, b in zip(o.pos, loc.pos)) ** 0.5
+                if d < bd:
+                    best, bd = other, d
+        if best:
+            out[name] = dict(out[best], name=name, inherited_from=best)
     return out
 
 

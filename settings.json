@@ -1,10 +1,10 @@
 {
+ "clear_log_on_start": true,
  "route_tasks": [],
  "guide": null,
  "autoloc": {
   "hotkey": "F9",
-  "interval": 0,
-  "open_chat": "enter",
-  "action": "overlay"
+  "loc_hotkey": "F10",
+  "open_chat": "enter"
  }
 }

@@ -13992,7 +13992,7 @@
    "created": 0.0
   },
   {
-   "name": "Pyro Jump Point",
+   "name": "Pyro Gateway",
    "kind": "space",
    "pos": [
     3310491639.80218,
@@ -14001,7 +14001,7 @@
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Jump point",
+   "notes": "Gateway: jump point to Pyro",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -14010,7 +14010,7 @@
    "created": 0.0
   },
   {
-   "name": "Terra Jump Point",
+   "name": "Terra Gateway",
    "kind": "space",
    "pos": [
     51118221616.9033,
@@ -14019,7 +14019,7 @@
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Jump point",
+   "notes": "Gateway: jump point to Terra",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -14028,7 +14028,7 @@
    "created": 0.0
   },
   {
-   "name": "Magnus Jump Point",
+   "name": "Magnus Gateway",
    "kind": "space",
    "pos": [
     -62284273860.7205,
@@ -14037,7 +14037,7 @@
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Jump point",
+   "notes": "Gateway: jump point to Magnus",
    "source": "db",
    "system": "Stanton",
    "qt": true,

@@ -105,7 +105,9 @@ button{cursor:pointer}
 .track .labels div:nth-child(4){text-align:right}
 .track .labels b{display:block;color:var(--ink-2);font-weight:600}
 .track .labels .on b{color:var(--ok)}
-.track .drops{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:12.5px;display:grid;gap:3px}
+.track .cargo{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;margin-top:8px;font-size:12.5px}
+.cargo .k{color:var(--dim);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.drops{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:12.5px;display:grid;gap:3px}
 .track .drops .ck{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;border:1.5px solid #3b4f75;margin-right:6px;font-size:9px;vertical-align:-2px}
 .track .drops .done .ck{background:var(--ok);border-color:var(--ok);color:#06200f}
 .track .drops .done{color:var(--ink-2)}
@@ -188,6 +190,13 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .rs-list .empty{display:block;color:var(--dim);cursor:default;padding:10px}
 .setgrid{display:grid;grid-template-columns:120px 1fr;gap:8px 10px;align-items:center;font-size:13px;margin:10px 0}
 .setgrid .k{color:var(--dim)}
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-weight:600}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.switch span{width:38px;height:22px;border-radius:11px;background:#223453;border:1px solid var(--line-2);position:relative;transition:background .15s}
+.switch span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#c8d6ea;transition:transform .15s}
+.switch input:checked+span{background:var(--route);border-color:var(--route)}
+.switch input:checked+span::after{transform:translateX(16px);background:#fff}
+.switch input:focus-visible+span{outline:2px solid var(--you);outline-offset:2px}
 .note{font-size:12px;color:var(--ink-2);background:rgba(75,141,255,.08);border:1px solid rgba(75,141,255,.25);border-radius:7px;padding:8px 10px;line-height:1.5}
 .align-list{display:grid;gap:2px;max-height:300px;overflow:auto;margin:6px 0 10px;font-size:13px}
 .align-list .a{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:baseline;padding:4px 2px;border-bottom:1px solid var(--line)}
@@ -230,8 +239,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .layers hr{border:0;border-top:1px solid var(--line-2);margin:4px 0}
 .bottomright{right:16px;bottom:16px;display:flex;gap:6px;align-items:flex-end}
 .bottomright button{width:34px;height:34px;border-radius:8px;background:rgba(13,21,40,.93);border:1px solid var(--line-2);font-size:17px}
+.bottomright button.on{background:rgba(75,141,255,.28);border-color:var(--route);color:#fff;box-shadow:0 0 0 1px rgba(75,141,255,.35)}
 .camtxt{right:222px;bottom:24px;color:var(--ink-2);font:600 12px var(--display);pointer-events:none;text-align:right}
-.detail{left:16px;bottom:16px;width:350px;padding:14px 16px;display:none}
+.detail{left:16px;bottom:16px;width:350px;padding:14px 16px;display:none;max-height:calc(100% - 32px);overflow-y:auto;overscroll-behavior:contain}
 .detail.show{display:block}
 .detail h2{margin:0;font:700 18px/1.25 var(--display);padding-right:24px}
 .detail .sub{color:var(--dim);font-size:13px;margin:3px 0 10px;display:flex;gap:8px;align-items:center}
@@ -246,6 +256,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--line-2);border-radius:8px;padding:9px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
 .toast.show{opacity:1}
 .help{left:50%;bottom:22px;transform:translateX(-50%);color:var(--dim);font-size:12.5px;pointer-events:none;background:rgba(13,21,40,.6);border-radius:6px;padding:4px 10px}
+.lam{display:inline-block;width:.86em;height:.735em;vertical-align:baseline;overflow:visible}
+.brand svg.lam,.splash svg.lam{width:.86em;height:.735em;filter:none}   /* beat the logo-sized svg rules */
+.brand h1 .lam{margin-right:.34em} .splash .wm .lam{margin-right:.42em}
 .splash{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
   background:radial-gradient(90% 80% at 70% 10%,rgba(47,134,255,.22),transparent 60%),radial-gradient(60% 60% at 20% 100%,rgba(111,208,255,.10),transparent 60%),#02050b;transition:opacity .6s ease}
 .splash.hide{opacity:0;pointer-events:none}
@@ -281,18 +294,18 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
   <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg2)" stroke-width="8.5" stroke-linecap="round"/>
   <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg2)"/>
   <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>
-  <div class="wm">QUANTUM</div><div class="by">by <b>microTech</b></div><div class="tag">THE VERSE, IN YOUR REACH.</div><div class="load"><span></span></div></div></div>
+  <div class="wm" aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</div><div class="by">by <b>microTech</b></div><div class="tag">THE VERSE, IN YOUR REACH.</div><div class="load"><span></span></div></div></div>
 <div class="app">
   <aside class="side">
     <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs>
   <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/>
   <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/>
-  <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1>QUANTUM</h1><div class="by">by <b>microTech</b></div></div></div>
+  <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1 aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</h1><div class="by">by <b>microTech</b></div></div></div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
       <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
-      <button class="tab" role="tab" data-tab="places" aria-selected="false">Places</button>
+      <button class="tab" role="tab" data-tab="places" aria-selected="false">POI</button>
     </div>
 
     <section class="pane active" id="pane-route">
@@ -300,7 +313,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
         <input class="search" id="rsearch" placeholder="Search places, moons, or a service like “refinery”…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="rs-list">
         <ul class="rs-list" id="rs-list" role="listbox" hidden></ul>
       </div>
-      <div class="route-summary">
+      <div class="route-summary" id="route-summary">
         <div><div class="big" id="route-total">–</div><div class="muted" id="route-sub">No stops yet</div></div>
         <div class="row"><button class="btn small ghost" id="btn-view" title="Show the whole route on the map">View</button>
           <button class="btn small ghost" id="btn-clear">Clear</button></div>
@@ -310,7 +323,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <div class="warnbox" id="route-warn" style="display:none"></div>
       <ol class="stops" id="stops"></ol>
       <div id="route-empty" class="empty"><strong>Plan a trip</strong>Search above to add stops, double-click anything on the map, or plan your contracts from the Contracts tab.</div>
-      <button class="btn primary" id="btn-arrived" style="width:100%;display:none">Arrived, go to next stop</button>
+      <button class="btn small ghost" id="btn-arrived" title="Stops tick themselves off when the game log or a /showlocation shows you've arrived" style="width:100%;display:none;margin-top:6px">Skip this stop (arrival is detected automatically)</button>
     </section>
 
     <section class="pane" id="pane-contracts">
@@ -340,7 +353,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <div class="row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
       <div class="row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
       <div class="row"><span class="dot" id="key-dot"></span><span id="key-text">Auto /showlocation</span><span class="spacer"></span><button class="btn small ghost" id="btn-settings">Settings</button></div>
-      <div class="row"><span class="dot" id="align-dot"></span><span id="align-text">Planet alignment</span><span class="spacer"></span><button class="btn small ghost" id="btn-align">Alignment</button></div>
+
     </div>
   </aside>
 
@@ -348,13 +361,13 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
     <canvas class="layer" id="gl"></canvas>
     <canvas class="layer" id="overlay"></canvas>
     <div class="ov hud" id="hud"></div>
-    <div class="ov help" id="help">Drag to spin or roam · right-drag to tilt · scroll to zoom · double-click to fly · triple-click a jump point to jump</div>
+    <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
     <div class="ov topright">
       <div class="seg" id="sysSeg"></div>
       <div class="card layers" id="layers"><div class="hdr" id="layers-hdr">Layers <span class="muted" id="layers-caret">▾</span></div><div id="layer-list"></div></div>
     </div>
     <div class="ov camtxt" id="camtxt"></div>
-    <div class="ov bottomright"><button id="z-route" title="Recenter on the route (R)">⌖</button><button id="z-you" title="Center on you (Y)">◎</button><button id="z-fit" title="Whole system (F)">⤢</button><button id="z-out" title="Zoom out">−</button><button id="z-in" title="Zoom in">+</button></div>
+    <div class="ov bottomright"><button id="z-route" title="Recenter on the route (R)">⌖</button><button id="z-you" title="Follow me (Y)">◎</button><button id="z-fit" title="Whole system (F)">⤢</button><button id="z-out" title="Zoom out">−</button><button id="z-in" title="Zoom in">+</button></div>
     <div class="ov card detail" id="detail"></div>
     <div class="tooltip" id="tooltip"></div>
     <div class="toast" id="toast"></div>
@@ -369,7 +382,7 @@ const TYPES = {
   city:{label:"Cities",one:"City",color:"#eef3fb",def:true}, station:{label:"Stations",one:"Station",color:"#f2c14e",def:true},
   outpost:{label:"Outposts",one:"Outpost",color:"#7fd18b",def:true}, cave:{label:"Caves",one:"Cave",color:"#c9a27a",def:false},
   wreck:{label:"Wrecks",one:"Wreck",color:"#b98cf0",def:false}, field:{label:"Mining & clouds",one:"Mining area",color:"#8fb3d9",def:false},
-  comm:{label:"Comm arrays",one:"Comm array",color:"#7fc6d9",def:false}, jump:{label:"Jump points",one:"Jump point",color:"#c9a7ff",def:true},
+  comm:{label:"Comm arrays",one:"Comm array",color:"#7fc6d9",def:false}, jump:{label:"Gateways",one:"Gateway",color:"#c9a7ff",def:true},
   poi:{label:"Other",one:"Point of interest",color:"#a9b6cc",def:false}, om:{label:"Orbital markers",one:"Orbital marker",color:"#7684a0",def:false},
   lpoint:{label:"Lagrange points",one:"Lagrange point",color:"#7684a0",def:true},
 };
@@ -462,7 +475,8 @@ function glowTexture(color){ const c=document.createElement("canvas"); c.width=c
 
 let sysObjs=[];  // three objects of the current system
 function buildSystem(){
-  for(const o of sysObjs){ scene.remove(o.group); o.group.traverse(n=>{ n.geometry?.dispose?.(); n.material?.map?.dispose?.(); n.material?.dispose?.(); }); }
+  for(const o of sysObjs){ scene.remove(o.group); o.group.traverse(n=>{ n.geometry?.dispose?.(); n.material?.map?.dispose?.(); n.material?.dispose?.(); });
+    if(o.orbit){ scene.remove(o.orbit); o.orbit.geometry.dispose(); o.orbit.material.dispose(); } }   // leftover rings = "ghost" orbits
   sysObjs=[];
   for(const b of S.bodies.filter(b=>b.system===S.system)){
     const group=new THREE.Group(); const spin=new THREE.Group(); group.add(spin);
@@ -549,12 +563,18 @@ function updateCamera(t){
   camera.near=Math.max(0.5,c.dist*1e-4); camera.far=1e14; camera.updateProjectionMatrix(); camera.lookAt(0,0,0); camera.updateMatrixWorld();
 }
 function fitSystem(){ flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
-function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
+function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(S.follow) setFollow(false); if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
 const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
-function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(L.system!==S.system) setSystem(L.system,false);
+function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false);
   if(L.kind==="surface"){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
   else flyTo({kind:"loc",name}, close?60000:4e6); }
-function focusPlayer(){ const p=S.live?.player; if(!p) return toast("Type /showlocation in game chat first");
+// Follow: when your position changes (a /showlocation, a landing, a jump, a stop ticked off), the view
+// moves with you: you and your next stop if there's a route, otherwise just you. Dragging or zooming the
+// map yourself pauses it; ◎ (or Y) turns it back on.
+function setFollow(on){ S.follow=on; $("z-you").classList.toggle("on",on); $("z-you").title=on?"Following you (drag the map to stop)":"Follow me (Y)"; }
+function followNow(){ const live=S.live, p=live?.player; if(!p) return;
+  if(live.route?.length && S.locMap[live.route[0]]?.system===p.system) fitRoute(false,[live.route[0]]); else focusPlayer(true); }
+function focusPlayer(quiet){ const p=S.live?.player; if(!p) return quiet?null:toast("Type /showlocation in game chat first");
   if(p.system!==S.system) setSystem(p.system,false);
   if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), TOPDOWN); else flyTo({kind:"point",pos:p.pos}, 5e6); }
 
@@ -773,7 +793,7 @@ function stopAnim(){ if(!S.anim) return;
   if(sb&&S.bodyMap[sb]){ S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(S.bodyMap[sb],S.cam.target,now())}; return; }  // stay on the globe
   const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
   S.anim=null; S.focus={kind:"point",pos:[...S.cam.target]}; setLock(null); S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
-ov.addEventListener("pointerdown",e=>{ stopAnim(); drag={x:e.clientX,y:e.clientY,pan:e.button===2||e.shiftKey}; moved=false; ov.classList.add("dragging");
+ov.addEventListener("pointerdown",e=>{ stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
   try{ ov.setPointerCapture(e.pointerId); }catch(_){} $("help").style.display="none"; });
 const endDrag=()=>{ drag=null; ov.classList.remove("dragging"); };
 window.addEventListener("pointerup",endDrag); window.addEventListener("pointercancel",endDrag);
@@ -781,8 +801,9 @@ window.addEventListener("pointermove",e=>{
   const r=ov.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>2) moved=true; drag.x=e.clientX; drag.y=e.clientY;
     const surf=!!surfaceBodyOf(S.focus);
-    if(surf && !drag.pan){ grabGlobe(dx,dy); }          // near a planet: drag the ground itself
-    else if(surf){ S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
+    if(surf && !drag.pan && !drag.turn){ grabGlobe(dx,dy); }          // near a planet: drag the ground itself
+    else if(surf && drag.turn){ S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
+    else if(drag.turn){ S.cam.yaw-=dx*0.006; S.cam.pitch=Math.max(-1.5,Math.min(1.5,S.cam.pitch+dy*0.006)); } // right-drag: turn the view, never move the system
     else if(drag.pan){ // move the view point in the camera plane
       const k=S.cam.dist*2*Math.tan(camera.fov*Math.PI/360)/H; const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
       const tg=[...S.cam.target]; S.anim=null;
@@ -792,10 +813,10 @@ window.addEventListener("pointermove",e=>{
     hideTip(); return; }
   if(e.target!==ov){ hideTip(); return; }
   const hit=pick(mx,my); if(hit) showTip(hit,mx,my); else hideTip(); });
-ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim();
+ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim(); if(S.follow) setFollow(false);
   let min=20; if(S.focus.kind==="body"){ min=S.bodyMap[S.focus.name].radius*1.05; }
   S.cam.dist=Math.min(4e12,Math.max(min,S.cam.dist*k)); },{passive:false});
-function jumpTarget(L){ const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+Jump\s*Point/i); return m?m[1]:null; }
+function jumpTarget(L){ const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)$/i); return m?m[1]:null; }
 function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) return;
   if(S.systems.includes(to)){ S.autoSystem=false; setSystem(to); select(null); toast(`Jumped to ${to}`); }
   else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
@@ -819,9 +840,9 @@ function showTip(hit,x,y){ let t="",s="";
   const r=tip.getBoundingClientRect(); tip.style.left=Math.min(x+14,W-r.width-8)+"px"; tip.style.top=Math.max(y-r.height-10,8)+"px"; }
 function hideTip(){ tip.style.display="none"; }
 window.addEventListener("keydown",e=>{ if(e.target.matches("input,textarea,select")) return;
-  if(e.key==="Escape") select(null); if(e.key==="r"||e.key==="R") fitRoute(false); if(e.key==="f"||e.key==="F") fitSystem(); if(e.key==="y"||e.key==="Y") focusPlayer();
+  if(e.key==="Escape") select(null); if(e.key==="r"||e.key==="R") fitRoute(false); if(e.key==="f"||e.key==="F") fitSystem(); if(e.key==="y"||e.key==="Y"){ setFollow(true); followNow(); }
   if(e.key==="+"||e.key==="=") S.cam.dist/=1.5; if(e.key==="-") S.cam.dist*=1.5; });
-$("z-in").onclick=()=>{ stopAnim(); S.cam.dist/=1.6; }; $("z-out").onclick=()=>{ stopAnim(); S.cam.dist*=1.6; }; $("z-fit").onclick=fitSystem; $("z-you").onclick=focusPlayer; $("z-route").onclick=()=>fitRoute(false);
+$("z-in").onclick=()=>{ stopAnim(); S.cam.dist/=1.6; }; $("z-out").onclick=()=>{ stopAnim(); S.cam.dist*=1.6; }; $("z-fit").onclick=fitSystem; $("z-you").onclick=()=>{ setFollow(true); followNow(); }; $("z-route").onclick=()=>fitRoute(false);
 
 // =================================================================== systems & layers
 function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg();
@@ -893,26 +914,39 @@ function renderDetail(){
   const d=$("detail"), sel=S.selected; if(!sel){ d.classList.remove("show"); return; }
   const live=S.live, t=now();
   if(sel.kind==="settings"){ const a=S.live?.autoloc||{};
-    const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"], ivs=[[0,"Off"],[30,"Every 30 s"],[60,"Every minute"],[120,"Every 2 min"],[300,"Every 5 min"],[600,"Every 10 min"]];
+    const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"];
     const when=a.last_sent?new Date(a.last_sent*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"never";
-    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2><div class="sub">Hotkey and auto /showlocation</div>
-      ${a.available===false?`<div class="note">This only works on Windows.</div>`:""}
+    const lg=S.live?.log||{}, cl=lg.cleared;
+    const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
+    const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
+      <div class="sub" style="margin-top:6px">Game.log</div>
+      <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
+        <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
+        <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
+        ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
+      <div class="sub">Planet alignment</div>
+      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
+      <div class="sub">Hotkeys</div>
+      ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
-        <span class="k">Hotkey</span><select class="field" id="s-hotkey">${keys.map(k=>`<option value="${k}" ${k===a.hotkey?"selected":""}>${k||"Off"}</option>`).join("")}</select>
-        <span class="k">Hotkey does</span><select class="field" id="s-action"><option value="overlay" ${a.action!=="showlocation"?"selected":""}>Show / hide Quantum over the game</option><option value="showlocation" ${a.action==="showlocation"?"selected":""}>Type /showlocation in chat</option></select>
-        <span class="k">Automatically</span><select class="field" id="s-interval">${ivs.map(([v,l])=>`<option value="${v}" ${v===a.interval?"selected":""}>${l}</option>`).join("")}</select>
+        <span class="k">Show / hide Quantum</span><select class="field" id="s-hotkey">${keyOpts(a.hotkey,a.loc_hotkey)}</select>
+        <span class="k">Type /showlocation</span><select class="field" id="s-lochotkey">${keyOpts(a.loc_hotkey,a.hotkey)}</select>
         <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
         <span class="k">Last sent</span><span>${esc(when)}${a.last_result&&a.last_result!=="idle"?` · <span class="muted">${esc(a.last_result)}</span>`:""}</span>
       </div>
-      <div class="note" style="margin-bottom:8px"><b>Overlay:</b> press the hotkey in game to bring Quantum up on top, and again to tuck it away and return to the game. Set Star Citizen to <b>Borderless</b> or <b>Windowed</b> (Graphics settings): nothing can appear over exclusive fullscreen. If Quantum appears but won't take focus, restart it as administrator (button below).</div>
-      <div class="note">For <b>/showlocation</b>, Quantum types it into the game chat for you, only while Star Citizen is the focused window. The timer briefly takes over your keyboard each time, so it's best while parked, landed or on foot. The game still sees the hotkey press too, so pick a key you haven't bound to anything in game. It sends simulated keystrokes, so use it at your own discretion.</div>
+
       <div class="acts" style="margin-top:10px"><button class="btn primary" data-a="testkey">Test /showlocation in 5 s</button>
         ${a.available&&!a.admin?`<button class="btn" data-a="relaunch" title="Needed when Star Citizen / the RSI Launcher runs as administrator">Restart Quantum as administrator</button>`:""}</div>
       <div class="sub" style="margin-top:12px">What happened (newest first)</div>
-      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press your hotkey in game, then look here.</div>'}</div>
-      <div class="muted" style="font-size:12px">${a.admin?"Quantum is running as administrator.":"Quantum is not running as administrator. If the RSI Launcher runs as admin, Windows blocks Quantum's keystrokes: restart Quantum as administrator."}</div>`;
-    const save=async()=>{ await api().set_autoloc($("s-hotkey").value,+$("s-interval").value,$("s-chat").value,$("s-action").value); await poll(); renderStatus(); toast("Saved"); };
-    for(const id of ["s-hotkey","s-interval","s-chat","s-action"]) $(id).onchange=save;
+      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>
+      <div class="muted" style="font-size:12px">${a.admin?"Quantum is running as administrator.":"Typing /showlocation needs Quantum to run as administrator when the RSI Launcher does."} Show/hide works either way. The game still sees your hotkeys, so pick keys that aren't bound in game.</div>`;
+    const save=async()=>{
+      await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value);
+      await poll(); renderStatus(); renderDetail(); toast("Saved"); };
+    for(const id of ["s-hotkey","s-lochotkey","s-chat"]) $(id).onchange=save;
+    $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
+      toast(e.target.checked?"Game.log will be cleared when Quantum starts (unless the game is running)":"Game.log will be left as is"); };
   } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
     const day=x=>x?new Date(x*1000).toLocaleDateString([], {day:"numeric",month:"short"}):"";
     const rows=st.bodies.filter(b=>b.system===S.system).map(b=>{
@@ -926,11 +960,7 @@ function renderDetail(){
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Planet alignment</h2>
       <div class="sub">${esc(S.system)}${st.build?` · game build ${esc(st.build)}`:""}</div>
       <div class="hint" style="font-size:13px;color:var(--ink-2)">Each planet is lined up once, from a /showlocation at a known place. Later readings at known places are logged as checks: if they stay near 0°, the alignment holds across sessions and can be shared.</div>
-      <div class="note" style="margin-top:8px"><b>No flying needed.</b> Open your inventory (so the game logs where you are), then type /showlocation or press F9:
-        <br>• <b>In your hangar</b> in New Babbage, Lorville, Area 18 or Orison: lines the planet up to within a few km.
-        <br>• <b>At the planet's station</b> (Port Tressler, Everus Harbor, Baijini Point, Seraphim): within about a km.
-        <br>• <b>At any outpost or distribution centre</b> during normal play: exact.
-        <br>A better reading replaces a rougher one automatically.</div>
+
       <div class="align-list">${rows||'<div class="muted">No planets in this system.</div>'}</div>
       <div class="acts"><button class="btn primary" data-a="export">Export alignments</button><button class="btn" data-a="import">Import</button></div>
       <div class="muted" style="font-size:12px;margin-top:8px">Saved automatically to ${esc(st.file)}. A calibrations.json placed in the app folder is applied on start.</div>`;
@@ -943,7 +973,7 @@ function renderDetail(){
       ${wikiFor(b.name)?.moons?.length?`<span class="k">Moons</span><span>${wikiFor(b.name).moons.map(esc).join(", ")}</span>`:""}
       <span class="k">Radius</span><span>${fmtDist(b.radius)}</span>
       ${b.period?`<span class="k">Day length</span><span>${b.period.toFixed(2)} h</span>`:""}
-      <span class="k">Places</span><span>${n}</span>
+      <span class="k">POI</span><span>${n}</span>
       ${b.kind!=="star"?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
       ${distFromYou(b.center,b.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(b.center,b.system)-b.radius)} to surface</span>`:""}</div>
       <div class="acts"><button class="btn primary" data-a="zoom">Fly to</button></div>${wikiFor(b.name)?CREDIT(wikiFor(b.name).url):""}`;
@@ -979,6 +1009,8 @@ function renderDetail(){
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
     const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;
     if(a==="zoom") focusBody(sel.name);
+    if(a==="openalign"){ await openAlign(); return; }
+    if(a==="logchange"){ const r=await api().browse_log(); if(r.ok){ toast("Now reading the selected Game.log"); await poll(); renderDetail(); } return; }
     if(a==="relaunch"){ const r=await api().relaunch_admin(); if(!r.ok) toast(r.error); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
     if(a==="jump") jumpThrough(sel.name);
@@ -1004,23 +1036,23 @@ function compass(deg){ return `<svg class="compass" viewBox="-22 -22 44 44" aria
   <g transform="rotate(${deg})"><path d="M0,-15 L6,6 L0,2 L-6,6 Z" fill="#7fe7ff"/></g></svg>`; }
 function renderHud(){
   const live=S.live, g=live.guide, n=live.next; let html="";
-  if(g){ const hdg=g.heading!=null; const nums = hdg
-      ? `<div class="nums">${compass(g.heading)}<div><div class="v">${Math.round(g.heading)%360}°</div><div class="k">heading</div></div>
-         <div><div class="v">${fmtDist(g.ground)}</div><div class="k">over ground</div></div>
-         <div><div class="v">${g.climb>0?"↑":"↓"} ${fmtDist(Math.abs(g.climb))}</div><div class="k">${g.climb>0?"climb":"descend"}</div></div></div>`
-      : g.distance!=null ? `<div class="nums"><div><div class="v">${fmtDist(g.distance)}</div><div class="k">straight line</div></div></div>`
-      : g.other_system ? `<div class="hint">It's in ${esc(g.system)}. Jump there first.</div>` : `<div class="hint">Type /showlocation in game chat to get a heading.</div>`;
-    const ap=(g.approach||[]).slice(0,2).map((a,i)=>`<div class="a"><span class="i">${i+1}</span><span>Quantum to <b>${esc(a.name)}</b>${a.ground!=null?`, then ${a.orbit?"descend and ":""}fly <b>${Math.round(a.heading)}°</b> for <b>${fmtDist(a.ground)}</b>`:`, then fly <b>${fmtDist(a.straight)}</b>`}</span></div>`).join("");
+  if(g){ const pl=live.player, approxPos=pl?.approx, ageMin=pl&&!approxPos?Math.round(pl.age/60):0;
+    const arrived=g.heading!=null&&!approxPos&&g.ground<150&&Math.abs(g.climb||0)<150;
+    const nums = approxPos
+      ? `<div class="hint">Your position is only known from the game log (at ${esc(approxPos)}), so there's no exact distance yet. Press your /showlocation hotkey or type /showlocation for one.</div>`
+      : arrived ? `<div class="hint" style="color:var(--ok)">You're there.</div>`
+      : g.distance!=null ? (ageMin>=2?`<div class="muted" style="font-size:12px;margin:2px 0 -4px">From your /showlocation ${ageMin} min ago</div>`:"")+`<div class="nums"><div><div class="v">${fmtDist(g.distance)}</div><div class="k">straight line</div></div></div>`
+      : g.other_system ? `<div class="hint">It's in ${esc(g.system)}. Jump there first.</div>` : `<div class="hint">Type /showlocation in game chat to see the distance.</div>`;
+    const ap=(g.approach||[]).slice(0,2).map((a,i)=>`<div class="a"><span class="i">${i+1}</span><span>Quantum to <b>${esc(a.name)}</b>${a.ground!=null?`, then ${a.orbit?"descend and ":""}fly <b>${fmtDist(a.ground)}</b>`:`, then fly <b>${fmtDist(a.straight)}</b>`}</span></div>`).join("");
     const direct = g.target_is_qt ? `<div class="a"><span class="i">★</span><span>It has its own quantum marker. Pick it in your starmap.</span></div>` : "";
-    const faster = hdg && g.approach?.[0] && g.ground < g.approach[0].ground ? `<div class="a"><span class="i">★</span><span>You're closer than any QT marker. Fly the heading above.</span></div>` : "";
+    const faster = !approxPos && g.ground!=null && g.approach?.[0] && g.ground < g.approach[0].ground ? `<div class="a"><span class="i">★</span><span>You're closer than any QT marker: fly there directly.</span></div>` : "";
     html+=`<div class="card guide"><div class="lbl">Guiding to<span class="spacer"></span><button class="btn small ghost" id="hud-stop">Stop</button></div>
       <div class="nm">${esc(g.name)}</div>${nums}${(ap||direct)?`<div class="approach"><div class="muted" style="font-size:12px">Fastest way there</div>${faster||direct}${ap}</div>`:""}</div>`; }
   const here=live.travel?.state==="landed"&&live.travel?.place===n?.name;
   if(n){ html+=`<div class="card next"><div class="lbl">Next stop${live.route.length>1?` · 1 of ${live.route.length}`:""}${here?' <span style="color:var(--ok);font-weight:600">· You\'re here</span>':""}</div><div class="nm">${esc(n.name)}</div>
     ${n.other_system?`<div class="hint">It's in ${esc(n.system)}. Jump there first.</div>`:n.distance!=null?`<div class="nums"><div><div class="v">${fmtDist(n.distance)}</div><div class="k">straight line</div></div>
-      ${n.surface!=null?`<div><div class="v">${fmtDist(n.surface)}</div><div class="k">over ground</div></div><div><div class="v">${Math.round(n.heading)%360}°</div><div class="k">heading</div></div>`:""}
       ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(n.pad)}</div><div class="k">pad</div></div>`:""}</div>`
-      :`<div class="hint">Type /showlocation in game chat to see distance and heading.</div>`}</div>`; }
+      :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}</div>`; }
   // Offer to line the planet up when your reading clearly matches a place the map has elsewhere.
   const cs=live.calib_suggest;
   if(cs && S.calDismissed!==cs.reading_t){ const top=cs.places[0];
@@ -1053,7 +1085,8 @@ async function addStops(names){ await api().add_stops(names); await poll(); toas
 function roleTags(roles){ return (roles||[]).map(r=>`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
 function renderRoute(){
   const live=S.live, route=live.route, el=$("stops"); $("c-route").textContent=route.length;
-  $("route-empty").style.display=route.length?"none":"block"; $("btn-arrived").style.display=route.length?"block":"none";
+  $("route-empty").style.display=route.length?"none":"block";
+  $("route-summary").style.display=route.length?"":"none";      // nothing to total up without stops $("btn-arrived").style.display=route.length?"block":"none";
   $("route-total").textContent=route.length?fmtDist(live.total):"–";
   const jumps=route.filter((n,i)=>i>0&&S.locMap[n]?.system!==S.locMap[route[i-1]]?.system).length;
   const again=route.length-new Set(route).size;
@@ -1077,7 +1110,7 @@ $("btn-optimize").onclick=async()=>{ const r=await api().optimize_route(); await
 $("btn-clear").onclick=async()=>{ await api().clear_route(); S.overview=null; await poll(); };
 $("btn-view").onclick=()=>fitRoute();
 async function openAlign(){ S.alignStatus=await api().calibration_status(); S.selected={kind:"align"}; renderDetail(); }
-$("btn-align").onclick=openAlign;
+
 $("btn-settings").onclick=()=>{ S.selected={kind:"settings"}; renderDetail(); };
 $("btn-plan").onclick=()=>planRoute(false); $("btn-plan-all").onclick=()=>planRoute(true);
 async function planRoute(withContracts){
@@ -1093,8 +1126,8 @@ async function planRoute(withContracts){
 }
 // Frame the whole route. The camera pivots on a planet (yours, or the next stop's), so dragging
 // afterwards spins that globe instead of swinging around an empty point in space.
-function fitRoute(reveal=true){
-  const route=S.live?.route||[]; if(!route.length){ toast("The route is empty"); return; }
+function fitRoute(reveal=true, only=null){
+  const route=only||S.live?.route||[]; if(!route.length){ if(!only) toast("The route is empty"); return; }
   const ps=S.live.player?.system; const sys=ps&&route.some(n=>S.locMap[n]?.system===ps)?ps:S.locMap[route[0]]?.system;
   if(sys&&sys!==S.system) setSystem(sys,false);
   const t=now(); const nodes=route.map(n=>nodeOf(n,t)).filter(Boolean); const pn=playerNode(); if(pn) nodes.push(pn);
@@ -1130,22 +1163,6 @@ async function planRoute(withContracts){
   if(!r.ok) return toast(r.error);
   S.overview=r; renderContracts(true);   // stay on whichever tab you planned from
   fitRoute(); S.reveal=performance.now(); renderHud();
-}
-// Frame the whole route. All on one planet: turn that planet so the route faces you.
-function fitRoute(){
-  const route=S.live?.route||[]; if(!route.length) return toast("The route is empty");
-  const ps=S.live.player?.system; const sys=ps&&route.some(n=>S.locMap[n]?.system===ps)?ps:S.locMap[route[0]]?.system;
-  if(sys&&sys!==S.system) setSystem(sys,false);
-  const t=now(); const nodes=route.map(n=>nodeOf(n,t)).filter(Boolean); const pn=playerNode(); if(pn) nodes.push(pn);
-  if(!nodes.length) return;
-  const bodies=new Set(nodes.map(n=>n.body));
-  if(bodies.size===1 && nodes[0].body){ const B=S.bodyMap[nodes[0].body];
-    const c=norm3(nodes.reduce((a,n)=>{ const u=norm3(n.local); return [a[0]+u[0],a[1]+u[1],a[2]+u[2]]; },[0,0,0]));
-    const spread=Math.max(...nodes.map(n=>{ const u=norm3(n.local); return Math.acos(Math.max(-1,Math.min(1,u[0]*c[0]+u[1]*c[1]+u[2]*c[2]))); }));
-    flyTo({kind:"body",name:B.name}, B.radius*(1.45+2.0*Math.min(spread,1.3)), {pitch:Math.asin(c[2]), yaw:Math.atan2(c[1],c[0]), dur:1600});
-  } else { const cen=[0,1,2].map(i=>nodes.reduce((a,n)=>a+n.g[i],0)/nodes.length); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),1e5);
-    flyTo({kind:"point",pos:cen}, rad/Math.tan(camera.fov*Math.PI/360)*1.5, {pitch:0.95, dur:1600}); }
-  S.reveal=performance.now();
 }
 $("btn-arrived").onclick=async()=>{ await api().arrived(); await poll(); };
 
@@ -1202,10 +1219,11 @@ function renderContracts(force){
   const cnt=$("c-contracts"); cnt.textContent=active.length; cnt.classList.toggle("hot",active.length>0);
   $("plan-all-bar").style.display=active.length?"flex":"none";
   const lg=live.log, ok=lg.status==="watching";
+  $("logbar").style.display = ok ? "none" : "";       // all good: it lives in Settings
   $("logbar").innerHTML = ok
     ? `<div class="row"><span class="dot on"></span><b>Reading Game.log</b><span class="spacer"></span><button class="btn small ghost" id="lb-change">Change</button></div><div class="path">${esc(lg.path)}</div>`
-    : `<div class="row"><span class="dot warn"></span><b>${lg.path?"Can't read Game.log":"Game.log not found"}</b></div>
-       <div class="muted" style="margin:4px 0 8px">It's in your Star Citizen install folder, usually <span style="color:var(--ink-2)">…\\StarCitizen\\LIVE\\Game.log</span></div>
+    : `<div class="row"><span class="dot warn"></span><b>${lg.game_running?"Waiting for Game.log":"Looking for Game.log"}</b></div>
+       <div class="muted" style="margin:4px 0 8px">${lg.game_running?"Star Citizen is running; its log will be picked up in a moment.":"It's picked up automatically when Star Citizen starts. You can also point Quantum at it: it's usually <span style=\"color:var(--ink-2)\">…\\StarCitizen\\LIVE\\Game.log</span>"}</div>
        <div class="row"><input class="field" id="lb-path" placeholder="Paste the full path" style="flex:1"><button class="btn small" id="lb-set">Use</button><button class="btn small" id="lb-browse">Browse</button></div>`;
   const on=(id,f)=>{ const x=$(id); if(x) x.onclick=f; };
   on("lb-change",async()=>{ const r=await api().browse_log(); if(r.ok) toast("Now reading the selected Game.log"); });
@@ -1233,18 +1251,24 @@ function renderContracts(force){
       multi&&st<3?`Delivered ${tr.delivered}/${tr.dropoffs}`:"Delivered"];
     const nodes=[0,1,2,3].map(i=>`<span class="node ${i<st||(i===st&&st===3)?"done":i===st?"cur":""}" style="left:${i/3*100}%"></span>`).join("");
     const labels=names.map((n,i)=>`<div class="${i<=st||(i===3&&tr.delivered)?"on":""}"><b>${n}</b>${i<=st?hhmm(tr.times[i]):i===3&&tr.last_drop?hhmm(tr.last_drop):""}</div>`).join("");
+    // What you're hauling: SCU per commodity (from the delivery objectives), delivered so far, and the total.
+    const cargoRow=tr.scu_total?`<div class="cargo"><span class="k">Cargo</span>${tr.cargo.map(g=>`<span><b>${g.total} SCU</b> ${esc(g.what)}${st>=1&&g.done?` <span class="muted">(${g.done} delivered)</span>`:""}</span>`).join("")}${tr.cargo.length>1?`<span class="muted">${tr.scu_total} SCU total</span>`:""}</div>`:"";
     const dropRows=multi?`<div class="drops">${tr.drops.map(d=>`<div class="${d.status}"><span class="ck">${d.status==="done"?"✓":""}</span>${esc(d.where||"Drop-off")}${d.scu?` <span class="muted">${d.scu[0]}/${d.scu[1]} SCU</span>`:""}${d.at?` <span class="muted">· ${hhmm(d.at)}</span>`:""}</div>`).join("")}</div>`:"";
     return `<div class="track ${cancel?"cancel":""}"><div class="head"><span class="st">${head}</span><span class="eta">${eta}</span></div>
-      <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${dropRows}</div>`; };
+      <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${cargoRow}${dropRows}</div>`; };
   const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
     const active=c.status==="active";
     const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?`Marker on ${o.marker.body}`:`Marker near ${o.marker.lpoint||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
       const inR=o.in_route;
+      // Pickups don't state the amount; it's what the delivery objectives add up to for that cargo.
+      const cg=c.tracking?.cargo||[], nm=x=>(x||"").toLowerCase().replace("aluminium","aluminum");
+      const pick=/^(pick up|collect)\b/i.test(o.label||"") && !/SCU/.test(o.label||"") && cg.length
+        ? (cg.length===1 ? cg[0] : cg.find(g=>nm(o.label).includes(nm(g.what)))) : null;
       const unknown = live_ && !where ? `<div class="unknown">The log only says it's inside a station or building.
           <div class="row"><input class="field" list="places-dl" placeholder="Type the place from your mobiGlas" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
           <button class="btn small" data-act="setplace" data-oid="${esc(o.id)}">Set</button><button class="btn small ghost" data-act="here" data-oid="${esc(o.id)}" title="Use the nearest place to your last /showlocation">I'm here</button></div></div>` : "";
-      return `<div class="obj ${o.status}"><div class="tick"></div><div><div class="txt">${esc(o.label)}</div>
+      return `<div class="obj ${o.status}"><div class="tick"></div><div><div class="txt">${esc(o.label)}${pick?` <span class="muted">· ${pick.total} SCU</span>`:""}</div>
         ${where&&live_?`<div><span class="where" data-cid="${c.id}" data-oid="${esc(o.id)}">◆ ${esc(where)}</span>${inR?'<span class="tag-in">✓ in route</span>':""}</div>${foundNote[o.found]?`<div class="found">Location ${foundNote[o.found]}</div>`:""}`:""}${unknown}</div>
         ${where&&live_?`<button class="btn small go" data-act="guide" data-oid="${esc(o.id)}">Guide</button>`:"<span></span>"}</div>`; }).join("")
       || `<div class="muted" style="font-size:13px">Objectives appear as the game reports them.</div>`;
@@ -1337,20 +1361,26 @@ function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"
   else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="arrived" && (!p || p.approx || (p.t||0) < tv.at)){ pd.className="dot on";
-    pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown jump point <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
+    pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown spot <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
   else if(tv.state==="flying" && (!p || (p.t||0) < tv.at)){ pd.className="dot on"; pt.innerHTML=`<b>In flight</b>${tv.left?`, left ${esc(tv.left)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(p&&p.approx){ pd.className="dot on"; pt.innerHTML=`At <b>${esc(p.approx)}</b> <span class="muted">(from the game log, ${ago(S.live.now-p.age)})</span>`; }
   else
   if(!p){ pd.className="dot"; pt.innerHTML="Type <b>/showlocation</b> in game chat to share your position"; }
   else { const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`; pd.className="dot"+(p.age<120?" on":"");
-    pt.innerHTML=p.body?`<b>${esc(p.body)}</b> ${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°, alt ${fmtDist(p.alt)} <span class="muted">(${age})</span>`:`<b>In space</b>, ${esc(p.system)} <span class="muted">(${age})</span>`; }
+    pt.innerHTML=p.body?`At <b>${esc(p.body)}</b> <span class="muted">(/showlocation, ${age})</span>`:`<b>In space</b>, ${esc(p.system)} <span class="muted">(${age})</span>`; }
+  // What you're up to, from lines that name you: traffic control you hailed, vehicle deliveries, shops,
+  // your own ship or vehicle, and the armistice zone.
+  const bits=[];
+  if(tv.vehicle) bits.push(tv.vehicle.aboard?`In your <b>${esc(tv.vehicle.name)}</b>`:`Left your ${esc(tv.vehicle.name)}`);
+  if(tv.activity) bits.push(`${esc(tv.activity.text)} <span class="muted">(${ago(tv.activity.at)})</span>`);
+  if(tv.armistice===false) bits.push(`<span style="color:#ffb454">Outside the armistice zone</span>`);
+  if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join(" · ")}</div>`;
   const lg=S.live.log; $("log-dot").className="dot"+(lg.status==="watching"?" on":lg.status==="idle"?"":" warn");
   const ap=S.live.at_place; const apTxt=ap?.name?` · at <b>${esc(ap.name)}</b>`:S.live.where?.body?` · near <b>${esc(S.live.where.body)}</b>`:"";
   $("log-text").innerHTML=lg.status==="watching"?`Tracking contracts${apTxt}`:"Contract tracking off: Game.log not found";
-  const al=S.live.autoloc||{}; const parts=[]; if(al.hotkey) parts.push(al.action==="showlocation"?`<b>${esc(al.hotkey)}</b> sends /showlocation`:`<b>${esc(al.hotkey)}</b> shows / hides Quantum`); if(al.interval) parts.push(`auto every ${al.interval>=60?al.interval/60+" min":al.interval+" s"}`);
+  const al=S.live.autoloc||{}; const parts=[]; if(al.hotkey) parts.push(`<b>${esc(al.hotkey)}</b> shows / hides`); if(al.loc_hotkey) parts.push(`<b>${esc(al.loc_hotkey)}</b> /showlocation`); 
   $("key-dot").className="dot"+(al.available&&parts.length?" on":""); $("key-text").innerHTML=al.available===false?"Hotkey: Windows only":parts.length?parts.join(" · "):"Hotkey off";
-  const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
-  $("align-dot").className="dot"+(done?" on":""); $("align-text").innerHTML=`Planet alignment: <b>${done}</b> of ${inSys.length} in ${esc(S.system)}`;
+
   const cal=S.live.calibration; if(cal&&cal.at!==S.calSeen){ if(S.calSeen!==undefined&&Math.abs(cal.correction)>0.05) toast(`Lined up ${cal.body} using your reading at ${cal.place} (${cal.correction>0?"+":""}${cal.correction.toFixed(1)}°)`); S.calSeen=cal.at; } }
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
 
@@ -1362,6 +1392,8 @@ async function loadStatic(){
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
 async function poll(){
   const live=await api().get_live(); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
+  const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
+  if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   if(live.static_version!==S.staticVersion) await loadStatic();
   const here=live.player?.system||live.where?.system;
   if(here && here!==prevSys){ renderSysSeg(); if(S.autoSystem && here!==S.system) setSystem(here); }
@@ -1375,6 +1407,7 @@ async function init(){
   resize(); buildLayers(); buildFilters(); await loadStatic();
   const live=await api().get_live(); S.live=live; const here=live.player?.system||live.where?.system; if(here&&S.systems.includes(here)) S.system=here;
   buildSystem(); renderSysSeg(); S.cam.target=systemCenter(); S.cam.dist=systemExtent()*2.4; S.cam.pitch=1.0; S.focus={kind:"system"};
+  setFollow(true);
   await poll(); renderContracts(); requestAnimationFrame(frame);
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;

@@ -48,8 +48,45 @@ RE_OOC = re.compile(r"OOC_(Stanton|Pyro|Nyx)_\d+[a-z]?_(\w+)", re.I)
 RE_INV_MOVE = re.compile(r"<Update Inventory Location> Player \[[^\]]*\] is changing location\. Landing \[(\d+)\] -> "
                          r"\[(\d+)\]\. Location \[(\d+)\] -> \[(\d+)\]")
 RE_LOCATION = re.compile(r"<RequestLocationInventory>.*?Location\[([^\]]+)\]")
-RE_ATC = re.compile(r"(ATC_DataManager_Port_[A-Za-z0-9_\-]+) \[(\d+)\]")
+RE_ATC = re.compile(r"(ATC_DataManager_Port_[A-Za-z0-9_\-]+)'? \[(\d+)\]")   # quoted in "ATC '...' [id]" lines
 RE_JURISDICTION = re.compile(r"Entered (.+?) Jurisdiction")
+# What you personally are doing, from lines that name you or come from your own terminals:
+RE_CHARACTER = re.compile(r"geid (\d+) - accountId \d+ - name (\S+) - state STATE_CURRENT")
+RE_COMMS_ATC = re.compile(r"DoEstablishCommunicationCommon: .*? for (\S+) \[\d+\] to track their communication partner "
+                          r"(ATC_DataManager_Port_[\w\-]+) \[(\d+)\]")
+RE_VEH_READY = re.compile(r"SetVehicleSpawnedInformations - VehicleEntityId: \[\d+\], LandingATCId: \[(\d+)\], "
+                          r"LandingArea: (.+?) \[\d+\]")
+RE_CHANNEL = re.compile(r"You have (joined|left) (?:the )?channel '(.+?) : ([^']+)'")
+RE_CLEAR_DRIVER = re.compile(r"ClearDriver: Local client node \[(\d+)\] releasing control token for '([A-Za-z0-9_]+?)_\d+'")
+RE_SHOP = re.compile(r"playerId\[(\d+)\] shopId\[\d+\] shopName\[SCShop_([A-Za-z0-9]+)_([A-Za-z0-9_]+)\]"
+                     r"(?:.*?itemName\[([A-Za-z0-9_]+)\])?")
+MAKERS = {"AEGS": "Aegis", "ANVL": "Anvil", "ARGO": "Argo", "BANU": "Banu", "CNOU": "C.O.", "CRUS": "Crusader",
+          "DRAK": "Drake", "ESPR": "Esperia", "GAMA": "Gatac", "GLSN": "Gallenson", "GRIN": "Greycat", "KRIG": "Kruger",
+          "MISC": "MISC", "MRAI": "Mirai", "ORIG": "Origin", "RSI": "RSI", "TMBL": "Tumbril", "XIAN": "Aopoa", "XNAA": "Aopoa"}
+
+
+def vehicle_name(code):
+    """'DRAK_Corsair' -> 'Drake Corsair', 'TMBL_Cyclone' -> 'Tumbril Cyclone', 'AEGS_Avenger_Titan' -> 'Aegis Avenger Titan'."""
+    parts = code.split("_")
+    maker = MAKERS.get(parts[0].upper())
+    rest = " ".join(p for p in (parts[1:] if maker else parts) if p)
+    return f"{maker} {rest}".strip() if maker else rest
+
+
+def spaced(word):
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", word).replace("_", " ").strip()
+
+
+def atc_label(name):
+    """'ATC_DataManager_Port_Lawful_Gate_03' -> 'Gate 3'. Generic ids ('Lawful-001') -> None."""
+    code = re.sub(r"^ATC_DataManager_Port_", "", name)
+    code = re.sub(r"^(Lawful|SemiLawful|Unlawful)[_\-]?", "", code)
+    m = re.fullmatch(r"(Gate|Dock|Pad|Hangar)[_\-]?0*(\d+)", code, re.I)
+    if m:
+        return f"{m.group(1).title()} {int(m.group(2))}"
+    if not code or re.fullmatch(r"[\d\-_]+", code) or re.search(r"\d{3}$", code):
+        return None
+    return spaced(code)
 SYSTEM_RE = re.compile(r"^(Stanton|Pyro|Nyx)", re.I)
 
 
@@ -173,6 +210,41 @@ def default_log_paths():
     return out
 
 
+def running_game_logs():
+    """Game.log paths of any running StarCitizen.exe (LIVE, PTU, ...): <channel>\\Bin64\\StarCitizen.exe
+    writes <channel>\\Game.log. Windows only; [] elsewhere or if it can't tell."""
+    if os.name != "nt":
+        return []
+    try:
+        import ctypes
+        from ctypes import wintypes
+        psapi, k32 = ctypes.WinDLL("psapi"), ctypes.WinDLL("kernel32")
+        k32.OpenProcess.restype = wintypes.HANDLE
+        k32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        k32.QueryFullProcessImageNameW.argtypes = (wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                                   ctypes.POINTER(wintypes.DWORD))
+        k32.CloseHandle.argtypes = (wintypes.HANDLE,)
+        pids = (wintypes.DWORD * 8192)()
+        got = wintypes.DWORD()
+        if not psapi.EnumProcesses(ctypes.byref(pids), ctypes.sizeof(pids), ctypes.byref(got)):
+            return []
+        out = []
+        for pid in pids[:got.value // ctypes.sizeof(wintypes.DWORD)]:
+            h = k32.OpenProcess(0x1000, False, pid)          # PROCESS_QUERY_LIMITED_INFORMATION
+            if not h:
+                continue
+            try:
+                buf, n = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+                if k32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(n)) and \
+                        os.path.basename(buf.value).lower() == "starcitizen.exe":
+                    out.append(os.path.join(os.path.dirname(os.path.dirname(buf.value)), "Game.log"))
+            finally:
+                k32.CloseHandle(h)
+        return out
+    except Exception:
+        return []
+
+
 class ContractTracker(threading.Thread):
     """Tails Game.log and keeps contracts, objective markers and the player's location in
     missions.json. `nav` (a NavDB) is used to place markers on the right planet."""
@@ -195,6 +267,10 @@ class ContractTracker(threading.Thread):
         self.cur = {}              # {"id", "landing", "at", "place", "left"}: where the log says you are now
         self.dest_ids = {}         # quantum destination id -> {"place", "n", "ambiguous"}, learned (kept)
         self.player_name = ""
+        self.player_geid = ""
+        self.activity = None       # latest thing you did that says where you are: {"text", "at"}
+        self.vehicle = None        # {"name", "aboard", "at"}: your own ship or ground vehicle
+        self.armistice = None      # (inside: bool, at)
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
         self.zone_bodies = {}      # zoneHostId -> body name, learned per game session
@@ -202,6 +278,8 @@ class ContractTracker(threading.Thread):
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
         self._pending = None       # buffered multi-line notification
         self._reopen = False
+        self.game_running = False
+        self.log_note = ""
         self._stop = threading.Event()
         self._load()
         if self.recheck_markers():
@@ -319,10 +397,21 @@ class ContractTracker(threading.Thread):
         else:
             stage = 0
         last_drop = max((o.done_at or 0) for o in dropped) if dropped else None
+        # Cargo: "Deliver 0/12 SCU of Aluminum to ..." gives the amount per commodity. Pickup objectives
+        # don't state it, but what you pick up is what you have to deliver.
+        cargo = {}
+        for o in drops:
+            m = re.search(r"(\d+)\s*/\s*(\d+)\s*SCU of (.+?) to ", o.text or "")
+            if m:
+                k = cargo.setdefault(m.group(3).strip(), [0, 0])
+                k[0] += int(m.group(2)) if o.status == "done" or c.status == "complete" else int(m.group(1))
+                k[1] += int(m.group(2))
         return {"stage": stage, "cancelled": c.status in ("failed", "abandoned"), "status": c.status,
                 "times": [c.accepted_at, collected_at, departed_at, c.closed_at if c.status == "complete" else None],
                 "picked": len(picked), "pickups": len(picks), "dropoffs": len(drops),
                 "delivered": len(dropped), "last_drop": last_drop,
+                "cargo": [{"what": k, "done": v[0], "total": v[1]} for k, v in cargo.items()],
+                "scu_total": sum(v[1] for v in cargo.values()),
                 "drops": [{"id": o.id, "where": o.location or (o.marker and (f"Marker on {o.marker['body']}" if o.marker.get('body') else f"Marker near {o.marker.get('lpoint', 'a Lagrange point')}")),
                            "status": o.status, "at": o.done_at, "scu": scu_progress(o.text)} for o in drops]}
 
@@ -624,6 +713,29 @@ class ContractTracker(threading.Thread):
                 self.build = m.group(1)
         if "objective marker" in line:
             return self._marker(line)
+        if "STATE_CURRENT" in line and (m := RE_CHARACTER.search(line)):
+            self.player_geid, self.player_name = m.group(1), m.group(2)
+            return False
+        if "DoEstablishCommunicationCommon" in line and (m := RE_COMMS_ATC.search(line)):
+            self.atc[int(m.group(3))] = m.group(2)
+            if not self.player_name or m.group(1) == self.player_name:
+                label = atc_label(m.group(2))
+                if label:
+                    return self._activity(f"Talking to {label} traffic control", line)
+            return False
+        if "SetVehicleSpawnedInformations" in line and (m := RE_VEH_READY.search(line)):
+            label = atc_label(self.atc.get(int(m.group(1)), "")) if m.group(1) != "0" else None
+            return self._activity(f"Vehicle delivered to {m.group(2)}" + (f", {label}" if label else ""), line)
+        if "ClearDriver: Local client" in line and (m := RE_CLEAR_DRIVER.search(line)):
+            if not self.player_geid or m.group(1) == self.player_geid:
+                self.vehicle = {"name": vehicle_name(m.group(2)), "aboard": True, "seat": False, "at": log_time(line) or time.time()}
+                return True
+        if "shopName[SCShop_" in line and (m := RE_SHOP.search(line)):
+            if not self.player_geid or m.group(1) == self.player_geid:
+                shop, where, item = spaced(m.group(2)), spaced(m.group(3)), m.group(4)
+                verb = "Rented" if "Rental" in line else "Bought" if "Buy" in line or "Purchase" in line else None
+                text = f"{verb} a {vehicle_name(item)} at {shop}, {where}" if verb and item else f"At {shop}, {where}"
+                return self._activity(text, line)
         if "ATC_DataManager_Port_" in line:
             for name, eid in RE_ATC.findall(line):
                 self.atc[int(eid)] = name
@@ -816,7 +928,20 @@ class ContractTracker(threading.Thread):
             if o.status == "active":
                 self._set_status(c, o, "done" if state == "complete" else "withdrawn", ts)
 
+    def _activity(self, text, line):
+        self.activity = {"text": text, "at": log_time(line) or time.time()}
+        return True
+
     def _notification(self, full: str) -> bool:
+        ts0 = log_time(full) or time.time()
+        if "channel '" in full and (c := RE_CHANNEL.search(full)):
+            if not self.player_name or c.group(3).strip() == self.player_name:
+                self.vehicle = {"name": c.group(2).strip(), "aboard": c.group(1) == "joined", "at": ts0}
+                return True
+            return False
+        if "Armistice Zone" in full:
+            self.armistice = ("Entering" in full, ts0)
+            return True
         m = RE_NOTE.search(full)
         if not m:
             return False
@@ -925,44 +1050,63 @@ class ContractTracker(threading.Thread):
         with open(path, "rb") as f:
             return hashlib.sha1(f.readline()[:512]).hexdigest()
 
+    def _locate_log(self, force=False):
+        """Find Game.log. A running Star Citizen wins: its own folder's Game.log is the one being written,
+        even if Quantum was pointed somewhere else before (another drive, LIVE vs PTU). Otherwise keep the
+        current file if it exists, else the first standard install location that has one."""
+        now = time.time()
+        if not force and now - getattr(self, "_last_locate", 0) < 5:
+            return
+        self._last_locate = now
+        logs = running_game_logs()
+        self.game_running = bool(logs)
+        running = [p for p in logs if os.path.isfile(p)]
+        if running and (not self.log_path or os.path.normcase(self.log_path) not in map(os.path.normcase, running)):
+            self.log_path, self.log_note = running[0], "Found Game.log next to the running Star Citizen"
+            return
+        if self.log_path and os.path.isfile(self.log_path):
+            return
+        found = next((p for p in default_log_paths() if os.path.isfile(p)), None)
+        if found:
+            self.log_path, self.log_note = found, "Found Game.log in the standard install folder"
+
     def run(self):
-        fh = None
+        """Tail Game.log. The file is opened, read and closed on every pass rather than held open, so the
+        game can move it into logbackups and start a fresh one when it launches; a new file (different
+        first line) or a shorter one means a new session, read from the start."""
         while not self._stop.is_set():
             try:
+                self._locate_log(force=self.status in ("idle", "not_found"))
                 path = self.log_path
                 if not path or not os.path.isfile(path):
-                    self.status, fh = "not_found", None
+                    self.status = "not_found"
                     self._stop.wait(2)
                     continue
-                if self._reopen and fh is not None:
-                    fh.close()
-                    fh = None
-                self._reopen = False
-                if fh is None or fh.name != path:
-                    sig = self._signature(path)
-                    with self.lock:
-                        if sig != self.log_sig:          # new game session
+                sig = self._signature(path)
+                size = os.path.getsize(path)
+                with self.lock:
+                    if self._reopen or sig != self.log_sig or size < self.offset:
+                        if sig != self.log_sig or size < self.offset:     # new game session
                             self.log_sig, self.offset, self.zone_bodies = sig, 0, {}
                             self.zone_places, self.atc = {}, {}
-                    fh = open(path, "r", encoding="utf-8", errors="replace", newline="")
-                    fh.seek(self.offset)
-                if os.path.getsize(path) < self.offset:  # game restarted and truncated the log
-                    fh.close()
-                    fh = None
-                    continue
+                        self._reopen = False
                 changed = False
+                if size > self.offset:
+                    with open(path, "r", encoding="utf-8", errors="replace", newline="") as fh:
+                        fh.seek(self.offset)
+                        with self.lock:
+                            while True:
+                                pos = fh.tell()
+                                line = fh.readline()
+                                if not line or not line.endswith("\n"):
+                                    fh.seek(pos)
+                                    break
+                                changed |= self.feed(line)
+                            self.offset = fh.tell()
                 with self.lock:
-                    while True:
-                        pos = fh.tell()
-                        line = fh.readline()
-                        if not line or not line.endswith("\n"):
-                            fh.seek(pos)
-                            break
-                        changed |= self.feed(line)
-                    self.offset = fh.tell()
                     self.status = "watching"
                     if changed:
                         self._changed()
             except (OSError, ValueError):
-                self.status, fh = "error", None
+                self.status = "error"
             self._stop.wait(self.interval)
