@@ -1,0 +1,1387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quantum</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Exo+2:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{ color-scheme:dark;
+  --ground:#03060c; --panel:#070e1c; --panel-2:#0c1629; --panel-3:#122038; --line:#16243d; --line-2:#233758;
+  --ink:#e6eef8; --ink-2:#a8bbd4; --dim:#6f82a0;
+  --route:#4b8dff; --route-2:#8cc4ff; --you:#7fe7ff; --ok:#3ccf6e; --mission:#ff5fa8; --wp:#9dff7a; --station:#f2c14e; --danger:#ff6b6b;
+  --brand-grad:linear-gradient(135deg,#6fd0ff 0%,#2f86ff 55%,#1a4fd6 100%);
+  --wordmark:"Michroma","Eurostile","Bahnschrift","Segoe UI",sans-serif;
+  --display:"Exo 2","Bahnschrift","Segoe UI",system-ui,sans-serif;
+  --text:"Inter","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font:14px/1.45 var(--text);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--you);outline-offset:2px}
+.app{display:grid;grid-template-columns:410px 1fr;height:100vh}
+
+/* ---------- sidebar ---------- */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.brand{display:flex;align-items:center;gap:12px;padding:16px 20px 12px;border-bottom:1px solid var(--line);
+  background:radial-gradient(120% 140% at 0% 0%,rgba(47,134,255,.16),transparent 60%)}
+.brand svg{width:40px;height:40px;flex:none;filter:drop-shadow(0 0 10px rgba(47,134,255,.45))}
+.brand h1{margin:0;font:400 19px/1 var(--wordmark);letter-spacing:.34em;color:#f2f7ff}
+.brand .by{margin-top:5px;font:500 10.5px/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
+.brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:12px}
+.tabs{display:flex;gap:0;padding:0 8px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:12px 5px 11px;color:var(--dim);font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--route);text-shadow:0 0 12px rgba(75,141,255,.5)}
+.tab .count{font:600 11px var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
+.tab .count.hot{background:var(--mission);color:#1a0612}
+.pane{flex:1;overflow:auto;padding:14px 14px 20px;display:none;min-height:0}
+.pane.active{display:block}
+.pane::-webkit-scrollbar{width:10px}.pane::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:5px;border:3px solid var(--panel)}
+.btn{background:var(--panel-3);border:1px solid var(--line-2);border-radius:6px;padding:7px 12px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--brand-grad);border-color:#3f8cff;color:#fff;font-weight:600;letter-spacing:.02em;box-shadow:0 0 0 1px rgba(111,208,255,.15),0 6px 18px -8px rgba(47,134,255,.8)}
+.btn.go{background:rgba(127,231,255,.12);border-color:rgba(127,231,255,.6);color:var(--you);font-weight:600}
+.btn.go:hover{background:rgba(127,231,255,.2)}
+.btn.ghost{background:none}
+.btn.small{padding:4px 9px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;align-items:center}
+.spacer{flex:1}
+.muted{color:var(--dim)}
+.empty{color:var(--ink-2);padding:22px 10px;text-align:center;line-height:1.6}
+.empty strong{color:var(--ink);display:block;font:600 16px var(--display);margin-bottom:4px}
+.field{background:var(--panel-2);border:1px solid var(--line-2);border-radius:6px;padding:7px 10px;min-width:0}
+.field::placeholder{color:var(--dim)}
+
+/* route */
+.route-summary{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 12px}
+.route-summary .big{font:600 26px/1 var(--display);font-variant-numeric:tabular-nums}
+.stops{list-style:none;margin:0 0 14px;padding:0;position:relative}
+.stops::before{content:"";position:absolute;left:20px;top:22px;bottom:22px;border-left:2px dotted #24477d}
+.stop{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:9px 8px;border-radius:8px;position:relative}
+.stop:hover{background:var(--panel-2)}
+.stop.dragging{opacity:.4}
+.stop.drop-before{box-shadow:inset 0 2px 0 var(--route)}
+.stop .num{width:26px;height:26px;border-radius:50%;border:2px solid var(--route);display:grid;place-items:center;font:700 13px var(--display);color:var(--route);background:var(--ground);z-index:1}
+.stop:first-child .num{background:var(--route);color:#ffffff}
+.stop .name{font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stop .meta{color:var(--dim);font-size:12.5px;display:flex;gap:10px}
+.stop .leg{font:600 13px var(--display);color:var(--ink-2);text-align:right;font-variant-numeric:tabular-nums}
+.stop .jump{color:#c9a7ff}
+.stop .x{opacity:0;background:none;border:0;color:var(--dim);padding:2px 4px;font-size:16px}
+.stop:hover .x{opacity:1}
+.stop .x:hover{color:var(--danger)}
+
+/* contracts */
+.logbar{background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.logbar .path{color:var(--dim);word-break:break-all;margin-top:2px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--dim);flex:none}
+.dot.on{background:#7fd18b;box-shadow:0 0 8px #7fd18b}
+.dot.warn{background:var(--danger)}
+.contract{border:1px solid var(--line);border-left:3px solid var(--mission);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--panel-2)}
+.contract.done{border-left-color:var(--dim);opacity:.72}
+.contract h3{margin:0 0 2px;font:600 15px/1.3 var(--display)}
+.contract .sub{color:var(--dim);font-size:12.5px;margin-bottom:6px}
+.obj{display:grid;grid-template-columns:16px 1fr auto;gap:8px;padding:6px 0;font-size:13.5px;align-items:start}
+.obj .tick{width:14px;height:14px;border:1.5px solid var(--ink-2);border-radius:3px;margin-top:3px}
+.obj.done .tick{background:#7fd18b;border-color:#7fd18b}
+.obj.done .txt,.obj.withdrawn .txt,.obj.failed .txt{color:var(--dim);text-decoration:line-through}
+.obj .where{color:#ffb3d6;font-size:12.5px;cursor:pointer}
+.obj .where:hover{text-decoration:underline}
+/* delivery tracker */
+.track{margin:6px 0 10px;padding:10px 12px 8px;background:rgba(5,8,15,.35);border-radius:8px}
+.track .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.track .st{font:700 15px var(--display);color:var(--ok)}
+.track .eta{font-size:12.5px;color:var(--ink-2);text-align:right}
+.track .bar{position:relative;height:8px;margin:12px 8px 8px;background:#223251;border-radius:4px}
+.track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--ok);border-radius:4px;transition:width .7s ease}
+.track .node{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--panel-2);border:2px solid #3b4f75}
+.track .node.done{background:var(--ok);border-color:var(--ok)}
+.track .node.cur{width:20px;height:20px;margin:-10px 0 0 -10px;background:#0c3a1f;border:3px solid var(--ok);box-shadow:0 0 0 4px rgba(60,207,110,.18)}
+.track .labels{display:grid;grid-template-columns:repeat(4,1fr);font-size:11.5px;color:var(--dim);line-height:1.35}
+.track .labels div:nth-child(2),.track .labels div:nth-child(3){text-align:center}
+.track .labels div:nth-child(4){text-align:right}
+.track .labels b{display:block;color:var(--ink-2);font-weight:600}
+.track .labels .on b{color:var(--ok)}
+.track .drops{margin-top:8px;padding-top:6px;border-top:1px solid var(--line);font-size:12.5px;display:grid;gap:3px}
+.track .drops .ck{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;border:1.5px solid #3b4f75;margin-right:6px;font-size:9px;vertical-align:-2px}
+.track .drops .done .ck{background:var(--ok);border-color:var(--ok);color:#06200f}
+.track .drops .done{color:var(--ink-2)}
+.track.cancel .st{color:var(--danger)} .track.cancel .fill{background:var(--danger)} .track.cancel .node.done,.track.cancel .node.cur{border-color:var(--danger);background:var(--danger)}
+.inroute{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-weight:600;font-size:13px;background:rgba(60,207,110,.12);border:1px solid rgba(60,207,110,.45);border-radius:6px;padding:4px 10px;cursor:pointer}
+.inroute .ck{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--ok);color:#06200f;font-size:11px;animation:pop .35s ease-out}
+.tag-in{color:var(--ok);font-size:12px;margin-left:6px;white-space:nowrap}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+.unknown{margin-top:4px;font-size:12.5px;color:var(--ink-2)}
+.unknown .row{margin-top:5px;gap:6px}
+.found{color:var(--dim);font-size:11.5px}
+.planbar{display:flex;gap:8px;margin-bottom:12px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.role{display:inline-block;font-size:11px;font-weight:600;border-radius:4px;padding:0 6px;margin-right:4px}
+.role.pickup{background:rgba(60,207,110,.15);color:#7fe0a3}
+.role.dropoff{background:rgba(255,95,168,.15);color:#ffb3d6}
+.role.back{background:rgba(75,141,255,.16);color:#bcd9ff}
+.warnbox{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.45);color:#ffb4b4;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px}
+.hud .overview{border-color:#24477d}
+.hud .calib{border-color:#2d6b7a;box-shadow:0 0 0 1px rgba(127,231,255,.25)}
+.hud .overview .v{color:var(--route)}
+.ovlist{margin-top:8px;display:grid;gap:3px;font-size:13px;max-height:180px;overflow:auto}
+.ovlist .i{display:grid;grid-template-columns:22px 1fr;gap:6px;align-items:baseline}
+.ovlist .n{font:700 12px var(--display);color:var(--route)}
+details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
+
+/* waypoints */
+.capture{background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:12px;margin-bottom:14px}
+.capture h4{margin:0 0 4px;font:600 15px var(--display)}
+.capture .pos{color:var(--ink-2);font-size:13px;margin-bottom:10px}
+.wp{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:9px 6px;border-radius:8px}
+.wp:hover{background:var(--panel-2)}
+.wp .star{background:none;border:0;font-size:17px;color:var(--dim);padding:0;line-height:1}
+.wp .star.on{color:var(--wp)}
+.wp .n{font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wp .m{color:var(--dim);font-size:12.5px}
+.wp .acts{display:flex;gap:5px}
+.wp input.rename{width:100%}
+
+/* places */
+.search{width:100%;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:9px 12px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 8px}
+.fchip{background:none;border:1px solid var(--line-2);border-radius:14px;padding:3px 10px;font-size:12.5px;color:var(--ink-2);display:inline-flex;gap:6px;align-items:center}
+.fchip[aria-pressed=true]{background:var(--panel-3);color:var(--ink);border-color:var(--ink-2)}
+.results{list-style:none;margin:0;padding:0}
+.res{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 6px;border-radius:6px;cursor:pointer}
+.res:hover,.res.sel{background:var(--panel-2)}
+.res .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.res .b{color:var(--dim);font-size:12.5px}
+.iconbtn{background:none;border:1px solid var(--line-2);border-radius:5px;width:28px;height:28px;color:var(--route);font-size:16px;line-height:1;display:grid;place-items:center}
+.iconbtn:hover{border-color:var(--route)}
+.iconbtn.in{color:var(--dim)}
+
+/* type glyphs in lists */
+.ty{width:12px;height:12px;display:inline-block;flex:none}
+.ty.city{background:#eef3fb}
+.ty.station{border:2px solid var(--station);transform:rotate(45deg) scale(.85)}
+.ty.outpost{background:#7fd18b;border-radius:50%}
+.ty.cave{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid #c9a27a}
+.ty.wreck{background:linear-gradient(45deg,transparent 42%,#b98cf0 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#b98cf0 42% 58%,transparent 58%)}
+.ty.field{border:2px dotted #8fb3d9;border-radius:50%}
+.ty.comm{border:2px solid #7fc6d9;border-radius:2px}
+.ty.om,.ty.lpoint{border:1.5px solid var(--dim);border-radius:50%}
+.ty.jump{border:2px solid #c9a7ff;border-radius:50%;box-shadow:inset 0 0 0 2px var(--panel)}
+.ty.poi{background:var(--ink-2);border-radius:50%;transform:scale(.6)}
+.ty.wp{background:var(--wp);clip-path:polygon(0 0,100% 30%,0 60%)}
+.ty.mission{background:var(--mission);transform:rotate(45deg) scale(.75)}
+
+.status{border-top:1px solid var(--line);padding:11px 16px;font-size:12.5px;color:var(--ink-2);display:grid;gap:5px}
+.status b{color:var(--ink);font-weight:600}
+.rsearch{position:relative;margin:0 0 14px}
+.rsearch .search{padding-left:36px;background:var(--panel-2) no-repeat 12px 50%/15px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f82a0' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M20 20l-4.8-4.8'/%3E%3C/svg%3E")}
+.rs-list{position:absolute;z-index:8;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;background:#0b1528;border:1px solid var(--line-2);border-radius:10px;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);max-height:360px;overflow:auto}
+.rs-list li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:7px;cursor:pointer}
+.rs-list li.on,.rs-list li:hover{background:var(--panel-3)}
+.rs-list .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-list .n mark{background:none;color:var(--route-2);font-weight:600}
+.rs-list .b{color:var(--dim);font-size:12px}
+.rs-list .empty{display:block;color:var(--dim);cursor:default;padding:10px}
+.setgrid{display:grid;grid-template-columns:120px 1fr;gap:8px 10px;align-items:center;font-size:13px;margin:10px 0}
+.setgrid .k{color:var(--dim)}
+.note{font-size:12px;color:var(--ink-2);background:rgba(75,141,255,.08);border:1px solid rgba(75,141,255,.25);border-radius:7px;padding:8px 10px;line-height:1.5}
+.align-list{display:grid;gap:2px;max-height:300px;overflow:auto;margin:6px 0 10px;font-size:13px}
+.align-list .a{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:baseline;padding:4px 2px;border-bottom:1px solid var(--line)}
+.align-list .a .s{color:var(--dim);font-size:12px}
+.align-list .ok{color:var(--ok)} .align-list .warn{color:#bcd9ff} .align-list .no{color:var(--dim)}
+
+/* ---------- map ---------- */
+.mapwrap{position:relative;min-width:0;overflow:hidden}
+canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
+#overlay{cursor:grab}
+#overlay.dragging{cursor:grabbing}
+.ov{position:absolute;pointer-events:none}
+.ov > *{pointer-events:auto}
+.card{background:rgba(13,21,40,.93);border:1px solid var(--line-2);border-radius:10px;backdrop-filter:blur(6px)}
+.hud{top:14px;left:14px;display:flex;flex-direction:column;gap:8px;width:440px}
+.hud .card{padding:10px 14px 11px}
+.hud .lbl{color:var(--dim);font-size:12.5px;display:flex;gap:8px;align-items:center}
+.hud .nm{font:700 18px/1.2 var(--display);margin:1px 0 6px}
+.hud .nums{display:flex;gap:22px;align-items:flex-end}
+.hud .v{font:600 20px/1 var(--display);font-variant-numeric:tabular-nums}
+.hud .k{color:var(--dim);font-size:12px;margin-top:3px}
+.hud .hint{color:var(--ink-2);font-size:13px}
+.hud .next .v{color:var(--route)}
+.hud .guide{border-color:#2d6b7a}
+.hud .guide .v{color:var(--you)}
+.compass{width:44px;height:44px;flex:none}
+.approach{margin:8px 0 0;padding:8px 0 0;border-top:1px solid var(--line-2);font-size:13px;display:grid;gap:6px}
+.approach .a{display:grid;grid-template-columns:18px 1fr;gap:6px;color:var(--ink-2)}
+.approach .a b{color:var(--ink)}
+.approach .a .i{color:var(--you);font:700 12px var(--display)}
+.topright{top:16px;right:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.seg{display:flex;background:rgba(13,21,40,.93);border:1px solid var(--line-2);border-radius:8px;padding:3px}
+.seg button{background:none;border:0;padding:5px 12px;border-radius:6px;color:var(--ink-2);font:600 13px var(--display)}
+.seg button[aria-pressed=true]{background:var(--panel-3);color:var(--ink)}
+.seg button .here{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--you);margin-left:6px;vertical-align:2px}
+.layers{padding:8px 10px;display:grid;gap:1px;font-size:13px;max-height:calc(100vh - 200px);overflow:auto}
+.layers label{display:flex;gap:8px;align-items:center;cursor:pointer;padding:2px;color:var(--ink-2)}
+.layers input{accent-color:var(--route)}
+.layers .hdr{display:flex;justify-content:space-between;gap:12px;color:var(--ink);font:600 13px var(--display);cursor:pointer}
+.layers hr{border:0;border-top:1px solid var(--line-2);margin:4px 0}
+.bottomright{right:16px;bottom:16px;display:flex;gap:6px;align-items:flex-end}
+.bottomright button{width:34px;height:34px;border-radius:8px;background:rgba(13,21,40,.93);border:1px solid var(--line-2);font-size:17px}
+.camtxt{right:222px;bottom:24px;color:var(--ink-2);font:600 12px var(--display);pointer-events:none;text-align:right}
+.detail{left:16px;bottom:16px;width:350px;padding:14px 16px;display:none}
+.detail.show{display:block}
+.detail h2{margin:0;font:700 18px/1.25 var(--display);padding-right:24px}
+.detail .sub{color:var(--dim);font-size:13px;margin:3px 0 10px;display:flex;gap:8px;align-items:center}
+.detail .close{position:absolute;top:10px;right:10px;background:none;border:0;color:var(--dim);font-size:18px}
+.detail .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 10px;font-size:13px;margin-bottom:12px;align-items:center}
+.detail .kv .k{color:var(--dim)}
+.detail textarea{width:100%;background:var(--panel-2);border:1px solid var(--line-2);border-radius:6px;padding:6px 8px;resize:vertical;min-height:34px;font:13px var(--text)}
+.detail .acts{display:flex;flex-wrap:wrap;gap:6px}
+.tooltip{position:absolute;pointer-events:none;background:rgba(8,13,26,.96);border:1px solid var(--line-2);border-radius:6px;padding:5px 9px;font-size:12.5px;max-width:360px;display:none;z-index:5}
+.tooltip .t{font-weight:600}
+.tooltip .s{color:var(--dim)}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--line-2);border-radius:8px;padding:9px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast.show{opacity:1}
+.help{left:50%;bottom:22px;transform:translateX(-50%);color:var(--dim);font-size:12.5px;pointer-events:none;background:rgba(13,21,40,.6);border-radius:6px;padding:4px 10px}
+.splash{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:radial-gradient(90% 80% at 70% 10%,rgba(47,134,255,.22),transparent 60%),radial-gradient(60% 60% at 20% 100%,rgba(111,208,255,.10),transparent 60%),#02050b;transition:opacity .6s ease}
+.splash.hide{opacity:0;pointer-events:none}
+.splash .inner{text-align:center}
+.splash svg{width:120px;height:120px;filter:drop-shadow(0 0 28px rgba(47,134,255,.55))}
+.splash .wm{margin-top:18px;font:400 44px/1 var(--wordmark);letter-spacing:.42em;padding-left:.42em;color:#f4f8ff}
+.splash .by{margin-top:10px;font:500 13px var(--text);letter-spacing:.3em;color:var(--ink-2);text-transform:uppercase}
+.splash .by b{text-transform:none;letter-spacing:.05em;color:#e3efff;font-size:16px}
+.splash .tag{margin-top:26px;font:500 13px var(--text);letter-spacing:.55em;padding-left:.55em;color:#6fc2ff}
+.splash .load{margin:28px auto 0;width:220px;height:2px;background:#132542;border-radius:2px;overflow:hidden}
+.splash .load span{display:block;height:100%;width:40%;background:var(--brand-grad);animation:load 1.1s ease-in-out infinite}
+@keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.credit{color:var(--dim);font-size:11.5px;margin-top:8px}
+.credit a{color:var(--route-2);cursor:pointer;text-decoration:none}
+.svc{margin:2px 0 12px}
+.svc .jur{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);margin:0 0 8px}
+.svc .jur b{color:var(--ink);font-weight:600}
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.svc-tile{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:9px;
+  background:linear-gradient(180deg,rgba(47,134,255,.10),rgba(47,134,255,.03));border:1px solid rgba(111,190,255,.22);position:relative}
+.svc-tile svg{width:24px;height:24px;stroke:#dbeaff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.svc-tile .bar{width:22px;height:3px;border-radius:2px;background:var(--ok);box-shadow:0 0 6px rgba(60,207,110,.6)}
+.svc-tile .l{font:600 9.5px/1.2 var(--text);letter-spacing:.06em;text-transform:uppercase;color:#bcd6f5;text-align:center}
+.svc-tile .sz{position:absolute;top:3px;right:6px;font:700 10px var(--display);color:#fff}
+.svc .desc{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
+.svc .none{font-size:12.5px;color:var(--dim)}
+.wikibox{border-top:1px solid var(--line-2);margin-top:10px;padding-top:8px;font-size:13px}
+@media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+</style>
+</head>
+<body>
+<div class="splash" id="splash"><div class="inner"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs>
+  <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg2)" stroke-width="8.5" stroke-linecap="round"/>
+  <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg2)"/>
+  <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>
+  <div class="wm">QUANTUM</div><div class="by">by <b>microTech</b></div><div class="tag">THE VERSE, IN YOUR REACH.</div><div class="load"><span></span></div></div></div>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs>
+  <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/>
+  <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/>
+  <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1>QUANTUM</h1><div class="by">by <b>microTech</b></div></div></div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
+      <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
+      <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
+      <button class="tab" role="tab" data-tab="places" aria-selected="false">Places</button>
+    </div>
+
+    <section class="pane active" id="pane-route">
+      <div class="rsearch" id="rsearch-wrap">
+        <input class="search" id="rsearch" placeholder="Search places, moons, or a service like “refinery”…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="rs-list">
+        <ul class="rs-list" id="rs-list" role="listbox" hidden></ul>
+      </div>
+      <div class="route-summary">
+        <div><div class="big" id="route-total">–</div><div class="muted" id="route-sub">No stops yet</div></div>
+        <div class="row"><button class="btn small ghost" id="btn-view" title="Show the whole route on the map">View</button>
+          <button class="btn small ghost" id="btn-clear">Clear</button></div>
+      </div>
+      <div class="planbar"><button class="btn primary plan" id="btn-plan" style="flex:1" title="Finds the shortest order for the stops in this list. To include contracts, plan from the Contracts tab">Plan route</button>
+        <button class="btn" id="btn-optimize" title="Reorder the current stops only">Optimize</button></div>
+      <div class="warnbox" id="route-warn" style="display:none"></div>
+      <ol class="stops" id="stops"></ol>
+      <div id="route-empty" class="empty"><strong>Plan a trip</strong>Search above to add stops, double-click anything on the map, or plan your contracts from the Contracts tab.</div>
+      <button class="btn primary" id="btn-arrived" style="width:100%;display:none">Arrived, go to next stop</button>
+    </section>
+
+    <section class="pane" id="pane-contracts">
+      <div class="logbar" id="logbar"></div>
+      <div class="planbar" id="plan-all-bar" style="display:none"><button class="btn primary plan" id="btn-plan-all" style="flex:1">Plan route for all contracts</button></div>
+      <div id="contracts"></div>
+      <datalist id="places-dl"></datalist>
+    </section>
+
+    <section class="pane" id="pane-waypoints">
+      <div class="capture">
+        <h4>Save this spot</h4>
+        <div class="pos" id="cap-pos">Type <b>/showlocation</b> in game chat, then save.</div>
+        <div class="row" style="margin-bottom:6px"><input class="field" id="wp-name" placeholder="Name, like “Quantanium rock”" style="flex:1"></div>
+        <div class="row"><input class="field" id="wp-notes" placeholder="Notes (optional)" style="flex:1"><button class="btn primary" id="btn-wp-save">Save</button></div>
+      </div>
+      <div id="wp-list"></div>
+    </section>
+
+    <section class="pane" id="pane-places">
+      <input class="search" id="search" placeholder="Search stations, outposts, caves…" autocomplete="off">
+      <div class="filters" id="filters"></div>
+      <ul class="results" id="results"></ul>
+    </section>
+
+    <div class="status">
+      <div class="row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
+      <div class="row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
+      <div class="row"><span class="dot" id="key-dot"></span><span id="key-text">Auto /showlocation</span><span class="spacer"></span><button class="btn small ghost" id="btn-settings">Settings</button></div>
+      <div class="row"><span class="dot" id="align-dot"></span><span id="align-text">Planet alignment</span><span class="spacer"></span><button class="btn small ghost" id="btn-align">Alignment</button></div>
+    </div>
+  </aside>
+
+  <main class="mapwrap" id="mapwrap">
+    <canvas class="layer" id="gl"></canvas>
+    <canvas class="layer" id="overlay"></canvas>
+    <div class="ov hud" id="hud"></div>
+    <div class="ov help" id="help">Drag to spin or roam · right-drag to tilt · scroll to zoom · double-click to fly · triple-click a jump point to jump</div>
+    <div class="ov topright">
+      <div class="seg" id="sysSeg"></div>
+      <div class="card layers" id="layers"><div class="hdr" id="layers-hdr">Layers <span class="muted" id="layers-caret">▾</span></div><div id="layer-list"></div></div>
+    </div>
+    <div class="ov camtxt" id="camtxt"></div>
+    <div class="ov bottomright"><button id="z-route" title="Recenter on the route (R)">⌖</button><button id="z-you" title="Center on you (Y)">◎</button><button id="z-fit" title="Whole system (F)">⤢</button><button id="z-out" title="Zoom out">−</button><button id="z-in" title="Zoom in">+</button></div>
+    <div class="ov card detail" id="detail"></div>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="toast" id="toast"></div>
+  </main>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script>
+"use strict";
+// =================================================================== constants
+const TYPES = {
+  city:{label:"Cities",one:"City",color:"#eef3fb",def:true}, station:{label:"Stations",one:"Station",color:"#f2c14e",def:true},
+  outpost:{label:"Outposts",one:"Outpost",color:"#7fd18b",def:true}, cave:{label:"Caves",one:"Cave",color:"#c9a27a",def:false},
+  wreck:{label:"Wrecks",one:"Wreck",color:"#b98cf0",def:false}, field:{label:"Mining & clouds",one:"Mining area",color:"#8fb3d9",def:false},
+  comm:{label:"Comm arrays",one:"Comm array",color:"#7fc6d9",def:false}, jump:{label:"Jump points",one:"Jump point",color:"#c9a7ff",def:true},
+  poi:{label:"Other",one:"Point of interest",color:"#a9b6cc",def:false}, om:{label:"Orbital markers",one:"Orbital marker",color:"#7684a0",def:false},
+  lpoint:{label:"Lagrange points",one:"Lagrange point",color:"#7684a0",def:true},
+};
+const PADS = ["unknown","none","vehicle","small","medium","large","xl","hangar"];
+const BODY_HSL = { Hurston:[32,38,46], ArcCorp:[14,52,48], microTech:[200,30,72], Crusader:[205,32,62], Arial:[20,45,45],
+  Aberdeen:[45,40,48], Magda:[195,12,58], Ita:[40,18,52], Cellin:[48,12,55], Daymar:[30,40,52], Yela:[200,20,78], Calliope:[210,15,70],
+  Clio:[190,22,76], Euterpe:[205,18,80], Lyria:[215,20,68], Wala:[25,25,50], Delamar:[25,12,42], Pyro1:[18,40,42], Monox:[35,12,52],
+  Bloom:[95,22,44], Pyro4:[12,38,40], Pyro5:[24,45,55], Terminus:[205,14,62], Ignis:[12,55,45], Vatra:[28,25,50], Adir:[200,10,62],
+  Fairo:[40,30,55], Fuego:[8,55,45], Vuur:[4,45,40], Stanton:[45,100,70], Pyrostar:[18,100,62] };
+const GAS = new Set(["Crusader","Pyro5"]);
+const ICY = new Set(["microTech","Yela","Clio","Euterpe","Calliope","Lyria","Terminus","Adir"]);
+
+// =================================================================== state
+const S = {
+  bodies:[], bodyMap:{}, locs:[], locMap:{}, systems:["Stanton","Pyro","Nyx"], staticVersion:0, live:null,
+  system:"Stanton", routeKey:"", contractsVersion:-1, wpKey:"",
+  layers:Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])),
+  show:{missions:true, waypoints:true, orbits:true, grid:true},
+  cam:{target:[0,0,0], dist:1e11, yaw:-1.2, pitch:0.9, lock:null}, focus:{kind:"system"}, anim:null,
+  selected:null, picks:[], search:"", typeFilter:null, tab:"route", editing:null, autoSystem:true,
+};
+const $ = id => document.getElementById(id);
+const api = () => window.pywebview.api;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const now = () => Date.now()/1000;
+
+// =================================================================== math
+function fmtDist(m){
+  if(m==null||!isFinite(m)) return "–"; const a=Math.abs(m);
+  if(a<1e3) return `${m.toFixed(0)} m`; if(a<1e6) return `${(m/1e3).toFixed(a<1e4?2:1)} km`;
+  if(a<1e9) return `${(m/1e6).toFixed(2)} Mm`; return `${(m/1e9).toFixed(3)} Gm`;
+}
+function bodyAngle(b,t){ let d=b.offset; if(b.period>0) d+=360*((t-b.epoch)/3600)/b.period; return ((d%360)+360)%360*Math.PI/180; }
+function toGlobal(b,p,t){ const a=bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a); return [b.center[0]+p[0]*c-p[1]*s, b.center[1]+p[0]*s+p[1]*c, b.center[2]+p[2]]; }
+function toLocal(b,g,t){ const a=-bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a),x=g[0]-b.center[0],y=g[1]-b.center[1]; return [x*c-y*s,x*s+y*c,g[2]-b.center[2]]; }
+function globalPos(L,t){ if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(b) return toGlobal(b,L.pos,t); } return L.pos; }
+function latLon(p){ const r=Math.hypot(p[0],p[1],p[2])||1e-9; return {lat:Math.asin(Math.max(-1,Math.min(1,p[2]/r)))*180/Math.PI, lon:-Math.atan2(p[0],p[1])*180/Math.PI}; }
+const d3 = (a,b) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
+function slerpLocal(a,b,f,R){ // great-circle point between two body-local vectors, at radius R
+  const la=Math.hypot(...a), lb=Math.hypot(...b); const ua=a.map(v=>v/la), ub=b.map(v=>v/lb);
+  const dot=Math.max(-1,Math.min(1,ua[0]*ub[0]+ua[1]*ub[1]+ua[2]*ub[2])), om=Math.acos(dot);
+  let p; if(om<1e-6) p=ua; else { const s=Math.sin(om), k1=Math.sin((1-f)*om)/s, k2=Math.sin(f*om)/s; p=[ua[0]*k1+ub[0]*k2, ua[1]*k1+ub[1]*k2, ua[2]*k1+ub[2]*k2]; }
+  return p.map(v=>v*R);
+}
+
+// =================================================================== three.js scene
+const glc=$("gl"), ovc=$("overlay"), ctx=ovc.getContext("2d");
+const renderer=new THREE.WebGLRenderer({canvas:glc, antialias:true, logarithmicDepthBuffer:true});
+renderer.setClearColor(0x02050b);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(50,1,0.5,1e14); camera.up.set(0,0,1);
+scene.add(new THREE.AmbientLight(0x4a5a80,1.0));   // keep night sides readable
+const sun=new THREE.DirectionalLight(0xfff0dc,2.4); scene.add(sun); scene.add(sun.target);
+let W=0,H=0,DPR=1, O=[0,0,0];    // O = floating origin (world meters), everything is drawn relative to it
+function resize(){ const r=$("mapwrap").getBoundingClientRect(); W=r.width; H=r.height; DPR=window.devicePixelRatio||1;
+  renderer.setPixelRatio(DPR); renderer.setSize(W,H,false); camera.aspect=W/H; camera.updateProjectionMatrix();
+  ovc.width=Math.round(W*DPR); ovc.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); }
+window.addEventListener("resize",resize);
+
+// Background stars: a fixed sphere of points that travels with the camera.
+const starfield=(()=>{ const n=2600, pos=new Float32Array(n*3), col=new Float32Array(n*3); let seed=7;
+  const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+  for(let i=0;i<n;i++){ const u=rnd()*2-1, th=rnd()*Math.PI*2, r=Math.sqrt(1-u*u); pos.set([r*Math.cos(th)*1e12, r*Math.sin(th)*1e12, u*1e12], i*3);
+    const b=0.35+rnd()*0.65; col.set([b*0.85,b*0.9,b], i*3); }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
+  const p=new THREE.Points(g,new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true,depthWrite:false})); scene.add(p); return p; })();
+
+function seededRand(name){ let h=2166136261; for(const c of name){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; }
+function bodyTexture(b){
+  const [h,s,l]=BODY_HSL[b.name]||[(b.name.length*47)%360,18,50]; const c=document.createElement("canvas"); c.width=512; c.height=256; const x=c.getContext("2d");
+  const rnd=seededRand(b.name);
+  if(GAS.has(b.name)){ for(let y=0;y<256;y+=2){ const v=Math.sin(y*0.11+rnd()*0.6)*8+Math.sin(y*0.031)*10; x.fillStyle=`hsl(${h+v*0.4} ${s}% ${l+v}%)`; x.fillRect(0,y,512,2); } }
+  else { x.fillStyle=`hsl(${h} ${s}% ${l}%)`; x.fillRect(0,0,512,256);
+    for(let i=0;i<900;i++){ const r=2+Math.pow(rnd(),3)*38, px=rnd()*512, py=rnd()*256, dl=(rnd()-.5)*22;
+      x.fillStyle=`hsla(${h+(rnd()-.5)*14} ${s}% ${l+dl}% / ${0.10+rnd()*0.16})`; x.beginPath(); x.arc(px,py,r,0,7); x.fill(); if(px<r) { x.beginPath(); x.arc(px+512,py,r,0,7); x.fill(); } }
+    if(ICY.has(b.name)||b.name==="microTech"){ const g=x.createLinearGradient(0,0,0,256); g.addColorStop(0,"rgba(245,250,255,.85)"); g.addColorStop(.13,"rgba(245,250,255,0)"); g.addColorStop(.87,"rgba(245,250,255,0)"); g.addColorStop(1,"rgba(245,250,255,.85)"); x.fillStyle=g; x.fillRect(0,0,512,256); } }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
+}
+function gratGeometry(){ // lat/lon grid on a unit sphere, z = north
+  const v=[]; const seg=96;
+  for(let lat=-75;lat<=75;lat+=15){ const z=Math.sin(lat*Math.PI/180), r=Math.cos(lat*Math.PI/180);
+    for(let i=0;i<seg;i++){ const a1=i/seg*Math.PI*2, a2=(i+1)/seg*Math.PI*2; v.push(r*Math.cos(a1),r*Math.sin(a1),z, r*Math.cos(a2),r*Math.sin(a2),z); } }
+  for(let lon=0;lon<360;lon+=15){ const a=lon*Math.PI/180;
+    for(let i=0;i<seg/2;i++){ const p1=-Math.PI/2+i/(seg/2)*Math.PI, p2=-Math.PI/2+(i+1)/(seg/2)*Math.PI;
+      v.push(Math.cos(p1)*Math.cos(a),Math.cos(p1)*Math.sin(a),Math.sin(p1), Math.cos(p2)*Math.cos(a),Math.cos(p2)*Math.sin(a),Math.sin(p2)); } }
+  const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(v,3)); return g; }
+const GRAT=gratGeometry();
+function glowTexture(color){ const c=document.createElement("canvas"); c.width=c.height=128; const x=c.getContext("2d"); const g=x.createRadialGradient(64,64,0,64,64,64);
+  g.addColorStop(0,color); g.addColorStop(0.25,color.replace(/[\d.]+\)$/,"0.35)")); g.addColorStop(1,"rgba(0,0,0,0)"); x.fillStyle=g; x.fillRect(0,0,128,128); return new THREE.CanvasTexture(c); }
+
+let sysObjs=[];  // three objects of the current system
+function buildSystem(){
+  for(const o of sysObjs){ scene.remove(o.group); o.group.traverse(n=>{ n.geometry?.dispose?.(); n.material?.map?.dispose?.(); n.material?.dispose?.(); }); }
+  sysObjs=[];
+  for(const b of S.bodies.filter(b=>b.system===S.system)){
+    const group=new THREE.Group(); const spin=new THREE.Group(); group.add(spin);
+    const isStar=b.kind==="star";
+    const geo=new THREE.SphereGeometry(1,96,64); geo.rotateX(Math.PI/2);
+    const mat= isStar ? new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${BODY_HSL[b.name]?.[0]??45},100%,70%)`)})
+                      : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:0.95, metalness:0});
+    const mesh=new THREE.Mesh(geo,mat); mesh.scale.setScalar(b.radius); spin.add(mesh);
+    let grid=null, atmo=null;
+    if(!isStar){
+      grid=new THREE.LineSegments(GRAT,new THREE.LineBasicMaterial({color:0xa9c3ff,transparent:true,opacity:0.16,depthWrite:false}));
+      grid.scale.setScalar(b.radius*1.002); spin.add(grid);
+      const [h]=BODY_HSL[b.name]||[210];
+      atmo=new THREE.Mesh(new THREE.SphereGeometry(1,48,32), new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${h},60%,70%)`),transparent:true,opacity:0.08,side:THREE.BackSide,depthWrite:false}));
+      atmo.scale.setScalar(b.radius*1.035); group.add(atmo);
+    } else {
+      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(b.name==="Pyrostar"?"rgba(255,140,80,1)":"rgba(255,220,150,1)"),depthWrite:false,transparent:true,blending:THREE.AdditiveBlending}));
+      sp.scale.setScalar(b.radius*9); group.add(sp);
+    }
+    scene.add(group);
+    // orbit ring around the parent (drawn in the parent's plane)
+    let orbit=null; const par=b.parent&&S.bodyMap[b.parent];
+    if(par){ const r=Math.hypot(b.center[0]-par.center[0], b.center[1]-par.center[1]); const pts=[];
+      for(let i=0;i<=256;i++){ const a=i/256*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
+      orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x6f8fc0,transparent:true,opacity:par.kind==="star"?0.28:0.18,depthWrite:false}));
+      scene.add(orbit); }
+    sysObjs.push({b,group,spin,mesh,grid,atmo,orbit,par,orbitZ:b.center[2],orbitR:par?Math.hypot(b.center[0]-par.center[0],b.center[1]-par.center[1]):0});
+  }
+  sysObjs.group=null;
+}
+function place(obj,p){ obj.position.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]); }
+
+// =================================================================== camera
+function lockBodyOf(f){ return f.kind==="body" ? f.name : null; }   // orbit a planet in its rotating frame
+function surfaceBodyOf(f){ if(f.kind==="loc"){ const L=S.locMap[f.name]; return L&&L.kind==="surface"?L.body:null; }
+  if(f.kind==="local") return f.body; if(f.kind==="player") return S.live?.player?.body||null; return null; }
+function focusPos(f,t){
+  if(f.kind==="body") return S.bodyMap[f.name].center;
+  if(f.kind==="loc") return globalPos(S.locMap[f.name],t);
+  if(f.kind==="local") return toGlobal(S.bodyMap[f.body],f.pos,t);
+  if(f.kind==="point") return f.pos;
+  if(f.kind==="player") return playerG(t) || S.cam.target;
+  return systemCenter();
+}
+function systemCenter(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind==="planet"); if(!bs.length) return [0,0,0];
+  return [0,1,2].map(i=>bs.reduce((s,b)=>s+b.center[i],0)/bs.length); }
+function systemExtent(){ const c=systemCenter(); let m=1e9; for(const b of S.bodies) if(b.system===S.system&&b.kind!=="star") m=Math.max(m,d3(b.center,c)); for(const L of S.locs) if(L.system===S.system&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump")) m=Math.max(m,d3(L.pos,c)); return m; }
+const norm3=v=>{ const l=Math.hypot(v[0],v[1],v[2])||1; return [v[0]/l,v[1]/l,v[2]/l]; };
+const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+// Camera direction and up vector for the current focus. Near a surface the view uses the local
+// horizon (east/north/up) so you look down at the ground with north at the top of the screen.
+function viewFrame(t,goal){
+  const c=S.cam, sb=surfaceBodyOf(S.focus);
+  if(sb && S.bodyMap[sb]){ const up=norm3([goal[0]-S.bodyMap[sb].center[0],goal[1]-S.bodyMap[sb].center[1],goal[2]-S.bodyMap[sb].center[2]]);
+    let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
+    const cp=Math.cos(c.pitch), dir=[0,1,2].map(i=>cp*(Math.cos(c.yaw)*east[i]+Math.sin(c.yaw)*north[i])+Math.sin(c.pitch)*up[i]);
+    return {dir,up:north}; }   // north at the top of the screen
+  const yaw=c.yaw+(c.lock&&S.bodyMap[c.lock]?bodyAngle(S.bodyMap[c.lock],t):0);
+  return {dir:[Math.cos(c.pitch)*Math.cos(yaw),Math.cos(c.pitch)*Math.sin(yaw),Math.sin(c.pitch)], up:[0,0,1]};
+}
+function setLock(name){ const t=now(); const old=S.cam.lock&&S.bodyMap[S.cam.lock];
+  if(old) S.cam.yaw+=bodyAngle(old,t); const nb=name&&S.bodyMap[name]; if(nb) S.cam.yaw-=bodyAngle(nb,t); S.cam.lock=nb?name:null; }
+function flyTo(focus,dist,{pitch=null,yaw=null,dur=1100}={}){
+  const fromDir=norm3([camera.position.x,camera.position.y,camera.position.z]), fromUp=[camera.up.x,camera.up.y,camera.up.z];
+  setLock(lockBodyOf(focus)); if(yaw!=null) S.cam.yaw=yaw;
+  S.anim={from:[...S.cam.target], fromDist:S.cam.dist, toDist:dist, fromPitch:S.cam.pitch, toPitch:pitch??S.cam.pitch, fromDir, fromUp,
+          t0:performance.now(), dur:matchMedia("(prefers-reduced-motion: reduce)").matches?1:dur};
+  S.focus=focus;
+}
+function updateCamera(t){
+  const c=S.cam, goal=focusPos(S.focus,t); let e=1;
+  if(S.anim){ const a=S.anim, u=Math.min(1,(performance.now()-a.t0)/a.dur); e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+    const D=Math.exp(Math.log(a.fromDist)+(Math.log(a.toDist)-Math.log(a.fromDist))*e);
+    const i0=1/a.fromDist, i1=1/a.toDist, p=Math.abs(i1-i0)/Math.max(i0,i1)<1e-3?e:(1/D-i0)/(i1-i0);
+    c.target=[0,1,2].map(i=>a.from[i]+(goal[i]-a.from[i])*p); c.dist=D; c.pitch=a.fromPitch+(a.toPitch-a.fromPitch)*e;
+  } else c.target=goal;
+  O=c.target;
+  let {dir,up}=viewFrame(t,c.target);
+  if(S.anim){ const a=S.anim; dir=norm3(dir.map((v,i)=>a.fromDir[i]+(v-a.fromDir[i])*e)); up=norm3(up.map((v,i)=>a.fromUp[i]+(v-a.fromUp[i])*e)); if(e>=1) S.anim=null; }
+  camera.position.set(dir[0]*c.dist,dir[1]*c.dist,dir[2]*c.dist); camera.up.set(up[0],up[1],up[2]);
+  // Keep what you're looking at clear of the cards on the left: shift the view's centre right.
+  const want=$("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0; S.shift=(S.shift||0)+(want-(S.shift||0))*0.12;
+  if(S.shift>0.5) camera.setViewOffset(W,H,-S.shift,0,W,H); else camera.clearViewOffset();
+  camera.near=Math.max(0.5,c.dist*1e-4); camera.far=1e14; camera.updateProjectionMatrix(); camera.lookAt(0,0,0); camera.updateMatrixWorld();
+}
+function fitSystem(){ flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
+function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
+const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
+function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(L.system!==S.system) setSystem(L.system,false);
+  if(L.kind==="surface"){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
+  else flyTo({kind:"loc",name}, close?60000:4e6); }
+function focusPlayer(){ const p=S.live?.player; if(!p) return toast("Type /showlocation in game chat first");
+  if(p.system!==S.system) setSystem(p.system,false);
+  if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), TOPDOWN); else flyTo({kind:"point",pos:p.pos}, 5e6); }
+
+// =================================================================== projection & occlusion
+const V3=new THREE.Vector3();
+function proj(p){ V3.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]).applyMatrix4(camera.matrixWorldInverse); if(V3.z>-camera.near) return null;
+  const depth=-V3.z; V3.applyMatrix4(camera.projectionMatrix); return [(V3.x+1)/2*W,(1-V3.y)/2*H,depth]; }
+let occluders=[], camW=[0,0,0];
+function prepOcclusion(){ camW=[camera.position.x+O[0],camera.position.y+O[1],camera.position.z+O[2]]; occluders=[];
+  const f=H/2/Math.tan(camera.fov*Math.PI/360);
+  for(const o of sysObjs){ const b=o.b; const d=d3(camW,b.center); const pr=b.radius/Math.max(d,1)*f; o.pr=pr; if(pr>1.5) occluders.push(b); } }
+function visible(p, ownBody){ // is world point p hidden behind a planet?
+  for(const b of occluders){ const c=b.center;
+    if(b.name===ownBody){ const n=[p[0]-c[0],p[1]-c[1],p[2]-c[2]], v=[camW[0]-p[0],camW[1]-p[1],camW[2]-p[2]];
+      const ln=Math.hypot(...n)||1, lv=Math.hypot(...v)||1; if((n[0]*v[0]+n[1]*v[1]+n[2]*v[2])/(ln*lv) < -0.03) return false; continue; }
+    const dx=p[0]-camW[0],dy=p[1]-camW[1],dz=p[2]-camW[2], L=Math.hypot(dx,dy,dz)||1, ux=dx/L,uy=dy/L,uz=dz/L;
+    const ox=c[0]-camW[0],oy=c[1]-camW[1],oz=c[2]-camW[2], tc=ox*ux+oy*uy+oz*uz; if(tc<0||tc>L) continue;
+    const d2=ox*ox+oy*oy+oz*oz-tc*tc, r=b.radius*0.998; if(d2<r*r && tc-Math.sqrt(r*r-d2)<L) return false; }
+  return true; }
+
+// =================================================================== overlay drawing
+let labelBoxes=[];
+function labelFree(x,y,w,h){ for(const b of labelBoxes) if(x<b[2]&&x+w>b[0]&&y<b[3]&&y+h>b[1]) return false; labelBoxes.push([x,y,x+w,y+h]); return true; }
+function label(text,x,y,{color="#c3cee0",font="500 12px 'Inter',Segoe UI,sans-serif",force=false,align="left"}={}){
+  ctx.font=font; const w=ctx.measureText(text).width, h=14, lx=align==="center"?x-w/2:x;
+  if(!force && !labelFree(lx-2,y-h+3,w+4,h+2)) return false; if(force) labelBoxes.push([lx-2,y-h+3,lx+w+2,y+5]);
+  ctx.fillStyle="rgba(5,8,15,.85)"; ctx.fillText(text,lx+1,y+1); ctx.fillStyle=color; ctx.fillText(text,lx,y); return true; }
+function glyph(type,x,y,r,color){
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.6;
+  switch(type){
+    case "city": ctx.fillRect(x-r,y-r,2*r,2*r); break;
+    case "station": ctx.beginPath(); ctx.moveTo(x,y-r-1.5); ctx.lineTo(x+r+1.5,y); ctx.lineTo(x,y+r+1.5); ctx.lineTo(x-r-1.5,y); ctx.closePath(); ctx.stroke(); break;
+    case "cave": ctx.beginPath(); ctx.moveTo(x,y-r); ctx.lineTo(x+r,y+r*.8); ctx.lineTo(x-r,y+r*.8); ctx.closePath(); ctx.fill(); break;
+    case "wreck": ctx.beginPath(); ctx.moveTo(x-r,y-r); ctx.lineTo(x+r,y+r); ctx.moveTo(x+r,y-r); ctx.lineTo(x-r,y+r); ctx.stroke(); break;
+    case "field": ctx.setLineDash([2,2]); ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.stroke(); break;
+    case "comm": ctx.strokeRect(x-r*.8,y-r*.8,1.6*r,1.6*r); break;
+    case "jump": ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x,y,r+1.5,0,7); ctx.stroke(); ctx.beginPath(); ctx.arc(x,y,r-1.5,0,7); ctx.stroke(); break;
+    case "om": case "lpoint": ctx.beginPath(); ctx.arc(x,y,r*.9,0,7); ctx.moveTo(x-r-2,y); ctx.lineTo(x+r+2,y); ctx.moveTo(x,y-r-2); ctx.lineTo(x,y+r+2); ctx.stroke(); break;
+    default: ctx.beginPath(); ctx.arc(x,y,r*.8,0,7); ctx.fill();
+  } ctx.restore(); }
+function flag(x,y,color,big){ const s=big?1.25:1; ctx.save(); ctx.strokeStyle="#05080f"; ctx.lineWidth=1.5; ctx.fillStyle=color;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-18*s); ctx.lineTo(x+11*s,y-14*s); ctx.lineTo(x,y-10*s); ctx.closePath(); ctx.stroke(); ctx.fill();
+  ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y-18*s); ctx.stroke(); ctx.restore(); }
+function diamond(x,y,color){ ctx.save(); ctx.translate(x,y-15); ctx.fillStyle=color; ctx.strokeStyle="#05080f"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(0,9); ctx.lineTo(-7,0); ctx.lineTo(0,-8); ctx.lineTo(7,0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+  ctx.strokeStyle="rgba(255,95,168,.7)"; ctx.beginPath(); ctx.moveTo(x,y-6); ctx.lineTo(x,y); ctx.stroke(); }
+
+// Active contract objectives with a map position in the current system.
+function missionMarks(t){
+  const out=[]; if(!S.live||!S.show.missions) return out;
+  for(const c of S.live.contracts) if(c.status==="active") for(const o of c.objectives){ if(o.status!=="active") continue;
+    let g=null, body=null;
+    if(o.marker && o.marker.system===S.system && !o.marker.body){ g=o.marker.pos; }          // rest stop at a Lagrange point
+    else if(o.marker && o.marker.system===S.system && S.bodyMap[o.marker.body]){ body=o.marker.body; g=toGlobal(S.bodyMap[body],o.marker.pos,t); }
+    else if(o.location && S.locMap[o.location]?.system===S.system){ const L=S.locMap[o.location]; g=globalPos(L,t); body=L.body; }
+    if(g) out.push({c,o,g,body}); }
+  return out; }
+
+// A path through the route, sampled so surface legs follow the planet's curve.
+function legSamples(a,b,t){ // a,b: {g, body, local}
+  if(a.body && a.body===b.body){ const B=S.bodyMap[a.body], ra=Math.hypot(...a.local), rb=Math.hypot(...b.local), chord=d3(a.local,b.local);
+    const hump=Math.min(B.radius*0.004, chord*0.03)+30;   // keep the arc just above the ground
+    const n=Math.min(120,Math.max(12,Math.round(chord/B.radius*80))); const pts=[];
+    for(let i=0;i<=n;i++){ const f=i/n; const R=ra+(rb-ra)*f+hump*Math.sin(Math.PI*f); pts.push({g:toGlobal(B,slerpLocal(a.local,b.local,f,R),t),body:a.body}); } return pts; }
+  const pts=[]; for(let i=0;i<=24;i++){ const f=i/24; pts.push({g:[0,1,2].map(k=>a.g[k]+(b.g[k]-a.g[k])*f), body:null}); } return pts; }
+function nodeOf(name,t){ const L=S.locMap[name]; if(!L||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
+// On a planet you turn with it, so place the last reading by its ground position, not its old space position.
+function playerG(t){ const p=S.live?.player; if(!p) return null; return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
+function playerNode(){ const p=S.live?.player; if(!p||p.system!==S.system) return null; return {g:playerG(now()), body:p.body, local:p.local}; }
+function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
+  let prev=null; const segs=[]; let cur=[];
+  for(const s of samples){ const q=proj(s.g); const vis=q&&visible(s.g,s.body); if(vis){ cur.push(q); } else { if(cur.length>1) segs.push(cur); cur=[]; } }
+  if(cur.length>1) segs.push(cur);
+  ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.globalAlpha=alpha;
+  for(const seg of segs){ if(glow){ ctx.strokeStyle=glow; ctx.lineWidth=width+6; ctx.beginPath(); seg.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.stroke(); }
+    ctx.strokeStyle=color; ctx.lineWidth=width; if(dash){ ctx.setLineDash(dash); ctx.lineDashOffset=offset; }
+    ctx.beginPath(); seg.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.stroke(); ctx.setLineDash([]); }
+  ctx.restore(); }
+
+// Distance rings on the ground around the view point (only when close to a surface).
+function drawRangeRings(t){
+  const sb=surfaceBodyOf(S.focus); if(!sb) return; const B=S.bodyMap[sb]; if(S.cam.dist>B.radius*0.4) return;
+  const c=toLocal(B,S.cam.target,t), R=Math.hypot(...c), up=norm3(c); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
+  const target=S.cam.dist*0.35, p10=Math.pow(10,Math.floor(Math.log10(target))); let step=p10; for(const m of [1,2,5]) if(m*p10<=target) step=m*p10;
+  ctx.save(); ctx.font="600 11px 'Exo 2',sans-serif";
+  for(let k=1;k<=3;k++){ const rr=step*k, ang=rr/R; let first=null, prev=null; ctx.strokeStyle="rgba(200,220,255,.22)"; ctx.lineWidth=1; ctx.setLineDash([3,5]); ctx.beginPath();
+    for(let i=0;i<=96;i++){ const a=i/96*Math.PI*2, dir=[0,1,2].map(j=>Math.cos(a)*east[j]+Math.sin(a)*north[j]);
+      const pl=[0,1,2].map(j=>(up[j]*Math.cos(ang)+dir[j]*Math.sin(ang))*R); const q=proj(toGlobal(B,pl,t)); if(!q){ prev=null; continue; }
+      if(prev) ctx.lineTo(q[0],q[1]); else ctx.moveTo(q[0],q[1]); prev=q; }
+    ctx.stroke(); ctx.setLineDash([]);
+    const lp=[0,1,2].map(j=>(up[j]*Math.cos(ang)-east[j]*Math.sin(ang))*R); const q=proj(toGlobal(B,lp,t)); if(q){ ctx.fillStyle="rgba(200,220,255,.55)"; ctx.fillText(fmtDist(rr),q[0]+4,q[1]-4); } }
+  // north tick
+  const np=[0,1,2].map(j=>(up[j]*Math.cos(step*3.4/R)+north[j]*Math.sin(step*3.4/R))*R); const qn=proj(toGlobal(B,np,t));
+  if(qn){ ctx.fillStyle="rgba(127,231,255,.8)"; ctx.font="700 13px 'Exo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("N",qn[0],qn[1]+4); ctx.textAlign="left"; }
+  ctx.restore(); }
+// Arrow at the screen edge pointing to an off-screen target.
+function edgeArrow(g,color,text){
+  V3.set(g[0]-O[0],g[1]-O[1],g[2]-O[2]).applyMatrix4(camera.matrixWorldInverse); const behind=V3.z>0;
+  const q=proj(g); if(q && q[0]>30 && q[0]<W-30 && q[1]>30 && q[1]<H-30) return;
+  let dx,dy; if(q&&!behind){ dx=q[0]-W/2; dy=q[1]-H/2; } else { dx=V3.x*(behind?-1:1); dy=-V3.y*(behind?-1:1); if(behind){ dx=-dx; dy=-dy; } }
+  const L=Math.hypot(dx,dy)||1; dx/=L; dy/=L; const m=40, k=Math.min((W/2-m)/Math.abs(dx||1e-9),(H/2-m)/Math.abs(dy||1e-9)); const x=W/2+dx*k, y=H/2+dy*k;
+  ctx.save(); ctx.translate(x,y); ctx.rotate(Math.atan2(dy,dx)); ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-7,-8); ctx.lineTo(-3,0); ctx.lineTo(-7,8); ctx.closePath(); ctx.fill(); ctx.restore();
+  ctx.font="600 12px 'Exo 2',sans-serif"; const w=ctx.measureText(text).width;
+  const lx=Math.min(Math.max(x-dx*22-(dx>0?w:dx<0?0:w/2),8),W-w-8), ly=Math.min(Math.max(y-dy*22+4,18),H-8);
+  label(text,lx,ly,{color,font:"600 12px 'Exo 2',sans-serif",force:true}); }
+function drawOverlay(t){
+  ctx.clearRect(0,0,W,H); labelBoxes=[]; S.picks=[];
+  if(!S.bodies.length){ ctx.fillStyle="#7684a0"; ctx.font="500 15px 'Inter',sans-serif"; ctx.textAlign="center";
+    ctx.fillText("No map data yet. Run  python import_data.py  and restart the app.",W/2,H/2); ctx.textAlign="left"; return; }
+  prepOcclusion();
+  const live=S.live, route=live?.route||[], stopIdx=Object.fromEntries(route.map((n,i)=>[n,i+1]));
+  const f=H/2/Math.tan(camera.fov*Math.PI/360);
+  drawRangeRings(t);
+  // ---- route & guide paths (under the markers)
+  const dash=(performance.now()/60)%20;
+  // After "Plan route" the path draws itself stop by stop.
+  const rv=S.reveal?Math.min(1,Math.max(0,(performance.now()-S.reveal-700)/(700+route.length*260))):1; if(rv>=1) S.reveal=null;
+  const P=rv*route.length; S.revealP=P;
+  if(route.length){ let prev=playerNode(); route.forEach((n,i)=>{ const nd=nodeOf(n,t); const f=Math.min(1,Math.max(0,P-i));
+      if(prev&&nd&&f>0){ let smp=legSamples(prev,nd,t); if(f<1) smp=smp.slice(0,Math.max(2,Math.ceil(smp.length*f)));
+        strokePath(smp,{color:"#4b8dff",width:i===0?2.8:2,glow:"rgba(75,141,255,.24)",dash:i===0?[10,9]:[6,6],offset:i===0?-dash:0}); }
+    prev=nd||prev; }); }
+  const guide=live?.guide; let gnode=null;
+  if(guide && S.locMap[guide.name]){ gnode=nodeOf(guide.name,t); const pn=playerNode(); if(gnode&&pn) strokePath(legSamples(pn,gnode,t),{color:"#7fe7ff",width:2.4,glow:"rgba(127,231,255,.18)",dash:[4,7],offset:-dash}); }
+  // ---- bodies: dots and labels when small, labels always
+  const bodyLabels=[];
+  for(const o of sysObjs){ const b=o.b, q=proj(b.center); if(!q) continue; const pr=o.pr;
+    if(pr<3){ ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); }
+    S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),depth:q[2]});
+    bodyLabels.push([b,q,pr]); }
+  // ---- locations
+  const drawn=[];
+  const selName=S.selected?.kind==="loc"?S.selected.name:null;
+  for(const L of S.locs){ if(L.system!==S.system) continue;
+    const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name;
+    const isWp = L.source==="user" || L.source==="mission";
+    if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue; }
+    let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:70) && !special) continue; }
+    const g=globalPos(L,t), q=proj(g); if(!q||q[0]<-40||q[0]>W+40||q[1]<-40||q[1]>H+40) continue;
+    if(!visible(g, L.kind==="surface"?L.body:null)) continue;
+    drawn.push({L,q,bodyPx,isWp}); }
+  for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; glyph(L.type,q[0],q[1],L.type==="city"?4.5:3.6,TYPES[L.type]?.color||"#aab"); S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:9,depth:q[2]}); }
+  // ---- mission markers
+  const marks=missionMarks(t);
+  for(const m of marks){ const q=proj(m.g); if(!q||!visible(m.g,m.body)) continue; diamond(q[0],q[1],"#ff5fa8");
+    S.picks.push({kind:"mission",name:m.o.location||m.o.label,x:q[0],y:q[1]-15,r:10,mission:m,depth:q[2]}); labelBoxes.push([q[0]-8,q[1]-25,q[0]+8,q[1]]); }
+  // ---- waypoints (flags)
+  for(const d of drawn){ if(!d.isWp) continue; const {L,q}=d; flag(q[0],q[1],L.source==="mission"?"#ff5fa8":"#9dff7a",L.name===guide?.name);
+    S.picks.push({kind:"loc",name:L.name,x:q[0]+4,y:q[1]-12,r:12,depth:q[2]}); labelBoxes.push([q[0]-2,q[1]-20,q[0]+14,q[1]]); }
+  // ---- route waypoint numbers
+  const seen=new Set();
+  route.forEach((n,i)=>{ if(P<i+0.999||seen.has(n)) return; const nd=nodeOf(n,t); if(!nd) return; const q=proj(nd.g); if(!q||!visible(nd.g,nd.body)) return;
+    seen.add(n); const nums=route.map((m,k)=>m===n&&P>=k+0.999?k+1:0).filter(Boolean).join(" · ");
+    ctx.font="700 11px 'Exo 2',sans-serif"; const bw=Math.max(20,ctx.measureText(nums).width+12);
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(q[0]-bw/2,q[1]-10,bw,20,10); else ctx.arc(q[0],q[1],10,0,7);
+    ctx.fillStyle=i===0?"#4b8dff":"#05080f"; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle="#4b8dff"; ctx.stroke();
+    ctx.fillStyle=i===0?"#ffffff":"#4b8dff"; ctx.textAlign="center"; ctx.fillText(nums,q[0],q[1]+4); ctx.textAlign="left";
+    S.picks.push({kind:"loc",name:n,x:q[0],y:q[1],r:11,depth:q[2]}); labelBoxes.push([q[0]-bw/2,q[1]-11,q[0]+bw/2,q[1]+11]);
+    label(n,q[0]+bw/2+4,q[1]+4,{color:"#bcd9ff",font:"600 12.5px 'Inter',sans-serif",force:i===0}); });
+  // ---- player
+  const pn=playerNode();
+  if(pn){ const q=proj(pn.g); if(q&&visible(pn.g,pn.body)){ const ph=(performance.now()/1400)%1;
+    ctx.strokeStyle=`rgba(127,231,255,${.55*(1-ph)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q[0],q[1],7+ph*18,0,7); ctx.stroke();
+    if(S.live.player?.approx){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke();
+    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label("You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true}); } }
+  // ---- selection ring
+  if(selName){ const p=S.picks.find(p=>p.kind==="loc"&&p.name===selName); if(p){ ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,14,0,7); ctx.stroke();
+    labelBoxes.push([p.x-14,p.y-14,p.x+14,p.y+14]); if(!stopIdx[selName]) label(selName,p.x+17,p.y+4,{color:"#7fe7ff",font:"600 13px 'Inter',sans-serif",force:true}); } }
+  // ---- labels, by priority
+  for(const d of drawn){ if(!d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; label(d.L.name,d.q[0]+14,d.q[1]-8,{color:d.L.source==="mission"?"#ffb3d6":"#c9ffb3",font:"600 12px 'Inter',sans-serif"}); }
+  bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
+  for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
+    label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"}); }
+  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city") continue;
+    label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined}); }
+  // ---- off-screen pointers for the guide target and next stop
+  if(gnode) edgeArrow(gnode.g,"#7fe7ff",`${guide.name}${guide.ground!=null?" · "+fmtDist(guide.ground):guide.distance!=null?" · "+fmtDist(guide.distance):""}`);
+  // camera readout
+  const lk=S.cam.lock?` · locked to ${S.cam.lock}`:""; $("camtxt").textContent=`view distance ${fmtDist(S.cam.dist)}${lk}`;
+}
+
+// =================================================================== frame
+function frame(){
+  const t=now(); updateCamera(t);
+  for(const o of sysObjs){ place(o.group,o.b.center); o.spin.rotation.z=bodyAngle(o.b,t);
+    if(o.grid) o.grid.visible=S.show.grid && o.pr>40;
+    if(o.orbit){ o.orbit.visible=S.show.orbits && S.cam.dist>o.orbitR*0.04; o.orbit.position.set(o.par.center[0]-O[0],o.par.center[1]-O[1],o.orbitZ-O[2]); } }
+  const star=sysObjs.find(o=>o.b.kind==="star"); const sp=star?star.b.center:[0,0,0];
+  sun.position.set(sp[0]-O[0],sp[1]-O[1],sp[2]-O[2]); sun.target.position.set(0,0,0); sun.target.updateMatrixWorld();
+  starfield.position.copy(camera.position);
+  renderer.render(scene,camera);
+  drawOverlay(t);
+  requestAnimationFrame(frame);
+}
+
+// =================================================================== input
+let drag=null, moved=false;
+const ov=$("overlay");
+ov.addEventListener("contextmenu",e=>e.preventDefault());
+// Drag the planet under the cursor: the point you look at slides across the globe, so you can
+// roam freely instead of circling one fixed spot. Works from ground level up to orbit.
+function grabGlobe(dx,dy){
+  const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb]; if(!B) return; const t=now();
+  const G=S.cam.target, C=B.center, R0=Math.max(d3(G,C),B.radius*0.5);
+  const k=Math.min(S.cam.dist,B.radius*3)*2*Math.tan(camera.fov*Math.PI/360)/H;   // metres per pixel at the ground
+  const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
+  let mv=[-(rt.x*dx-up.x*dy)*k, -(rt.y*dx-up.y*dy)*k, -(rt.z*dx-up.z*dy)*k];
+  const L=Math.hypot(...mv), cap=R0*0.3; if(L>cap) mv=mv.map(v=>v*cap/L);           // no wild jumps
+  const dir=norm3([G[0]+mv[0]-C[0],G[1]+mv[1]-C[1],G[2]+mv[2]-C[2]]);
+  S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(B,[C[0]+dir[0]*R0,C[1]+dir[1]*R0,C[2]+dir[2]*R0],t)};
+}
+// Grabbing the map always wins: an unfinished fly-in stops where it is.
+function stopAnim(){ if(!S.anim) return;
+  const sb=surfaceBodyOf(S.focus);
+  if(sb&&S.bodyMap[sb]){ S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(S.bodyMap[sb],S.cam.target,now())}; return; }  // stay on the globe
+  const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
+  S.anim=null; S.focus={kind:"point",pos:[...S.cam.target]}; setLock(null); S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
+ov.addEventListener("pointerdown",e=>{ stopAnim(); drag={x:e.clientX,y:e.clientY,pan:e.button===2||e.shiftKey}; moved=false; ov.classList.add("dragging");
+  try{ ov.setPointerCapture(e.pointerId); }catch(_){} $("help").style.display="none"; });
+const endDrag=()=>{ drag=null; ov.classList.remove("dragging"); };
+window.addEventListener("pointerup",endDrag); window.addEventListener("pointercancel",endDrag);
+window.addEventListener("pointermove",e=>{
+  const r=ov.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>2) moved=true; drag.x=e.clientX; drag.y=e.clientY;
+    const surf=!!surfaceBodyOf(S.focus);
+    if(surf && !drag.pan){ grabGlobe(dx,dy); }          // near a planet: drag the ground itself
+    else if(surf){ S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
+    else if(drag.pan){ // move the view point in the camera plane
+      const k=S.cam.dist*2*Math.tan(camera.fov*Math.PI/360)/H; const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
+      const tg=[...S.cam.target]; S.anim=null;
+      if(S.cam.lock){ const d=norm3([camera.position.x,camera.position.y,camera.position.z]); S.cam.lock=null; S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
+      S.focus={kind:"point",pos:[tg[0]-(rt.x*dx-up.x*dy)*k, tg[1]-(rt.y*dx-up.y*dy)*k, tg[2]-(rt.z*dx-up.z*dy)*k]};
+    } else { S.cam.yaw-=dx*0.006; S.cam.pitch=Math.max(-1.5,Math.min(1.5,S.cam.pitch+dy*0.006)); }
+    hideTip(); return; }
+  if(e.target!==ov){ hideTip(); return; }
+  const hit=pick(mx,my); if(hit) showTip(hit,mx,my); else hideTip(); });
+ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim();
+  let min=20; if(S.focus.kind==="body"){ min=S.bodyMap[S.focus.name].radius*1.05; }
+  S.cam.dist=Math.min(4e12,Math.max(min,S.cam.dist*k)); },{passive:false});
+function jumpTarget(L){ const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+Jump\s*Point/i); return m?m[1]:null; }
+function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) return;
+  if(S.systems.includes(to)){ S.autoSystem=false; setSystem(to); select(null); toast(`Jumped to ${to}`); }
+  else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
+ov.addEventListener("click",e=>{ if(moved) return; const r=ov.getBoundingClientRect(); const hit=pick(e.clientX-r.left,e.clientY-r.top);
+  if(e.detail===3 && hit?.kind==="loc" && jumpTarget(S.locMap[hit.name])) return jumpThrough(hit.name);
+  if(!hit) return select(null); if(hit.kind==="mission"){ const L=hit.mission.o.location; select(L?{kind:"loc",name:L}:{kind:"mission",m:hit.mission}); return; }
+  select({kind:hit.kind,name:hit.name}); });
+ov.addEventListener("dblclick",e=>{ const r=ov.getBoundingClientRect(); const hit=pick(e.clientX-r.left,e.clientY-r.top); if(!hit) return;
+  if(hit.kind==="body") focusBody(hit.name);
+  else if(hit.kind==="mission"){ const m=hit.mission; if(m.o.marker){ if(!m.o.marker.body) flyTo({kind:"point",pos:m.o.marker.pos},60000);
+      else flyTo({kind:"local",body:m.o.marker.body,pos:m.o.marker.pos}, Math.max(15000,S.bodyMap[m.o.marker.body].radius*0.06), TOPDOWN); } }
+  else focusLoc(hit.name,true); });
+function pick(x,y){ let best=null,bs=1e9; for(const p of S.picks){ const d=Math.hypot(p.x-x,p.y-y); if(d>p.r) continue;
+  const score=(p.kind==="body"?d+30:d); if(score<bs){ bs=score; best=p; } } return best; }
+const tip=$("tooltip");
+function showTip(hit,x,y){ let t="",s="";
+  if(hit.kind==="body"){ const b=S.bodyMap[hit.name]; t=b.name; s=b.kind==="star"?"Star":`${b.kind==="moon"?"Moon":"Planet"}, ${fmtDist(b.radius)} radius. Double-click to fly there`; }
+  else if(hit.kind==="mission"){ const m=hit.mission; t=m.o.label; s=`${m.c.subtitle?m.c.subtitle+" · ":""}${m.c.name}`; }
+  else { const L=S.locMap[hit.name]; if(!L) return; t=L.name; s=[L.source==="user"?"Your waypoint":TYPES[L.type]?.one, L.body, padOf(L)!=="unknown"?`pad: ${padOf(L)}`:null, L.qt?"QT marker":null].filter(Boolean).join(", "); }
+  tip.innerHTML=`<div class="t">${esc(t)}</div><div class="s">${esc(s)}</div>`; tip.style.display="block";
+  const r=tip.getBoundingClientRect(); tip.style.left=Math.min(x+14,W-r.width-8)+"px"; tip.style.top=Math.max(y-r.height-10,8)+"px"; }
+function hideTip(){ tip.style.display="none"; }
+window.addEventListener("keydown",e=>{ if(e.target.matches("input,textarea,select")) return;
+  if(e.key==="Escape") select(null); if(e.key==="r"||e.key==="R") fitRoute(false); if(e.key==="f"||e.key==="F") fitSystem(); if(e.key==="y"||e.key==="Y") focusPlayer();
+  if(e.key==="+"||e.key==="=") S.cam.dist/=1.5; if(e.key==="-") S.cam.dist*=1.5; });
+$("z-in").onclick=()=>{ stopAnim(); S.cam.dist/=1.6; }; $("z-out").onclick=()=>{ stopAnim(); S.cam.dist*=1.6; }; $("z-fit").onclick=fitSystem; $("z-you").onclick=focusPlayer; $("z-route").onclick=()=>fitRoute(false);
+
+// =================================================================== systems & layers
+function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg();
+  if(changed){ setLock(null); S.anim=null; buildSystem(); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
+function renderSysSeg(){ const here=S.live?.player?.system||S.live?.where?.system;
+  $("sysSeg").innerHTML=S.systems.map(s=>{ const w=wikiSystem(s); const tip=w?`${w.affiliation} · ${w.star_type||""}`:"";
+    return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}${s===here?'<span class="here" title="You are here"></span>':""}</button>`; }).join(""); }
+$("sysSeg").onclick=e=>{ const b=e.target.closest("button"); if(b){ S.autoSystem=false; setSystem(b.dataset.s); } };
+function buildLayers(){
+  const el=$("layer-list"); el.innerHTML="";
+  const mk=(lbl,checked,cls,on)=>{ const l=document.createElement("label"); l.innerHTML=`<input type="checkbox" ${checked?"checked":""}><span class="ty ${cls}"></span>${esc(lbl)}`;
+    l.querySelector("input").onchange=e=>on(e.target.checked); el.appendChild(l); };
+  mk("Contract objectives",S.show.missions,"mission",v=>S.show.missions=v);
+  mk("My waypoints (pinned)",S.show.waypoints,"wp",v=>S.show.waypoints=v);
+  for(const [k,v] of Object.entries(TYPES)) mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
+  el.appendChild(document.createElement("hr"));
+  mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>S.show.grid=v);
+  $("layers-hdr").onclick=()=>{ el.hidden=!el.hidden; $("layers-caret").textContent=el.hidden?"▸":"▾"; };
+  el.hidden=true; $("layers-caret").textContent="▸";
+}
+
+// =================================================================== detail card
+function select(sel){ S.selected=sel; renderDetail(); highlightResult(); }
+// ---- location services (Star Citizen Wiki API)
+const SVC_ICONS={
+  pad:'<path d="M12 3l3 7h-6z"/><path d="M9 10l-4 4h14l-4-4"/><path d="M4 20h16"/>',
+  hangar:'<path d="M3 20V10l9-6 9 6v10"/><path d="M7 20v-7h10v7"/><path d="M7 16h10"/>',
+  wrench:'<path d="M14.5 5.5a4 4 0 0 0-5 5L4 16l4 4 5.5-5.5a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+  dock:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  cargo:'<path d="M4 9h7v11H4zM13 13h7v7h-7z"/><path d="M16.5 3v7M14 5.5l2.5-2.5 2.5 2.5"/>',
+  refine:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7.5 15h9"/>',
+  med:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+  shop:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  food:'<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10"/><path d="M16 3c-2 2-2 6 0 8v10"/>',
+  ship:'<path d="M12 3l3 8 6 3-6 1-3 6-3-6-6-1 6-3z"/>',
+  dot:'<circle cx="12" cy="12" r="4"/>'};
+function svcIcon(name){ const n=name.toLowerCase();
+  const k=n.includes("landing pad")?"pad":n.includes("hangar")||n.includes("garage")?"hangar":n.includes("vehicle services")||n.includes("repair")?"wrench":n.includes("docking")?"dock"
+    :n.includes("loading dock")||n.includes("commodity")||n.includes("cargo")?"cargo":n.includes("refinery")?"refine":n.includes("clinic")||n.includes("hospital")||n.includes("medical")?"med"
+    :n.includes("food")?"food":n.includes("vehicle")||n.includes("ship")&&n.includes("rent")?"ship":n.includes("buy")||n.includes("rent")||n.includes("shop")?"shop":"dot";
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${SVC_ICONS[k]}</svg>`; }
+const SVC_ORDER=["landing pad","hangar","docking","loading dock","vehicle services","commodity","refinery","clinic","hospital","rent","buy","food"];
+function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.includes(k)); return i<0?99:i; }
+function servicesHtml(r){
+  if(!r) return "";
+  const tiles=[...r.amenities].sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
+    const m=a.match(/^(Landing Pad|Hangar) *[(](XL|S|M|L)[)]/i); const label=m?m[1]:a;
+    return `<div class="svc-tile" title="${esc(a)}">${m?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("");
+  const desc=r.description?(r.description.length>260?r.description.slice(0,257)+"…":r.description):"";
+  return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
+    ${tiles?`<div class="svc-grid">${tiles}</div>`:`<div class="none">No services listed for this location.</div>`}
+    ${desc?`<div class="desc">${esc(desc)}</div>`:""}
+    <div class="credit">Services: ${wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div></div>`; }
+S.svcCache={};
+async function fillServices(name){
+  if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
+  const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name]); }
+function padOf(L){ return L.pad&&L.pad!=="unknown"?L.pad:(L.pad_auto||"unknown"); }
+function wikiFor(name){ return S.wiki?.bodies?.[name]||null; }
+function wikiSystem(name){ return S.wiki?.systems?.[name]||null; }
+function wikiLink(url,label="Star Citizen Wiki"){ return url?`<a data-url="${esc(url)}">${esc(label)}</a>`:""; }
+const CREDIT=url=>`<div class="credit">Info: ${wikiLink(url)} (CC BY-SA 4.0)</div>`;
+function systemBlurb(sw){ if(!sw) return "";
+  return `${sw.affiliation?`<span class="k">Affiliation</span><span>${esc(sw.affiliation)}</span>`:""}
+    ${sw.star_type?`<span class="k">Star</span><span>${esc(sw.star||"")} · ${esc(sw.star_type)}</span>`:""}
+    <span class="k">Bodies</span><span>${sw.planets.length} planet${sw.planets.length===1?"":"s"}${sw.moons?`, ${sw.moons} moon${sw.moons===1?"":"s"}`:""}${sw.belts.length?`, ${sw.belts.length} belt${sw.belts.length===1?"":"s"}`:""}</span>`; }
+function distFromYou(g,sys){ const p=S.live?.player; return p&&p.system===sys?d3(g,playerG(now())):null; }
+function renderDetail(){
+  const d=$("detail"), sel=S.selected; if(!sel){ d.classList.remove("show"); return; }
+  const live=S.live, t=now();
+  if(sel.kind==="settings"){ const a=S.live?.autoloc||{};
+    const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"], ivs=[[0,"Off"],[30,"Every 30 s"],[60,"Every minute"],[120,"Every 2 min"],[300,"Every 5 min"],[600,"Every 10 min"]];
+    const when=a.last_sent?new Date(a.last_sent*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"never";
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2><div class="sub">Hotkey and auto /showlocation</div>
+      ${a.available===false?`<div class="note">This only works on Windows.</div>`:""}
+      <div class="setgrid">
+        <span class="k">Hotkey</span><select class="field" id="s-hotkey">${keys.map(k=>`<option value="${k}" ${k===a.hotkey?"selected":""}>${k||"Off"}</option>`).join("")}</select>
+        <span class="k">Hotkey does</span><select class="field" id="s-action"><option value="overlay" ${a.action!=="showlocation"?"selected":""}>Show / hide Quantum over the game</option><option value="showlocation" ${a.action==="showlocation"?"selected":""}>Type /showlocation in chat</option></select>
+        <span class="k">Automatically</span><select class="field" id="s-interval">${ivs.map(([v,l])=>`<option value="${v}" ${v===a.interval?"selected":""}>${l}</option>`).join("")}</select>
+        <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
+        <span class="k">Last sent</span><span>${esc(when)}${a.last_result&&a.last_result!=="idle"?` · <span class="muted">${esc(a.last_result)}</span>`:""}</span>
+      </div>
+      <div class="note" style="margin-bottom:8px"><b>Overlay:</b> press the hotkey in game to bring Quantum up on top, and again to tuck it away and return to the game. Set Star Citizen to <b>Borderless</b> or <b>Windowed</b> (Graphics settings): nothing can appear over exclusive fullscreen. If Quantum appears but won't take focus, restart it as administrator (button below).</div>
+      <div class="note">For <b>/showlocation</b>, Quantum types it into the game chat for you, only while Star Citizen is the focused window. The timer briefly takes over your keyboard each time, so it's best while parked, landed or on foot. The game still sees the hotkey press too, so pick a key you haven't bound to anything in game. It sends simulated keystrokes, so use it at your own discretion.</div>
+      <div class="acts" style="margin-top:10px"><button class="btn primary" data-a="testkey">Test /showlocation in 5 s</button>
+        ${a.available&&!a.admin?`<button class="btn" data-a="relaunch" title="Needed when Star Citizen / the RSI Launcher runs as administrator">Restart Quantum as administrator</button>`:""}</div>
+      <div class="sub" style="margin-top:12px">What happened (newest first)</div>
+      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press your hotkey in game, then look here.</div>'}</div>
+      <div class="muted" style="font-size:12px">${a.admin?"Quantum is running as administrator.":"Quantum is not running as administrator. If the RSI Launcher runs as admin, Windows blocks Quantum's keystrokes: restart Quantum as administrator."}</div>`;
+    const save=async()=>{ await api().set_autoloc($("s-hotkey").value,+$("s-interval").value,$("s-chat").value,$("s-action").value); await poll(); renderStatus(); toast("Saved"); };
+    for(const id of ["s-hotkey","s-interval","s-chat","s-action"]) $(id).onchange=save;
+  } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
+    const day=x=>x?new Date(x*1000).toLocaleDateString([], {day:"numeric",month:"short"}):"";
+    const rows=st.bodies.filter(b=>b.system===S.system).map(b=>{
+      let mark="no", text="Community values";
+      const q={hangar:"from a hangar, within a few km",station:"from the station, within ~1 km",place:"exact",estimate:"estimated, will be replaced by your first reading"}[b.quality]||"older calibration, accuracy unknown";
+      if(b.calibrated){ mark=b.quality?"ok":"warn"; text=`Aligned at ${esc(b.place||"a known place")} (${q})${b.at?" · "+day(b.at):""}`;
+        if(b.checks){ const drift=b.worst_check; mark=drift<0.2?"ok":"warn";
+          text+=` · ${b.checks} check${b.checks>1?"s":""} over ${b.sessions} session${b.sessions>1?"s":""}, ${drift<0.2?"stable":"drift up to "+drift.toFixed(2)+"°"}`; } }
+      return `<div class="a"><span class="${mark}">${mark==="ok"?"✓":mark==="warn"?"!":"○"}</span><div><b>${esc(b.name)}</b> <span class="s">${b.kind}</span><div class="s">${text}</div></div>
+        ${b.calibrated?`<button class="btn small ghost" data-a="resetcal" data-body="${esc(b.name)}" title="Go back to the community value">Reset</button>`:"<span></span>"}</div>`; }).join("");
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Planet alignment</h2>
+      <div class="sub">${esc(S.system)}${st.build?` · game build ${esc(st.build)}`:""}</div>
+      <div class="hint" style="font-size:13px;color:var(--ink-2)">Each planet is lined up once, from a /showlocation at a known place. Later readings at known places are logged as checks: if they stay near 0°, the alignment holds across sessions and can be shared.</div>
+      <div class="note" style="margin-top:8px"><b>No flying needed.</b> Open your inventory (so the game logs where you are), then type /showlocation or press F9:
+        <br>• <b>In your hangar</b> in New Babbage, Lorville, Area 18 or Orison: lines the planet up to within a few km.
+        <br>• <b>At the planet's station</b> (Port Tressler, Everus Harbor, Baijini Point, Seraphim): within about a km.
+        <br>• <b>At any outpost or distribution centre</b> during normal play: exact.
+        <br>A better reading replaces a rougher one automatically.</div>
+      <div class="align-list">${rows||'<div class="muted">No planets in this system.</div>'}</div>
+      <div class="acts"><button class="btn primary" data-a="export">Export alignments</button><button class="btn" data-a="import">Import</button></div>
+      <div class="muted" style="font-size:12px;margin-top:8px">Saved automatically to ${esc(st.file)}. A calibrations.json placed in the app folder is applied on start.</div>`;
+  } else if(sel.kind==="body"){ const b=S.bodyMap[sel.name]; if(!b) return d.classList.remove("show");
+    const n=S.locs.filter(L=>L.body===b.name).length;
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(b.name)}</h2>
+      <div class="sub">${wikiFor(b.name)?.designation?esc(wikiFor(b.name).designation)+" · ":""}${b.kind==="star"?"Star":(b.kind==="moon"?"Moon":"Planet")} in ${esc(b.system)}${b.parent&&b.kind==="moon"?", orbiting "+esc(b.parent):""}</div>
+      <div class="kv">${wikiFor(b.name)?.type?`<span class="k">Type</span><span>${esc(wikiFor(b.name).type)}</span>`:""}
+      ${b.kind==="star"?systemBlurb(wikiSystem(b.system)):""}
+      ${wikiFor(b.name)?.moons?.length?`<span class="k">Moons</span><span>${wikiFor(b.name).moons.map(esc).join(", ")}</span>`:""}
+      <span class="k">Radius</span><span>${fmtDist(b.radius)}</span>
+      ${b.period?`<span class="k">Day length</span><span>${b.period.toFixed(2)} h</span>`:""}
+      <span class="k">Places</span><span>${n}</span>
+      ${b.kind!=="star"?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
+      ${distFromYou(b.center,b.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(b.center,b.system)-b.radius)} to surface</span>`:""}</div>
+      <div class="acts"><button class="btn primary" data-a="zoom">Fly to</button></div>${wikiFor(b.name)?CREDIT(wikiFor(b.name).url):""}`;
+  } else if(sel.kind==="mission"){ const m=sel.m;
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(m.o.label)}</h2><div class="sub"><span class="ty mission"></span>${esc(m.c.subtitle||"")} contract on ${esc(m.body||"")}</div>
+      <div class="kv"><span class="k">Contract</span><span>${esc(m.c.name)}</span>${distFromYou(m.g,S.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(m.g,S.system))}</span>`:""}</div>
+      <div class="acts"><button class="btn go" data-a="mguide">Guide me</button><button class="btn" data-a="mroute">Add to route</button></div>`;
+  } else { const L=S.locMap[sel.name]; if(!L) return d.classList.remove("show");
+    const g=globalPos(L,t), from=distFromYou(g,L.system), inRoute=live?.route.includes(L.name), guiding=live?.guide?.name===L.name;
+    let ll=""; if(L.kind==="surface"){ const q=latLon(L.pos); ll=`${q.lat.toFixed(3)}°, ${q.lon.toFixed(3)}°`; }
+    const user=L.source==="user"||L.source==="mission";
+    const canCal = L.kind==="surface" && L.source==="db" && live?.player?.body===L.body && live.player.age<600;
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
+      <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}</div>
+      <div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
+      ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
+        return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
+          <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
+      <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
+        ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
+        <span class="k">Landing pad</span><select class="field" id="d-pad">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"&&L.pad_auto?`unknown (game data: ${L.pad_auto})`:p}</option>`).join("")}</select>
+        <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea></div>
+      <div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
+        ${inRoute?`<button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
+        <button class="btn" data-a="focus">Fly to</button>
+        ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
+        ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`;
+    if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
+    $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value; toast(`Saved pad size for ${L.name}`); };
+    $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; };
+  }
+  d.classList.add("show");
+  d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
+    const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;
+    if(a==="zoom") focusBody(sel.name);
+    if(a==="relaunch"){ const r=await api().relaunch_admin(); if(!r.ok) toast(r.error); return; }
+    if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
+    if(a==="jump") jumpThrough(sel.name);
+    if(a==="resetcal"){ const n=e.target.dataset.body; const r=await api().reset_calibration(n); if(!r.ok) return toast(r.error);
+      await poll(); await openAlign(); toast(`${n} is back on community values`); return; }
+    if(a==="export"){ const r=await api().export_calibrations(); if(r.ok) toast(`Exported ${r.count} planet alignment${r.count>1?"s":""}`); else if(r.error!=="cancelled") toast(r.error); }
+    if(a==="import"){ const r=await api().import_calibrations(null); if(!r.ok){ if(r.error!=="cancelled") toast(r.error); return; }
+      await poll(); await openAlign(); toast(r.applied.length?`Applied: ${r.applied.join(", ")}`:`Nothing new${r.skipped.length?": "+r.skipped.join(", "):""}`); }
+    if(a==="route") addStops([sel.name]);
+    if(a==="unroute"){ await api().remove_place(sel.name); await poll(); renderDetail(); }
+    if(a==="focus") focusLoc(sel.name,true);
+    if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); toast(`Guiding you to ${sel.name}`); }
+    if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
+    if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
+    if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
+    if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); toast(`Guiding you to ${r.name}`); }
+    if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); toast("Added to route"); } };
+}
+
+// =================================================================== HUD (guidance + next stop)
+function compass(deg){ return `<svg class="compass" viewBox="-22 -22 44 44" aria-label="heading ${Math.round(deg)} degrees"><circle r="20" fill="none" stroke="#2c3f63" stroke-width="1.5"/>
+  <text y="-12" text-anchor="middle" font-size="7" fill="#7684a0" font-family="Exo 2">N</text>
+  <g transform="rotate(${deg})"><path d="M0,-15 L6,6 L0,2 L-6,6 Z" fill="#7fe7ff"/></g></svg>`; }
+function renderHud(){
+  const live=S.live, g=live.guide, n=live.next; let html="";
+  if(g){ const hdg=g.heading!=null; const nums = hdg
+      ? `<div class="nums">${compass(g.heading)}<div><div class="v">${Math.round(g.heading)%360}°</div><div class="k">heading</div></div>
+         <div><div class="v">${fmtDist(g.ground)}</div><div class="k">over ground</div></div>
+         <div><div class="v">${g.climb>0?"↑":"↓"} ${fmtDist(Math.abs(g.climb))}</div><div class="k">${g.climb>0?"climb":"descend"}</div></div></div>`
+      : g.distance!=null ? `<div class="nums"><div><div class="v">${fmtDist(g.distance)}</div><div class="k">straight line</div></div></div>`
+      : g.other_system ? `<div class="hint">It's in ${esc(g.system)}. Jump there first.</div>` : `<div class="hint">Type /showlocation in game chat to get a heading.</div>`;
+    const ap=(g.approach||[]).slice(0,2).map((a,i)=>`<div class="a"><span class="i">${i+1}</span><span>Quantum to <b>${esc(a.name)}</b>${a.ground!=null?`, then ${a.orbit?"descend and ":""}fly <b>${Math.round(a.heading)}°</b> for <b>${fmtDist(a.ground)}</b>`:`, then fly <b>${fmtDist(a.straight)}</b>`}</span></div>`).join("");
+    const direct = g.target_is_qt ? `<div class="a"><span class="i">★</span><span>It has its own quantum marker. Pick it in your starmap.</span></div>` : "";
+    const faster = hdg && g.approach?.[0] && g.ground < g.approach[0].ground ? `<div class="a"><span class="i">★</span><span>You're closer than any QT marker. Fly the heading above.</span></div>` : "";
+    html+=`<div class="card guide"><div class="lbl">Guiding to<span class="spacer"></span><button class="btn small ghost" id="hud-stop">Stop</button></div>
+      <div class="nm">${esc(g.name)}</div>${nums}${(ap||direct)?`<div class="approach"><div class="muted" style="font-size:12px">Fastest way there</div>${faster||direct}${ap}</div>`:""}</div>`; }
+  const here=live.travel?.state==="landed"&&live.travel?.place===n?.name;
+  if(n){ html+=`<div class="card next"><div class="lbl">Next stop${live.route.length>1?` · 1 of ${live.route.length}`:""}${here?' <span style="color:var(--ok);font-weight:600">· You\'re here</span>':""}</div><div class="nm">${esc(n.name)}</div>
+    ${n.other_system?`<div class="hint">It's in ${esc(n.system)}. Jump there first.</div>`:n.distance!=null?`<div class="nums"><div><div class="v">${fmtDist(n.distance)}</div><div class="k">straight line</div></div>
+      ${n.surface!=null?`<div><div class="v">${fmtDist(n.surface)}</div><div class="k">over ground</div></div><div><div class="v">${Math.round(n.heading)%360}°</div><div class="k">heading</div></div>`:""}
+      ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(n.pad)}</div><div class="k">pad</div></div>`:""}</div>`
+      :`<div class="hint">Type /showlocation in game chat to see distance and heading.</div>`}</div>`; }
+  // Offer to line the planet up when your reading clearly matches a place the map has elsewhere.
+  const cs=live.calib_suggest;
+  if(cs && S.calDismissed!==cs.reading_t){ const top=cs.places[0];
+    html=`<div class="card calib"><div class="lbl">Map out of line with ${esc(cs.body)}<span class="spacer"></span><button class="btn small ghost" id="cal-x">Not now</button></div>
+      ${cs.city?`<div class="note" style="margin:6px 0">In a city? Only confirm if you're standing <b>at</b> this place. From a hangar, open your inventory and type /showlocation instead: Quantum lines the planet up to the city's spaceport by itself.</div>`:""}
+      <div class="hint" style="margin:4px 0 8px">Your /showlocation matches <b>${esc(top.name)}</b>${cs.log_area&&top.near_log?` (near ${esc(cs.log_area)}, where the log last placed you)`:""}, but the map has you ${fmtDist(top.off)} away. Are you there?</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">${cs.places.map((p,i)=>`<button class="btn small ${i?"":"go"}" data-cal="${esc(p.name)}">${i?"":"Yes, "}I'm at ${esc(p.name)}</button>`).join("")}</div></div>`+html; }
+  const ov=S.overview;
+  if(ov){ const route=live.route; const roleTxt=(n,i)=>roleTags(live.stop_roles?.[i]);
+    html=`<div class="card overview"><div class="lbl">Route planned<span class="spacer"></span><button class="btn small ghost" id="hud-ov-close">Close</button></div>
+      <div class="nums" style="margin-top:4px"><div><div class="v">${route.length}</div><div class="k">stops</div></div><div><div class="v">${fmtDist(live.total)}</div><div class="k">${ov.from_ship?"from your position":"total"}</div></div>
+      ${ov.jumps?`<div><div class="v">${ov.jumps}</div><div class="k">jumps</div></div>`:""}</div>
+      <div class="hint" style="margin-top:8px">${ov.bodies.map(esc).join(" → ")}${ov.added?` · ${ov.added} contract task${ov.added>1?"s":""} added`:""}${ov.revisits?` · ${ov.revisits} return visit${ov.revisits>1?"s":""}`:""}</div>
+      <div class="ovlist">${route.map((n,i)=>`<div class="i"><span class="n">${i+1}</span><span>${roleTxt(n,i)}${esc(n)}</span></div>`).join("")}</div></div>`+html; }
+  $("hud").innerHTML=html; const st=$("hud-stop"); if(st) st.onclick=async()=>{ await api().set_guide(null); await poll(); };
+  const oc=$("hud-ov-close"); if(oc) oc.onclick=()=>{ S.overview=null; renderHud(); };
+  const cx=$("cal-x"); if(cx) cx.onclick=()=>{ S.calDismissed=cs.reading_t; renderHud(); };
+  for(const b of $("hud").querySelectorAll("[data-cal]")) b.onclick=async()=>{ const r=await api().calibrate_at(b.dataset.cal);
+    if(!r.ok) return toast(r.error); await poll(); toast(`${cs.body} lined up at ${b.dataset.cal} (${r.correction>0?"+":""}${r.correction.toFixed(1)}°)`); };
+}
+
+// =================================================================== sidebar
+for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.dataset.tab;
+  for(const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected",String(x===t));
+  for(const p of document.querySelectorAll(".pane")) p.classList.toggle("active",p.id==="pane-"+S.tab);
+  if(S.tab==="places") $("search").focus(); if(S.tab==="waypoints") renderWaypoints(true); };
+
+// ---- route
+async function addStops(names){ await api().add_stops(names); await poll(); toast(names.length===1?`Added ${names[0]} to route`:`Added ${names.length} stops to route`); renderDetail(); }
+function roleTags(roles){ return (roles||[]).map(r=>`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
+function renderRoute(){
+  const live=S.live, route=live.route, el=$("stops"); $("c-route").textContent=route.length;
+  $("route-empty").style.display=route.length?"none":"block"; $("btn-arrived").style.display=route.length?"block":"none";
+  $("route-total").textContent=route.length?fmtDist(live.total):"–";
+  const jumps=route.filter((n,i)=>i>0&&S.locMap[n]?.system!==S.locMap[route[i-1]]?.system).length;
+  const again=route.length-new Set(route).size;
+  $("route-sub").textContent=!route.length?"No stops yet":`${route.length} stop${route.length>1?"s":""}${again?`, ${again} return visit${again>1?"s":""}`:""}${jumps?`, ${jumps} jump${jumps>1?"s":""}`:""}${live.player?" from your position":""}`;
+  $("route-warn").style.display=live.route_warning?"block":"none"; $("route-warn").textContent=live.route_warning||"";
+  el.innerHTML=route.map((n,i)=>{ const L=S.locMap[n]||{}; const leg=live.legs[i]; const jump=i>0&&L.system!==S.locMap[route[i-1]]?.system;
+    const back=route.indexOf(n)<i?'<span class="role back">Return visit</span>':"";
+    return `<li class="stop" draggable="true" data-i="${i}"><div class="num">${i+1}</div>
+      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padOf(L))}</span>`:""}</div></div>
+      <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system):leg!=null?fmtDist(leg):""}</div><button class="x" aria-label="Remove stop ${i+1}">×</button></div></li>`; }).join("");
+  for(const li of el.children){ const i=+li.dataset.i, n=route[i];
+    li.querySelector(".name").onclick=()=>{ select({kind:"loc",name:n}); focusLoc(n); };
+    li.querySelector(".x").onclick=async()=>{ await api().remove_stop(i); await poll(); };
+    li.ondragstart=e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",String(i)); };
+    li.ondragend=()=>li.classList.remove("dragging");
+    li.ondragover=e=>{ e.preventDefault(); for(const o of el.children) o.classList.remove("drop-before"); li.classList.add("drop-before"); };
+    li.ondrop=async e=>{ e.preventDefault(); const from=+e.dataTransfer.getData("text/plain"); if(from===i) return;
+      await api().move_stop(from, from<i?i-1:i); await poll(); }; }
+}
+$("btn-optimize").onclick=async()=>{ const r=await api().optimize_route(); await poll(); if(!r.ok) return toast(r.error); toast(r.saved>1?`Shorter by ${fmtDist(r.saved)}`:"Already the shortest order"); };
+$("btn-clear").onclick=async()=>{ await api().clear_route(); S.overview=null; await poll(); };
+$("btn-view").onclick=()=>fitRoute();
+async function openAlign(){ S.alignStatus=await api().calibration_status(); S.selected={kind:"align"}; renderDetail(); }
+$("btn-align").onclick=openAlign;
+$("btn-settings").onclick=()=>{ S.selected={kind:"settings"}; renderDetail(); };
+$("btn-plan").onclick=()=>planRoute(false); $("btn-plan-all").onclick=()=>planRoute(true);
+async function planRoute(withContracts){
+  const btns=[...document.querySelectorAll(".btn.plan")]; const labels=btns.map(b=>b.innerHTML);
+  btns.forEach(b=>{ b.disabled=true; b.innerHTML='<span class="spin"></span>Planning route…'; });
+  const t0=performance.now(); let r;
+  try{ r=await api().plan_route(withContracts); await poll(); } finally {
+    await new Promise(res=>setTimeout(res,Math.max(0,900-(performance.now()-t0))));
+    btns.forEach((b,i)=>{ b.disabled=false; b.innerHTML=labels[i]; }); }
+  if(!r.ok) return toast(r.error);
+  S.overview=r; renderContracts(true);   // stay on whichever tab you planned from
+  fitRoute(); S.reveal=performance.now(); renderHud();
+}
+// Frame the whole route. The camera pivots on a planet (yours, or the next stop's), so dragging
+// afterwards spins that globe instead of swinging around an empty point in space.
+function fitRoute(reveal=true){
+  const route=S.live?.route||[]; if(!route.length){ toast("The route is empty"); return; }
+  const ps=S.live.player?.system; const sys=ps&&route.some(n=>S.locMap[n]?.system===ps)?ps:S.locMap[route[0]]?.system;
+  if(sys&&sys!==S.system) setSystem(sys,false);
+  const t=now(); const nodes=route.map(n=>nodeOf(n,t)).filter(Boolean); const pn=playerNode(); if(pn) nodes.push(pn);
+  if(!nodes.length) return;
+  const pivotName=(pn&&pn.body)||nodes.find(n=>n.body)?.body;
+  const B=pivotName&&S.bodyMap[pivotName];
+  const half=Math.tan(camera.fov*Math.PI/360);
+  if(B){ const bodies=new Set(nodes.map(n=>n.body));
+    let dist, pitch, yaw;
+    if(bodies.size===1){ // all on this globe: turn it so the route faces you
+      const c=norm3(nodes.reduce((a,n)=>{ const u=norm3(n.local); return [a[0]+u[0],a[1]+u[1],a[2]+u[2]]; },[0,0,0]));
+      const spread=Math.max(...nodes.map(n=>{ const u=norm3(n.local); return Math.acos(Math.max(-1,Math.min(1,u[0]*c[0]+u[1]*c[1]+u[2]*c[2]))); }));
+      dist=B.radius*(1.45+2.0*Math.min(spread,1.3)); pitch=Math.asin(c[2]); yaw=Math.atan2(c[1],c[0]);
+    } else { // several bodies: stay centred on this planet but back off until every stop fits
+      const far=Math.max(...nodes.map(n=>d3(n.g,B.center)));
+      dist=Math.max(B.radius*3, far/half*1.25); pitch=0.95; yaw=S.cam.yaw; }
+    flyTo({kind:"body",name:B.name}, dist, {pitch, yaw, dur:1600});
+  } else { const cen=[0,1,2].map(i=>nodes.reduce((a,n)=>a+n.g[i],0)/nodes.length); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),1e5);
+    flyTo({kind:"point",pos:cen}, rad/half*1.5, {pitch:0.95, dur:1600}); }
+  if(reveal) S.reveal=performance.now();
+}
+$("btn-optimize").onclick=async()=>{ const r=await api().optimize_route(); await poll(); if(!r.ok) return toast(r.error); toast(r.saved>1?`Shorter by ${fmtDist(r.saved)}`:"Already the shortest order"); };
+$("btn-clear").onclick=async()=>{ await api().clear_route(); S.overview=null; await poll(); };
+$("btn-view").onclick=()=>fitRoute();
+$("btn-plan").onclick=()=>planRoute(false); $("btn-plan-all").onclick=()=>planRoute(true);
+async function planRoute(withContracts){
+  const btns=[...document.querySelectorAll(".btn.plan")]; const labels=btns.map(b=>b.innerHTML);
+  btns.forEach(b=>{ b.disabled=true; b.innerHTML='<span class="spin"></span>Planning route…'; });
+  const t0=performance.now(); let r;
+  try{ r=await api().plan_route(withContracts); await poll(); } finally {
+    await new Promise(res=>setTimeout(res,Math.max(0,900-(performance.now()-t0))));
+    btns.forEach((b,i)=>{ b.disabled=false; b.innerHTML=labels[i]; }); }
+  if(!r.ok) return toast(r.error);
+  S.overview=r; renderContracts(true);   // stay on whichever tab you planned from
+  fitRoute(); S.reveal=performance.now(); renderHud();
+}
+// Frame the whole route. All on one planet: turn that planet so the route faces you.
+function fitRoute(){
+  const route=S.live?.route||[]; if(!route.length) return toast("The route is empty");
+  const ps=S.live.player?.system; const sys=ps&&route.some(n=>S.locMap[n]?.system===ps)?ps:S.locMap[route[0]]?.system;
+  if(sys&&sys!==S.system) setSystem(sys,false);
+  const t=now(); const nodes=route.map(n=>nodeOf(n,t)).filter(Boolean); const pn=playerNode(); if(pn) nodes.push(pn);
+  if(!nodes.length) return;
+  const bodies=new Set(nodes.map(n=>n.body));
+  if(bodies.size===1 && nodes[0].body){ const B=S.bodyMap[nodes[0].body];
+    const c=norm3(nodes.reduce((a,n)=>{ const u=norm3(n.local); return [a[0]+u[0],a[1]+u[1],a[2]+u[2]]; },[0,0,0]));
+    const spread=Math.max(...nodes.map(n=>{ const u=norm3(n.local); return Math.acos(Math.max(-1,Math.min(1,u[0]*c[0]+u[1]*c[1]+u[2]*c[2]))); }));
+    flyTo({kind:"body",name:B.name}, B.radius*(1.45+2.0*Math.min(spread,1.3)), {pitch:Math.asin(c[2]), yaw:Math.atan2(c[1],c[0]), dur:1600});
+  } else { const cen=[0,1,2].map(i=>nodes.reduce((a,n)=>a+n.g[i],0)/nodes.length); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),1e5);
+    flyTo({kind:"point",pos:cen}, rad/Math.tan(camera.fov*Math.PI/360)*1.5, {pitch:0.95, dur:1600}); }
+  S.reveal=performance.now();
+}
+$("btn-arrived").onclick=async()=>{ await api().arrived(); await poll(); };
+
+// ---- route search: find anything and add it as a stop (or fly to planets and moons)
+const RS={items:[],on:0};
+function rsCandidates(q){
+  q=q.trim().toLowerCase(); if(!q) return [];
+  const rank=t=>({city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6}[t]??4);
+  const score=n=>{ const x=n.toLowerCase(); if(x===q) return 0; if(x.startsWith(q)) return 1;
+    if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; return x.includes(q)?3:9; };
+  const out=[];
+  for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${b.kind==="moon"?"Moon":"Planet"} · ${b.system}`,sc,r:-1,sys:b.system}); }
+  for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; let sc=score(L.name);
+    let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q)); if(via) sc=4; }
+    if(sc<9) out.push({kind:"loc",name:L.name,via,
+    sub:`${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
+  out.sort((a,b)=>a.sc-b.sc||(a.sys!==S.system)-(b.sys!==S.system)||a.r-b.r||a.name.localeCompare(b.name));
+  return out.slice(0,q.length>=3&&out.some(o=>o.via)?30:12);
+}
+function rsRender(){
+  const q=$("rsearch").value, list=$("rs-list"), route=S.live?.route||[];
+  RS.items=rsCandidates(q); RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
+  if(!q.trim()){ list.hidden=true; $("rsearch").setAttribute("aria-expanded","false"); return; }
+  const hl=n=>{ const i=n.toLowerCase().indexOf(q.trim().toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.trim().length))+"</mark>"+esc(n.slice(i+q.trim().length)); };
+  list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" class="${i===RS.on?"on":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
+      <div style="min-width:0"><div class="n">${hl(it.name)}</div><div class="b">${esc(it.sub)}</div></div>
+      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="fly" title="Already in your route">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
+    :`<li class="empty">No match for “${esc(q)}”</li>`;
+  list.hidden=false; $("rsearch").setAttribute("aria-expanded","true");
+}
+async function rsPick(i,act){
+  const it=RS.items[i]; if(!it) return;
+  if(it.kind==="body"){ focusBody(it.name); select({kind:"body",name:it.name}); }
+  else if(act==="add" && !(S.live?.route||[]).includes(it.name)){ await addStops([it.name]); select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
+  else { select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
+  $("rsearch").value=""; rsRender(); $("rsearch").blur();
+}
+$("rsearch").oninput=()=>{ RS.on=0; rsRender(); };
+$("rsearch").onfocus=()=>rsRender();
+$("rsearch").onkeydown=e=>{
+  if(e.key==="ArrowDown"){ RS.on=Math.min(RS.on+1,RS.items.length-1); rsRender(); e.preventDefault(); }
+  else if(e.key==="ArrowUp"){ RS.on=Math.max(RS.on-1,0); rsRender(); e.preventDefault(); }
+  else if(e.key==="Enter"){ const it=RS.items[RS.on]; if(it) rsPick(RS.on, it.kind==="body"?"fly":"add"); e.preventDefault(); }
+  else if(e.key==="Escape"){ $("rsearch").value=""; rsRender(); $("rsearch").blur(); } };
+$("rs-list").onmousedown=e=>{ e.preventDefault(); const li=e.target.closest("li[data-i]"); if(!li) return;
+  const b=e.target.closest("[data-act]"); rsPick(+li.dataset.i, b?b.dataset.act:(RS.items[+li.dataset.i]?.kind==="body"?"fly":"view")); };
+document.addEventListener("pointerdown",e=>{ if(!$("rsearch-wrap").contains(e.target)){ $("rs-list").hidden=true; $("rsearch").setAttribute("aria-expanded","false"); } });
+
+// ---- contracts
+function renderContracts(force){
+  const typing=$("contracts").contains(document.activeElement)&&document.activeElement.tagName==="INPUT";
+  if(typing&&!force) return;
+  const live=S.live, cs=live.contracts, active=cs.filter(c=>c.status==="active"), done=cs.filter(c=>c.status!=="active");
+  const cnt=$("c-contracts"); cnt.textContent=active.length; cnt.classList.toggle("hot",active.length>0);
+  $("plan-all-bar").style.display=active.length?"flex":"none";
+  const lg=live.log, ok=lg.status==="watching";
+  $("logbar").innerHTML = ok
+    ? `<div class="row"><span class="dot on"></span><b>Reading Game.log</b><span class="spacer"></span><button class="btn small ghost" id="lb-change">Change</button></div><div class="path">${esc(lg.path)}</div>`
+    : `<div class="row"><span class="dot warn"></span><b>${lg.path?"Can't read Game.log":"Game.log not found"}</b></div>
+       <div class="muted" style="margin:4px 0 8px">It's in your Star Citizen install folder, usually <span style="color:var(--ink-2)">…\\StarCitizen\\LIVE\\Game.log</span></div>
+       <div class="row"><input class="field" id="lb-path" placeholder="Paste the full path" style="flex:1"><button class="btn small" id="lb-set">Use</button><button class="btn small" id="lb-browse">Browse</button></div>`;
+  const on=(id,f)=>{ const x=$(id); if(x) x.onclick=f; };
+  on("lb-change",async()=>{ const r=await api().browse_log(); if(r.ok) toast("Now reading the selected Game.log"); });
+  on("lb-set",async()=>{ const r=await api().set_log_path($("lb-path").value); toast(r.ok?"Now reading Game.log":r.error); });
+  on("lb-browse",async()=>{ const r=await api().browse_log(); if(r.ok) toast("Now reading Game.log"); });
+  const route=live.route||[];
+  const hhmm=x=>{ if(!x) return ""; const d=new Date(x*1000), today=new Date().toDateString()===d.toDateString();
+    return (today?"":d.toLocaleDateString([], {day:"numeric",month:"short"})+" ")+d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); };
+  const tracker=c=>{ const tr=c.tracking; if(!tr) return "";
+    const st=tr.stage, cancel=tr.cancelled, multi=tr.dropoffs>1;
+    // With several drop-offs the last segment fills one delivery at a time.
+    const part=st===2&&multi?tr.delivered/tr.dropoffs:0, pct=Math.min(100,(st+part)/3*100);
+    const pickupAt=(c.objectives.find(o=>o.kind==="pickup")||{}).location;
+    const heads=["Waiting for pickup","Collected","Out for delivery","Delivered"];
+    const head=cancel?(tr.status==="failed"?"Failed":"Abandoned"):heads[st];
+    let eta="";
+    if(cancel) eta=hhmm(c.updated_at);
+    else if(st===0) eta=pickupAt?`Collect at ${esc(pickupAt)}`:(tr.pickups?"Pickup location not in the log yet":"");
+    else if(st===3) eta=`Delivered ${hhmm(tr.times[3])}`;
+    else if(multi&&st>=1){ const next=tr.drops.find(d=>d.status==="active");
+      eta=`${tr.delivered} of ${tr.dropoffs} delivered${next?` · next: ${esc(next.where||"a drop-off")}${tr.to_go!=null&&!tr.other_system?` (<b>${fmtDist(tr.to_go)}</b>)`:""}`:""}`; }
+    else if(tr.to_go!=null&&!tr.other_system) eta=`<b>${fmtDist(tr.to_go)}</b> to ${esc(tr.dest||"the drop-off")}`;
+    else if(tr.dest) eta=`Deliver to ${esc(tr.dest)}`;
+    const names=["Accepted",tr.pickups>1&&st===0&&tr.picked?`Collected ${tr.picked}/${tr.pickups}`:"Collected","Out for delivery",
+      multi&&st<3?`Delivered ${tr.delivered}/${tr.dropoffs}`:"Delivered"];
+    const nodes=[0,1,2,3].map(i=>`<span class="node ${i<st||(i===st&&st===3)?"done":i===st?"cur":""}" style="left:${i/3*100}%"></span>`).join("");
+    const labels=names.map((n,i)=>`<div class="${i<=st||(i===3&&tr.delivered)?"on":""}"><b>${n}</b>${i<=st?hhmm(tr.times[i]):i===3&&tr.last_drop?hhmm(tr.last_drop):""}</div>`).join("");
+    const dropRows=multi?`<div class="drops">${tr.drops.map(d=>`<div class="${d.status}"><span class="ck">${d.status==="done"?"✓":""}</span>${esc(d.where||"Drop-off")}${d.scu?` <span class="muted">${d.scu[0]}/${d.scu[1]} SCU</span>`:""}${d.at?` <span class="muted">· ${hhmm(d.at)}</span>`:""}</div>`).join("")}</div>`:"";
+    return `<div class="track ${cancel?"cancel":""}"><div class="head"><span class="st">${head}</span><span class="eta">${eta}</span></div>
+      <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${dropRows}</div>`; };
+  const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you"};
+  const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
+    const active=c.status==="active";
+    const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?`Marker on ${o.marker.body}`:`Marker near ${o.marker.lpoint||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
+      const inR=o.in_route;
+      const unknown = live_ && !where ? `<div class="unknown">The log only says it's inside a station or building.
+          <div class="row"><input class="field" list="places-dl" placeholder="Type the place from your mobiGlas" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
+          <button class="btn small" data-act="setplace" data-oid="${esc(o.id)}">Set</button><button class="btn small ghost" data-act="here" data-oid="${esc(o.id)}" title="Use the nearest place to your last /showlocation">I'm here</button></div></div>` : "";
+      return `<div class="obj ${o.status}"><div class="tick"></div><div><div class="txt">${esc(o.label)}</div>
+        ${where&&live_?`<div><span class="where" data-cid="${c.id}" data-oid="${esc(o.id)}">◆ ${esc(where)}</span>${inR?'<span class="tag-in">✓ in route</span>':""}</div>${foundNote[o.found]?`<div class="found">Location ${foundNote[o.found]}</div>`:""}`:""}${unknown}</div>
+        ${where&&live_?`<button class="btn small go" data-act="guide" data-oid="${esc(o.id)}">Guide</button>`:"<span></span>"}</div>`; }).join("")
+      || `<div class="muted" style="font-size:13px">Objectives appear as the game reports them.</div>`;
+    const placeable=c.objectives.filter(o=>o.status==="active"&&(o.location||o.marker));
+    const pending=placeable.filter(o=>!o.in_route).length;
+    const status={active:"Accepted "+ago, complete:"Completed", failed:"Failed", abandoned:"Abandoned"}[c.status]||c.status;
+    const routeBtn = !active||!placeable.length ? "" : pending
+      ? `<button class="btn small primary" data-act="route">Add ${pending} stop${pending>1?"s":""} to route</button>`
+      : `<span class="inroute" data-act="showroute" title="Open the route"><span class="ck">✓</span>In route</span>`;
+    return `<div class="contract ${active?"":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
+      <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>${tracker(c)}${objs}
+      <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
+  $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Accept one in game. Its objectives show up here and on the map, often pinned to the exact spot.":"Point the app at Game.log to track contracts."}</div>`)
+    +(done.length?`<details class="finished"><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
+  on("btn-clear-finished",async()=>{ await api().clear_finished_contracts(); await poll(); });
+  $("contracts").onclick=async e=>{
+    const w=e.target.closest(".where"); if(w){ const c=cs.find(x=>x.id===w.dataset.cid), o=c.objectives.find(o=>o.id===w.dataset.oid);
+      if(o.location){ select({kind:"loc",name:o.location}); focusLoc(o.location,true); } else if(o.marker){ if(o.marker.system!==S.system) setSystem(o.marker.system,false);
+        if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); } return; }
+    const act=e.target.dataset?.act, cardEl=e.target.closest(".contract"); if(!act||!cardEl) return; const c=cs.find(x=>x.id===cardEl.dataset.id);
+    if(act==="dismiss"){ await api().dismiss_contract(c.id); await poll(); }
+    if(act==="route"){ const r=await api().add_contract_stops(c.id,null); await poll(); renderContracts(true); toast(r.ok?`Added ${r.names.length} stop${r.names.length>1?"s":""} to route`:r.error); }
+    if(act==="showroute"){ fitRoute(); }
+    if(act==="setplace"){ const inp=cardEl.querySelector(`input[data-pick="${CSS.escape(e.target.dataset.oid)}"]`); const v=(inp?.value||"").trim();
+      if(!S.locMap[v]) return toast("Pick a place from the suggestions"); const r=await api().set_objective_place(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Set to ${v}`:r.error); }
+    if(act==="here"){ const r=await api().objective_place_here(c.id,e.target.dataset.oid); await poll(); renderContracts(true); toast(r.ok?`Set to ${r.name}`:r.error); }
+    if(act==="guide"){ const r=await api().guide_objective(c.id,e.target.dataset.oid); if(!r.ok) return toast(r.error); await poll(); focusLoc(r.name,true); toast(`Guiding you to ${r.name}`); } };
+}
+
+// ---- waypoints
+function renderCapture(){ const p=S.live?.player, el=$("cap-pos");
+  if(!p){ el.innerHTML="Type <b>/showlocation</b> in game chat, then save."; return; }
+  const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`;
+  el.innerHTML = p.body ? `On <b>${esc(p.body)}</b> at ${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°, altitude ${fmtDist(p.alt)} <span class="muted">(${age})</span>`
+                        : `In space in <b>${esc(p.system)}</b> <span class="muted">(${age})</span>`; }
+function renderWaypoints(force){
+  const t=now(); const wps=S.locs.filter(L=>L.source==="user").sort((a,b)=>(b.pinned-a.pinned)||(b.created-a.created));
+  $("c-wp").textContent=wps.length;
+  const key=JSON.stringify([wps.map(w=>[w.name,w.pinned,w.body]),S.live?.guide?.name,S.editing,Math.round((S.live?.player?.t||0))]);
+  if(!force && key===S.wpKey) return; S.wpKey=key;
+  const guide=S.live?.guide?.name;
+  $("wp-list").innerHTML = wps.length ? wps.map(L=>{ const from=distFromYou(globalPos(L,t),L.system);
+    const where=L.body?`${L.body}${L.system!==S.system?" · "+L.system:""}`:`Space, ${L.system}`;
+    const nameHtml = S.editing===L.name ? `<input class="field rename" value="${esc(L.name)}" data-old="${esc(L.name)}">` : `<div class="n" title="${esc(L.name)}">${esc(L.name)}</div>`;
+    return `<div class="wp" data-name="${esc(L.name)}"><button class="star ${L.pinned?"on":""}" title="${L.pinned?"Unpin from map":"Pin on map"}" aria-label="Pin">${L.pinned?"★":"☆"}</button>
+      <div style="min-width:0">${nameHtml}<div class="m">${esc(where)}${from!=null?` · ${fmtDist(from)} away`:""}${L.notes?` · ${esc(L.notes)}`:""}</div></div>
+      <div class="acts">${guide===L.name?`<button class="btn small" data-a="unguide">Stop</button>`:`<button class="btn small go" data-a="guide">Guide</button>`}
+        <button class="iconbtn" data-a="route" title="Add to route">+</button><button class="iconbtn" data-a="rename" title="Rename" style="color:var(--ink-2)">✎</button></div></div>`; }).join("")
+    : `<div class="empty"><strong>No waypoints yet</strong>Found something worth coming back to? Type /showlocation in game chat and save it here. The app can then guide you back to it.</div>`;
+  const inp=$("wp-list").querySelector("input.rename"); if(inp){ inp.focus(); inp.select();
+    const done=async commit=>{ const old=inp.dataset.old; S.editing=null; if(commit&&inp.value.trim()&&inp.value.trim()!==old){ const r=await api().rename_location(old,inp.value); if(!r.ok) toast(r.error); await poll(); } renderWaypoints(true); };
+    inp.onkeydown=e=>{ if(e.key==="Enter") done(true); if(e.key==="Escape") done(false); }; inp.onblur=()=>done(true); }
+}
+$("wp-list").onclick=async e=>{ const row=e.target.closest(".wp"); if(!row) return; const n=row.dataset.name, L=S.locMap[n];
+  if(e.target.classList.contains("star")){ await api().set_pinned(n,!L.pinned); await poll(); return; }
+  if(e.target.classList.contains("n")){ select({kind:"loc",name:n}); focusLoc(n,true); return; }
+  const a=e.target.dataset?.a; if(!a) return;
+  if(a==="guide"){ await api().set_guide(n); await poll(); select({kind:"loc",name:n}); toast(`Guiding you to ${n}`); }
+  if(a==="unguide"){ await api().set_guide(null); await poll(); }
+  if(a==="route") addStops([n]);
+  if(a==="rename"){ S.editing=n; renderWaypoints(true); } };
+$("btn-wp-save").onclick=async()=>{ const r=await api().save_waypoint($("wp-name").value,$("wp-notes").value,true);
+  if(!r.ok) return toast(r.error); toast(`Saved ${r.name}${r.body?" on "+r.body:""}`); $("wp-name").value=""; $("wp-notes").value=""; await poll(); renderWaypoints(true); };
+$("wp-name").onkeydown=e=>{ if(e.key==="Enter") $("btn-wp-save").click(); };
+
+// ---- places
+function buildFilters(){ const types=["city","station","outpost","cave","wreck","jump","field","comm","poi","om"];
+  $("filters").innerHTML=`<button class="fchip" data-t="" aria-pressed="true">All</button>`+types.map(t=>`<button class="fchip" data-t="${t}" aria-pressed="false"><span class="ty ${t}"></span>${TYPES[t].label}</button>`).join("");
+  $("filters").onclick=e=>{ const b=e.target.closest(".fchip"); if(!b) return; S.typeFilter=b.dataset.t||null; for(const x of $("filters").children) x.setAttribute("aria-pressed",String(x===b)); renderResults(); }; }
+function renderResults(){
+  const q=S.search.trim().toLowerCase(), route=S.live?.route||[];
+  let list=S.locs.filter(L=>L.source==="db" && (!S.typeFilter||L.type===S.typeFilter) && (q ? (L.name.toLowerCase().includes(q)||(L.body||"").toLowerCase().includes(q)) : L.system===S.system));
+  if(!q&&!S.typeFilter) list=list.filter(L=>L.type!=="om");
+  list.sort((a,b)=>((a.system!==S.system)-(b.system!==S.system)) || ((a.name.toLowerCase().startsWith(q)?0:1)-(b.name.toLowerCase().startsWith(q)?0:1)) || a.name.localeCompare(b.name));
+  const shown=list.slice(0,250);
+  $("results").innerHTML = shown.length ? shown.map(L=>`<li class="res${S.selected?.name===L.name?" sel":""}" data-name="${esc(L.name)}"><span class="ty ${L.type}"></span>
+      <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padOf(L)):""}</div></div>
+      <button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button></li>`).join("")
+      +(list.length>shown.length?`<li class="muted" style="padding:8px">${list.length-shown.length} more. Narrow your search.</li>`:"")
+    : `<div class="empty"><strong>Nothing matches “${esc(S.search)}”</strong>Try part of the name, like “tressler” or “sm0”.</div>`; }
+$("results").onclick=e=>{ const li=e.target.closest(".res"); if(!li) return; const n=li.dataset.name;
+  if(e.target.closest(".iconbtn")){ if(!(S.live?.route||[]).includes(n)) addStops([n]); return; } select({kind:"loc",name:n}); focusLoc(n,true); };
+function highlightResult(){ for(const li of $("results").children) li.classList?.toggle("sel",li.dataset?.name===S.selected?.name); }
+$("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
+
+// ---- status & toast
+function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
+  const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
+  if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  else if(tv.state==="arrived" && (!p || p.approx || (p.t||0) < tv.at)){ pd.className="dot on";
+    pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown jump point <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
+  else if(tv.state==="flying" && (!p || (p.t||0) < tv.at)){ pd.className="dot on"; pt.innerHTML=`<b>In flight</b>${tv.left?`, left ${esc(tv.left)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  else if(p&&p.approx){ pd.className="dot on"; pt.innerHTML=`At <b>${esc(p.approx)}</b> <span class="muted">(from the game log, ${ago(S.live.now-p.age)})</span>`; }
+  else
+  if(!p){ pd.className="dot"; pt.innerHTML="Type <b>/showlocation</b> in game chat to share your position"; }
+  else { const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`; pd.className="dot"+(p.age<120?" on":"");
+    pt.innerHTML=p.body?`<b>${esc(p.body)}</b> ${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°, alt ${fmtDist(p.alt)} <span class="muted">(${age})</span>`:`<b>In space</b>, ${esc(p.system)} <span class="muted">(${age})</span>`; }
+  const lg=S.live.log; $("log-dot").className="dot"+(lg.status==="watching"?" on":lg.status==="idle"?"":" warn");
+  const ap=S.live.at_place; const apTxt=ap?.name?` · at <b>${esc(ap.name)}</b>`:S.live.where?.body?` · near <b>${esc(S.live.where.body)}</b>`:"";
+  $("log-text").innerHTML=lg.status==="watching"?`Tracking contracts${apTxt}`:"Contract tracking off: Game.log not found";
+  const al=S.live.autoloc||{}; const parts=[]; if(al.hotkey) parts.push(al.action==="showlocation"?`<b>${esc(al.hotkey)}</b> sends /showlocation`:`<b>${esc(al.hotkey)}</b> shows / hides Quantum`); if(al.interval) parts.push(`auto every ${al.interval>=60?al.interval/60+" min":al.interval+" s"}`);
+  $("key-dot").className="dot"+(al.available&&parts.length?" on":""); $("key-text").innerHTML=al.available===false?"Hotkey: Windows only":parts.length?parts.join(" · "):"Hotkey off";
+  const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
+  $("align-dot").className="dot"+(done?" on":""); $("align-text").innerHTML=`Planet alignment: <b>${done}</b> of ${inSys.length} in ${esc(S.system)}`;
+  const cal=S.live.calibration; if(cal&&cal.at!==S.calSeen){ if(S.calSeen!==undefined&&Math.abs(cal.correction)>0.05) toast(`Lined up ${cal.body} using your reading at ${cal.place} (${cal.correction>0?"+":""}${cal.correction.toFixed(1)}°)`); S.calSeen=cal.at; } }
+let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
+
+// =================================================================== data sync
+async function loadStatic(){
+  const st=await api().get_static(); S.staticVersion=st.version; S.systems=st.systems||S.systems; S.wiki=st.wiki;
+  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l]));
+  $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
+  buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
+async function poll(){
+  const live=await api().get_live(); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
+  if(live.static_version!==S.staticVersion) await loadStatic();
+  const here=live.player?.system||live.where?.system;
+  if(here && here!==prevSys){ renderSysSeg(); if(S.autoSystem && here!==S.system) setSystem(here); }
+  const rk=JSON.stringify([live.route,live.legs.map(x=>x&&Math.round(x/1000)),live.stop_roles,live.route_warning]); if(rk!==S.routeKey){ S.routeKey=rk; renderRoute(); renderResults(); }
+  const ck=JSON.stringify([live.contracts_version,live.route,live.contracts.map(c=>c.tracking&&[c.tracking.stage,Math.round((c.tracking.to_go||0)/100)])]);
+  if(ck!==S.contractsKey||Math.round(live.now)%30===0){ S.contractsKey=ck; renderContracts(); }
+  const ar=live.arrived; if(ar&&ar.at!==S.arrSeen){ if(S.arrSeen!==undefined) toast(ar.advanced?`Arrived at ${ar.place}${live.route.length?". Next: "+live.route[0]:". Route complete"}`:`Arrived at ${ar.place}`); S.arrSeen=ar.at; }
+  renderHud(); renderStatus(); renderCapture(); renderWaypoints(false);
+}
+async function init(){
+  resize(); buildLayers(); buildFilters(); await loadStatic();
+  const live=await api().get_live(); S.live=live; const here=live.player?.system||live.where?.system; if(here&&S.systems.includes(here)) S.system=here;
+  buildSystem(); renderSysSeg(); S.cam.target=systemCenter(); S.cam.dist=systemExtent()*2.4; S.cam.pitch=1.0; S.focus={kind:"system"};
+  await poll(); renderContracts(); requestAnimationFrame(frame);
+  setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
+  setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
+  if(S.selected?.kind==="settings"){ if(!(a&&$("detail").contains(a)&&a.tagName==="SELECT")) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
+}
+window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); try{ await init(); } finally {
+  setTimeout(()=>$("splash").classList.add("hide"), Math.max(0,1400-(performance.now()-t0))); } });
+</script>
+</body>
+</html>
