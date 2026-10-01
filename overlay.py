@@ -113,6 +113,15 @@ if AVAILABLE:
             return "shown"
         return ("shown on top, but Windows kept the game focused: click Quantum to use it. If it doesn't "
                 "appear at all, set the game to Borderless, or restart Quantum as administrator")
+    def focus_game(title=WINDOW_TITLE):
+        """Un-pin Quantum and give Star Citizen the focus, so keystrokes reach the game.
+        Returns True if the game ended up focused."""
+        me = user32.FindWindowW(None, title)
+        if me and _is_overlay_up(me):
+            user32.SetWindowPos(me, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
+        game = _find_game()
+        return bool(game) and _force_foreground(game)
+
     def set_app_id(app_id="microTech.Quantum"):
         """Group Quantum under its own taskbar icon (not Python's). Call before the window opens."""
         try:
@@ -144,6 +153,9 @@ if AVAILABLE:
             user32.SendMessageW(hwnd, WM_SETICON, 0, small)
         return bool(big or small)
 else:
+    def focus_game(title=WINDOW_TITLE):
+        return False
+
     def set_app_id(app_id="microTech.Quantum"):
         pass
 

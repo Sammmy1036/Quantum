@@ -16,6 +16,10 @@ class ClipboardWatcher(threading.Thread):
         self._stop = threading.Event()
 
     def run(self):
+        try:        # whatever's on the clipboard already is old (maybe last session's /showlocation)
+            self._last = pyperclip.paste()
+        except Exception:
+            pass
         while not self._stop.is_set():
             try:
                 text = pyperclip.paste()

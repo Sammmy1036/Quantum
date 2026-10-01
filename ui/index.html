@@ -90,6 +90,9 @@ button{cursor:pointer}
 .obj.done .txt,.obj.withdrawn .txt,.obj.failed .txt{color:var(--dim);text-decoration:line-through}
 .obj .where{color:#ffb3d6;font-size:12.5px;cursor:pointer}
 .obj .where:hover{text-decoration:underline}
+.trackno{font:500 12px ui-monospace,Consolas,monospace;color:var(--ink-2);margin:2px 0 6px;cursor:copy;letter-spacing:.04em}.trackno b{color:var(--ink);font-weight:600}
+.obj-acts{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.turnin{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:8px 0 4px;font-size:13px}.turnin .k{color:var(--ink-2)}.turnin .unknown{grid-column:1/-1}.turnin a{color:var(--route-2);cursor:pointer;text-decoration:underline}
 /* delivery tracker */
 .track{margin:6px 0 10px;padding:10px 12px 8px;background:rgba(5,8,15,.35);border-radius:8px}
 .track .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
@@ -351,7 +354,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 
     <div class="status">
       <div class="row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
-      <div class="row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
+      <div class="row" id="log-row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
       <div class="row"><span class="dot" id="key-dot"></span><span id="key-text">Auto /showlocation</span><span class="spacer"></span><button class="btn small ghost" id="btn-settings">Settings</button></div>
 
     </div>
@@ -418,7 +421,7 @@ function fmtDist(m){
 function bodyAngle(b,t){ let d=b.offset; if(b.period>0) d+=360*((t-b.epoch)/3600)/b.period; return ((d%360)+360)%360*Math.PI/180; }
 function toGlobal(b,p,t){ const a=bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a); return [b.center[0]+p[0]*c-p[1]*s, b.center[1]+p[0]*s+p[1]*c, b.center[2]+p[2]]; }
 function toLocal(b,g,t){ const a=-bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a),x=g[0]-b.center[0],y=g[1]-b.center[1]; return [x*c-y*s,x*s+y*c,g[2]-b.center[2]]; }
-function globalPos(L,t){ if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(b) return toGlobal(b,L.pos,t); } return L.pos; }
+function globalPos(L,t){ if(!L.pos) return null; if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(b) return toGlobal(b,L.pos,t); } return L.pos; }
 function latLon(p){ const r=Math.hypot(p[0],p[1],p[2])||1e-9; return {lat:Math.asin(Math.max(-1,Math.min(1,p[2]/r)))*180/Math.PI, lon:-Math.atan2(p[0],p[1])*180/Math.PI}; }
 const d3 = (a,b) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 function slerpLocal(a,b,f,R){ // great-circle point between two body-local vectors, at radius R
@@ -523,7 +526,7 @@ function focusPos(f,t){
 }
 function systemCenter(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind==="planet"); if(!bs.length) return [0,0,0];
   return [0,1,2].map(i=>bs.reduce((s,b)=>s+b.center[i],0)/bs.length); }
-function systemExtent(){ const c=systemCenter(); let m=1e9; for(const b of S.bodies) if(b.system===S.system&&b.kind!=="star") m=Math.max(m,d3(b.center,c)); for(const L of S.locs) if(L.system===S.system&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump")) m=Math.max(m,d3(L.pos,c)); return m; }
+function systemExtent(){ const c=systemCenter(); let m=1e9; for(const b of S.bodies) if(b.system===S.system&&b.kind!=="star") m=Math.max(m,d3(b.center,c)); for(const L of S.locs) if(L.system===S.system&&L.pos&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump")) m=Math.max(m,d3(L.pos,c)); return m; }
 const norm3=v=>{ const l=Math.hypot(v[0],v[1],v[2])||1; return [v[0]/l,v[1]/l,v[2]/l]; };
 const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
 // Camera direction and up vector for the current focus. Near a surface the view uses the local
@@ -539,19 +542,34 @@ function viewFrame(t,goal){
 }
 function setLock(name){ const t=now(); const old=S.cam.lock&&S.bodyMap[S.cam.lock];
   if(old) S.cam.yaw+=bodyAngle(old,t); const nb=name&&S.bodyMap[name]; if(nb) S.cam.yaw-=bodyAngle(nb,t); S.cam.lock=nb?name:null; }
-function flyTo(focus,dist,{pitch=null,yaw=null,dur=1100}={}){
+// Zoom-and-pan along the path from van Wijk & Nuij ("Smooth and efficient zooming and panning"):
+// it zooms out just enough to keep both ends in view and moves at an even perceived speed, so a long
+// fly-in reads as one gliding motion instead of a zoom, a pause and a slide.
+function zoomPath(d, w0, w1){ const rho=Math.SQRT2;
+  if(d<1e-9*Math.max(w0,w1)){ const S=Math.log(w1/w0)/rho; return {S, at:s=>[s/(S||1), w0*Math.exp(rho*s)], flat:true}; }
+  const b0=(w1*w1-w0*w0+4*d*d)/(2*w0*2*d), b1=(w1*w1-w0*w0-4*d*d)/(2*w1*2*d);
+  const r0=-Math.asinh(b0), r1=-Math.asinh(b1), S=(r1-r0)/rho, c0=Math.cosh(r0);
+  return {S, at:s=>[w0/(2*d)*(c0*Math.tanh(rho*s+r0)-Math.sinh(r0)), w0*c0/Math.cosh(rho*s+r0)]}; }
+function flyTo(focus,dist,{pitch=null,yaw=null,dur=null}={}){
+  // Already gliding to the same thing (the follow camera asks again on every update)? Keep going.
+  const key=JSON.stringify(focus);
+  if(S.anim&&S.anim.key===key&&Math.abs(Math.log(dist/S.anim.toDist))<0.2) return;
   const fromDir=norm3([camera.position.x,camera.position.y,camera.position.z]), fromUp=[camera.up.x,camera.up.y,camera.up.z];
   setLock(lockBodyOf(focus)); if(yaw!=null) S.cam.yaw=yaw;
-  S.anim={from:[...S.cam.target], fromDist:S.cam.dist, toDist:dist, fromPitch:S.cam.pitch, toPitch:pitch??S.cam.pitch, fromDir, fromUp,
-          t0:performance.now(), dur:matchMedia("(prefers-reduced-motion: reduce)").matches?1:dur};
+  const from=[...S.cam.target], goal=focusPos(focus,now()), k=2*Math.tan(camera.fov*Math.PI/360);
+  const path=zoomPath(d3(from,goal), S.cam.dist*k, dist*k);
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  S.anim={key, from, fromDist:S.cam.dist, toDist:dist, k, path, fromPitch:S.cam.pitch, toPitch:pitch??S.cam.pitch, fromDir, fromUp,
+          t0:performance.now(), dur:reduce?1:(dur??Math.max(900,Math.min(2600,Math.abs(path.S)*620)))};
   S.focus=focus;
 }
 function updateCamera(t){
   const c=S.cam, goal=focusPos(S.focus,t); let e=1;
-  if(S.anim){ const a=S.anim, u=Math.min(1,(performance.now()-a.t0)/a.dur); e=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
-    const D=Math.exp(Math.log(a.fromDist)+(Math.log(a.toDist)-Math.log(a.fromDist))*e);
-    const i0=1/a.fromDist, i1=1/a.toDist, p=Math.abs(i1-i0)/Math.max(i0,i1)<1e-3?e:(1/D-i0)/(i1-i0);
-    c.target=[0,1,2].map(i=>a.from[i]+(goal[i]-a.from[i])*p); c.dist=D; c.pitch=a.fromPitch+(a.toPitch-a.fromPitch)*e;
+  if(S.anim){ const a=S.anim, u=Math.min(1,(performance.now()-a.t0)/a.dur);
+    e=(1-Math.cos(Math.PI*u))/2;                       // gentle start and finish, no plateaus
+    let [p,w]=a.path.at(a.path.S*e); if(a.path.flat) p=e;
+    if(u>=1){ p=1; w=a.toDist*a.k; }
+    c.target=[0,1,2].map(i=>a.from[i]+(goal[i]-a.from[i])*Math.max(0,Math.min(1,p))); c.dist=w/a.k; c.pitch=a.fromPitch+(a.toPitch-a.fromPitch)*e;
   } else c.target=goal;
   O=c.target;
   let {dir,up}=viewFrame(t,c.target);
@@ -565,7 +583,7 @@ function updateCamera(t){
 function fitSystem(){ flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
 function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(S.follow) setFollow(false); if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
 const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
-function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false);
+function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false); if(!L.pos) return;
   if(L.kind==="surface"){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
   else flyTo({kind:"loc",name}, close?60000:4e6); }
 // Follow: when your position changes (a /showlocation, a landing, a jump, a stop ticked off), the view
@@ -640,7 +658,7 @@ function legSamples(a,b,t){ // a,b: {g, body, local}
     const n=Math.min(120,Math.max(12,Math.round(chord/B.radius*80))); const pts=[];
     for(let i=0;i<=n;i++){ const f=i/n; const R=ra+(rb-ra)*f+hump*Math.sin(Math.PI*f); pts.push({g:toGlobal(B,slerpLocal(a.local,b.local,f,R),t),body:a.body}); } return pts; }
   const pts=[]; for(let i=0;i<=24;i++){ const f=i/24; pts.push({g:[0,1,2].map(k=>a.g[k]+(b.g[k]-a.g[k])*f), body:null}); } return pts; }
-function nodeOf(name,t){ const L=S.locMap[name]; if(!L||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
+function nodeOf(name,t){ const L=S.locMap[name]; if(!L||!L.pos||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
 // On a planet you turn with it, so place the last reading by its ground position, not its old space position.
 function playerG(t){ const p=S.live?.player; if(!p) return null; return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
 function playerNode(){ const p=S.live?.player; if(!p||p.system!==S.system) return null; return {g:playerG(now()), body:p.body, local:p.local}; }
@@ -708,7 +726,7 @@ function drawOverlay(t){
   // ---- locations
   const drawn=[];
   const selName=S.selected?.kind==="loc"?S.selected.name:null;
-  for(const L of S.locs){ if(L.system!==S.system) continue;
+  for(const L of S.locs){ if(L.system!==S.system||!L.pos) continue;
     const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name;
     const isWp = L.source==="user" || L.source==="mission";
     if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue; }
@@ -816,9 +834,12 @@ window.addEventListener("pointermove",e=>{
 ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim(); if(S.follow) setFollow(false);
   let min=20; if(S.focus.kind==="body"){ min=S.bodyMap[S.focus.name].radius*1.05; }
   S.cam.dist=Math.min(4e12,Math.max(min,S.cam.dist*k)); },{passive:false});
-function jumpTarget(L){ const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)$/i); return m?m[1]:null; }
+function jumpTarget(L){ if(L?.to) return L.to; const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)(?:\s*\([^)]*\))?$/i); return m?m[1]:null; }
 function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) return;
-  if(S.systems.includes(to)){ S.autoSystem=false; setSystem(to); select(null); toast(`Jumped to ${to}`); }
+  if(S.systems.includes(to)){ S.autoSystem=false; setSystem(to);
+    const back=S.locs.find(o=>o.system===to&&o.type==="jump"&&jumpTarget(o)===L.system);
+    if(back){ select({kind:"loc",name:back.name}); if(back.pos) focusLoc(back.name,false); } else select(null);
+    toast(`Jumped to ${to}`); }
   else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
 ov.addEventListener("click",e=>{ if(moved) return; const r=ov.getBoundingClientRect(); const hit=pick(e.clientX-r.left,e.clientY-r.top);
   if(e.detail===3 && hit?.kind==="loc" && jumpTarget(S.locMap[hit.name])) return jumpThrough(hit.name);
@@ -889,13 +910,13 @@ function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.include
 function servicesHtml(r){
   if(!r) return "";
   const tiles=[...r.amenities].sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
-    const m=a.match(/^(Landing Pad|Hangar) *[(](XL|S|M|L)[)]/i); const label=m?m[1]:a;
+    const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)[)]?$/i); const label=m?m[1]:a;
     return `<div class="svc-tile" title="${esc(a)}">${m?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("");
   const desc=r.description?(r.description.length>260?r.description.slice(0,257)+"…":r.description):"";
   return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
     ${tiles?`<div class="svc-grid">${tiles}</div>`:`<div class="none">No services listed for this location.</div>`}
     ${desc?`<div class="desc">${esc(desc)}</div>`:""}
-    <div class="credit">Services: ${wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div></div>`; }
+    <div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div></div>`; }
 S.svcCache={};
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
@@ -909,7 +930,7 @@ function systemBlurb(sw){ if(!sw) return "";
   return `${sw.affiliation?`<span class="k">Affiliation</span><span>${esc(sw.affiliation)}</span>`:""}
     ${sw.star_type?`<span class="k">Star</span><span>${esc(sw.star||"")} · ${esc(sw.star_type)}</span>`:""}
     <span class="k">Bodies</span><span>${sw.planets.length} planet${sw.planets.length===1?"":"s"}${sw.moons?`, ${sw.moons} moon${sw.moons===1?"":"s"}`:""}${sw.belts.length?`, ${sw.belts.length} belt${sw.belts.length===1?"":"s"}`:""}</span>`; }
-function distFromYou(g,sys){ const p=S.live?.player; return p&&p.system===sys?d3(g,playerG(now())):null; }
+function distFromYou(g,sys){ const p=S.live?.player; return g&&p&&p.system===sys?d3(g,playerG(now())):null; }
 function renderDetail(){
   const d=$("detail"), sel=S.selected; if(!sel){ d.classList.remove("show"); return; }
   const live=S.live, t=now();
@@ -986,24 +1007,30 @@ function renderDetail(){
     let ll=""; if(L.kind==="surface"){ const q=latLon(L.pos); ll=`${q.lat.toFixed(3)}°, ${q.lon.toFixed(3)}°`; }
     const user=L.source==="user"||L.source==="mission";
     const canCal = L.kind==="surface" && L.source==="db" && live?.player?.body===L.body && live.player.age<600;
+    const pl=live?.player, readingHere = pl && !pl.approx && pl.age<900 && pl.system===L.system && (L.type!=="jump" || !pl.body);
+    const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
+      Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
       <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}</div>
-      <div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
+      ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
         return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
           <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
       <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
         ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
-        <span class="k">Landing pad</span><select class="field" id="d-pad">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"&&L.pad_auto?`unknown (game data: ${L.pad_auto})`:p}</option>`).join("")}</select>
-        <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea></div>
-      <div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
+        ${L.unplaced?"":`<span class="k">Landing pad</span><select class="field" id="d-pad">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"&&L.pad_auto?`unknown (game data: ${L.pad_auto})`:p}</option>`).join("")}</select>
+        <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`}</div>
+      ${L.unplaced?`<div class="acts"><button class="btn primary" data-a="placehere" ${readingHere?"":`disabled title="Needs a /showlocation taken at this station in the last 15 minutes"`}>I'm here: set position</button></div>`:
+      `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
         ${inRoute?`<button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
-        ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`;
+        ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
+        ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}`;
     if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
-    $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value; toast(`Saved pad size for ${L.name}`); };
-    $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; };
+    if(!L.unplaced){
+      $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value; toast(`Saved pad size for ${L.name}`); };
+      $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
   }
   d.classList.add("show");
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
@@ -1024,6 +1051,8 @@ function renderDetail(){
     if(a==="focus") focusLoc(sel.name,true);
     if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
+    if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
+      select({kind:"loc",name:sel.name}); focusLoc(sel.name,true); toast(`${sel.name} is on the map now`); return; }
     if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
     if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
     if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); toast(`Guiding you to ${r.name}`); }
@@ -1126,6 +1155,11 @@ async function planRoute(withContracts){
 }
 // Frame the whole route. The camera pivots on a planet (yours, or the next stop's), so dragging
 // afterwards spins that globe instead of swinging around an empty point in space.
+// How much of the view a framed route may use, as tan(half-angle): the narrower of height and the free
+// width beside the cards on the left (the view's centre is shifted right by half their width).
+function fitHalf(){ const half=Math.tan(camera.fov*Math.PI/360);
+  const shift=$("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0;
+  return Math.min(half, half*(W/H)*Math.max(0.25,(W/2-shift)/(W/2)))*0.88; }
 function fitRoute(reveal=true, only=null){
   const route=only||S.live?.route||[]; if(!route.length){ if(!only) toast("The route is empty"); return; }
   const ps=S.live.player?.system; const sys=ps&&route.some(n=>S.locMap[n]?.system===ps)?ps:S.locMap[route[0]]?.system;
@@ -1141,12 +1175,14 @@ function fitRoute(reveal=true, only=null){
       const c=norm3(nodes.reduce((a,n)=>{ const u=norm3(n.local); return [a[0]+u[0],a[1]+u[1],a[2]+u[2]]; },[0,0,0]));
       const spread=Math.max(...nodes.map(n=>{ const u=norm3(n.local); return Math.acos(Math.max(-1,Math.min(1,u[0]*c[0]+u[1]*c[1]+u[2]*c[2]))); }));
       dist=B.radius*(1.45+2.0*Math.min(spread,1.3)); pitch=Math.asin(c[2]); yaw=Math.atan2(c[1],c[0]);
-    } else { // several bodies: stay centred on this planet but back off until every stop fits
-      const far=Math.max(...nodes.map(n=>d3(n.g,B.center)));
-      dist=Math.max(B.radius*3, far/half*1.25); pitch=0.95; yaw=S.cam.yaw; }
-    flyTo({kind:"body",name:B.name}, dist, {pitch, yaw, dur:1600});
-  } else { const cen=[0,1,2].map(i=>nodes.reduce((a,n)=>a+n.g[i],0)/nodes.length); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),1e5);
-    flyTo({kind:"point",pos:cen}, rad/half*1.5, {pitch:0.95, dur:1600}); }
+      flyTo({kind:"body",name:B.name}, dist, {pitch, yaw});
+      if(reveal) S.reveal=performance.now(); return; }
+  }
+  // Stops spread over space or several planets: centre on the middle of them all and back off until
+  // every one fits beside the cards (it used to stay centred on your planet, pushing stops off screen).
+  const lo=[0,1,2].map(i=>Math.min(...nodes.map(n=>n.g[i]))), hi=[0,1,2].map(i=>Math.max(...nodes.map(n=>n.g[i])));
+  const cen=[0,1,2].map(i=>(lo[i]+hi[i])/2); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),B?B.radius*1.5:1e5);
+  const h=fitHalf(); flyTo({kind:"point",pos:cen}, rad*Math.sqrt(1+h*h)/h, {pitch:0.95});
   if(reveal) S.reveal=performance.now();
 }
 $("btn-optimize").onclick=async()=>{ const r=await api().optimize_route(); await poll(); if(!r.ok) return toast(r.error); toast(r.saved>1?`Shorter by ${fmtDist(r.saved)}`:"Already the shortest order"); };
@@ -1178,7 +1214,7 @@ function rsCandidates(q){
   for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; let sc=score(L.name);
     let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q)); if(via) sc=4; }
     if(sc<9) out.push({kind:"loc",name:L.name,via,
-    sub:`${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
+    sub:`${L.unplaced?"Position not known yet · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
   out.sort((a,b)=>a.sc-b.sc||(a.sys!==S.system)-(b.sys!==S.system)||a.r-b.r||a.name.localeCompare(b.name));
   return out.slice(0,q.length>=3&&out.some(o=>o.via)?30:12);
 }
@@ -1189,7 +1225,7 @@ function rsRender(){
   const hl=n=>{ const i=n.toLowerCase().indexOf(q.trim().toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.trim().length))+"</mark>"+esc(n.slice(i+q.trim().length)); };
   list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" class="${i===RS.on?"on":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
       <div style="min-width:0"><div class="n">${hl(it.name)}</div><div class="b">${esc(it.sub)}</div></div>
-      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="fly" title="Already in your route">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
+      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="fly" title="Already in your route">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
     :`<li class="empty">No match for “${esc(q)}”</li>`;
   list.hidden=false; $("rsearch").setAttribute("aria-expanded","true");
 }
@@ -1237,25 +1273,33 @@ function renderContracts(force){
     // With several drop-offs the last segment fills one delivery at a time.
     const part=st===2&&multi?tr.delivered/tr.dropoffs:0, pct=Math.min(100,(st+part)/3*100);
     const pickupAt=(c.objectives.find(o=>o.kind==="pickup")||{}).location;
-    const heads=["Waiting for pickup","Collected","Out for delivery","Delivered"];
+    const coll=tr.collection;   // Wikelo: gather items anywhere, hand them in at an emporium
+    const heads=coll?["Gathering items","Items in hand","On the way","Turned in"]:["Waiting for pickup","Collected","Out for delivery","Delivered"];
     const head=cancel?(tr.status==="failed"?"Failed":"Abandoned"):heads[st];
     let eta="";
     if(cancel) eta=hhmm(c.updated_at);
+    else if(st===0&&coll) eta=c.turn_in?`Hand in at ${esc(c.turn_in.replace("Wikelo Emporium ",""))}`:"";
     else if(st===0) eta=pickupAt?`Collect at ${esc(pickupAt)}`:(tr.pickups?"Pickup location not in the log yet":"");
     else if(st===3) eta=`Delivered ${hhmm(tr.times[3])}`;
     else if(multi&&st>=1){ const next=tr.drops.find(d=>d.status==="active");
       eta=`${tr.delivered} of ${tr.dropoffs} delivered${next?` · next: ${esc(next.where||"a drop-off")}${tr.to_go!=null&&!tr.other_system?` (<b>${fmtDist(tr.to_go)}</b>)`:""}`:""}`; }
     else if(tr.to_go!=null&&!tr.other_system) eta=`<b>${fmtDist(tr.to_go)}</b> to ${esc(tr.dest||"the drop-off")}`;
     else if(tr.dest) eta=`Deliver to ${esc(tr.dest)}`;
-    const names=["Accepted",tr.pickups>1&&st===0&&tr.picked?`Collected ${tr.picked}/${tr.pickups}`:"Collected","Out for delivery",
+    const names=coll?["Accepted",tr.pickups&&st===0&&tr.picked?`Got ${tr.picked}/${tr.pickups}`:"Items in hand","On the way",
+      multi&&st<3?`Handed in ${tr.delivered}/${tr.dropoffs}`:"Turned in"]
+      :["Accepted",tr.pickups>1&&st===0&&tr.picked?`Collected ${tr.picked}/${tr.pickups}`:"Collected","Out for delivery",
       multi&&st<3?`Delivered ${tr.delivered}/${tr.dropoffs}`:"Delivered"];
     const nodes=[0,1,2,3].map(i=>`<span class="node ${i<st||(i===st&&st===3)?"done":i===st?"cur":""}" style="left:${i/3*100}%"></span>`).join("");
     const labels=names.map((n,i)=>`<div class="${i<=st||(i===3&&tr.delivered)?"on":""}"><b>${n}</b>${i<=st?hhmm(tr.times[i]):i===3&&tr.last_drop?hhmm(tr.last_drop):""}</div>`).join("");
     // What you're hauling: SCU per commodity (from the delivery objectives), delivered so far, and the total.
-    const cargoRow=tr.scu_total?`<div class="cargo"><span class="k">Cargo</span>${tr.cargo.map(g=>`<span><b>${g.total} SCU</b> ${esc(g.what)}${st>=1&&g.done?` <span class="muted">(${g.done} delivered)</span>`:""}</span>`).join("")}${tr.cargo.length>1?`<span class="muted">${tr.scu_total} SCU total</span>`:""}</div>`:"";
+    const unit=coll?"×":"SCU";
+    const cargoRow=tr.scu_total&&!coll?`<div class="cargo"><span class="k">Cargo</span>${tr.cargo.map(g=>`<span><b>${g.total} ${unit}</b> ${esc(g.what)}${st>=1&&g.done?` <span class="muted">(${g.done} delivered)</span>`:""}</span>`).join("")}${tr.cargo.length>1?`<span class="muted">${tr.scu_total} SCU total</span>`:""}</div>`:"";
     const dropRows=multi?`<div class="drops">${tr.drops.map(d=>`<div class="${d.status}"><span class="ck">${d.status==="done"?"✓":""}</span>${esc(d.where||"Drop-off")}${d.scu?` <span class="muted">${d.scu[0]}/${d.scu[1]} SCU</span>`:""}${d.at?` <span class="muted">· ${hhmm(d.at)}</span>`:""}</div>`).join("")}</div>`:"";
+    const openPicks=c.status==="active"&&!cancel&&st===0?c.objectives.filter(o=>o.kind==="pickup"&&o.status==="active").length:0;
+    const markBtn=openPicks?`<div class="row" style="margin-top:8px"><span class="muted" style="font-size:12px">Picked up but not showing?</span><span class="spacer"></span>
+      <button class="btn small" data-act="collectall" title="Marks ${openPicks>1?"every open pickup":"the pickup"} as collected, then types /showlocation in game for your position">Mark picked up</button></div>`:"";
     return `<div class="track ${cancel?"cancel":""}"><div class="head"><span class="st">${head}</span><span class="eta">${eta}</span></div>
-      <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${cargoRow}${dropRows}</div>`; };
+      <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${cargoRow}${dropRows}${markBtn}</div>`; };
   const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
     const active=c.status==="active";
@@ -1265,12 +1309,16 @@ function renderContracts(force){
       const cg=c.tracking?.cargo||[], nm=x=>(x||"").toLowerCase().replace("aluminium","aluminum");
       const pick=/^(pick up|collect)\b/i.test(o.label||"") && !/SCU/.test(o.label||"") && cg.length
         ? (cg.length===1 ? cg[0] : cg.find(g=>nm(o.label).includes(nm(g.what)))) : null;
-      const unknown = live_ && !where ? `<div class="unknown">The log only says it's inside a station or building.
+      const need=o.need, getter=need&&c.objectives.find(g=>g.item_for===o.id);
+      const unknown = live_ && need ? (getter ? "" : `<div class="unknown">Where will you get it? It can come from any shop, loot or mining. Add the place and it becomes a stop before the hand-in.
+          <div class="row"><input class="field" list="places-dl" placeholder="A shop, station or city" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
+          <button class="btn small" data-act="setsrc" data-oid="${esc(o.id)}">Set</button></div></div>`)
+        : live_ && !where ? `<div class="unknown">The log only says it's inside a station or building.
           <div class="row"><input class="field" list="places-dl" placeholder="Type the place from your mobiGlas" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
           <button class="btn small" data-act="setplace" data-oid="${esc(o.id)}">Set</button><button class="btn small ghost" data-act="here" data-oid="${esc(o.id)}" title="Use the nearest place to your last /showlocation">I'm here</button></div></div>` : "";
       return `<div class="obj ${o.status}"><div class="tick"></div><div><div class="txt">${esc(o.label)}${pick?` <span class="muted">· ${pick.total} SCU</span>`:""}</div>
-        ${where&&live_?`<div><span class="where" data-cid="${c.id}" data-oid="${esc(o.id)}">◆ ${esc(where)}</span>${inR?'<span class="tag-in">✓ in route</span>':""}</div>${foundNote[o.found]?`<div class="found">Location ${foundNote[o.found]}</div>`:""}`:""}${unknown}</div>
-        ${where&&live_?`<button class="btn small go" data-act="guide" data-oid="${esc(o.id)}">Guide</button>`:"<span></span>"}</div>`; }).join("")
+        ${where&&live_?`<div><span class="where" data-cid="${c.id}" data-oid="${esc(o.id)}">◆ ${esc(where)}</span>${inR?'<span class="tag-in">✓ in route</span>':""}</div>${o.found==="turnin"?`<div class="found">Hand-in: ${c.turn_in_how==="manual"?"chosen by you":"the Wikelo Emporium nearest to you"}</div>`:foundNote[o.found]?`<div class="found">Location ${foundNote[o.found]}</div>`:""}`:""}${need&&live_&&!where?`<div class="found">Hand in at ${esc(c.turn_in||"a Wikelo Emporium")}</div>`:""}${unknown}</div>
+        <div class="obj-acts">${live_&&o.item_for?`<button class="btn small ghost" data-act="clearsrc" data-oid="${esc(o.item_for)}" title="Remove this stop">Remove</button>`:""}${live_&&o.kind==="pickup"?`<button class="btn small ghost" data-act="collect" data-oid="${esc(o.id)}" title="The game didn't report this pickup: mark it collected. Quantum also types /showlocation in game for your position">Collected</button>`:""}${where&&live_?`<button class="btn small go" data-act="guide" data-oid="${esc(o.id)}">Guide</button>`:""}</div></div>`; }).join("")
       || `<div class="muted" style="font-size:13px">Objectives appear as the game reports them.</div>`;
     const placeable=c.objectives.filter(o=>o.status==="active"&&(o.location||o.marker));
     const pending=placeable.filter(o=>!o.in_route).length;
@@ -1278,18 +1326,37 @@ function renderContracts(force){
     const routeBtn = !active||!placeable.length ? "" : pending
       ? `<button class="btn small primary" data-act="route">Add ${pending} stop${pending>1?"s":""} to route</button>`
       : `<span class="inroute" data-act="showroute" title="Open the route"><span class="ck">✓</span>In route</span>`;
+    const emps=S.locs.filter(L=>L.name.startsWith("Wikelo Emporium")).map(L=>L.name).sort();
+    const tin=c.turn_in&&S.locMap[c.turn_in];
+    const turnIn = c.collection&&active ? `<div class="turnin"><span class="k">Hand in at</span>
+        <select class="field" data-act="turnin">${c.turn_in?"":`<option value="">Nearest (needs your position)</option>`}${emps.map(n=>`<option value="${esc(n)}" ${n===c.turn_in?"selected":""}>${esc(n.replace("Wikelo Emporium ",""))}${n===c.turn_in&&c.turn_in_how==="nearest"?" (nearest)":""}</option>`).join("")}</select>
+        ${tin?.unplaced?`<div class="unknown">Quantum doesn't know where ${esc(c.turn_in)} is yet, so it can't be a route stop. Fly there, type /showlocation, and press <b>I'm here: set position</b> on <a data-open="${esc(c.turn_in)}">its card</a>. Once is enough.</div>`:""}</div>` : "";
     return `<div class="contract ${active?"":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
-      <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>${tracker(c)}${objs}
+      <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>
+      ${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${tracker(c)}${turnIn}${objs}
       <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
   $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Accept one in game. Its objectives show up here and on the map, often pinned to the exact spot.":"Point the app at Game.log to track contracts."}</div>`)
-    +(done.length?`<details class="finished"><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
+    +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
+  const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
   on("btn-clear-finished",async()=>{ await api().clear_finished_contracts(); await poll(); });
+  $("contracts").onchange=async e=>{ if(e.target.dataset?.act!=="turnin") return; const cardEl=e.target.closest(".contract"); const v=e.target.value; if(!v) return;
+    const r=await api().set_turn_in(cardEl.dataset.id,v); await poll(); renderContracts(true); toast(r.ok?`Handing in at ${v}`:r.error); };
   $("contracts").onclick=async e=>{
     const w=e.target.closest(".where"); if(w){ const c=cs.find(x=>x.id===w.dataset.cid), o=c.objectives.find(o=>o.id===w.dataset.oid);
       if(o.location){ select({kind:"loc",name:o.location}); focusLoc(o.location,true); } else if(o.marker){ if(o.marker.system!==S.system) setSystem(o.marker.system,false);
         if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); } return; }
+    const tn=e.target.closest(".trackno"); if(tn){ const n=tn.querySelector("b").textContent; try{ await navigator.clipboard.writeText(n); toast(`Copied ${n}`); }catch{ toast(n); } return; }
+    const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,true); return; }
     const act=e.target.dataset?.act, cardEl=e.target.closest(".contract"); if(!act||!cardEl) return; const c=cs.find(x=>x.id===cardEl.dataset.id);
+    if(act==="turnin") return;   // handled on change
+    if(act==="setsrc"){ const inp=cardEl.querySelector(`input[data-pick="${CSS.escape(e.target.dataset.oid)}"]`); const v=(inp?.value||"").trim();
+      if(!S.locMap[v]||S.locMap[v].unplaced) return toast("Pick a place from the suggestions"); const r=await api().set_item_source(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Get it at ${v}`:r.error); return; }
+    if(act==="clearsrc"){ const r=await api().set_item_source(c.id,e.target.dataset.oid,null); await poll(); renderContracts(true); if(!r.ok) toast(r.error); return; }
     if(act==="dismiss"){ await api().dismiss_contract(c.id); await poll(); }
+    if(act==="collectall"){ const r=await api().mark_collected(c.id,null); if(!r.ok) return toast(r.error); await poll(); renderContracts(true);
+      return toast(r.sending?"Marked picked up. Sending /showlocation to Star Citizen":`Marked picked up. ${r.note||""}`); }
+    if(act==="collect"){ const r=await api().mark_collected(c.id,e.target.dataset.oid); if(!r.ok) return toast(r.error); await poll(); renderContracts(true);
+      toast(r.sending?"Marked collected. Sending /showlocation to Star Citizen":`Marked collected. ${r.note||""}`); }
     if(act==="route"){ const r=await api().add_contract_stops(c.id,null); await poll(); renderContracts(true); toast(r.ok?`Added ${r.names.length} stop${r.names.length>1?"s":""} to route`:r.error); }
     if(act==="showroute"){ fitRoute(); }
     if(act==="setplace"){ const inp=cardEl.querySelector(`input[data-pick="${CSS.escape(e.target.dataset.oid)}"]`); const v=(inp?.value||"").trim();
@@ -1346,7 +1413,7 @@ function renderResults(){
   const shown=list.slice(0,250);
   $("results").innerHTML = shown.length ? shown.map(L=>`<li class="res${S.selected?.name===L.name?" sel":""}" data-name="${esc(L.name)}"><span class="ty ${L.type}"></span>
       <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padOf(L)):""}</div></div>
-      <button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button></li>`).join("")
+      ${L.unplaced?`<span class="muted" title="Position not known yet: open it to set it">?</span>`:`<button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button>`}</li>`).join("")
       +(list.length>shown.length?`<li class="muted" style="padding:8px">${list.length-shown.length} more. Narrow your search.</li>`:"")
     : `<div class="empty"><strong>Nothing matches “${esc(S.search)}”</strong>Try part of the name, like “tressler” or “sm0”.</div>`; }
 $("results").onclick=e=>{ const li=e.target.closest(".res"); if(!li) return; const n=li.dataset.name;
@@ -1357,13 +1424,15 @@ $("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
 // ---- status & toast
 function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
-  if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b> <span class="muted">· your position shows once you're in game</span>`; }
+  else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="arrived" && (!p || p.approx || (p.t||0) < tv.at)){ pd.className="dot on";
     pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown spot <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
   else if(tv.state==="flying" && (!p || (p.t||0) < tv.at)){ pd.className="dot on"; pt.innerHTML=`<b>In flight</b>${tv.left?`, left ${esc(tv.left)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
-  else if(p&&p.approx){ pd.className="dot on"; pt.innerHTML=`At <b>${esc(p.approx)}</b> <span class="muted">(from the game log, ${ago(S.live.now-p.age)})</span>`; }
+  else if(p&&p.approx){ pd.className="dot on"; const how={left:"took off",log:"from the game log",landed:"from the game log",jump:"quantum arrival"}[p.approx_how]||"from the game log";
+    pt.innerHTML=`${p.approx_how==="left"||p.approx_how==="log"?"Near":"At"} <b>${esc(p.approx)}</b> <span class="muted">(${how}, ${ago(S.live.now-p.age)})</span>`; }
   else
   if(!p){ pd.className="dot"; pt.innerHTML="Type <b>/showlocation</b> in game chat to share your position"; }
   else { const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`; pd.className="dot"+(p.age<120?" on":"");
@@ -1371,13 +1440,15 @@ function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"
   // What you're up to, from lines that name you: traffic control you hailed, vehicle deliveries, shops,
   // your own ship or vehicle, and the armistice zone.
   const bits=[];
-  if(tv.vehicle) bits.push(tv.vehicle.aboard?`In your <b>${esc(tv.vehicle.name)}</b>`:`Left your ${esc(tv.vehicle.name)}`);
-  if(tv.activity) bits.push(`${esc(tv.activity.text)} <span class="muted">(${ago(tv.activity.at)})</span>`);
+  // The log only says what you last did, not where you are now, so word it as a report.
+  if(tv.activity) bits.push(`Last report: ${esc(tv.activity.text.charAt(0).toLowerCase()+tv.activity.text.slice(1))} <span class="muted">(${ago(tv.activity.at)})</span>`);
+  if(tv.vehicle) bits.push(`Ship: <b>${esc(tv.vehicle.name)}</b>`);
   if(tv.armistice===false) bits.push(`<span style="color:#ffb454">Outside the armistice zone</span>`);
-  if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join(" · ")}</div>`;
+  if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join("<br>")}</div>`;
   const lg=S.live.log; $("log-dot").className="dot"+(lg.status==="watching"?" on":lg.status==="idle"?"":" warn");
-  const ap=S.live.at_place; const apTxt=ap?.name?` · at <b>${esc(ap.name)}</b>`:S.live.where?.body?` · near <b>${esc(S.live.where.body)}</b>`:"";
-  $("log-text").innerHTML=lg.status==="watching"?`Tracking contracts${apTxt}`:"Contract tracking off: Game.log not found";
+  // Only worth a line when something's wrong: tracking contracts is the normal state.
+  $("log-row").style.display=lg.status==="watching"||lg.status==="idle"?"none":"";
+  $("log-text").innerHTML=lg.status==="error"?"Can't read Game.log right now":"Contract tracking off: Game.log not found";
   const al=S.live.autoloc||{}; const parts=[]; if(al.hotkey) parts.push(`<b>${esc(al.hotkey)}</b> shows / hides`); if(al.loc_hotkey) parts.push(`<b>${esc(al.loc_hotkey)}</b> /showlocation`); 
   $("key-dot").className="dot"+(al.available&&parts.length?" on":""); $("key-text").innerHTML=al.available===false?"Hotkey: Windows only":parts.length?parts.join(" · "):"Hotkey off";
 
@@ -1388,7 +1459,7 @@ let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classL
 async function loadStatic(){
   const st=await api().get_static(); S.staticVersion=st.version; S.systems=st.systems||S.systems; S.wiki=st.wiki;
   S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l]));
-  $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
+  $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.pos&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
 async function poll(){
   const live=await api().get_live(); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;

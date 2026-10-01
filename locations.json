@@ -13992,60 +13992,6 @@
    "created": 0.0
   },
   {
-   "name": "Pyro Gateway",
-   "kind": "space",
-   "pos": [
-    3310491639.80218,
-    -27979408221.4568,
-    -2676285679
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway: jump point to Pyro",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Terra Gateway",
-   "kind": "space",
-   "pos": [
-    51118221616.9033,
-    -5269981303.11381,
-    -4339551619
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway: jump point to Terra",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Magnus Gateway",
-   "kind": "space",
-   "pos": [
-    -62284273860.7205,
-    23467618051.3957,
-    20198396608
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway: jump point to Magnus",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
    "name": "P1-L1",
    "kind": "space",
    "pos": [
@@ -14493,6 +14439,60 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway",
+   "kind": "space",
+   "pos": [
+    3310484799.0,
+    -27979313941.0,
+    -2676300515.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station: jump point to Pyro",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway",
+   "kind": "space",
+   "pos": [
+    -62284273860.7205,
+    23467618051.3957,
+    20198396608.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Temporary link to Nyx through the old Magnus gate. Position is the jump point's; the station is close by",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Terra Gateway",
+   "kind": "space",
+   "pos": [
+    51118221616.9033,
+    -5269981303.11381,
+    -4339551619.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Terra isn't open yet. Position is the jump point's; the station is close by",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
    "created": 0.0
   },
   {
@@ -34077,6 +34077,24 @@
    "qt": false,
    "pinned": false,
    "category": "cave",
+   "created": 0.0
+  },
+  {
+   "name": "Wikelo Emporium Kinga Station",
+   "kind": "space",
+   "pos": [
+    23761435998.552826,
+    39225376833.414856,
+    492.206296
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Wikelo Emporium: asteroid base near microTech",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
    "created": 0.0
   }
  ]

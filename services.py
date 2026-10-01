@@ -91,7 +91,29 @@ def _body_key(name):
     return re.sub(r"[^a-z0-9]", "", (name or "").lower())
 
 
+# Services players have seen where the game data lists none (the Wiki API has the Wikelo stations
+# with an empty amenity list). Used only when the data has nothing for that place.
+REPORTED = {n: ["Hangar XL", "Commodity Trading - Freight Elevator", "Wikelo's Shop",
+                "Vehicle Services (refuel, repair)"]
+            for n in ("Wikelo Emporium Dasi Station", "Wikelo Emporium Selo Station",
+                      "Wikelo Emporium Kinga Station")}
+
+
+def _with_reported(out, locations):
+    for name, amen in REPORTED.items():
+        if name not in locations or (name in out and out[name]["amenities"]):
+            continue
+        base = out.get(name) or {"name": name, "parent": "", "system": "", "type": "", "jurisdiction": "",
+                                 "description": "", "url": "", "image": "", "version": ""}
+        out[name] = dict(base, amenities=list(amen), reported=True)
+    return out
+
+
 def match(records, locations):
+    return _with_reported(_match(records, locations), locations)
+
+
+def _match(records, locations):
     """-> {quantum place name: record}. Same-named places are told apart by their parent body."""
     by_key = {}
     for r in records:
@@ -99,7 +121,13 @@ def match(records, locations):
             by_key.setdefault(_key(r["name"]), []).append(r)
     out = {}
     for name, loc in locations.items():
-        cands = by_key.get(_key(name))
+        k = _key(name)
+        cands = by_key.get(k) or (by_key.get(k[:-7]) if k.endswith("station") else None)  # "Checkmate Station"
+        if not cands:
+            continue
+        # Same-named stations in different systems (Pyro Gateway is in Stanton and in Nyx): same system only.
+        sys_ = (loc.system or "").lower()
+        cands = [r for r in cands if not r["system"] or r["system"].lower().split()[0] == sys_]
         if not cands:
             continue
         if loc.body:
@@ -131,7 +159,7 @@ def pad_from(amenities):
     """Largest landing option in the amenities -> Quantum's pad size ("small".."xl", "hangar")."""
     best, hangar = None, False
     for a in amenities:
-        m = re.match(r"(Landing Pad|Hangar)\s*\((XL|S|M|L)\)", a, re.I)
+        m = re.match(r"(Landing Pad|Hangar)\s*\(?(XL|S|M|L)\)?$", a.strip(), re.I)   # "Landing Pad M" or "(M)"
         if not m:
             continue
         size = PAD_CODES[m.group(2).upper()]

@@ -1,269 +1,138 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "9a654ec874fc2033fe0d848a671bdee79ef8d94e",
- "offset": 607985,
+ "log_sig": "236a9d7ab3616a544423c3b8a4ff1de4b7e4e13c",
+ "offset": 1767910,
  "where": {
-  "code": "Stanton1_Lorville",
+  "code": "RR_MIC_LEO",
   "system": "Stanton",
-  "body": "Hurston",
-  "at": 1790641757.889
+  "body": "microTech",
+  "at": 1790751419.792
  },
- "zone_bodies": {},
+ "zone_bodies": {
+  "833687641891": "Monox"
+ },
  "build": "12660092",
  "loc_ids": {
-  "3170699229": "New Babbage",
-  "3602456948": "Rayari Anvik Research Outpost",
-  "1563376125": "Rayari Cantwell Research Outpost",
-  "121402817": "Devlin Scrap & Salvage",
-  "698568626": "HDMS Woodruff",
-  "3869711843": "HDMS Anderson",
-  "2950551292": "HDMS Bezdek",
-  "3377278171": "HDMS Perlman",
-  "4156127098": "Shubin Mining Facility SAL-2",
-  "1752580222": "ArcCorp Mining Area 045",
-  "1882438059": "Shubin Mining Facility SCD-1",
-  "240701213": "ArcCorp Mining Area 157",
-  "3283370651": "Tram & Myers Mining",
-  "2065796676": "New Babbage",
-  "4005457614": "Lorville"
+  "2147648880": "Port Tressler"
  },
  "cur": {
-  "id": 4005457614,
-  "landing": 4005457614,
-  "at": 1790641757.887,
-  "place": "Lorville",
+  "id": 3839298489,
+  "landing": 2147648880,
+  "at": 1790751601.193,
+  "place": null,
   "left": null,
   "spawned": false,
   "died_near": null
  },
- "dest_ids": {
-  "NavPoint_Dynamic_833123331017": {
-   "place": "Devlin Scrap & Salvage",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  },
-  "hurdyn_cluster_001_sand_red_{F7C6FE12-A504-4AAD-910F-CC9DD059B7E6}.socpak": {
-   "place": "HDMS Bezdek",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  },
-  "hurdyn_cluster_002_sand_red_{9109C84A-088B-4B9F-B22E-1BA3A0429FF8}.socpak": {
-   "place": "HDMS Perlman",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  },
-  "shubin_cluster_001_frost_{13DA184B-8620-4DAE-9450-5CE6F2ADA1A5}.socpak": {
-   "place": "Shubin Mining Facility SAL-2",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  },
-  "arccorp_cluster_001_dust_{4748C9A2-52DF-4E97-BE98-4C31439FC790}.socpak": {
-   "place": "ArcCorp Mining Area 045",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  },
-  "arccorp_cluster_001_frost_{C4F29ABD-9E68-4FD7-9A70-A0522884BF50}.socpak": {
-   "place": "ArcCorp Mining Area 157",
-   "n": 1,
-   "ambiguous": false,
-   "how": "named location"
-  }
- },
+ "dest_ids": {},
  "qt": {
-  "dest": "ObjectContainer_Lorville_City",
-  "ship": "849495085297",
-  "selected": 1790641255.881,
-  "arrived": 1790641614.96,
-  "start": "New Babbage",
-  "start_body": "microTech",
+  "dest": "ObjectContainer_RestStop",
+  "ship": "850634805167",
+  "selected": 1790751284.548,
+  "arrived": 1790751398.099,
+  "start": "Stanton",
+  "start_body": "Stanton",
   "place": null,
-  "learned": true,
-  "by_reading": true
+  "learned": true
  },
  "zone_places": {},
  "atc": {
-  "833119855515": "ATC_DataManager_Port_Lawful-001",
-  "833120645338": "ATC_DataManager_Port_Lorville"
+  "833693872328": "ATC_DataManager_Port_Lawful-001",
+  "833693868876": "ATC_DataManager_Port_SemiLawful-Dock1",
+  "833687756846": "ATC_DataManager_Port_Lawful_Collector"
  },
  "contracts": [
   {
-   "id": "0f67f4e1-bbed-43cd-a5e3-2ee5e773328a",
-   "name": "Red Wind Seeking New Haulers",
+   "id": "1bd65bf5-74e8-4dad-a2d5-21b77c078cc9",
+   "name": "DEAD SAINTS -- Rookie Rank, Small Scale Cargo Run",
    "status": "abandoned",
-   "accepted_at": 1790633205.771,
-   "updated_at": 1790633281.809,
-   "code": "Redwind_Intro_0",
-   "system": "Stanton",
+   "accepted_at": 1790747756.232,
+   "updated_at": 1790747844.0,
+   "code": "HaulCargo_AToB_Interstellar_Small_Cryo",
+   "system": null,
    "objectives": [
     {
-     "id": "pickup_1f934d6b-bc1b-48ee-b574-4ed09af4aa4c_0",
+     "id": "dropoff_ba08f4ac-144c-4c20-8441-c41644f5bea2_0",
+     "text": "Deliver 0/4 SCU of CryoPod to Pyro System",
+     "status": "withdrawn",
+     "kind": "dropoff",
+     "location": "Jackson's Swap",
+     "marker": {
+      "body": "Monox",
+      "system": "Pyro",
+      "pos": [
+       383195.510179,
+       -245788.250802,
+       -272391.567254
+      ]
+     },
+     "done_at": null,
+     "zone": null,
+     "found": "marker",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "pickup_ba08f4ac-144c-4c20-8441-c41644f5bea2_0",
      "text": "Objective",
      "status": "withdrawn",
      "kind": "pickup",
      "location": null,
      "marker": null,
      "done_at": null,
-     "zone": "833118147488",
-     "found": ""
-    },
-    {
-     "id": "dropoff_1f934d6b-bc1b-48ee-b574-4ed09af4aa4c_0",
-     "text": "Deliver 0/6 SCU of Ship Ammunition to Grim HEX",
-     "status": "withdrawn",
-     "kind": "dropoff",
-     "location": "Grim HEX",
-     "marker": null,
-     "done_at": null,
-     "zone": "833119032777",
-     "found": "text"
+     "zone": "833694682422",
+     "found": "",
+     "manual": false,
+     "item_for": ""
     }
    ],
    "departed_at": null,
-   "closed_at": 1790633281.809,
-   "pickup_code": ""
+   "closed_at": 1790747844.0,
+   "pickup_code": "",
+   "turn_in": "",
+   "turn_in_how": ""
   },
   {
-   "id": "99bf3375-75a5-46f0-a5de-99ad098aa25e",
-   "name": "Rookie Rank - Direct Extra Small Cargo Haul",
-   "status": "abandoned",
-   "accepted_at": 1790633292.727,
-   "updated_at": 1790635381.092,
-   "code": "HaulCargo_AToB_NonMetal_Silicon_Stanton2_SmallGrade",
+   "id": "f4a2753e-c0c0-4b01-bc35-b01436257796",
+   "name": "Very Hungry",
+   "status": "complete",
+   "accepted_at": 1790749758.666,
+   "updated_at": 1790750605.317,
+   "code": "TheCollector_FoodOrder",
    "system": "Stanton",
    "objectives": [
     {
-     "id": "dropoff_0de56f00-32da-4b70-bfd4-dba1b9f4e9af_0",
-     "text": "Deliver 0/8 SCU of Silicon to CRU-L4 Shallow Fields Station",
-     "status": "withdrawn",
+     "id": "dropoff_8cabaa26-afa8-4c7b-83ac-6f5d30091427_0",
+     "text": "Need 0/1 of Berry Blend Smoothie",
+     "status": "done",
      "kind": "dropoff",
-     "location": "R&R CRU-L4 Shallow Fields Station",
-     "marker": {
-      "body": null,
-      "lpoint": "CRU-L4",
-      "system": "Stanton",
-      "pos": [
-       -7173768306.542127,
-       -17750056492.479366,
-       -2174784.16814
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker"
-    },
-    {
-     "id": "pickup_0de56f00-32da-4b70-bfd4-dba1b9f4e9af_0",
-     "text": "Objective",
-     "status": "withdrawn",
-     "kind": "pickup",
-     "location": "R&R CRU-L1 Ambitious Dream Station",
-     "marker": {
-      "body": null,
-      "lpoint": "CRU-L1",
-      "system": "Stanton",
-      "pos": [
-       -17068753721.355608,
-       -2399482272.943079,
-       -20044.224621
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker"
-    }
-   ],
-   "departed_at": null,
-   "closed_at": 1790635381.092,
-   "pickup_code": ""
-  },
-  {
-   "id": "9fabe4f3-490f-41f1-af3f-ecab1e5e0547",
-   "name": "Rookie Rank - Small Cargo Haul",
-   "status": "abandoned",
-   "accepted_at": 1790635390.125,
-   "updated_at": 1790637517.495,
-   "code": "HaulCargo_Multi2ToSingle_Waste_Mixed_ScrapWaste_Stanton2_SmallGrade1",
-   "system": "Stanton",
-   "objectives": [
-    {
-     "id": "dropoff_c2261dc6-4adf-4c74-b4ca-35700a4c6493_0",
-     "text": "Deliver 0/5 SCU of Waste to Seraphim Station",
-     "status": "withdrawn",
-     "kind": "dropoff",
-     "location": "Seraphim Station",
-     "marker": {
-      "body": "Crusader",
-      "system": "Stanton",
-      "pos": [
-       5876098.201785,
-       -1384206.723274,
-       5565883.231907
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker"
-    },
-    {
-     "id": "pickup_c2261dc6-4adf-4c74-b4ca-35700a4c6493_0",
-     "text": "Objective",
-     "status": "withdrawn",
-     "kind": "pickup",
-     "location": "R&R CRU-L4 Shallow Fields Station",
-     "marker": {
-      "body": null,
-      "lpoint": "CRU-L4",
-      "system": "Stanton",
-      "pos": [
-       -7173768306.542127,
-       -17750056492.479366,
-       -2174784.16814
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker"
-    },
-    {
-     "id": "pickup_c2261dc6-4adf-4c74-b4ca-35700a4c6493_1",
-     "text": "Objective",
-     "status": "withdrawn",
-     "kind": "pickup",
-     "location": "R&R CRU-L1 Ambitious Dream Station",
-     "marker": {
-      "body": null,
-      "lpoint": "CRU-L1",
-      "system": "Stanton",
-      "pos": [
-       -17068753721.355608,
-       -2399482272.943079,
-       -20044.224621
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker"
-    },
-    {
-     "id": "dropoff_c2261dc6-4adf-4c74-b4ca-35700a4c6493_1",
-     "text": "Deliver 0/4 SCU of Scrap to Seraphim Station",
-     "status": "withdrawn",
-     "kind": "dropoff",
-     "location": "Seraphim Station",
+     "location": null,
      "marker": null,
-     "done_at": null,
+     "done_at": 1790750605.234,
+     "zone": "833687637475",
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "dropoff_8cabaa26-afa8-4c7b-83ac-6f5d30091427_1",
+     "text": "Need 0/1 of Ermer Family Farms Fat Free Ice Cream",
+     "status": "done",
+     "kind": "dropoff",
+     "location": null,
+     "marker": null,
+     "done_at": 1790750605.234,
      "zone": null,
-     "found": "text"
+     "found": "",
+     "manual": false,
+     "item_for": ""
     }
    ],
    "departed_at": null,
-   "closed_at": 1790637517.495,
-   "pickup_code": ""
+   "closed_at": 1790750605.317,
+   "pickup_code": "",
+   "turn_in": "",
+   "turn_in_how": ""
   }
  ]
 }

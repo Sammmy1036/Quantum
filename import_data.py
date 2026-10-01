@@ -18,6 +18,7 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
+import gateways
 from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist
 
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
@@ -115,17 +116,15 @@ def main():
         db.bodies[c["name"]] = Body(c["name"], (c["pos_x"], c["pos_y"], c["pos_z"]), radius,
                                     c["rot_vel_x"], c["rot_adj_x"], om_radius_m=c["om_radius"],
                                     system=c["system"], internal=c["internal_name"], kind=kind)
-    # Pyro Lagrange points, jump points (both systems)
+    # Pyro Lagrange points
     for c in containers:
         pos = (c["pos_x"], c["pos_y"], c["pos_z"])
         if c["cont_type"] == "Lagrange" and c["system"] == "Pyro":
             add_loc(Location(c["name"].replace("_", "-"), "space", pos, None, notes="Lagrange point",
                              source="db", system="Pyro", category="lpoint"))
-        if c["cont_type"] == "JumpPoint" and abs(pos[0]) + abs(pos[1]) > 0:
-            to = c["name"].replace("JumpPoint", "").strip()
-            add_loc(Location(f"{to} Gateway", "space", pos, None,            # what the game calls them
-                             notes=f"Gateway: jump point to {to}", source="db", system=c["system"], qt=True,
-                             category="jump"))
+    # Gateway stations at the jump points, all three systems (see gateways.py). The ones in Pyro and
+    # Nyx get a position once you've taken a /showlocation there (places.json).
+    gateways.apply(db, gateways.load_learned(HERE / "places.json"))
     # Checkmate sits at Pyro II L4; the dataset has no coordinates for it, so pin it to the L-point.
     l4 = db.locations.get("P2-L4")
     if l4:

@@ -18,10 +18,11 @@ import webbrowser
 
 import webview
 
+import gateways
 import services
 import wiki
 
-from gamelog import ContractTracker, contract_cargo
+from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
 from nav_core import Location, NavDB, SYSTEMS, classify, dist
 import overlay
 from keysender import ShowLocationSender
@@ -38,6 +39,7 @@ SETTINGS_PATH = HERE / "settings.json"
 SERVICES_PATH = HERE / "services.json"    # location services from the Star Citizen Wiki API
 WIKI_PATH = HERE / "wiki_systems.json"   # Star Citizen Wiki system info (CC BY-SA 4.0), from import_data.py
 CAL_PATH = HERE / "calibrations.json"
+PLACES_PATH = HERE / "places.json"      # gateway positions you measured with /showlocation; shareable
 # Where a hangar reading in each city is anchored: its spaceport (or the city if the data has no spaceport).
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
                "Orison": "August Dunlow Spaceport", "Lorville": "Lorville", "Levski": "Levski"}
@@ -53,6 +55,11 @@ class Api:
         self._db = NavDB.load(DB_PATH)
         self._db.path = DB_PATH
         self._renamed = rename_gateways(self._db)
+        # Gateway stations in all three systems. Ones with no known position yet are kept aside:
+        # searchable with their services, but off the map until you /showlocation there.
+        ren, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
+        self._renamed.update(ren)
+        self._db.save()
         for path in (BUILTIN_CAL_PATH, CAL_PATH):   # shipped alignments first, then yours / shared ones
             if not path.exists():
                 continue
@@ -83,7 +90,7 @@ class Api:
         self._static_version = 1
         self._wiki = wiki.load(WIKI_PATH)
         self._service_records = services.load(SERVICES_PATH)
-        self._services = services.match(self._service_records, self._db.locations)
+        self._services = self._match_services()
         self._log_cleared = None
         if self._settings.get("clear_log_on_start"):
             self._log_cleared = clear_game_log(self._settings.get("log_path"))
@@ -114,7 +121,20 @@ class Api:
         self._settings.pop("route", None)
         SETTINGS_PATH.write_text(json.dumps(self._settings, indent=1), encoding="utf-8")
 
+    def _game_on(self):
+        """Is Star Citizen running? The process check, backed by the game adding lines to Game.log in the
+        last two minutes while Quantum watched (in case the check can't see the game). Not the file's
+        modified time: Quantum emptying the log at startup touches that too. Off Windows, assume yes."""
+        tr = self._tracker
+        if os.name != "nt" or tr.game_running:
+            return True
+        if tr.proc_seen:              # the process check has seen the game before: trust it, it's gone
+            return False
+        return time.time() - tr.last_growth < 120
+
     def _on_position(self, pos, t):
+        if not self._game_on():
+            return                  # coordinates copied from somewhere else: the game isn't running
         with self._lock:
             hint = self._tracker.where.get("system")
             self._player, self._player_t = pos, t
@@ -368,8 +388,11 @@ class Api:
                 "log_area": anchor.name if anchor else None, "places": cands[:3],
                 "city": bool(anchor and classify(anchor.name, anchor.category) == "city")}
 
+    def _match_services(self):
+        return services.match(self._service_records, {**self._unplaced, **self._db.locations})
+
     def _db_changed(self):
-        self._services = services.match(self._service_records, self._db.locations)
+        self._services = self._match_services()
         self._static_version += 1
         self._route = [r for r in self._route if r["place"] in self._db.locations]
         if self._guide not in self._db.locations:
@@ -413,29 +436,58 @@ class Api:
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
                      "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
+                     "to": gateways.leads_to(l.name), "unplaced": l.pos is None,
+                     "placeable": gateways.system_of(l.name) is not None, "near": gateways.near_body(l.name),
                      **({"amen": self._services[l.name]["amenities"],
                          "pad_auto": services.pad_from(self._services[l.name]["amenities"])}
                         if l.name in self._services else {})}
-                    for l in self._db.locations.values()]
+                    for l in [*self._db.locations.values(), *self._unplaced.values()]]
             info = {b["name"]: wiki.for_game_body(self._wiki, b["name"], b["kind"], b["system"]) for b in out_b}
             return {"version": self._static_version, "bodies": out_b, "locations": locs, "systems": SYSTEMS,
                     "wiki": {"bodies": info, "systems": (self._wiki or {}).get("systems", {})}}
 
     # ------------------------------------------------------------ live data
+    def _log_spot(self, cur):
+        """Best place the log puts you at -> (place, when, how), or (None, 0, None).
+        Landed/docked there > arrived there by quantum > talking to its traffic control or entering it >
+        just took off from it. Unknown places, deaths and quantum jumps under way give nothing."""
+        cur, locs = cur or {}, self._db.locations
+        if cur.get("dead"):
+            return None, 0, None
+        if cur.get("landing") and cur.get("place") in locs:
+            return cur["place"], cur["at"], "landed"
+        if cur.get("jump"):
+            return (cur["near"], cur["at"], "jump") if cur.get("near") in locs else (None, 0, None)
+        q = self._tracker.qt or {}
+        if q.get("selected") and not q.get("arrived") and time.time() - q["selected"] < 1800:
+            return None, 0, None                      # mid-jump: you're not at the old place any more
+        w = self._tracker.where or {}
+        wp = self._tracker.place_for_code(w["code"]) if w.get("code") else None
+        options = []
+        if wp in locs and w.get("at"):
+            options.append((wp, w["at"], "log"))
+        if cur.get("left") in locs and cur.get("at"):
+            options.append((cur["left"], cur["at"], "left"))
+        return max(options, key=lambda o: o[1]) if options else (None, 0, None)
+
     def get_live(self):
         with self._lock:
             t = time.time()
+            game_on = self._game_on()
+            if not game_on and self._player:
+                # The game closed: that reading is from the last session and you'll spawn somewhere else.
+                self._player = self._player_t = self._player_sys = None
             p, psys = self._player, self._player_sys
             ptime, approx = self._player_t, None
             cur = self._tracker.cur or {}
-            # Landed or docked somewhere the log names, and that's newer than your last /showlocation:
-            # show you at that place (approximate) until a real reading comes in.
-            near = cur.get("near") if cur and not cur.get("landing") else None
-            spot = cur.get("place") if cur and cur.get("landing") else near
-            if spot in self._db.locations and (not p or cur["at"] > self._player_t):
+            # The log knows where you are and that's newer than your last /showlocation: show you at
+            # that place (approximate) until a real reading comes in. Keeps the route line drawn.
+            spot, spot_at, how = self._log_spot(cur) if game_on else (None, 0, None)
+            if spot and (not p or spot_at > self._player_t):
                 L = self._db.locations[spot]
                 p, psys, ptime, approx = self._db.global_pos(L, t), L.system, t, L.name
-            self._auto_arrive(cur)
+            if game_on:
+                self._auto_arrive(cur)
             self._prune_finished_tasks()
             stops = self._stops()
             names = [st["place"] for st in stops]
@@ -447,12 +499,12 @@ class Api:
                             "game_running": self._tracker.game_running, "note": self._tracker.log_note,
                             "cleared": self._log_cleared},
                     "where": self._tracker.where,
-                    "travel": self._travel_view(cur, t),
-                    "arrived": self._arrived_note}
+                    "travel": self._travel_view(cur, t) if game_on else None,
+                    "arrived": self._arrived_note if game_on else None, "game_off": not game_on}
             if p:
                 body = self._db.body_near(p, psys)
-                info = {"pos": p, "t": ptime, "age": t - (cur["at"] if approx else ptime), "system": psys, "body": None,
-                        "approx": approx}
+                info = {"pos": p, "t": ptime, "age": t - (spot_at if approx else ptime), "system": psys, "body": None,
+                        "approx": approx, "approx_how": how if approx else None}
                 if body:
                     local = body.to_local(p, ptime)
                     lat, lon, alt = body.lat_lon_alt(local)
@@ -480,6 +532,7 @@ class Api:
             live["calib_suggest"] = self._calib_suggestion()
             live["at_place"] = ({"name": self._tracker.place_for_code(w["code"]), "code": w["code"], "at": w.get("at")}
                                 if w.get("code") else None)
+            self._assign_turn_ins(p, psys, tc)
             live["contracts"] = self._contracts_view(p, psys, tc)
             live["stop_roles"], live["route_warning"] = self._stop_roles(stops, live["contracts"])
             return live
@@ -510,10 +563,13 @@ class Api:
                 cid, _, oid = t["task"].partition("|")
                 c = self._tracker.get(cid)
                 o = next((o for o in c.objectives if o.id == oid), None) if c else None
-                if not o or o.status != "active" or c.status != "active":
+                if not o or o.status != "active" or c.status != "active" or not is_tracked(c):
                     changed = True
                     continue
                 place = self._existing_place(o) or self._objective_place(c, o)
+                if not place and need_item(o.text):     # turn-in emporium not placed yet
+                    changed = True
+                    continue
                 if place and place != t["place"]:
                     t["place"], changed = place, True
             keep.append(t)
@@ -526,6 +582,8 @@ class Api:
         """Remove auto-created contract stops nothing points at any more."""
         used = {t["place"] for t in self._route} | ({self._guide} if self._guide else set())
         for c in self._tracker.contracts.values():
+            if not is_tracked(c):
+                continue
             for o in c.objectives:
                 if o.status == "active" and c.status == "active":
                     p = self._existing_place(o)
@@ -590,6 +648,60 @@ class Api:
             return b.to_global(loc.pos, t), b.system, loc
         return None, None, None
 
+    def _emporium_pos(self, name, t):
+        """Where a Wikelo emporium is: its own position once placed, else its planet's (good enough to
+        tell which one is closest)."""
+        L = self._db.locations.get(name)
+        if L:
+            return self._db.global_pos(L, t)
+        b = self._db.bodies.get(gateways.near_body(name) or "")
+        return b.center if b else None
+
+    def _assign_turn_ins(self, p, psys, t):
+        """Collection contracts (Wikelo) can be handed in at any emporium: pick the one closest to you,
+        unless you chose one. The choice sticks, so the route doesn't jump around as you fly."""
+        emp = gateways.WIKELO
+        for c in list(self._tracker.contracts.values()):
+            if c.status != "active" or not is_collection(c) or not is_tracked(c):
+                continue
+            changed = False
+            for o in c.objectives:        # you typed a shop as the item's place: that's where you get it
+                if need_item(o.text) and o.location and o.location not in emp and o.found == "manual":
+                    self._tracker.set_item_source(c.id, o.id, o.location)
+                    o.location, o.found, changed = None, "", True
+            choice = c.turn_in if c.turn_in in emp else None
+            if not choice and p:
+                ref = p if psys == "Stanton" else (
+                    self._db.locations["Pyro Gateway"].pos if "Pyro Gateway" in self._db.locations else p)
+                ranked = [(dist(g, ref), n) for n in emp if (g := self._emporium_pos(n, t))]
+                if ranked:
+                    choice = min(ranked)[1]
+                    self._tracker.set_turn_in(c.id, choice, "nearest")
+            target = choice if choice in self._db.locations else None   # placed ones only are routable
+            for o in c.objectives:
+                if need_item(o.text) and o.status == "active" and o.location != target:
+                    o.location, o.found, changed = target, ("turnin" if target else ""), True
+            if changed:
+                with self._tracker.lock:
+                    self._tracker._changed()
+        self._prune_finished_tasks()
+
+    def set_turn_in(self, cid, place):
+        with self._lock:
+            if place not in gateways.WIKELO:
+                return {"ok": False, "error": "Pick one of the Wikelo Emporiums"}
+            self._tracker.set_turn_in(cid, place, "manual")
+            return {"ok": True}
+
+    def set_item_source(self, cid, oid, place):
+        with self._lock:
+            if place and place not in self._db.locations:
+                return {"ok": False, "error": "Pick a place from the suggestions"}
+            ok = self._tracker.set_item_source(cid, oid, place or None)
+            if ok:
+                self._prune_finished_tasks()
+            return {"ok": ok} if ok else {"ok": False, "error": "That item isn't open any more"}
+
     def _contracts_view(self, p, psys, tc):
         view = self._tracker.snapshot()
         for c in view:
@@ -601,11 +713,12 @@ class Api:
             if not tr or c["status"] != "active":
                 continue
             # Left the pickup with the cargo? Then it's out for delivery.
-            if tr["stage"] == 1 and p and tr["times"][1] and self._player_t > tr["times"][1]:
+            # (real /showlocation readings only: a position from the log is just the place's own spot)
+            if tr["stage"] == 1 and self._player and tr["times"][1] and (self._player_t or 0) > tr["times"][1]:
                 for o in c["objectives"]:
                     if o["kind"] == "pickup":
                         g, sysname, _ = self._objective_global(o, tc)
-                        if g and (sysname != psys or dist(g, p) > 3000):
+                        if g and (sysname != self._player_sys or dist(g, self._player) > 3000):
                             self._tracker.mark_departed(c["id"], self._player_t)
                             tr["stage"], tr["times"][2] = 2, self._player_t
                         break
@@ -716,6 +829,8 @@ class Api:
     def _add_contract_tasks(self, c, oid=None):
         """Queue one task per active objective (pickups first). Returns how many were added."""
         ids, added = self._task_ids(), 0
+        if not is_tracked(c):
+            return 0
         order = {"pickup": 0, "goto": 1, "combat": 1, "dropoff": 2}
         for o in sorted(c.objectives, key=lambda o: order.get(o.kind, 1)):
             if o.status != "active" or (oid is not None and o.id != oid):
@@ -734,6 +849,7 @@ class Api:
         With include_contracts, every active contract's pickups and drop-offs are added first."""
         with self._lock:
             added = 0
+            self._assign_turn_ins(self._player, self._player_sys, time.time())
             if include_contracts:
                 for c in list(self._tracker.contracts.values()):
                     if c.status == "active":
@@ -766,6 +882,26 @@ class Api:
             loc = self._db.capture(name, self._player, self._player_t, self._player_sys, pad, notes, pinned)
             self._db_changed()
             return {"ok": True, "name": loc.name, "body": loc.body}
+
+    def set_place_here(self, name):
+        """You're docked at a gateway station: use your last /showlocation as its position."""
+        with self._lock:
+            system = gateways.system_of(name)
+            if not system:
+                return {"ok": False, "error": "Only gateway and Wikelo stations can be placed this way"}
+            if not self._player or time.time() - self._player_t > 900:
+                return {"ok": False, "error": "Type /showlocation in game chat while docked there"}
+            if self._player_sys != system:
+                return {"ok": False, "error": f"Your last reading is in {self._player_sys}, not {system}"}
+            body = self._db.body_near(self._player, system)
+            if body and name in gateways.GATEWAYS:            # gateways are far out; Wikelo's orbit planets
+                return {"ok": False, "error": f"That reading is near {body.name}, not at the gateway. "
+                                              "Take it while docked at the station"}
+            gateways.save_learned(PLACES_PATH, name, system, self._player)
+            _, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
+            self._db.save()
+            self._db_changed()
+            return {"ok": True, "name": name}
 
     def update_location(self, name, pad=None, notes=None):
         with self._lock:
@@ -995,6 +1131,7 @@ class Api:
             c = self._tracker.get(cid)
             if not c:
                 return {"ok": False, "error": "Contract not found"}
+            self._assign_turn_ins(self._player, self._player_sys, time.time())
             added = self._add_contract_tasks(c, oid)
             self._save_settings()
             if not added and not any(t["task"].startswith(cid + "|") for t in self._route):
@@ -1016,6 +1153,10 @@ class Api:
         with self._lock:
             if place not in self._db.locations:
                 return {"ok": False, "error": "Pick a place from the list"}
+            c = self._tracker.get(cid)
+            o = next((o for o in c.objectives if o.id == oid), None) if c else None
+            if o and need_item(o.text):             # an item to collect: that's where you get it
+                return self.set_item_source(cid, oid, place)
             ok = self._tracker.set_objective_place(cid, oid, place)
             return {"ok": ok} if ok else {"ok": False, "error": "Contract not found"}
 
@@ -1035,6 +1176,25 @@ class Api:
                 return {"ok": False, "error": "No known place within 5 km of you. Save a waypoint instead"}
             self._tracker.set_objective_place(cid, oid, best)
             return {"ok": True, "name": best}
+
+    def mark_collected(self, cid, oid=None):
+        """Mark a pickup collected when the game didn't log it, then type /showlocation in game (after
+        giving it focus) so Quantum knows where you are and can tell when you leave with the cargo."""
+        with self._lock:
+            if not self._tracker.mark_collected(cid, oid):
+                return {"ok": False, "error": "That pickup isn't open any more"}
+            self._prune_finished_tasks()
+            self._save_settings()
+        if not overlay.AVAILABLE:
+            return {"ok": True, "sending": False, "note": "Type /showlocation in game for your position."}
+
+        def send():
+            time.sleep(0.3)                       # let the click finish before the focus change
+            if overlay.focus_game():
+                time.sleep(0.5)                   # the game needs a moment before it takes keystrokes
+                self._sender.send("collected")
+        threading.Thread(target=send, daemon=True).start()
+        return {"ok": True, "sending": True}
 
     def dismiss_contract(self, cid):
         self._tracker.dismiss(cid)

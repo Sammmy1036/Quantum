@@ -24,6 +24,7 @@ import json
 import math
 import os
 import re
+import secrets
 import string
 import threading
 import time
@@ -102,8 +103,41 @@ def objective_key(text: str) -> str:
     return re.sub(r"\d+\s*/\s*\d+", "#/#", text.strip().lower())
 
 
+# Wikelo-style collection objectives: "Need 0/1 of Berry Blend Smoothie". The items come from anywhere
+# (shops, loot, mining); they're handed in at a Wikelo Emporium, any of the three.
+NEED_RE = re.compile(r"^need\s+(\d+)\s*/\s*(\d+)\s+(?:scu\s+)?(?:of\s+)?(.+?)\s*$", re.I)
+BUY_SUFFIX = "#get"          # id suffix of the "get this item at <place>" step you can add per item
+
+
+def need_item(text: str):
+    """'Need 0/1 of Berry Blend Smoothie' -> (0, 1, 'Berry Blend Smoothie'), else None."""
+    m = NEED_RE.match(text or "")
+    return (int(m.group(1)), int(m.group(2)), m.group(3)) if m else None
+
+
+def is_collection(c) -> bool:
+    """A collection contract (Wikelo): items gathered anywhere, turned in at an emporium."""
+    return "wikelo" in f"{c.code} {c.name}".lower() or any(need_item(o.text) for o in c.objectives)
+
+
+# Contract types Quantum doesn't track for now: Wikelo collections and bounties don't fit the
+# pickup/delivery model well. Their code stays in place for when they're turned back on.
+TRACK_COLLECTION = False
+TRACK_BOUNTY = False
+
+
+def is_bounty(c) -> bool:
+    return "bounty" in f"{c.code} {c.name}".lower()
+
+
+def is_tracked(c) -> bool:
+    return (TRACK_COLLECTION or not is_collection(c)) and (TRACK_BOUNTY or not is_bounty(c))
+
+
 def objective_kind(text: str, oid: str = "") -> str:
     o, t = oid.lower(), text.lower()
+    if need_item(text):
+        return "dropoff"                  # handed in at the emporium
     if o.startswith("pickup") or t.startswith(("collect", "pick up", "pickup", "retrieve", "obtain")):
         return "pickup"
     if o.startswith("dropoff") or t.startswith(("deliver", "drop off", "dropoff")):
@@ -153,6 +187,8 @@ class Objective:
     done_at: float | None = None
     zone: str | None = None         # interior zone (building/station) the marker sits in
     found: str = ""                 # how the place was worked out: text|marker|zone|station|visited|manual
+    manual: bool = False            # marked done by you (the game didn't log it)
+    item_for: str = ""              # a "get the item" step you added: the id of the item it's for
 
 
 @dataclass
@@ -168,6 +204,9 @@ class Contract:
     departed_at: float | None = None   # left the pickup with the cargo ("out for delivery")
     closed_at: float | None = None
     pickup_code: str = ""              # location code where the cargo was collected
+    turn_in: str = ""                  # collection contracts: the emporium to hand the items in at
+    turn_in_how: str = ""              # "nearest" (picked by Quantum) or "manual" (picked by you)
+    tracking_no: str = ""              # Quantum's own parcel-style number: 1SC + 15 random digits
 
 DEPART_FALLBACK_S = 180   # no departure signal? call it out for delivery 3 minutes after pickup
 GENERIC_TOKENS = {"lawful", "semilawful", "unlawful", "port", "station", "stanton", "pyro", "nyx", "location",
@@ -279,6 +318,9 @@ class ContractTracker(threading.Thread):
         self._pending = None       # buffered multi-line notification
         self._reopen = False
         self.game_running = False
+        self.proc_seen = False
+        self.last_growth = 0.0       # when the game last added lines while Quantum watched (not catch-up)
+        self._seen = None            # (signature, size) at the previous pass
         self.log_note = ""
         self._stop = threading.Event()
         self._load()
@@ -337,6 +379,11 @@ class ContractTracker(threading.Thread):
             self.recheck_markers()
             for c in self.contracts.values():
                 for o in c.objectives:
+                    # Places you set, learned ones and hand-ins stay; only text/marker matches are redone.
+                    if o.item_for or need_item(o.text) or o.found in ("manual", "visited", "zone", "station"):
+                        if o.location and o.location not in self.nav.locations and not need_item(o.text):
+                            o.location = None               # that place was deleted
+                        continue
                     o.location = self._match_location(o)
             self._changed()
 
@@ -356,6 +403,9 @@ class ContractTracker(threading.Thread):
         with self.lock:
             out = []
             for c in sorted(self.contracts.values(), key=lambda c: -c.accepted_at):
+                if not is_tracked(c):
+                    continue
+                self._tracking_no(c)          # contracts from before tracking numbers existed
                 d = asdict(c)
                 cargo = contract_cargo(c.code)
                 d["subtitle"] = cargo
@@ -370,6 +420,9 @@ class ContractTracker(threading.Thread):
                     else:
                         o["label"] = o["text"]
                 d["tracking"] = self._tracking(c)
+                d["collection"] = is_collection(c)
+                for o in d["objectives"]:
+                    o["need"] = need_item(o["text"])
                 out.append(d)
             return out
 
@@ -382,11 +435,14 @@ class ContractTracker(threading.Thread):
         now = time.time()
         picked = [o for o in picks if o.status == "done"]
         dropped = [o for o in drops if o.status == "done"]
+        collection = is_collection(c)
         collected_at = None
-        if picks and len(picked) == len(picks):
+        if picks and len(picked) == len(picks) and (not collection or len(picks) >= len(drops)):
             collected_at = max((o.done_at or c.updated_at) for o in picked)
-        elif not picks:
+        elif not picks and not collection:
             collected_at = c.accepted_at
+        elif collection and dropped:          # handing items in: you had them
+            collected_at = min(o.done_at or c.updated_at for o in dropped)
         departed_at = c.departed_at
         if collected_at and not departed_at and (c.status != "active" or now - collected_at > DEPART_FALLBACK_S):
             departed_at = collected_at + DEPART_FALLBACK_S if c.status == "active" else (c.closed_at or collected_at)
@@ -401,12 +457,18 @@ class ContractTracker(threading.Thread):
         # don't state it, but what you pick up is what you have to deliver.
         cargo = {}
         for o in drops:
+            n = need_item(o.text)
+            if n:                                  # collection item: count, not SCU
+                k = cargo.setdefault(n[2], [0, 0])
+                k[0] += n[1] if o.status == "done" or c.status == "complete" else n[0]
+                k[1] += n[1]
+                continue
             m = re.search(r"(\d+)\s*/\s*(\d+)\s*SCU of (.+?) to ", o.text or "")
             if m:
                 k = cargo.setdefault(m.group(3).strip(), [0, 0])
                 k[0] += int(m.group(2)) if o.status == "done" or c.status == "complete" else int(m.group(1))
                 k[1] += int(m.group(2))
-        return {"stage": stage, "cancelled": c.status in ("failed", "abandoned"), "status": c.status,
+        return {"stage": stage, "collection": collection, "cancelled": c.status in ("failed", "abandoned"), "status": c.status,
                 "times": [c.accepted_at, collected_at, departed_at, c.closed_at if c.status == "complete" else None],
                 "picked": len(picked), "pickups": len(picks), "dropoffs": len(drops),
                 "delivered": len(dropped), "last_drop": last_drop,
@@ -414,6 +476,52 @@ class ContractTracker(threading.Thread):
                 "scu_total": sum(v[1] for v in cargo.values()),
                 "drops": [{"id": o.id, "where": o.location or (o.marker and (f"Marker on {o.marker['body']}" if o.marker.get('body') else f"Marker near {o.marker.get('lpoint', 'a Lagrange point')}")),
                            "status": o.status, "at": o.done_at, "scu": scu_progress(o.text)} for o in drops]}
+
+    def mark_collected(self, cid, oid):
+        """The player says they collected the cargo (the game didn't log it). Same as the game's
+        "Objective Complete" for that pickup; if the game reports it later, nothing changes."""
+        with self.lock:
+            c = self.contracts.get(cid)
+            if not c or c.status != "active":
+                return False
+            todo = [o for o in c.objectives if o.kind == "pickup" and o.status == "active"
+                    and (oid is None or o.id == oid)]           # no oid: every open pickup
+            for o in todo:
+                o.manual = True
+                self._set_status(c, o, "done", time.time(), manual=True)
+            if todo:
+                self._changed()
+            return bool(todo)
+
+    def set_item_source(self, cid, oid, place):
+        """Where you'll get an item for a collection contract: adds (or moves, or with place=None
+        removes) a pickup step for it, which then shows up in routes like any pickup."""
+        with self.lock:
+            c = self.contracts.get(cid)
+            o = next((o for o in c.objectives if o.id == oid), None) if c else None
+            if not o or not need_item(o.text) or (place and place not in self.nav.locations):
+                return False
+            gid = o.id + BUY_SUFFIX
+            g = next((g for g in c.objectives if g.id == gid), None)
+            if not place:
+                if g and g.status == "active":
+                    c.objectives.remove(g)
+            elif g:
+                g.location, g.status, g.done_at, g.manual = place, "active", None, False
+            else:
+                c.objectives.append(Objective(gid, f"Get {need_item(o.text)[2]}", "active", "pickup", place,
+                                              found="manual", item_for=o.id))
+            self._changed()
+            return True
+
+    def set_turn_in(self, cid, place, how):
+        with self.lock:
+            c = self.contracts.get(cid)
+            if not c or (c.turn_in == place and c.turn_in_how == how):
+                return False
+            c.turn_in, c.turn_in_how = place, how
+            self._changed()
+            return True
 
     def mark_departed(self, cid, ts):
         with self.lock:
@@ -449,7 +557,19 @@ class ContractTracker(threading.Thread):
         if c is None:
             c = Contract(mid, name or "Contract", "active", ts, ts)
             self.contracts[mid] = c
+            self._tracking_no(c)
         return c
+
+    def _tracking_no(self, c):
+        """Give a contract a tracking number like a parcel's, never one already in use."""
+        if not c.tracking_no:
+            used = {x.tracking_no for x in self.contracts.values()}
+            while True:
+                n = "1SC" + "".join(secrets.choice("0123456789") for _ in range(15))
+                if n not in used:
+                    c.tracking_no = n
+                    break
+        return c.tracking_no
 
     def _objective(self, c, oid, text=""):
         for o in c.objectives:
@@ -648,13 +768,16 @@ class ContractTracker(threading.Thread):
                         o.location, o.found, changed = place, how, True
         return changed
 
-    def _set_status(self, c, o, status, ts):
+    def _set_status(self, c, o, status, ts, manual=False):
         o.status = status
         c.updated_at = ts
         if status != "done":
             return
         o.done_at = ts
-        if o.marker and o.marker.get("body") and o.kind in ("pickup", "dropoff"):
+        for g in c.objectives:            # handed the item in: its "get it" step is done too
+            if g.item_for == o.id and g.status == "active":
+                g.status, g.done_at = "done", ts
+        if not manual and o.marker and o.marker.get("body") and o.kind in ("pickup", "dropoff"):
             # You complete a pickup/drop-off standing at its marker: an exact, known spot for calibration.
             self.marker_hits = (self.marker_hits + [{"t": ts, "body": o.marker["body"], "pos": o.marker["pos"],
                                                      "name": o.location or f"{o.kind} marker", "used": False}])[-10:]
@@ -975,7 +1098,7 @@ class ContractTracker(threading.Thread):
             else:
                 o = Objective(oid or f"t{len(c.objectives)}", rest, "active", objective_kind(rest, oid))
                 c.objectives.append(o)
-            if not o.location:
+            if not o.location and not need_item(rest):   # item names aren't places ("Ermer Family Farms")
                 o.location = self._match_location(o)
                 o.found = "text" if o.location else o.found
             c.updated_at = ts
@@ -1055,11 +1178,12 @@ class ContractTracker(threading.Thread):
         even if Quantum was pointed somewhere else before (another drive, LIVE vs PTU). Otherwise keep the
         current file if it exists, else the first standard install location that has one."""
         now = time.time()
-        if not force and now - getattr(self, "_last_locate", 0) < 5:
+        if not force and now - getattr(self, "_last_locate", 0) < 2:
             return
         self._last_locate = now
         logs = running_game_logs()
         self.game_running = bool(logs)
+        self.proc_seen = self.proc_seen or self.game_running   # the process check works on this PC
         running = [p for p in logs if os.path.isfile(p)]
         if running and (not self.log_path or os.path.normcase(self.log_path) not in map(os.path.normcase, running)):
             self.log_path, self.log_note = running[0], "Found Game.log next to the running Star Citizen"
@@ -1090,6 +1214,9 @@ class ContractTracker(threading.Thread):
                             self.log_sig, self.offset, self.zone_bodies = sig, 0, {}
                             self.zone_places, self.atc = {}, {}
                         self._reopen = False
+                if self._seen and self._seen[0] == sig and size > self._seen[1]:
+                    self.last_growth = time.time()        # written since the last pass: the game is live
+                self._seen = (sig, size)
                 changed = False
                 if size > self.offset:
                     with open(path, "r", encoding="utf-8", errors="replace", newline="") as fh:
