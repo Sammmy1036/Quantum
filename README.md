@@ -118,7 +118,7 @@ Positions come from community datasets, and component stats come from the game f
 
 ## Your data and privacy
 
-Quantum does not transmit or store your API token. It is stored locally on your own machine and only communicates with UEX servers.
+Quantum does not transmit or store your API token to an outward facing server. It is stored locally on your own machine and only communicates with UEX servers.
 
 | File | Holds |
 |---|---|
