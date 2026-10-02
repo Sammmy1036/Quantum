@@ -1,16 +1,14 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "236a9d7ab3616a544423c3b8a4ff1de4b7e4e13c",
- "offset": 1767910,
+ "log_sig": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+ "offset": 0,
  "where": {
   "code": "RR_MIC_LEO",
   "system": "Stanton",
   "body": "microTech",
   "at": 1790751419.792
  },
- "zone_bodies": {
-  "833687641891": "Monox"
- },
+ "zone_bodies": {},
  "build": "12660092",
  "loc_ids": {
   "2147648880": "Port Tressler"
@@ -36,11 +34,7 @@
   "learned": true
  },
  "zone_places": {},
- "atc": {
-  "833693872328": "ATC_DataManager_Port_Lawful-001",
-  "833693868876": "ATC_DataManager_Port_SemiLawful-Dock1",
-  "833687756846": "ATC_DataManager_Port_Lawful_Collector"
- },
+ "atc": {},
  "contracts": [
   {
    "id": "1bd65bf5-74e8-4dad-a2d5-21b77c078cc9",
@@ -90,7 +84,8 @@
    "closed_at": 1790747844.0,
    "pickup_code": "",
    "turn_in": "",
-   "turn_in_how": ""
+   "turn_in_how": "",
+   "tracking_no": "1SC798198986771664"
   },
   {
    "id": "f4a2753e-c0c0-4b01-bc35-b01436257796",
@@ -132,7 +127,8 @@
    "closed_at": 1790750605.317,
    "pickup_code": "",
    "turn_in": "",
-   "turn_in_how": ""
+   "turn_in_how": "",
+   "tracking_no": ""
   }
  ]
 }

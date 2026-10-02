@@ -7,6 +7,9 @@ Read-only data sources; nothing touches the game process:
   - locations.json                -> map database (run import_data.py once)
 """
 import json
+import secrets
+import urllib.parse
+import urllib.request
 import os
 import math
 import sys
@@ -18,8 +21,10 @@ import webbrowser
 
 import webview
 
+import fleet
 import gateways
 import services
+import uex
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
@@ -39,13 +44,20 @@ SETTINGS_PATH = HERE / "settings.json"
 SERVICES_PATH = HERE / "services.json"    # location services from the Star Citizen Wiki API
 WIKI_PATH = HERE / "wiki_systems.json"   # Star Citizen Wiki system info (CC BY-SA 4.0), from import_data.py
 CAL_PATH = HERE / "calibrations.json"
-PLACES_PATH = HERE / "places.json"      # gateway positions you measured with /showlocation; shareable
+PLACES_PATH = HERE / "places.json"
+SYSTEM_ORDER = {"Stanton": 0, "Pyro": 1, "Nyx": 2}
+VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"), ("is_military", "Combat"),
+                 ("is_bomber", "Bomber"), ("is_exploration", "Exploration"), ("is_medical", "Medical"),
+                 ("is_refuel", "Refuel"), ("is_repair", "Repair"), ("is_passenger", "Passenger"),
+                 ("is_racing", "Racing"), ("is_starter", "Starter"), ("is_ground_vehicle", "Ground"),
+                 ("is_industrial", "Industrial"), ("is_science", "Science"), ("is_stealth", "Stealth"),
+                 ("is_carrier", "Carrier"), ("is_interdiction", "Interdiction"), ("is_emp", "EMP"),
+                 ("is_construction", "Construction"), ("is_datarunner", "Data running"), ("is_qed", "Quantum snare")]      # gateway positions you measured with /showlocation; shareable
 # Where a hangar reading in each city is anchored: its spaceport (or the city if the data has no spaceport).
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
                "Orison": "August Dunlow Spaceport", "Lorville": "Lorville", "Levski": "Levski"}
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
-BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum   # your planet alignments + evidence; shareable
-
+BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum  
 
 class Api:
     """Public methods are callable from JS as window.pywebview.api.<name>(...)."""
@@ -55,12 +67,10 @@ class Api:
         self._db = NavDB.load(DB_PATH)
         self._db.path = DB_PATH
         self._renamed = rename_gateways(self._db)
-        # Gateway stations in all three systems. Ones with no known position yet are kept aside:
-        # searchable with their services, but off the map until you /showlocation there.
         ren, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
         self._renamed.update(ren)
         self._db.save()
-        for path in (BUILTIN_CAL_PATH, CAL_PATH):   # shipped alignments first, then yours / shared ones
+        for path in (BUILTIN_CAL_PATH, CAL_PATH):
             if not path.exists():
                 continue
             try:
@@ -70,8 +80,13 @@ class Api:
             except Exception:
                 pass
         self._settings = self._load_settings()
-        # The route is a list of tasks. A task is a plain visit, or one contract objective at a place.
-        # Consecutive tasks at the same place form one stop; a place can come back later in the trip.
+        # Stations Quantum's data lacks, from UEX's station list (cached; nothing is fetched here).
+        self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
+        self._uex_amen = {}
+        self._wikiapi = fleet.Wiki(HERE / "uex_cache")
+        # Component numbers from the game files (build_component_stats.py), preferred over the wiki.
+        self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
+        self._renamed.update(self._apply_uex_stations(offline=True))
         ren = self._renamed
         for st in self._settings.get("route_tasks") or []:
             st["place"] = ren.get(st.get("place"), st.get("place"))
@@ -106,7 +121,6 @@ class Api:
              **self._settings.get("autoloc", {})}
         if a.get("action") == "showlocation" and not a.get("loc_hotkey"):
             a["loc_hotkey"], a["hotkey"] = a["hotkey"], "F9" if a["hotkey"] != "F9" else ""
-        # Automatic /showlocation was removed: the log can't tell reliably when a quantum jump is under way.
         self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False)
 
     # ------------------------------------------------------------ internals
@@ -122,19 +136,17 @@ class Api:
         SETTINGS_PATH.write_text(json.dumps(self._settings, indent=1), encoding="utf-8")
 
     def _game_on(self):
-        """Is Star Citizen running? The process check, backed by the game adding lines to Game.log in the
-        last two minutes while Quantum watched (in case the check can't see the game). Not the file's
-        modified time: Quantum emptying the log at startup touches that too. Off Windows, assume yes."""
+        """Is Star Citizen running?"""
         tr = self._tracker
         if os.name != "nt" or tr.game_running:
             return True
-        if tr.proc_seen:              # the process check has seen the game before: trust it, it's gone
+        if tr.proc_seen:              # the process check has seen the game before trust it it's gone
             return False
         return time.time() - tr.last_growth < 120
 
     def _on_position(self, pos, t):
         if not self._game_on():
-            return                  # coordinates copied from somewhere else: the game isn't running
+            return                 
         with self._lock:
             hint = self._tracker.where.get("system")
             self._player, self._player_t = pos, t
@@ -175,8 +187,6 @@ class Api:
         return {**base, "state": None}
 
     def _learn_jump_from_reading(self):
-        """A /showlocation soon after a jump tells us exactly where that jump went: the nearest place you
-        can jump to (orbital marker, station, outpost...) is what the destination id means."""
         q = self._tracker.qt or {}
         if not q.get("arrived") or q.get("by_reading") or not (0 <= self._player_t - q["arrived"] <= 900):
             return
@@ -191,7 +201,6 @@ class Api:
                 best, bd, second = loc.name, d, bd
             elif d < second:
                 second = d
-        # Close to one jump point, and clearly closer to it than to any other.
         if best and bd < 150_000 and second > 2 * bd:
             q["by_reading"] = True
             self._tracker.learn_dest(q["dest"], best, "reading")
@@ -201,7 +210,7 @@ class Api:
           - landing or docking at that place (or anywhere in that city),
           - a quantum jump arriving at a destination known to be that place,
           - a /showlocation within reach of it (1.5 km on the ground, 30 km in space).
-        Stops with contract jobs stay until the job itself completes; they're marked as reached."""
+        Stops with contract jobs stay until the job itself completes they're marked as reached."""
         stops = self._stops()
         if not stops:
             return
@@ -236,13 +245,12 @@ class Api:
     def _try_autocal(self):
         """Line a planet up from a /showlocation taken where the log says you are.
 
-        - City or spaceport (e.g. your hangar at New Babbage): anchored to that city's spaceport.
+        - City or spaceport (e.g. your hangar at New Babbage) anchored to that city's spaceport.
           Hangars sit a few km from the spaceport's map point, so this is good to a few km.
-        - Orbital station (e.g. Port Tressler): anchored to the station, good to about a km.
-        - Any other named place (outposts, distribution centres): exact.
+        - Orbital station (e.g. Port Tressler) anchored to the station, good to about a km.
+        - Any other named place (outposts, distribution centres) exact.
         Latitude and height don't depend on the rotation angle, so they must roughly match the anchor
-        first. A better-quality calibration is never replaced by a rougher one; the reading is logged
-        as a drift check instead."""
+        first."""
         if self._player and self._autocal_from_delivery():
             return
         w = self._tracker.where or {}
@@ -270,7 +278,6 @@ class Api:
             elif kind == "station":
                 target, mode, lat_tol, alt_tol = anchor, "station", 0.15, 6_000
         if target is None:
-            # A small named place: the reading has to match one known place tightly.
             lat_p, _, alt_p = body.lat_lon_alt(body.to_local(self._player, self._player_t))
             matches = []
             for loc in self._db.locations.values():
@@ -288,7 +295,7 @@ class Api:
                 return
             matches.sort(key=lambda m: m[0])
             if any(dist(m[1].pos, matches[0][1].pos) > 5_000 for m in matches[1:]):
-                return                                  # two different places fit: let the prompt ask
+                return                                  # two different places fit let the prompt ask
             target, mode, lat_tol, alt_tol = matches[0][1], "place", 0.3, 15_000
         if target.kind != "surface" or target.body != body.name:
             return
@@ -296,7 +303,6 @@ class Api:
             return                                      # this reading already calibrated this body
         have = QUALITY.get(body.calibration_quality, 0) if body.calibrated else -1
         if QUALITY[mode] < have:
-            # Rougher than what we already have: don't overwrite, but it's a useful drift check.
             lat_c, _, alt_c = body.lat_lon_alt(body.to_local(self._player, self._player_t))
             lat_k, _, alt_k = body.lat_lon_alt(target.pos)
             if abs(lat_c - lat_k) <= lat_tol and abs(alt_c - alt_k) <= alt_tol \
@@ -314,7 +320,7 @@ class Api:
             self._save_settings()
 
     def _autocal_from_delivery(self):
-        """You just completed a pickup or drop-off: the log's marker for it is where you're standing.
+        """You just completed a pickup or drop-off the log's marker for it is where you're standing.
         A /showlocation within 5 minutes lines that planet up exactly."""
         for hit in reversed(self._tracker.marker_hits):
             if hit["used"] or abs(self._player_t - hit["t"]) > 300:
@@ -325,7 +331,7 @@ class Api:
             spot = Location(hit["name"], "surface", tuple(hit["pos"]), body.name, system=body.system)
             if QUALITY["place"] < (QUALITY.get(body.calibration_quality, 0) if body.calibrated else -1):
                 continue
-            # 0.05 degrees (about 900 m on a 1,000 km planet) and 1.5 km of height: you're at the marker.
+            # 0.05 degrees (about 900 m on a 1,000 km planet) and 1.5 km of height you're at the marker.
             res = self._db.auto_calibrate(body.name, spot, self._player, self._player_t, 0.05, 1_500, "place")
             if not res.get("ok"):
                 continue
@@ -341,8 +347,8 @@ class Api:
 
     def _calib_suggestion(self):
         """Your reading matches a known place by latitude and altitude (which don't depend on the
-        planet's rotation angle) but the map puts you far from it: offer to line the planet up there.
-        Places near the area the log last named come first; otherwise the closest matches anywhere."""
+        planet's rotation angle) but the map puts you far from it offer to line the planet up there.
+        Places near the area the log last named come first otherwise the closest matches anywhere."""
         if not self._player:
             return None
         body = self._db.body_near(self._player, self._player_sys)
@@ -365,7 +371,7 @@ class Api:
             if score >= 1:
                 continue
             off = dist(loc.pos, local)
-            if off < 3_000:                # you're already where the map says: nothing to fix
+            if off < 3_000:                
                 if (body.calibrated and self._last_check_t != self._player_t
                         and self._player_t - (body.calibrated_at or 0) > 60):   # a LATER reading, not the calibrating one
                     self._last_check_t = self._player_t
@@ -389,9 +395,111 @@ class Api:
                 "city": bool(anchor and classify(anchor.name, anchor.category) == "city")}
 
     def _match_services(self):
-        return services.match(self._service_records, {**self._unplaced, **self._db.locations})
+        out = services.match(self._service_records, {**self._unplaced, **self._db.locations})
+        for name, amen in self._uex_amen.items():      # stations the wiki data has nothing for
+            if amen and (name not in out or not out[name]["amenities"]):
+                out[name] = dict(out.get(name) or {"name": name, "description": "", "jurisdiction": "",
+                                                   "url": "", "version": ""}, amenities=amen, uex=True)
+        return out
+
+    def _apply_uex_stations(self, offline=False):
+        """Add the stations UEX lists that Quantum's data lacks: at their Lagrange point (approximate),
+        or by renaming a placeholder like "Orbital Station Bloom" to the real name ("Orbituary").
+        Returns {old name: new name}."""
+        try:
+            rows, _ = self._uex.get("space_stations", offline=offline)
+        except uex.UexError:
+            return {}
+        locs = self._db.locations
+        keys = {(services._key(n), l.system): n for n, l in locs.items()
+                if l.source == "db" and l.category not in ("lpoint", "om")}
+        renamed, aliases, amen = {}, {}, {}
+        for st in rows:
+            sysn, name = st.get("star_system_name"), (st.get("name") or "").strip()
+            if sysn not in uex.SYSTEMS or not name or st.get("is_decommissioned") or \
+                    not st.get("is_available_live", 1) or not st.get("is_visible", 1):
+                continue
+            k = services._key(name)
+            have = keys.get((k, sysn)) or keys.get((k + "station", sysn))
+            if have:
+                if have != name:
+                    aliases[name] = have
+                amen[have] = uex.amenities(st)
+                continue
+            lp = uex.lpoint_name(st)
+            body = st.get("moon_name") or st.get("planet_name")
+            ph = f"Orbital Station {body}" if body else None
+            if not lp and ph in locs and locs[ph].source == "db" and name not in locs:
+                loc = locs.pop(ph)
+                loc.name = name
+                loc.notes = (loc.notes + ". " if loc.notes else "") + "Name from UEX"
+                locs[name] = loc
+                renamed[ph] = name
+            elif lp in locs and locs[lp].system == sysn and name not in locs:
+                locs[name] = Location(name, "space", locs[lp].pos, None, source="db", system=sysn, qt=True,
+                                      notes=f"Position approximate (at {lp}). Station from UEX", category="station")
+            else:
+                continue
+            keys[(k, sysn)] = name
+            amen[name] = uex.amenities(st)
+        self._uex.aliases, self._uex_amen = aliases, amen
+        self._uex.forget_places()
+        self._add_uex_pending(offline, rows)
+        self._db.save()
+        self._uex.forget_places()
+        return renamed
+
+    def _add_uex_pending(self, offline, stations):
+        """Trade terminals at places no data has a position for (new Pyro outposts and stations):
+        searchable with their services, and placed for good by one /showlocation there."""
+        try:
+            places = self._uex.place_map(self._db.locations, offline=offline)
+            terms = self._uex.terminals(offline=offline)
+        except uex.UexError:
+            return
+        try:
+            outposts = {o["name"]: o for o in self._uex.get("outposts", offline=offline)[0]}
+        except uex.UexError:
+            outposts = {}
+        st_by_name = {s_.get("name"): s_ for s_ in stations}
+        learned = gateways.load_learned(PLACES_PATH)
+        bodies = {n for n in self._db.bodies}
+        self._uex_pending = getattr(self, "_uex_pending", {})
+        for tid, t in terms.items():
+            if places.get(tid):
+                continue
+            station = t.get("space_station_name")
+            name = (station or t.get("outpost_name") or t.get("city_name") or t.get("displayname")
+                    or t.get("name") or "").strip()
+            sysn = t.get("star_system_name")
+            if not name or name in self._db.locations or gateways.system_of(name) or \
+                    any(services._key(name) == services._key(n) for n in self._unplaced if n not in self._uex_pending):
+                continue
+            body = uex.body_name(t.get("moon_name") or t.get("planet_name"), bodies)
+            surface = not station and bool(body)
+            src = st_by_name.get(name) or outposts.get(name) or {}
+            self._uex_amen[name] = uex.amenities(src) if src else []
+            where = f" on {t.get('moon_name') or t.get('planet_name')}" if surface else ""
+            l = learned.get(name)
+            if l and l.get("system") == sysn and (l.get("local") or l.get("pos")):
+                if l.get("local") and l.get("body") in bodies:
+                    loc = Location(name, "surface", tuple(l["local"]), l["body"], source="db", system=sysn,
+                                   qt=True, category="station" if station else "outpost",
+                                   notes=f"From UEX{where}. Position from your /showlocation")
+                else:
+                    loc = Location(name, "space", tuple(l["pos"]), None, source="db", system=sysn, qt=True,
+                                   category="station", notes="From UEX. Position from your /showlocation")
+                self._db.locations[name] = loc
+                self._unplaced.pop(name, None)
+            else:
+                self._unplaced[name] = Location(name, "surface" if surface else "space", None, body if surface else None,
+                                                source="db", system=sysn, qt=True,
+                                                category="station" if station else "outpost",
+                                                notes=f"From UEX{where}. Position not known yet")
+            self._uex_pending[name] = sysn
 
     def _db_changed(self):
+        self._uex.forget_places()
         self._services = self._match_services()
         self._static_version += 1
         self._route = [r for r in self._route if r["place"] in self._db.locations]
@@ -425,7 +533,7 @@ class Api:
             bodies = sorted(self._db.bodies.values(), key=lambda b: -b.radius_m)
             out_b = []
             for b in bodies:
-                # a moon's parent: at least twice its size and close by (within 200 parent radii)
+                # a moon's parent at least twice its size and close by (within 200 parent radii)
                 parents = [p for p in bodies if p.system == b.system and p.radius_m >= 2 * b.radius_m
                            and (p.kind == "star" or dist(p.center, b.center) < 200 * p.radius_m)]
                 parent = min(parents, key=lambda p: dist(p.center, b.center), default=None)
@@ -437,7 +545,8 @@ class Api:
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
                      "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
                      "to": gateways.leads_to(l.name), "unplaced": l.pos is None,
-                     "placeable": gateways.system_of(l.name) is not None, "near": gateways.near_body(l.name),
+                     "placeable": gateways.system_of(l.name) is not None or l.name in getattr(self, "_uex_pending", {}),
+                     "near": gateways.near_body(l.name),
                      **({"amen": self._services[l.name]["amenities"],
                          "pad_auto": services.pad_from(self._services[l.name]["amenities"])}
                         if l.name in self._services else {})}
@@ -475,12 +584,12 @@ class Api:
             t = time.time()
             game_on = self._game_on()
             if not game_on and self._player:
-                # The game closed: that reading is from the last session and you'll spawn somewhere else.
+                # The game closed that reading is from the last session and you'll spawn somewhere else.
                 self._player = self._player_t = self._player_sys = None
             p, psys = self._player, self._player_sys
             ptime, approx = self._player_t, None
             cur = self._tracker.cur or {}
-            # The log knows where you are and that's newer than your last /showlocation: show you at
+            # The log knows where you are and that's newer than your last /showlocation show you at
             # that place (approximate) until a real reading comes in. Keeps the route line drawn.
             spot, spot_at, how = self._log_spot(cur) if game_on else (None, 0, None)
             if spot and (not p or spot_at > self._player_t):
@@ -496,6 +605,7 @@ class Api:
                     "contracts": [], "contracts_version": self._tracker.version,
                     "log": {"path": self._tracker.log_path, "status": self._tracker.status,
                             "clear_on_start": bool(self._settings.get("clear_log_on_start")),
+                            "uex_token": bool(self._uex.token),
                             "game_running": self._tracker.game_running, "note": self._tracker.log_note,
                             "cleared": self._log_cleared},
                     "where": self._tracker.where,
@@ -597,7 +707,7 @@ class Api:
             self._static_version += 1
 
     def _stop_roles(self, stops, contracts):
-        """Per stop: what you do there. Also flags a delivery planned before its pickup."""
+        """Per stop what you do there. Also flags a delivery planned before its pickup."""
         by_id = {c["id"]: c for c in contracts}
         roles, pos = [], {}
         for i, st in enumerate(stops):
@@ -639,7 +749,7 @@ class Api:
             loc = self._db.locations[place]
             return self._db.global_pos(loc, t), loc.system, loc
         m = o.get("marker")
-        if m and not m.get("body"):                     # rest stop at a Lagrange point: global position
+        if m and not m.get("body"):                     # rest stop at a Lagrange point global position
             loc = Location("marker", "space", tuple(m["pos"]), None, system=m["system"])
             return loc.pos, m["system"], loc
         if m and m["body"] in self._db.bodies:
@@ -649,7 +759,7 @@ class Api:
         return None, None, None
 
     def _emporium_pos(self, name, t):
-        """Where a Wikelo emporium is: its own position once placed, else its planet's (good enough to
+        """Where a Wikelo emporium is its own position once placed, else its planet's (good enough to
         tell which one is closest)."""
         L = self._db.locations.get(name)
         if L:
@@ -665,7 +775,7 @@ class Api:
             if c.status != "active" or not is_collection(c) or not is_tracked(c):
                 continue
             changed = False
-            for o in c.objectives:        # you typed a shop as the item's place: that's where you get it
+            for o in c.objectives:        # you typed a shop as the item's place that's where you get it
                 if need_item(o.text) and o.location and o.location not in emp and o.found == "manual":
                     self._tracker.set_item_source(c.id, o.id, o.location)
                     o.location, o.found, changed = None, "", True
@@ -747,7 +857,7 @@ class Api:
         return pairs
 
     def _optimize_tasks(self):
-        """Reorder the tasks. Each task is a node (its place's position); tasks at the same place are
+        """Reorder the tasks. Each task is a node (its place's position) tasks at the same place are
         zero distance apart, so they end up together unless a revisit is genuinely needed."""
         now = time.time()
         first = self._db.locations[self._route[0]["place"]]
@@ -886,9 +996,12 @@ class Api:
     def set_place_here(self, name):
         """You're docked at a gateway station: use your last /showlocation as its position."""
         with self._lock:
-            system = gateways.system_of(name)
+            pend = getattr(self, "_uex_pending", {})
+            system = gateways.system_of(name) or pend.get(name)
             if not system:
-                return {"ok": False, "error": "Only gateway and Wikelo stations can be placed this way"}
+                return {"ok": False, "error": "Only gateways, Wikelo and UEX-only places can be placed this way"}
+            if name in pend:
+                return self._place_uex_here(name, system)
             if not self._player or time.time() - self._player_t > 900:
                 return {"ok": False, "error": "Type /showlocation in game chat while docked there"}
             if self._player_sys != system:
@@ -899,9 +1012,35 @@ class Api:
                                               "Take it while docked at the station"}
             gateways.save_learned(PLACES_PATH, name, system, self._player)
             _, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
+            self._apply_uex_stations(offline=True)          # keep the UEX-only places alongside
             self._db.save()
             self._db_changed()
             return {"ok": True, "name": name}
+
+    def _place_uex_here(self, name, system):
+        """A place known only from UEX a surface outpost is stored relative to its moon or planet (it
+        turns with it), a station by its position."""
+        if not self._player or time.time() - self._player_t > 900:
+            return {"ok": False, "error": "Type /showlocation in game chat while you're there"}
+        if self._player_sys != system:
+            return {"ok": False, "error": f"Your last reading is in {self._player_sys}, not {system}"}
+        cur = self._unplaced.get(name) or self._db.locations.get(name)
+        places = gateways.load_learned(PLACES_PATH)
+        if cur and cur.kind == "surface" and cur.body:
+            b = self._db.bodies.get(cur.body)
+            near = self._db.body_near(self._player, system)
+            if not b or not near or near.name != b.name:
+                return {"ok": False, "error": f"That reading isn't on {cur.body}. Take it while you're at {name}"}
+            places[name] = {"system": system, "body": b.name, "local": list(b.to_local(self._player, self._player_t)),
+                            "at": time.time()}
+        else:
+            places[name] = {"system": system, "pos": list(self._player), "at": time.time()}
+        PLACES_PATH.write_text(json.dumps({"places": places}, indent=1), encoding="utf-8")
+        self._db.locations.pop(name, None)
+        self._unplaced.pop(name, None)
+        self._apply_uex_stations(offline=True)
+        self._db_changed()
+        return {"ok": True, "name": name}
 
     def update_location(self, name, pad=None, notes=None):
         with self._lock:
@@ -995,9 +1134,677 @@ class Api:
         return {"ok": True}
 
     def get_services(self, name):
-        """Services, jurisdiction and in-game description for one place (None if unknown)."""
+        """Services, jurisdiction and in-game description for one place (None if unknown), plus fuel
+        prices from UEX when there's a token."""
         r = self._services.get(name)
-        return dict(r, pad=services.pad_from(r["amenities"])) if r else None
+        out = dict(r, pad=services.pad_from(r["amenities"])) if r else None
+        fuel = self._fuel_at(name)
+        if fuel:
+            out = dict(out or {"amenities": [], "pad": None}, fuel=fuel)
+        return out
+
+    # ------------------------------------------------------------ UEX: trade data
+    def _uex_call(self, fn):
+        try:
+            return fn()
+        except uex.UexError as e:
+            return {"ok": False, "error": str(e)}
+
+    def _dist_from_you(self, place):
+        L = self._db.locations.get(place) if place else None
+        if not L or not L.pos or not self._player or L.system != self._player_sys:
+            return None
+        return dist(self._db.global_pos(L, time.time()), self._player)
+
+    def _fuel_at(self, place):
+        if not self._uex.token:
+            return None
+        try:
+            places = self._uex.place_map(self._db.locations)
+            rows, _ = self._uex.get("fuel_prices_all")
+        except uex.UexError:
+            return None
+        return [{"what": r["commodity_name"], "price": r["price_buy"]} for r in rows
+                if places.get(r["id_terminal"]) == place and r.get("price_buy")] or None
+
+    def set_uex_token(self, token):
+        token = (token or "").strip()
+        if not token:
+            self._uex.token = ""
+            self._settings.pop("uex_token", None)
+            self._save_settings()
+            return {"ok": True, "cleared": True}
+        try:
+            self._uex.test(token)               # a wrong token is reported and dropped, never kept
+        except uex.UexError as e:
+            return {"ok": False, "error": str(e) + (". Your saved token is still in use" if self._uex.token else "")}
+        self._uex.token = token
+        self._settings["uex_token"] = token
+        self._save_settings()
+        self._refresh_uex_places()
+        return {"ok": True}
+
+    def _refresh_uex_places(self):
+        """Fetch UEX's station list and add the stations Quantum lacks (renames carry into the route)."""
+        with self._lock:
+            ren = self._apply_uex_stations(offline=False)
+            if ren:
+                for t in self._route:
+                    t["place"] = ren.get(t["place"], t["place"])
+                if self._guide in ren:
+                    self._guide = ren[self._guide]
+                self._save_settings()
+            self._db_changed()
+
+    def uex_status(self):
+        if not self._uex.token:
+            return {"ok": False, "token": False}
+        if not (HERE / "uex_cache" / "space_stations.json").exists():
+            try:
+                self._refresh_uex_places()        # token from before stations were added: fetch them once
+            except Exception:
+                pass
+        st = dict(self._uex.status(self._db.locations), token=True)
+        if st.get("ok"):          # ones Quantum knows but can't place yet (gateways, Wikelo): say so
+            pending = {services._key(n): n for n in self._unplaced}
+            st["needs_position"] = sorted(pending[services._key(n)] for n in st["unmatched"] if services._key(n) in pending)
+            st["unmatched"] = [n for n in st["unmatched"] if services._key(n) not in pending]
+        return st
+
+    def uex_commodities(self):
+        def run():
+            rows, at = self._uex.get("commodities")
+            out = [{"id": c["id"], "name": c["name"], "code": c["code"], "kind": c.get("kind"), "wiki": c.get("wiki"),
+                    "raw": bool(c.get("is_raw")), "mineral": bool(c.get("is_mineral")),
+                    "harvestable": bool(c.get("is_harvestable")), "volatile": bool(c.get("is_volatile_qt")),
+                    "illegal": bool(c.get("is_illegal")), "buy": c.get("price_buy"), "sell": c.get("price_sell")}
+                   for c in rows if c.get("is_available_live", 1) and (c.get("is_buyable") or c.get("is_sellable"))]
+            return {"ok": True, "items": sorted(out, key=lambda c: c["name"]), "at": at}
+        return self._uex_call(run)
+
+    def uex_market(self, id_commodity):
+        """Where to buy and sell one commodity, best price first."""
+        def run():
+            terms = self._uex.terminals()
+            places = self._uex.place_map(self._db.locations)
+            rows, at = self._uex.get("commodities_prices_all")
+            buy, sell = [], []
+            for r in rows:
+                t = terms.get(r["id_terminal"])
+                if r["id_commodity"] != id_commodity or not t:
+                    continue
+                place = places.get(r["id_terminal"])
+                base = {"terminal": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
+                        "place": place, "dist": self._dist_from_you(place), "updated": r.get("date_modified"),
+                        "max_box": t.get("max_container_size"), "containers": r.get("container_sizes")}
+                if r.get("price_buy"):
+                    buy.append(dict(base, price=r["price_buy"], avg=r.get("price_buy_avg"), scu=r.get("scu_buy"),
+                                    status=r.get("status_buy")))
+                if r.get("price_sell"):
+                    sell.append(dict(base, price=r["price_sell"], avg=r.get("price_sell_avg"),
+                                     scu=r.get("scu_sell_stock"), status=r.get("status_sell")))
+            buy.sort(key=lambda x: x["price"])
+            sell.sort(key=lambda x: -x["price"])
+            return {"ok": True, "buy": buy, "sell": sell, "at": at}
+        return self._uex_call(run)
+
+    def uex_vehicles(self):
+        """Every ship and ground vehicle, with where to buy and rent it in game and for how much."""
+        def run():
+            vehicles, at = self._uex.get("vehicles")
+            terms = self._uex.terminals()
+            places = self._uex.place_map(self._db.locations)
+            spots = {}
+
+            def add(kind, rows, price_keys):
+                for r in rows:
+                    t = terms.get(r.get("id_terminal"))
+                    price = next((r[k] for k in price_keys if r.get(k)), None)
+                    if not t or not price:
+                        continue
+                    place = places.get(r["id_terminal"])
+                    spots.setdefault(r.get("id_vehicle"), {"buy": [], "rent": []})[kind].append({
+                        "where": uex.where(t), "place": place, "system": t.get("star_system_name"),
+                        "price": price, "dist": self._dist_from_you(place), "updated": r.get("date_modified")})
+            add("buy", self._uex.get("vehicles_purchases_prices_all")[0], ("price_buy",))
+            add("rent", self._uex.get("vehicles_rentals_prices_all")[0], ("price_rent", "price", "price_buy"))
+            roles = VEHICLE_ROLES or [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"),
+                     ("is_military", "Combat"), ("is_bomber", "Bomber"), ("is_exploration", "Exploration"),
+                     ("is_medical", "Medical"), ("is_refuel", "Refuel"), ("is_repair", "Repair"),
+                     ("is_passenger", "Passenger"), ("is_racing", "Racing"), ("is_starter", "Starter"),
+                     ("is_ground_vehicle", "Ground"), ("is_industrial", "Industrial"), ("is_science", "Science")]
+            out = []
+            for v in vehicles:
+                if v.get("is_concept") or v.get("is_addon"):
+                    continue
+                sp = spots.get(v["id"], {"buy": [], "rent": []})
+                for k in ("buy", "rent"):
+                    sp[k].sort(key=lambda x: x["price"])
+                out.append({
+                    "id": v["id"], "name": v.get("name"), "full": v.get("name_full") or v.get("name"),
+                    "maker": v.get("company_name") or "", "scu": v.get("scu") or 0, "crew": v.get("crew") or "",
+                    "pad": v.get("pad_type"), "ground": bool(v.get("is_ground_vehicle")),
+                    "roles": [label for flag, label in roles if v.get(flag)],
+                    "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
+                    "store": v.get("url_store"), "photo": v.get("url_photo"), "buy": sp["buy"], "rent": sp["rent"]})
+            out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
+            return {"ok": True, "vehicles": out, "at": at}
+        return self._uex_call(run)
+
+    def wiki_image(self, ref):
+        """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
+        wiki URL UEX gives, or a page title."""
+        title = urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
+        if not title:
+            return None
+        cache_f = HERE / "uex_cache" / "wiki_images.json"
+        try:
+            cache = json.loads(cache_f.read_text(encoding="utf-8"))
+        except Exception:
+            cache = {}
+        if title in cache:
+            return cache[title] or None
+        url = ("https://starcitizen.tools/api.php?action=query&format=json&prop=pageimages&piprop=thumbnail"
+               "&pithumbsize=720&redirects=1&titles=" + urllib.parse.quote(title))
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Quantum (Star Citizen route planner)"})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                pages = json.loads(r.read().decode("utf-8")).get("query", {}).get("pages", {})
+            img = next((p["thumbnail"]["source"] for p in pages.values() if p.get("thumbnail")), "")
+        except Exception:
+            return None                                     # offline: try again next time
+        cache[title] = img
+        cache_f.parent.mkdir(exist_ok=True)
+        cache_f.write_text(json.dumps(cache), encoding="utf-8")
+        return img or None
+
+    def _item_spots(self):
+        """id_item -> where it's sold, cheapest first."""
+        terms = self._uex.terminals()
+        places = self._uex.place_map(self._db.locations)
+        spots = {}
+        for r in self._uex.get("items_prices_all")[0]:
+            t = terms.get(r.get("id_terminal"))
+            if not t or not r.get("price_buy"):
+                continue
+            place = places.get(r["id_terminal"])
+            spots.setdefault(r["id_item"], []).append({
+                "where": uex.where(t), "shop": r.get("terminal_name"), "place": place,
+                "system": t.get("star_system_name"), "price": r["price_buy"],
+                "dist": self._dist_from_you(place), "updated": r.get("date_modified")})
+        for v in spots.values():
+            v.sort(key=lambda x: x["price"])
+        return spots
+
+    COMPONENT_HINTS = ("vehicle", "ship", "cooler", "power plant", "quantum drive", "shield generator", "missile",
+                       "turret", "mining laser", "mining module", "gadget", "salvage", "tractor", "radar", "bomb")
+    COMPONENT_SKIP = ("clothing", "armor", "undersuit", "jumpsuit", "helmet", "personal", "fps", "food", "drink",
+                      "medical", "tool", "decoration", "flair", "paint", "livery", "utility")
+
+    def _game_view(self, uuid, name, size):
+        """A component's numbers from the game files, for its detail page."""
+        try:
+            sz = int(size) if str(size or "").strip() not in ("", "0") else None
+        except ValueError:
+            sz = None
+        g = self._game.find(uuid, name, sz)
+        if not g:
+            return None
+        st = dict(g.get("stats") or {})
+        pw = g.get("power") or {}
+        for k in ("power_use", "power_min", "coolant_make", "power_make"):
+            if pw.get(k) is not None:
+                st[k] = pw[k]
+        return {"type": g.get("type"), "class": g.get("class"), "grade": g.get("grade"), "size": g.get("size"),
+                "maker": g.get("maker"), "stats": st}
+
+    def uex_component_categories(self):
+        """Ship upgrade categories: coolers, power plants, quantum drives, shields, weapons, mining…"""
+        def run():
+            rows, _ = self._uex.get("categories")
+            items = [c for c in rows if (c.get("type") or "item") == "item"]
+            def txt(c):
+                return f"{c.get('section') or ''} {c.get('name') or ''}".lower()
+            pick = [c for c in items if any(h in txt(c) for h in self.COMPONENT_HINTS)
+                    and not any(k in txt(c) for k in self.COMPONENT_SKIP)] or items
+            out = [{"id": c["id"], "name": c.get("name"), "section": c.get("section") or "Other"} for c in pick]
+            out.sort(key=lambda c: (c["section"], c["name"] or ""))
+            return {"ok": True, "items": out}
+        return self._uex_call(run)
+
+    def uex_components(self, id_category):
+        """Items in one category with where to buy them and for how much."""
+        def run():
+            rows, at = self._uex.get("items", {"id_category": int(id_category)})
+            spots = self._item_spots()
+            out = []
+            for i in rows:
+                if i.get("is_commodity"):
+                    continue
+                buy = spots.get(i["id"], [])
+                size = i.get("size")
+                out.append({"id": i["id"], "name": i.get("name"), "maker": i.get("company_name") or "",
+                            "size": None if str(size or "").strip() in ("", "0") else size,
+                            "grade": i.get("quality"), "category": i.get("category"),
+                            "vehicle": i.get("vehicle_name"), "wiki": i.get("wiki"), "store": i.get("url_store"),
+                            "exclusive": bool(i.get("is_exclusive_pledge") or i.get("is_exclusive_subscriber")
+                                              or i.get("is_exclusive_concierge")),
+                            "note": (i.get("notification") or None), "buy": buy,
+                            "uuid": i.get("uuid"), "game": self._game_view(i.get("uuid"), i.get("name"), size)})
+            out.sort(key=lambda x: (str(x["size"] or ""), x["buy"][0]["price"] if x["buy"] else 9e12, x["name"] or ""))
+            return {"ok": True, "items": out, "at": at}
+        return self._uex_call(run)
+
+    def vehicle_detail(self, vehicle_id):
+        """A ship's own page: crew and seats, beds and medical, cargo and storage, size, speed, quantum,
+        defences and weapons, from the Star Citizen Wiki, with UEX's roles."""
+        v = self._vehicle_rows().get(int(vehicle_id))
+        if not v:
+            return {"ok": False, "error": "Vehicle not found"}
+        name = v.get("name") or ""
+        d = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
+                                   v.get("name_full")]) or {}
+        g = lambda *path: fleet._dig(d, *path)
+        seat = d.get("seating") or {}
+        size = d.get("sizes") or d.get("dimension") or {}
+        inv = d.get("vehicle_inventory")
+        out = {
+            "ok": True, "id": v["id"], "name": v.get("name_full") or name, "maker": v.get("company_name") or "",
+            "photo": v.get("url_photo"), "store": v.get("url_store"), "wiki": bool(d),
+            "roles": [label for flag, label in VEHICLE_ROLES if v.get(flag)],
+            "career": d.get("career") or d.get("role"), "description": d.get("description") if isinstance(d.get("description"), str) else None,
+            "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
+            "seats": seat.get("crew_stations"), "beds": seat.get("beds"), "medical_beds": seat.get("medical_beds"),
+            "medical_tier": d.get("max_medical_tier"), "ejection": seat.get("ejection_seats"), "escape_pods": seat.get("escape_pods"),
+            "jump_seats": seat.get("jump_seats"),
+            "scu": v.get("scu") or d.get("cargo_capacity") or 0, "ore": d.get("ore_capacity"),
+            "storage_scu": round(inv / 1e6, 2) if isinstance(inv, (int, float)) and inv else None,
+            "lockers": g("weapon_storage", "slots_total"),
+            "length": size.get("length"), "beam": size.get("beam") or size.get("width"), "height": size.get("height"),
+            "mass": d.get("mass_total") or d.get("mass"), "pad": v.get("pad_type"), "size_class": d.get("size_class"),
+            "scm": g("speed", "scm"), "max": g("speed", "max"), "boost": g("speed", "boost_forward"),
+            "pitch": g("agility", "pitch"), "yaw": g("agility", "yaw"), "roll": g("agility", "roll"),
+            "qt_speed": g("quantum", "quantum_speed"), "qt_range": g("quantum", "quantum_range"),
+            "qt_spool": g("quantum", "quantum_spool_time"), "h_fuel": g("fuel", "capacity") or v.get("fuel_hydrogen"),
+            "q_fuel": g("quantum", "quantum_fuel_capacity") or v.get("fuel_quantum"),
+            "shield": g("shield", "hp") or d.get("shield_hp"), "shield_face": g("shield", "face_type"),
+            "hull": d.get("health"), "armor": g("armor", "health"), "dps": g("weaponry", "pilot_dps"),
+            "missiles": g("weapon_snapshot", "missile_count"), "missile_dmg": g("weaponry", "total_missile_damage"),
+            "turrets": (g("weapon_snapshot", "turrets_manned_count") or 0) + (g("weapon_snapshot", "turrets_remote_count") or 0),
+            "countermeasures": g("weapon_snapshot", "countermeasures_count"),
+            "ir": g("signature", "ir_shields") or g("emission", "ir"), "em": g("signature", "em_shields") or g("emission", "em_idle"),
+            "cs": d.get("cross_section_max"), "claim": g("insurance", "claim_time"), "expedite": g("insurance", "expedite_time"),
+        }
+        return out
+
+    def wiki_images(self, refs):
+        """{ref: picture url} for many wiki pages at once (commodity and component grids)."""
+        return self._wikiapi.pictures(list(refs or []))
+
+    # ------------------------------------------------------------ My Fleet
+    def _fleet(self):
+        return self._settings.setdefault("fleet", [])
+
+    def _vehicle_rows(self):
+        try:
+            return {v["id"]: v for v in self._uex.get("vehicles", offline=not self._uex.token)[0]}
+        except uex.UexError:
+            return {}
+
+    def fleet_list(self):
+        rows = self._vehicle_rows()
+        out = []
+        for f in self._fleet():
+            v = rows.get(f["vehicle_id"], {})
+            out.append(dict(f, full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
+                            scu=v.get("scu") or 0, photo=v.get("url_photo"), pad=v.get("pad_type"),
+                            swaps=len(f.get("loadout") or {})))
+        return {"ok": True, "ships": out, "main": next((f["uid"] for f in self._fleet() if f.get("main")), None)}
+
+    def fleet_add(self, vehicle_id):
+        v = self._vehicle_rows().get(int(vehicle_id))
+        if not v:
+            return {"ok": False, "error": "Pick a ship from the list"}
+        uid = f"s{int(time.time() * 1000)}"
+        fl = self._fleet()
+        fl.append({"uid": uid, "vehicle_id": v["id"], "name": v.get("name_full") or v.get("name"),
+                   "main": not any(f.get("main") for f in fl), "loadout": {}})
+        self._save_settings()
+        return {"ok": True, "uid": uid}
+
+    def fleet_remove(self, uid):
+        fl = self._fleet()
+        was_main = any(f["uid"] == uid and f.get("main") for f in fl)
+        fl[:] = [f for f in fl if f["uid"] != uid]
+        if was_main and fl:
+            fl[0]["main"] = True
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_set_main(self, uid):
+        for f in self._fleet():
+            f["main"] = f["uid"] == uid
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_loadout(self, uid):
+        """The ship's slots stock component in each, and what you've swapped in."""
+        f = next((x for x in self._fleet() if x["uid"] == uid), None)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        v = self._vehicle_rows().get(f["vehicle_id"], {})
+        name = v.get("name") or f["name"]
+        data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
+                                   v.get("name_full")])
+        if not data:
+            return {"ok": False, "error": f"The Star Citizen Wiki has no loadout for {f['name']} (or it can't be reached)"}
+        lo = fleet.Wiki.loadout(data)
+        for s_ in lo["slots"]:                            
+            st = s_.get("stock")
+            if st:
+                g = self._game.stats(st.get("uuid"), st.get("name"), st.get("size"))
+                if g:
+                    st["stats"] = {**(st.get("stats") or {}), **g}
+                    st["source"] = "game"
+            fit = (f.get("loadout") or {}).get(s_["port"])
+            if isinstance(fit, str):                    
+                fit = {"name": fit}
+            s_["fitted"] = fit["name"] if fit else None
+            if fit:
+                gi = self._game.find(fit.get("uuid"), fit["name"], s_.get("size"))
+                if gi:
+                    s_["fitted_stats"], s_["fitted_grade"], s_["fitted_maker"] = dict(gi["stats"]), gi.get("grade"), gi.get("maker")
+                    if s_["type"] == "Cooler":              
+                        rec = self._wikiapi.item(gi["uuid"], fit["name"])
+                        s_["fitted_stats"].update({k: v for k, v in (fleet.item_stats(rec) if rec else {}).items()
+                                                   if k not in s_["fitted_stats"]})
+                else:
+                    rec = self._wikiapi.item(fit.get("uuid"), fit["name"])
+                    s_["fitted_stats"] = fleet.item_stats(rec) if rec else {}
+                    s_["fitted_grade"] = (rec or {}).get("grade")
+                    s_["fitted_maker"] = ((rec or {}).get("manufacturer") or {}).get("name")
+        lo["stock_stats"] = dict(lo["stats"])
+        lo["stats"], lo["delta"] = fleet.apply_swaps(lo["stats"], lo["slots"])
+        pw = f.get("power") or {}
+        mode = pw.get("mode", "scm")
+        for fx in lo.get("fixed") or []:                
+            st = fx.get("stock") or {}
+            g = self._game.stats(st.get("uuid"), st.get("name"), st.get("size"))
+            if g:
+                st["stats"] = g
+        opts = {"pips": None, "mode": mode, "cooling": pw.get("cooling"),
+                "parts": (pw.get("parts") or {}).get(mode) or {}, "fixed": lo.get("fixed") or []}
+        now, stock = fleet.signatures(lo["slots"], True, **opts), fleet.signatures(lo["slots"], False, **opts)
+        if now["em"] or now["ir"]:
+            for k in ("em", "ir"):
+                lo["stats"][k] = round(now[k])
+                d = round(now[k] - stock[k])
+                if d:
+                    lo["delta"][k] = d
+                else:
+                    lo["delta"].pop(k, None)
+        lo["power"] = {"mode": mode, "cooling": now["cooling"], "cooling_auto": now["cooling_auto"],
+                       "custom": bool(opts["parts"]) or not now["cooling_auto"],
+                       "cool_make": now["cool_make"], "pips_gen": now["pips_gen"], "pips_used": now["pips_used"]}
+        for s_ in lo["slots"] + (lo.get("fixed") or []):
+            s_["power"] = now["parts"].get(s_["port"])
+        if now.get("pool"):                               # the guns' shared power pool, shown as one bar
+            guns = [x for x in lo["slots"] if x["type"] == "WeaponGun"]
+            lo.setdefault("fixed", []).insert(0, {"port": fleet.WEAPONS, "type": fleet.WEAPONS, "label": "Weapons",
+                                                  "stock": {"name": f"{len(guns)} gun{'s' if len(guns) != 1 else ''}"},
+                                                  "power": now["parts"].get(fleet.WEAPONS)})
+        return {"ok": True, "uid": uid, "ship": dict(f, full=v.get("name_full") or f["name"], photo=v.get("url_photo"),
+                                                     scu=v.get("scu") or 0),
+                "game_data": self._game.generated, **lo}
+
+    def fleet_options(self, slot_type, size, uid=None):
+        """Components that fit a slot (same kind and size), with where to buy them. From the game files
+        when they cover this kind of slot (every part, exact numbers), else UEX's lists."""
+        f = next((x for x in self._fleet() if x["uid"] == uid), None) if uid else None
+        ground = bool(self._vehicle_rows().get(f["vehicle_id"], {}).get("is_ground_vehicle")) if f else False
+        game = self._game.of_kind(slot_type, size, ground)
+        if game:
+            return self._uex_call(lambda: self._game_options(slot_type, game))
+        def run():
+            words = fleet.SLOT_TYPES.get(slot_type, ("", ()))[1]
+            cats = [c for c in self._uex.get("categories")[0] if (c.get("type") or "item") == "item"
+                    and any(w == (c.get("name") or "").lower().rstrip("s") or w in (c.get("name") or "").lower()
+                            for w in words)
+                    and not any(k in f"{c.get('section') or ''} {c.get('name') or ''}".lower()
+                                for k in self.COMPONENT_SKIP + ("fps", "personal"))]
+            spots = self._item_spots()
+            out = []
+            for c in cats[:3]:
+                for i in self._uex.get("items", {"id_category": int(c["id"])})[0]:
+                    if size and str(i.get("size") or "") not in (str(size), ""):
+                        continue
+                    buy = spots.get(i["id"], [])
+                    out.append({"id": i["id"], "name": i.get("name"), "maker": i.get("company_name") or "",
+                                "size": i.get("size"), "grade": i.get("quality"), "wiki": i.get("wiki"),
+                                "uuid": i.get("uuid"), "price": buy[0]["price"] if buy else None, "buy": buy[:6]})
+            out.sort(key=lambda x: (x["price"] is None, x["price"] or 0, x["name"] or ""))
+            out = out[:40]
+            # Each option's numbers from the wiki (cached a week), fetched side by side.
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                recs = list(ex.map(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out))
+            for i, rec in zip(out, recs):
+                i["stats"] = fleet.item_stats(rec) if rec else {}
+            return {"ok": True, "items": out, "key": fleet.KEY_STAT.get(slot_type)}
+        return self._uex_call(run)
+
+    def _game_options(self, slot_type, game):
+        """Game-file components joined with UEX shop prices (by UUID, else name)."""
+        prices, by_name = {}, {}
+        if self._uex.token or (HERE / "uex_cache" / "items_prices_all.json").exists():
+            try:
+                spots = self._item_spots()
+                words = fleet.SLOT_TYPES.get(slot_type, ("", ()))[1]
+                for c in self._uex.get("categories")[0]:
+                    nm = (c.get("name") or "").lower()
+                    if (c.get("type") or "item") == "item" and any(w in nm for w in words) and \
+                            not any(k in f"{c.get('section') or ''} {nm}".lower() for k in self.COMPONENT_SKIP):
+                        for i in self._uex.get("items", {"id_category": int(c["id"])})[0]:
+                            buy = spots.get(i["id"], [])
+                            if i.get("uuid"):
+                                prices[i["uuid"]] = buy
+                            by_name.setdefault((i.get("name") or "").lower(), buy)
+            except uex.UexError:
+                pass
+        out, seen = [], set()
+        for g in game:
+            sig = (g.get("name"), g.get("grade"), json.dumps(g.get("stats"), sort_keys=True))
+            if sig in seen:                                  # the game files hold some parts twice
+                continue
+            seen.add(sig)
+            buy = prices.get(g["uuid"]) or by_name.get((g.get("name") or "").lower()) or []
+            out.append({"id": g["uuid"], "uuid": g["uuid"], "name": g["name"], "maker": g.get("maker") or "",
+                        "size": g.get("size"), "grade": g.get("grade"), "class": g.get("class"),
+                        "stats": dict(g.get("stats") or {}), "price": buy[0]["price"] if buy else None, "buy": buy[:6]})
+        if slot_type == "Cooler":                            # cooling rate: from the wiki
+            from concurrent.futures import ThreadPoolExecutor
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                recs = list(ex.map(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out))
+            for i, rec in zip(out, recs):
+                i["stats"].update({k: v for k, v in (fleet.item_stats(rec) if rec else {}).items() if k not in i["stats"]})
+        out.sort(key=lambda x: (x["price"] is None, x["price"] or 0, x["name"] or ""))
+        return {"ok": True, "items": out, "key": fleet.KEY_STAT.get(slot_type), "source": "game"}
+
+    def fleet_set_part_power(self, uid, port, pips):
+        f = next((x for x in self._fleet() if x["uid"] == uid), None)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        pw = f.setdefault("power", {})
+        parts = pw.setdefault("parts", {}).setdefault(pw.get("mode", "scm"), {})
+        if pips is None:
+            parts.pop(port, None)
+        else:
+            parts[port] = max(0, int(pips))
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_set_power(self, uid, pips=None, mode=None, cooling=None, auto=False):
+        """Power settings for a ship's EM/IR: pips in use (None = all), SCM/NAV, cooling in use %."""
+        f = next((x for x in self._fleet() if x["uid"] == uid), None)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        pw = f.setdefault("power", {})
+        if auto:                                         
+            pw.pop("parts", None)
+            pw.pop("pips", None)
+            pw.pop("cooling", None)
+        if pips is not None:
+            pw["pips"] = None if pips == "all" else int(pips)
+        if mode in ("scm", "nav"):
+            pw["mode"] = mode
+        if cooling == "auto":
+            pw.pop("cooling", None)
+        elif cooling is not None:
+            pw["cooling"] = max(0, min(100, int(cooling)))
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_set_slot(self, uid, port, item_name, uuid=None):
+        f = next((x for x in self._fleet() if x["uid"] == uid), None)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        lo = f.setdefault("loadout", {})
+        if item_name:
+            lo[port] = {"name": item_name, "uuid": uuid}
+        else:
+            lo.pop(port, None)
+        self._save_settings()
+        return {"ok": True}
+
+    # ------------------------------------------------------------ my trade runs
+    TRADE_STAGES = ("planned", "bought", "transit", "sold")
+
+    def _runs(self):
+        return self._settings.setdefault("trade_runs", [])
+
+    def trade_runs(self):
+        return {"ok": True, "runs": sorted(self._runs(), key=lambda r: -r.get("created", 0))}
+
+    def trade_run_save(self, run):
+        """Create or update one of your trade runs (from a found route or entered yourself)."""
+        run = dict(run or {})
+        if not (run.get("commodity") or "").strip():
+            return {"ok": False, "error": "Enter the commodity"}
+        for k in ("units", "buy_price", "sell_price", "plan_buy", "plan_sell", "handling"):
+            v = run.get(k)
+            run[k] = float(v) if v not in (None, "") else None
+        runs = self._runs()
+        old = next((r for r in runs if r["id"] == run.get("id")), None)
+        if old:
+            old.update({k: v for k, v in run.items() if k not in ("id", "created", "times", "tracking_no")})
+        else:
+            used = {r.get("tracking_no") for r in runs}
+            while True:
+                tn = "1SC" + "".join(secrets.choice("0123456789") for _ in range(15))
+                if tn not in used:
+                    break
+            run.update({"id": f"t{int(time.time() * 1000)}", "created": time.time(), "stage": "planned",
+                        "times": {"planned": time.time()}, "tracking_no": tn})
+            runs.append(run)
+        self._save_settings()
+        return {"ok": True, "id": (old or run)["id"]}
+
+    def trade_run_stage(self, rid, stage, price=None):
+        """Move a run along: planned > bought > in transit > sold. Buying or selling can record the
+        price you actually got (per SCU)."""
+        r = next((x for x in self._runs() if x["id"] == rid), None)
+        if not r or stage not in self.TRADE_STAGES:
+            return {"ok": False, "error": "Run not found"}
+        r["stage"] = stage
+        r.setdefault("times", {})[stage] = time.time()
+        for later in self.TRADE_STAGES[self.TRADE_STAGES.index(stage) + 1:]:
+            r["times"].pop(later, None)             # stepping back clears what came after
+        if price not in (None, ""):
+            r["buy_price" if stage == "bought" else "sell_price"] = float(price)
+        self._save_settings()
+        return {"ok": True}
+
+    def trade_run_delete(self, rid):
+        self._settings["trade_runs"] = [x for x in self._runs() if x["id"] != rid]
+        self._save_settings()
+        return {"ok": True}
+
+    def uex_origins(self):
+        """Starting points for trade routes: every planet (or orbit, where UEX has no planet) that has
+        a commodity terminal, plus the one nearest you."""
+        def run():
+            terms = self._uex.terminals()
+            places = self._uex.place_map(self._db.locations)
+            opts, near = {}, None
+            for tid, t in terms.items():
+                if t.get("type") != "commodity":
+                    continue
+                key = ("planet", t["id_planet"], t.get("planet_name")) if t.get("id_planet") else \
+                      ("orbit", t["id_orbit"], t.get("orbit_name"))
+                if key[1] and key[2]:
+                    opts[key] = t.get("star_system_name")
+                d = self._dist_from_you(places.get(tid))
+                if d is not None and (near is None or d < near[0]):
+                    near = (d, key)
+            items = [{"kind": k[0], "id": k[1], "name": k[2], "system": sysn} for k, sysn in opts.items()]
+            items.sort(key=lambda o: (SYSTEM_ORDER.get(o["system"], 9), o["name"]))
+            here = {"kind": near[1][0], "id": near[1][1], "name": near[1][2]} if near else None
+            return {"ok": True, "items": items, "here": here}
+        return self._uex_call(run)
+
+    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False):
+        """Best runs from a planet/orbit for your cargo space and budget, most profit first."""
+        def run():
+            key = {"planet": "id_planet_origin", "orbit": "id_orbit_origin", "terminal": "id_terminal_origin"}[kind]
+            rows, at = self._uex.get("commodities_routes", {key: int(origin_id)})
+            places = self._uex.place_map(self._db.locations)
+            out = []
+            for r in rows:
+                so, sd = r.get("origin_star_system_name"), r.get("destination_star_system_name")
+                if so not in uex.SYSTEMS or sd not in uex.SYSTEMS:
+                    continue
+                if (stay and (so != stay or sd != stay)) or (avoid and (so in avoid or sd in avoid)) or \
+                        (one_system and so != sd):
+                    continue
+                pb, ps = r.get("price_origin") or 0, r.get("price_destination") or 0
+                if pb <= 0 or ps <= pb:
+                    continue
+                cap = [x for x in (scu, r.get("scu_origin"), r.get("scu_destination")) if x and x > 0]
+                if budget and budget > 0:
+                    cap.append(int(budget // pb))
+                units = int(min(cap)) if cap else 0
+                if units <= 0:
+                    continue
+                po, pd = places.get(r["id_terminal_origin"]), places.get(r["id_terminal_destination"])
+                L1, L2 = self._db.locations.get(po), self._db.locations.get(pd)
+                qd = dist(self._db.global_pos(L1, time.time()), self._db.global_pos(L2, time.time())) \
+                    if L1 and L2 and L1.pos and L2.pos and L1.system == L2.system else None
+                out.append({
+                    "commodity": r["commodity_name"], "code": r.get("code"), "units": units,
+                    "buy": pb, "sell": ps, "profit": units * (ps - pb), "cost": units * pb,
+                    "margin": r.get("price_margin"), "roi": r.get("price_roi"), "score": r.get("score"),
+                    "from": r.get("origin_terminal_name"), "to": r.get("destination_terminal_name"),
+                    "from_place": po, "to_place": pd,
+                    "from_where": ", ".join(x for x in (r.get("origin_orbit_name"), r.get("origin_star_system_name")) if x),
+                    "to_where": ", ".join(x for x in (r.get("destination_orbit_name"), r.get("destination_star_system_name")) if x),
+                    "cross_system": r.get("origin_star_system_name") != r.get("destination_star_system_name"),
+                    "dist": qd if qd is not None else (r.get("distance") or 0) * 1e9,
+                    "stock_from": r.get("status_origin"), "stock_to": r.get("status_destination"),
+                    "boxes_from": r.get("container_sizes_origin"), "boxes_to": r.get("container_sizes_destination"),
+                    "elevator_to": bool(r.get("has_freight_elevator_destination") or r.get("has_loading_dock_destination")),
+                    "url": f"https://uexcorp.space/trade/route?code={r['code']}" if r.get("code") else None,
+                    "id_commodity": r.get("id_commodity"), "updated": r.get("date_added"),
+                    "scu_from": r.get("scu_origin"), "scu_to": r.get("scu_destination"),
+                    "reports_from": r.get("price_origin_users_rows"), "reports_to": r.get("price_destination_users_rows"),
+                    "from_station": bool(r.get("is_space_station_origin")), "to_station": bool(r.get("is_space_station_destination")),
+                    "from_ground": bool(r.get("is_on_ground_origin")), "to_ground": bool(r.get("is_on_ground_destination")),
+                    "from_monitored": r.get("is_monitored_origin"), "to_monitored": r.get("is_monitored_destination"),
+                    "refuel_to": bool(r.get("has_refuel_destination")), "dock_from": bool(r.get("has_docking_port_origin")),
+                    "elevator_from": bool(r.get("has_freight_elevator_origin") or r.get("has_loading_dock_origin")),
+                    "faction_from": r.get("origin_faction_name"), "faction_to": r.get("destination_faction_name")})
+            out.sort(key=lambda x: -x["profit"])
+            return {"ok": True, "routes": out[:60], "at": at, "total": len(out)}
+        return self._uex_call(run)
 
     def open_url(self, url):
         if isinstance(url, str) and url.startswith("https://"):

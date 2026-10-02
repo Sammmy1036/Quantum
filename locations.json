@@ -20688,42 +20688,6 @@
    "created": 0.0
   },
   {
-   "name": "Orbital Station Bloom",
-   "kind": "surface",
-   "pos": [
-    379849.5625,
-    -718724.3125,
-    226043.640625
-   ],
-   "body": "Bloom",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Pyro",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Orbital Station Terminus",
-   "kind": "surface",
-   "pos": [
-    -315346.452214,
-    302409.057066,
-    -100477.857041
-   ],
-   "body": "Terminus",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Pyro",
-   "qt": false,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
    "name": "Rock Cave #001",
    "kind": "surface",
    "pos": [
@@ -34092,6 +34056,366 @@
    "notes": "Wikelo Emporium: asteroid base near microTech",
    "source": "db",
    "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-1-2",
+   "kind": "space",
+   "pos": [
+    -8713009576.03091,
+    -2625677640.0681,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P1-L2). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-1-3",
+   "kind": "space",
+   "pos": [
+    8274711438.80223,
+    2229680545.63711,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P1-L3). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-1-5",
+   "kind": "space",
+   "pos": [
+    -6027626644.57736,
+    5666241171.99014,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P1-L5). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Orbituary",
+   "kind": "surface",
+   "pos": [
+    379849.5625,
+    -718724.3125,
+    226043.640625
+   ],
+   "body": "Bloom",
+   "pad": "unknown",
+   "notes": "Name from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Starlight Service Station",
+   "kind": "space",
+   "pos": [
+    -14493519662.2722,
+    6829353989.97241,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P3-L1). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Patch City",
+   "kind": "space",
+   "pos": [
+    14541573612.6615,
+    -10269333167.8828,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P3-L3). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-3-5",
+   "kind": "space",
+   "pos": [
+    12638431338.8065,
+    12537403510.6462,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P3-L5). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-5-1",
+   "kind": "space",
+   "pos": [
+    -3522319939.44293,
+    -38482740207.6644,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P5-L1). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-5-3",
+   "kind": "space",
+   "pos": [
+    18302065394.5192,
+    38841341951.7326,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P5-L3). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Rod's Fuel 'N Supplies",
+   "kind": "space",
+   "pos": [
+    41429351313.3098,
+    -11279333425.3262,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P5-L4). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Rat's Nest",
+   "kind": "space",
+   "pos": [
+    -42314565583.5993,
+    -7286465628.46906,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P5-L5). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-6-2",
+   "kind": "space",
+   "pos": [
+    -49918483338.131,
+    50320251342.2699,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P6-L2). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Endgame",
+   "kind": "space",
+   "pos": [
+    52161403642.242,
+    -44126491135.6201,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P6-L3). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Dudley & Daughters",
+   "kind": "space",
+   "pos": [
+    -62036440806.4568,
+    -28625942535.941,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P6-L4). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Megumi Refueling",
+   "kind": "space",
+   "pos": [
+    29122470164.3387,
+    61804895101.4097,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P6-L5). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Ruin Station",
+   "kind": "surface",
+   "pos": [
+    -315346.452214,
+    302409.057066,
+    -100477.857041
+   ],
+   "body": "Terminus",
+   "pad": "unknown",
+   "notes": "Name from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": false,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Gaslight",
+   "kind": "space",
+   "pos": [
+    -4305013180.34407,
+    -47034474329.37,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P5-L2). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-FARSTAT-2-3",
+   "kind": "space",
+   "pos": [
+    -2707846809.10924,
+    10270479208.6781,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P2-L3). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-SUPVISR-3-4",
+   "kind": "space",
+   "pos": [
+    -14623507669.0335,
+    -10152318683.6845,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P3-L4). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "PYAM-SUPVISR-3-5",
+   "kind": "space",
+   "pos": [
+    12638431338.8065,
+    12537403510.6462,
+    0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position approximate (at P3-L5). Station from UEX",
+   "source": "db",
+   "system": "Pyro",
    "qt": true,
    "pinned": false,
    "category": "station",

@@ -31,9 +31,10 @@ button{cursor:pointer}
 .brand h1{margin:0;font:400 19px/1 var(--wordmark);letter-spacing:.34em;color:#f2f7ff}
 .brand .by{margin-top:5px;font:500 10.5px/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
 .brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:12px}
-.tabs{display:flex;gap:0;padding:0 8px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;flex-wrap:wrap;column-gap:6px;padding:0 8px;border-bottom:1px solid var(--line)}
 .tab{background:none;border:0;padding:12px 5px 11px;color:var(--dim);font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
 .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--route);text-shadow:0 0 12px rgba(75,141,255,.5)}
+.tab[hidden]{display:none}
 .tab .count{font:600 11px var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
 .tab .count.hot{background:var(--mission);color:#1a0612}
 .pane{flex:1;overflow:auto;padding:14px 14px 20px;display:none;min-height:0}
@@ -91,6 +92,104 @@ button{cursor:pointer}
 .obj .where{color:#ffb3d6;font-size:12.5px;cursor:pointer}
 .obj .where:hover{text-decoration:underline}
 .trackno{font:500 12px ui-monospace,Consolas,monospace;color:var(--ink-2);margin:2px 0 6px;cursor:copy;letter-spacing:.04em}.trackno b{color:var(--ink);font-weight:600}
+.vh-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}.vh-filters .field{width:100%;min-width:0;padding-left:8px;padding-right:4px}
+.vh.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
+#vh-gallery{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:20px 22px 30px;display:none}
+#vh-gallery.show{display:block}
+#detail{z-index:40}
+.runbar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 6px}.runbar i{height:6px;border-radius:3px;background:#223251}.runbar i.on{background:#57e39b}
+.runlabels{display:grid;grid-template-columns:repeat(4,1fr);font-size:11.5px;color:var(--dim);line-height:1.35}.runlabels .done{color:var(--ink)}
+.side-panel{position:absolute;inset:0;z-index:30;overflow:hidden;display:none;flex-direction:column;padding:16px 22px 0;pointer-events:none}
+.side-panel.show{display:flex}
+.side-panel .trd-head,.side-panel .trd-info,.side-panel .trd-body{pointer-events:auto}
+.side-panel .trd-top{display:grid;grid-template-columns:minmax(320px,1.15fr) 1fr;gap:20px;height:min(46%,440px);min-height:260px;flex:none;pointer-events:none}
+/* the map shows through this window; everything around it is page */
+/* not positioned on purpose: its shadow paints with the page backgrounds, so the text and cards around
+   it stay on top while everything outside the window is covered */
+.trd-map{border:1px solid var(--line);border-radius:14px;box-shadow:0 0 0 9999px var(--bg,#05080f);pointer-events:none;padding:8px 10px}
+.trd-map .lbl{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:rgba(5,8,15,.7);padding:2px 8px;border-radius:6px}
+.trd-info{overflow:auto;min-width:0}.trd-info .trd-pic{height:120px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--line);float:right;margin:0 0 8px 12px;background:var(--panel)}
+.trd-info .trd-pic img{width:100%;height:100%;object-fit:cover}
+.side-panel .trd-body{flex:1;overflow:auto;padding:14px 0 26px;min-height:0}
+.side-panel .trd-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 16px}
+@media (max-width:1000px){.side-panel .trd-top{grid-template-columns:1fr;height:auto}.trd-map{height:220px}}
+.tr-tabs{display:flex;margin:0 0 10px}.tr-tabs button{flex:1;white-space:nowrap;padding:6px 8px}
+.tr-card{cursor:pointer}.tr-card.open{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
+.disclaim{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-left:3px solid #ffb454;border-radius:8px;padding:7px 10px;margin:6px 0 10px;line-height:1.45}
+.run-form{display:grid;grid-template-columns:auto 1fr;gap:7px 10px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:12px;margin-bottom:10px}
+.run-form .k{color:var(--ink-2)}.run-form .field{width:100%}
+.pic-panel{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:22px 24px 34px;display:none}
+.pic-panel.show{display:block}
+.pic-panel .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.pic-panel .gh{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;color:var(--ink-2);font-size:13px}.pic-panel .gh b{color:var(--ink);font-size:17px}
+.main-ship{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;background:var(--panel-2)}.main-ship img{width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:8px}
+.mkp-head{display:grid;grid-template-columns:minmax(220px,340px) 1fr;gap:22px;align-items:start;margin-bottom:18px}
+.mkp-img{aspect-ratio:4/3;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(135deg,var(--panel-3),var(--panel));display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12px}
+.mkp-img img{width:100%;height:100%;object-fit:cover}
+.mkp-head h2{margin:0 0 4px;font-size:24px}.mkp-head .sub{color:var(--ink-2);font-size:13px}
+.mkp-stats{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}.mkp-stats div{border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel-2)}
+.mkp-stats b{display:block;font-size:16px}.mkp-stats span{font-size:11.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.07em}
+.mkp-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.mkp-cols .mk-row{background:var(--panel-2)}
+@media (max-width:1100px){.mkp-cols,.mkp-head{grid-template-columns:1fr}}
+.offmap{display:none;margin-top:8px;padding:10px 12px;max-width:260px;font-size:12px;pointer-events:auto}.offmap.show{display:block}
+.offmap .t{color:var(--ink-2);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.offmap a{display:block;color:var(--ink);cursor:pointer;padding:2px 0}.offmap a:hover{color:var(--route-2)}.offmap a.gw{color:#c9a6ff}
+.vd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 18px;align-items:start}
+.vd-sec{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:4px 14px 10px;margin-bottom:12px}
+.vd-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}.vd-row:last-child{border-bottom:0}
+.vd-row span{color:var(--ink-2)}.vd-tags{grid-column:auto;margin:6px 0 2px}.vd-tags span{font-size:11.5px;background:var(--panel-3);border-radius:8px;padding:2px 8px;color:var(--ink-2);margin-right:4px;display:inline-block}
+.pips{display:flex;align-items:center;gap:3px}.pips i{width:16px;height:9px;border-radius:2px;background:var(--panel-3);cursor:pointer}.pips i.on{background:var(--route)}.pips i:hover{outline:1px solid var(--route-2)}.pips span{font-size:11px;color:var(--ink-2);margin-left:5px}
+.pwr-panel{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:12px 14px;margin:0 0 14px;max-width:760px}
+.pwr-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}.pwr-head b{font-size:14px}.pwr-head .muted{font-size:12.5px}
+.pwr-cols{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.pc{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:58px}
+.pc .bars{display:flex;flex-direction:column;gap:3px}.pc .bars i{width:30px;height:8px;border-radius:2px;background:var(--panel-3);cursor:pointer}.pc .bars i.on{background:var(--route)}.pc .bars i:hover{outline:1px solid var(--route-2)}
+.pc b{font-size:13px}.pc span{font-size:11px;color:var(--ink-2);text-align:center}
+.pwr-foot{font-size:12px;margin-top:10px;display:flex;align-items:center;flex-wrap:wrap}
+.pwr-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:-4px;font-size:13px}
+.seg-mini{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:8px}.seg-mini button{background:none;border:0;color:var(--ink-2);padding:4px 10px;font:600 12px var(--text);cursor:pointer}.seg-mini button.on{background:var(--route);color:#fff}
+.slot-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:4px 16px;align-items:start}
+.sg .mk-h{margin-top:6px}.sg.many{grid-column:span 2}.sg.open{grid-column:1/-1}
+.slot-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:6px}.sg.many .slot-grid,.sg.open .slot-grid{grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.slot{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.slot.fit{border-color:var(--route);box-shadow:inset 3px 0 0 var(--route)}.slot.open{grid-column:1/-1}
+.slot .top{display:flex;align-items:center;gap:8px}.slot .sz,.slot .gr{font:700 11px var(--text);border-radius:6px;padding:3px 6px;flex:none}
+.slot .sz{background:var(--route);color:#fff}.slot .gr{background:var(--panel-3);color:var(--ink)}
+.slot .nm{flex:1;min-width:0}.slot .nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slot .nm span{font-size:11.5px;color:var(--ink-2)}
+.slot .val,.opt .val{text-align:right}.slot .val b,.opt .val b{display:block;font-size:16px}.slot .val span{font-size:10.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
+.slot .was{font-size:11.5px;color:var(--ink-2)}.slot .acts{display:flex;gap:6px;justify-content:flex-end}
+.slot .opts{border-top:1px solid var(--line);padding-top:8px}
+.opt{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:7px 8px;border-radius:9px}.opt:hover{background:var(--panel)}
+.opt .nm b{display:block}.opt .nm span{font-size:11.5px;color:var(--ink-2)}.opt .nm a{color:var(--ink-2);text-decoration:underline;cursor:pointer}.opt .pr{font-weight:600;min-width:90px;text-align:right}
+.best-tag{font:600 10px var(--text);background:#57e39b;color:#04160c;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}em.up{color:#57e39b}em.down{color:#ff8f8f}
+.mkp-stats div.chg{border-color:var(--route)}
+.map-back{position:absolute;left:50%;transform:translateX(-50%);bottom:22px;z-index:25;display:none}.map-back.show{display:flex}
+.cp-img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;margin:8px 0;display:block;background:var(--panel)}
+#vh-gallery .gh{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;color:var(--ink-2);font-size:13px}#vh-gallery .gh b{color:var(--ink);font-size:17px}
+#vh-gallery .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.vg{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2);cursor:pointer;transition:transform .15s,border-color .15s}
+.vg:hover{transform:translateY(-2px);border-color:var(--route)}.vg.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
+.vg .ph{aspect-ratio:16/9;background:linear-gradient(135deg,var(--panel-3),var(--panel));display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12px}
+.vg .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.vg .tx{padding:8px 10px}.vg .tx b{display:block;font-size:13.5px}.vg .tx span{font-size:12px;color:var(--ink-2)}
+.vh{border:1px solid var(--line);border-radius:12px;margin-bottom:6px;background:var(--panel-2)}
+.vh>.hd{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 12px;cursor:pointer}
+.vh .nm{font-weight:600}.vh .mk{font-size:12px;color:var(--ink-2)}.vh .pr{text-align:right;font:600 14px var(--text)}.vh .pr small{display:block;font:500 11.5px var(--text);color:var(--ink-2)}
+.vh .tags{grid-column:1/3;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.vh .tags span{font-size:11px;background:var(--panel-3);border-radius:8px;padding:1px 7px;color:var(--ink-2)}
+.vh .bd{padding:0 12px 10px}.vh .bd .mk-row{background:var(--panel)}
+.tr-form{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:13px}.tr-form .k{color:var(--ink-2)}
+.mk-h{display:flex;align-items:baseline;gap:8px;margin:14px 2px 6px;font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
+.mk-row{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel-2)}
+.mk-row .w{font-weight:600}.mk-row .w a{color:inherit;cursor:pointer}.mk-row .w a:hover{text-decoration:underline}
+.mk-row .p{font:600 14px var(--text);text-align:right}.mk-row .m{grid-column:1/3;font-size:12px;color:var(--ink-2)}
+.mk-row .best{color:#57e39b}.mk-row .iconbtn{grid-row:1/3;grid-column:3}
+.tr-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--panel-2)}
+.tr-card.hl{border-color:#57e39b;box-shadow:0 0 0 1px #57e39b}
+.tr-card .top{display:flex;align-items:baseline;gap:8px}.tr-card .top b{font-size:15px}.tr-card .profit{margin-left:auto;font:600 16px var(--text);color:#57e39b}
+.tr-card .leg{font-size:13px;margin-top:6px;line-height:1.5}.tr-card .leg .muted{font-size:12px}
+.tr-card .facts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-2);margin-top:6px}
+.uex-credit{font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.4}.uex-credit a{color:var(--ink-2);cursor:pointer;text-decoration:underline}
 .obj-acts{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
 .turnin{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:8px 0 4px;font-size:13px}.turnin .k{color:var(--ink-2)}.turnin .unknown{grid-column:1/-1}.turnin a{color:var(--route-2);cursor:pointer;text-decoration:underline}
 /* delivery tracker */
@@ -309,6 +408,11 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
       <button class="tab" role="tab" data-tab="places" aria-selected="false">POI</button>
+      <button class="tab uex-tab" role="tab" data-tab="market" aria-selected="false" hidden>Commodities</button>
+      <button class="tab uex-tab" role="tab" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
+      <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
+      <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
+      <button class="tab uex-tab" role="tab" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
     </div>
 
     <section class="pane active" id="pane-route">
@@ -346,6 +450,55 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <div id="wp-list"></div>
     </section>
 
+    <section class="pane" id="pane-market">
+      <div class="row" style="gap:6px"><input class="search" id="mk-search" list="mk-dl" placeholder="Commodity, like “Agricium”" autocomplete="off" style="flex:1">
+        <select class="field" id="mk-sys" style="width:auto"><option value="">All systems</option><option>Stanton</option><option>Pyro</option><option>Nyx</option></select></div>
+      <datalist id="mk-dl"></datalist>
+      <div id="mk-out"></div>
+    </section>
+
+    <section class="pane" id="pane-trade">
+      <div class="seg-mini tr-tabs"><button data-trv="find" class="on">Find Routes</button><button data-trv="mine">Planned Routes <span id="tr-mine-n"></span></button></div>
+      <div id="tr-find">
+      <div class="tr-form">
+        <span class="k">From</span><select class="field" id="tr-from"></select>
+        <span class="k">Ship</span><select class="field" id="tr-ship"><option value="">None Selected</option></select>
+        <span class="k">Systems</span><select class="field" id="tr-sys"><option value="">Any</option><option value="one">Don't cross systems</option>
+          <option value="stay:Stanton">Stay in Stanton</option><option value="stay:Pyro">Stay in Pyro</option><option value="stay:Nyx">Stay in Nyx</option>
+          <option value="avoid:Pyro">Avoid Pyro</option><option value="avoid:Nyx">Avoid Nyx</option><option value="avoid:Stanton">Avoid Stanton</option></select>
+        <span class="k">Cargo</span><div class="row" style="gap:6px"><input class="field" id="tr-scu" type="number" min="1" placeholder="SCU your ship holds" style="flex:1"><span class="muted">SCU</span></div>
+        <span class="k">Budget</span><div class="row" style="gap:6px"><input class="field" id="tr-budget" type="number" min="0" placeholder="No limit" style="flex:1"><span class="muted">aUEC</span></div>
+      </div>
+      <button class="btn primary plan" id="tr-go" style="width:100%;margin:10px 0 4px">Find Route</button>
+      <div id="tr-out"></div>
+      </div>
+      <div id="tr-mine" hidden><div id="tr-mine-out"></div></div>
+    </section>
+
+    <section class="pane" id="pane-vehicles">
+      <input class="search" id="vh-search" placeholder="Ship or vehicle, like “Cutlass” or “Drake”" autocomplete="off">
+      <div class="vh-filters">
+        <select class="field" id="vh-avail"><option value="buy">Buyable</option><option value="rent">Rentable</option><option value="">All</option></select>
+        <select class="field" id="vh-role"><option value="">Any role</option></select>
+        <select class="field" id="vh-sort"><option value="price">Price: Low to High</option><option value="price_desc">Price: High to Low</option><option value="scu">Most cargo</option><option value="name">A–Z</option></select></div>
+      <div id="vh-out"></div>
+    </section>
+
+    <section class="pane" id="pane-components">
+      <input class="search" id="cp-search" placeholder="Component, like “Atlas” or “Bulwark”" autocomplete="off">
+      <div class="vh-filters" style="grid-template-columns:2fr 1fr">
+        <select class="field" id="cp-cat"></select>
+        <select class="field" id="cp-size"><option value="">Any size</option></select></div>
+      <div id="cp-out"></div>
+    </section>
+
+    <section class="pane" id="pane-fleet">
+      <div class="row" style="gap:6px"><input class="search" id="fl-add" list="fl-dl" placeholder="Add a ship you own, like “Cutlass Black”" autocomplete="off" style="flex:1">
+        <button class="btn" id="fl-add-btn">Add</button></div>
+      <datalist id="fl-dl"></datalist>
+      <div id="fl-out"></div>
+    </section>
+
     <section class="pane" id="pane-places">
       <input class="search" id="search" placeholder="Search stations, outposts, caves…" autocomplete="off">
       <div class="filters" id="filters"></div>
@@ -364,9 +517,16 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
     <canvas class="layer" id="gl"></canvas>
     <canvas class="layer" id="overlay"></canvas>
     <div class="ov hud" id="hud"></div>
+    <div id="vh-gallery"></div>
+    <div id="mk-panel" class="pic-panel"></div>
+    <div id="tr-panel" class="side-panel"></div>
+    <div id="cp-panel" class="pic-panel"></div>
+    <div id="fl-panel" class="pic-panel"></div>
+    <button class="btn primary map-back" id="map-back">Back to details</button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
     <div class="ov topright">
       <div class="seg" id="sysSeg"></div>
+      <div class="card offmap" id="offmap"></div>
       <div class="card layers" id="layers"><div class="hdr" id="layers-hdr">Layers <span class="muted" id="layers-caret">▾</span></div><div id="layer-list"></div></div>
     </div>
     <div class="ov camtxt" id="camtxt"></div>
@@ -524,7 +684,10 @@ function focusPos(f,t){
   if(f.kind==="player") return playerG(t) || S.cam.target;
   return systemCenter();
 }
-function systemCenter(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind==="planet"); if(!bs.length) return [0,0,0];
+// Systems are framed around their star: the orbit rings are centred on it, so the view is balanced
+// (averaging the planets pulled Pyro off to one side, because Terminus is so far out).
+function systemCenter(){ const star=S.bodies.find(b=>b.system===S.system&&b.kind==="star"); if(star) return star.center;
+  const bs=S.bodies.filter(b=>b.system===S.system&&b.kind==="planet"); if(!bs.length) return [0,0,0];
   return [0,1,2].map(i=>bs.reduce((s,b)=>s+b.center[i],0)/bs.length); }
 function systemExtent(){ const c=systemCenter(); let m=1e9; for(const b of S.bodies) if(b.system===S.system&&b.kind!=="star") m=Math.max(m,d3(b.center,c)); for(const L of S.locs) if(L.system===S.system&&L.pos&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump")) m=Math.max(m,d3(L.pos,c)); return m; }
 const norm3=v=>{ const l=Math.hypot(v[0],v[1],v[2])||1; return [v[0]/l,v[1]/l,v[2]/l]; };
@@ -576,11 +739,16 @@ function updateCamera(t){
   if(S.anim){ const a=S.anim; dir=norm3(dir.map((v,i)=>a.fromDir[i]+(v-a.fromDir[i])*e)); up=norm3(up.map((v,i)=>a.fromUp[i]+(v-a.fromUp[i])*e)); if(e>=1) S.anim=null; }
   camera.position.set(dir[0]*c.dist,dir[1]*c.dist,dir[2]*c.dist); camera.up.set(up[0],up[1],up[2]);
   // Keep what you're looking at clear of the cards on the left: shift the view's centre right.
-  const want=$("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0; S.shift=(S.shift||0)+(want-(S.shift||0))*0.12;
-  if(S.shift>0.5) camera.setViewOffset(W,H,-S.shift,0,W,H); else camera.clearViewOffset();
+  const want=viewShift(); S.shift=(S.shift||0)+(want-(S.shift||0))*0.12;
+  const fr=mapWindow(), wantV=fr?(H/2-(fr.y+fr.h/2)):0; S.vshift=(S.vshift||0)+(wantV-(S.vshift||0))*0.12;
+  if(Math.abs(S.shift)>0.5||Math.abs(S.vshift)>0.5) camera.setViewOffset(W,H,-S.shift,S.vshift,W,H); else camera.clearViewOffset();
   camera.near=Math.max(0.5,c.dist*1e-4); camera.far=1e14; camera.updateProjectionMatrix(); camera.lookAt(0,0,0); camera.updateMatrixWorld();
 }
-function fitSystem(){ flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
+// A system with just one body we know (Nyx: Delamar) frames that body instead of empty space around it.
+function fitSystem(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star");
+  const far=S.locs.some(L=>L.system===S.system&&L.pos&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump"));
+  if(bs.length===1&&!far) return flyTo({kind:"body",name:bs[0].name}, bs[0].radius*5, {pitch:0.9});
+  flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
 function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(S.follow) setFollow(false); if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
 const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
 function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false); if(!L.pos) return;
@@ -717,6 +885,8 @@ function drawOverlay(t){
     prev=nd||prev; }); }
   const guide=live?.guide; let gnode=null;
   if(guide && S.locMap[guide.name]){ gnode=nodeOf(guide.name,t); const pn=playerNode(); if(gnode&&pn) strokePath(legSamples(pn,gnode,t),{color:"#7fe7ff",width:2.4,glow:"rgba(127,231,255,.18)",dash:[4,7],offset:-dash}); }
+  if(S.preview){ let prev=playerNode(); for(const n of S.preview){ const nd=nodeOf(n,t);
+      if(prev&&nd) strokePath(legSamples(prev,nd,t),{color:"#57e39b",width:2.6,glow:"rgba(87,227,155,.22)",dash:[9,8],offset:-dash}); prev=nd||prev; } }
   // ---- bodies: dots and labels when small, labels always
   const bodyLabels=[];
   for(const o of sysObjs){ const b=o.b, q=proj(b.center); if(!q) continue; const pr=o.pr;
@@ -727,7 +897,7 @@ function drawOverlay(t){
   const drawn=[];
   const selName=S.selected?.kind==="loc"?S.selected.name:null;
   for(const L of S.locs){ if(L.system!==S.system||!L.pos) continue;
-    const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name;
+    const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name || S.preview?.includes(L.name) || S.mapMarks?.some(m=>m.name===L.name);
     const isWp = L.source==="user" || L.source==="mission";
     if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue; }
     let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:70) && !special) continue; }
@@ -763,6 +933,12 @@ function drawOverlay(t){
   if(selName){ const p=S.picks.find(p=>p.kind==="loc"&&p.name===selName); if(p){ ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,14,0,7); ctx.stroke();
     labelBoxes.push([p.x-14,p.y-14,p.x+14,p.y+14]); if(!stopIdx[selName]) label(selName,p.x+17,p.y+4,{color:"#7fe7ff",font:"600 13px 'Inter',sans-serif",force:true}); } }
   // ---- labels, by priority
+  if(S.mapMarks) for(const m of S.mapMarks){ const nd=nodeOf(m.name,t), q=nd&&proj(nd.g); if(!q) continue;
+    ctx.beginPath(); ctx.arc(q[0],q[1],8,0,Math.PI*2); ctx.strokeStyle=m.color; ctx.lineWidth=2; ctx.stroke();
+    label(`${m.name} · ${m.label}`,q[0]+13,q[1]+16,{color:m.color,font:"600 12px 'Inter',sans-serif",force:true}); }
+  if(S.preview) for(const n of S.preview){ const nd=nodeOf(n,t), q=nd&&proj(nd.g); if(!q) continue;
+    ctx.beginPath(); ctx.arc(q[0],q[1],9,0,Math.PI*2); ctx.strokeStyle="#57e39b"; ctx.lineWidth=2; ctx.stroke();
+    label(`${S.previewLabels?.[n]||""} · ${n}`,q[0]+14,q[1]+18,{color:"#8ff0bd",font:"600 12.5px 'Inter',sans-serif",force:true}); }
   for(const d of drawn){ if(!d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; label(d.L.name,d.q[0]+14,d.q[1]-8,{color:d.L.source==="mission"?"#ffb3d6":"#c9ffb3",font:"600 12px 'Inter',sans-serif"}); }
   bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
   for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
@@ -866,9 +1042,14 @@ window.addEventListener("keydown",e=>{ if(e.target.matches("input,textarea,selec
 $("z-in").onclick=()=>{ stopAnim(); S.cam.dist/=1.6; }; $("z-out").onclick=()=>{ stopAnim(); S.cam.dist*=1.6; }; $("z-fit").onclick=fitSystem; $("z-you").onclick=()=>{ setFollow(true); followNow(); }; $("z-route").onclick=()=>fitRoute(false);
 
 // =================================================================== systems & layers
-function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg();
+// Places in the shown system that aren't on the map yet (no position): gateways first, one click to their card.
+function renderOffmap(){ const L=S.locs.filter(x=>x.system===S.system&&!x.pos).sort((a,b)=>(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
+  const el=$("offmap"); el.classList.toggle("show",L.length>0);
+  el.innerHTML=L.length?`<div class="t">Not on the map yet (${L.length})</div>${L.slice(0,8).map(x=>`<a class="${x.type==="jump"?"gw":""}" data-om="${esc(x.name)}">${x.type==="jump"?"◎ ":""}${esc(x.name)}${x.to?` <span class="muted">→ ${esc(x.to)}</span>`:""}</a>`).join("")}${L.length>8?`<div class="muted">+${L.length-8} more in search</div>`:""}`:""; }
+$("offmap").onclick=e=>{ const a=e.target.closest("[data-om]"); if(a) select({kind:"loc",name:a.dataset.om}); };
+function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg(); renderOffmap();
   if(changed){ setLock(null); S.anim=null; buildSystem(); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
-function renderSysSeg(){ const here=S.live?.player?.system||S.live?.where?.system;
+function renderSysSeg(){ const here=S.live?.game_off?null:(S.live?.player?.system||S.live?.where?.system);
   $("sysSeg").innerHTML=S.systems.map(s=>{ const w=wikiSystem(s); const tip=w?`${w.affiliation} · ${w.star_type||""}`:"";
     return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}${s===here?'<span class="here" title="You are here"></span>':""}</button>`; }).join(""); }
 $("sysSeg").onclick=e=>{ const b=e.target.closest("button"); if(b){ S.autoSystem=false; setSystem(b.dataset.s); } };
@@ -916,7 +1097,9 @@ function servicesHtml(r){
   return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
     ${tiles?`<div class="svc-grid">${tiles}</div>`:`<div class="none">No services listed for this location.</div>`}
     ${desc?`<div class="desc">${esc(desc)}</div>`:""}
-    <div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div></div>`; }
+    ${r.fuel?`<div class="jur" style="margin-top:8px">Fuel ${r.fuel.map(f=>`<b>${esc(f.what.replace(" Fuel",""))}</b> ${money(f.price)}/SCU`).join(" · ")} <span class="muted">(UEX)</span></div>`:""}
+    ${r.uex?`<div class="credit">Services: UEX (community data)</div>`:""}
+    ${r.url||r.reported?`<div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div>`:""}</div>`; }
 S.svcCache={};
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
@@ -948,19 +1131,24 @@ function renderDetail(){
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
       <div class="sub">Planet alignment</div>
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
+      <div class="sub">Trade data (UEX)</div>
+      <div class="note" style="margin:4px 0 12px">
+        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Token saved. Paste a new one to replace it":"Paste your UEX access token"}" style="flex:1" autocomplete="off">
+          <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
+          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. It stays on this PC.</div>
+        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div></div>
       <div class="sub">Hotkeys</div>
       ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
         <span class="k">Show / hide Quantum</span><select class="field" id="s-hotkey">${keyOpts(a.hotkey,a.loc_hotkey)}</select>
         <span class="k">Type /showlocation</span><select class="field" id="s-lochotkey">${keyOpts(a.loc_hotkey,a.hotkey)}</select>
         <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
-        <span class="k">Last sent</span><span>${esc(when)}${a.last_result&&a.last_result!=="idle"?` · <span class="muted">${esc(a.last_result)}</span>`:""}</span>
       </div>
-
+      <div class="sub" style="margin-top:12px">Log</div>
+      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>
       <div class="acts" style="margin-top:10px"><button class="btn primary" data-a="testkey">Test /showlocation in 5 s</button>
         ${a.available&&!a.admin?`<button class="btn" data-a="relaunch" title="Needed when Star Citizen / the RSI Launcher runs as administrator">Restart Quantum as administrator</button>`:""}</div>
-      <div class="sub" style="margin-top:12px">What happened (newest first)</div>
-      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>
       <div class="muted" style="font-size:12px">${a.admin?"Quantum is running as administrator.":"Typing /showlocation needs Quantum to run as administrator when the RSI Launcher does."} Show/hide works either way. The game still sees your hotkeys, so pick keys that aren't bound in game.</div>`;
     const save=async()=>{
       await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value);
@@ -1007,7 +1195,7 @@ function renderDetail(){
     let ll=""; if(L.kind==="surface"){ const q=latLon(L.pos); ll=`${q.lat.toFixed(3)}°, ${q.lon.toFixed(3)}°`; }
     const user=L.source==="user"||L.source==="mission";
     const canCal = L.kind==="surface" && L.source==="db" && live?.player?.body===L.body && live.player.age<600;
-    const pl=live?.player, readingHere = pl && !pl.approx && pl.age<900 && pl.system===L.system && (L.type!=="jump" || !pl.body);
+    const pl=live?.player, readingHere = pl && !pl.approx && pl.age<900 && pl.system===L.system && (L.kind==="surface" ? pl.body===L.body : (L.type!=="jump" || !pl.body));
     const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
@@ -1033,12 +1221,17 @@ function renderDetail(){
       $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
   }
   d.classList.add("show");
+  if(sel.kind==="settings") fillUexStatus(false);
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
     const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;
     if(a==="zoom") focusBody(sel.name);
     if(a==="openalign"){ await openAlign(); return; }
     if(a==="logchange"){ const r=await api().browse_log(); if(r.ok){ toast("Now reading the selected Game.log"); await poll(); renderDetail(); } return; }
     if(a==="relaunch"){ const r=await api().relaunch_admin(); if(!r.ok) toast(r.error); return; }
+    if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
+      const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; }
+      S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
+    if(a==="uexclear"){ await api().set_uex_token(""); S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
     if(a==="jump") jumpThrough(sel.name);
     if(a==="resetcal"){ const n=e.target.dataset.body; const r=await api().reset_calibration(n); if(!r.ok) return toast(r.error);
@@ -1107,7 +1300,12 @@ function renderHud(){
 for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.dataset.tab;
   for(const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected",String(x===t));
   for(const p of document.querySelectorAll(".pane")) p.classList.toggle("active",p.id==="pane-"+S.tab);
-  if(S.tab==="places") $("search").focus(); if(S.tab==="waypoints") renderWaypoints(true); };
+  if(S.tab==="places") $("search").focus(); if(S.tab==="waypoints") renderWaypoints(true);
+  $("vh-gallery").classList.toggle("show",S.tab==="vehicles"); if(S.tab!=="trade"){ setPreview(null); closeRunDetail(); }
+  if(S.tab!=="market"){ S.mkMap=false; S.mapMarks=null; } syncMarketPanel();
+  $("cp-panel").classList.toggle("show",S.tab==="components"); $("fl-panel").classList.toggle("show",S.tab==="fleet");
+  if(S.tab==="components") openComponents(); if(S.tab==="fleet") openFleet();
+  if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- route
 async function addStops(names){ await api().add_stops(names); await poll(); toast(names.length===1?`Added ${names[0]} to route`:`Added ${names.length} stops to route`); renderDetail(); }
@@ -1140,7 +1338,7 @@ $("btn-clear").onclick=async()=>{ await api().clear_route(); S.overview=null; aw
 $("btn-view").onclick=()=>fitRoute();
 async function openAlign(){ S.alignStatus=await api().calibration_status(); S.selected={kind:"align"}; renderDetail(); }
 
-$("btn-settings").onclick=()=>{ S.selected={kind:"settings"}; renderDetail(); };
+$("btn-settings").onclick=()=>{ S.uexStat=null; S.selected={kind:"settings"}; renderDetail(); };
 $("btn-plan").onclick=()=>planRoute(false); $("btn-plan-all").onclick=()=>planRoute(true);
 async function planRoute(withContracts){
   const btns=[...document.querySelectorAll(".btn.plan")]; const labels=btns.map(b=>b.innerHTML);
@@ -1157,8 +1355,19 @@ async function planRoute(withContracts){
 // afterwards spins that globe instead of swinging around an empty point in space.
 // How much of the view a framed route may use, as tan(half-angle): the narrower of height and the free
 // width beside the cards on the left (the view's centre is shifted right by half their width).
+// How far right the view's centre moves so things aren't hidden: half the cards on the left, or half
+// the trade-route detail panel when it's open.
+// With a trade route open, the map shows through a window in its page: the view centres on that
+// window and frames the route to its size.
+function tradePanelOpen(){ return !!$("tr-panel")?.classList.contains("show"); }
+function mapWindow(){ if(!tradePanelOpen()) return null; const f=$("trd-map"), base=$("gl"); if(!f||!base) return null;
+  const a=f.getBoundingClientRect(), b=base.getBoundingClientRect(); if(!a.width||!a.height) return null;
+  return {x:a.left-b.left, y:a.top-b.top, w:a.width, h:a.height}; }
+function viewShift(){ const fr=mapWindow(); if(fr) return fr.x+fr.w/2-W/2;
+  return $("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0; }
 function fitHalf(){ const half=Math.tan(camera.fov*Math.PI/360);
-  const shift=$("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0;
+  const fr=mapWindow(); if(fr) return Math.min(half*fr.h/H, half*fr.w/H)*0.82;
+  const shift=viewShift();
   return Math.min(half, half*(W/H)*Math.max(0.25,(W/2-shift)/(W/2)))*0.88; }
 function fitRoute(reveal=true, only=null){
   const route=only||S.live?.route||[]; if(!route.length){ if(!only) toast("The route is empty"); return; }
@@ -1335,7 +1544,7 @@ function renderContracts(force){
       <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>
       ${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${tracker(c)}${turnIn}${objs}
       <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
-  $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Accept one in game. Its objectives show up here and on the map, often pinned to the exact spot.":"Point the app at Game.log to track contracts."}</div>`)
+  $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
   const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
   on("btn-clear-finished",async()=>{ await api().clear_finished_contracts(); await poll(); });
@@ -1424,7 +1633,7 @@ $("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
 // ---- status & toast
 function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
-  if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b> <span class="muted">· your position shows once you're in game</span>`; }
+  if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b>`; }
   else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
@@ -1455,14 +1664,560 @@ function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"
   const cal=S.live.calibration; if(cal&&cal.at!==S.calSeen){ if(S.calSeen!==undefined&&Math.abs(cal.correction)>0.05) toast(`Lined up ${cal.body} using your reading at ${cal.place} (${cal.correction>0?"+":""}${cal.correction.toFixed(1)}°)`); S.calSeen=cal.at; } }
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2600); }
 
+// =================================================================== trade data (UEX)
+const money=n=>n==null?"–":`${Math.round(n).toLocaleString()} aUEC`;
+const shortMoney=n=>Math.abs(n)>=1e6?`${(n/1e6).toFixed(2)}M`:Math.abs(n)>=1e4?`${Math.round(n/1e3)}k`:Math.round(n).toLocaleString();
+const agoTs=ts=>{ if(!ts) return ""; const a=Math.max(0,Date.now()/1000-ts); return a<3600?`${Math.max(1,Math.round(a/60))} min ago`:a<172800?`${Math.round(a/3600)} h ago`:`${Math.round(a/86400)} d ago`; };
+const uexCredit=at=>`<div class="uex-credit">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the terminal before you buy.${at?` Fetched ${agoTs(at)}.`:""}</div>`;
+const needToken=`<div class="empty"><strong>Connect UEX first</strong>Add your free UEX access token in Settings to see prices and trade runs.<br><br><button class="btn small" data-act="opensettings">Open Settings</button></div>`;
+// Status is fetched when Settings opens or the token changes, not on every refresh of the panel.
+async function fillUexStatus(refresh){ const el=$("uex-status"); if(!el) return;
+  if(refresh||!S.uexStat){ if(S.uexBusy) return; S.uexBusy=true;
+    try{ S.uexStat=await api().uex_status(); } finally{ S.uexBusy=false; } }
+  const r=S.uexStat; if(!$("uex-status")||!r) return;
+  $("uex-status").innerHTML=!r.token?"":!r.ok?esc(r.error):`Connected. ${r.matched} of ${r.terminals} trade terminals tied to places on the map${r.needs_position?.length?`<div style="margin-top:4px">Waiting for a /showlocation there: ${r.needs_position.map(esc).join(", ")}</div>`:""}${r.unmatched.length?`<details style="margin-top:4px" ${S.uexListOpen?"open":""} ontoggle="S.uexListOpen=this.open"><summary style="cursor:pointer">Not on the map (${r.unmatched.length})</summary>${r.unmatched.map(esc).join(", ")}<div style="margin-top:4px">No position data exists for these yet.</div></details>`:""}`; }
+// Shared clicks in both tabs: open a place, add it to the route, open UEX, open Settings.
+async function tradeClick(e){
+  const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,false); return true; }
+  const ad=e.target.closest("[data-add]"); if(ad){ await api().add_stops([ad.dataset.add]); await poll(); toast(`Added ${ad.dataset.add} to the route`); return true; }
+  const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return true; }
+  if(e.target.closest("[data-act=opensettings]")){ select({kind:"settings"}); return true; }
+  return false; }
+// ---- Commodities: where to buy and sell one commodity
+async function openMarket(){
+  if(!S.live?.log?.uex_token){ $("mk-out").innerHTML=needToken; return; }
+  if(!S.mk){ const r=await api().uex_commodities(); if(!r.ok){ $("mk-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+    S.mk=r.items; S.mkByName=Object.fromEntries(r.items.map(c=>[c.name.toLowerCase(),c]));
+    $("mk-dl").innerHTML=r.items.map(c=>`<option value="${esc(c.name)}">${esc(c.kind||"")}${c.illegal?" · illegal":""}</option>`).join(""); }
+  if(!S.mkSel){ $("mk-out").innerHTML=`<div class="empty"><strong>Pick a commodity</strong>Click one in the grid or search above to see where it's cheapest to buy and where it sells best.</div>`; renderMarketGrid(); }
+  else renderMarket(); }
+// All commodities as pictures in place of the map; the search box narrows them.
+async function renderMarketGrid(){
+  const q=$("mk-search").value.trim().toLowerCase(), L=(S.mk||[]).filter(c=>!q||`${c.name} ${c.kind||""}`.toLowerCase().includes(q));
+  $("mk-panel").innerHTML=`<div class="gh"><b>Commodities</b>${L.length} · click one for prices and where to trade it</div>
+    <div class="grid">${L.map(c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
+      <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`).join("")}</div>`;
+  S.mkData=null; syncMarketPanel(); fillPictures($("mk-panel")); }
+// Pictures from the Star Citizen Wiki, many per request, filled in when they arrive.
+async function fillPictures(root){ const els=[...root.querySelectorAll("[data-pic]")]; if(!els.length) return;
+  S.pics=S.pics||{}; const need=[...new Set(els.map(e=>e.dataset.pic))].filter(r=>!(r in S.pics));
+  for(let i=0;i<need.length;i+=50){ const got=await api().wiki_images(need.slice(i,i+50)); Object.assign(S.pics,got); paint(); }
+  function paint(){ for(const e of els){ const u=S.pics[e.dataset.pic]; if(u&&!e.querySelector("img")) e.innerHTML=`<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer">`; } }
+  paint(); }
+async function renderMarket(){
+  const c=S.mkSel, sys=$("mk-sys").value; if(S.mkData?.c!==c){ S.mkMap=false; S.mapMarks=null; $("mk-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading ${esc(c.name)}…</div>`; }
+  const r=await api().uex_market(c.id); if(S.mkSel!==c) return;
+  if(!r.ok){ $("mk-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+  const rows=(list,kind)=>{ const L=list.filter(x=>!sys||x.system===sys);
+    if(!L.length) return `<div class="muted" style="font-size:13px;margin:0 2px 8px">${kind==="buy"?"Nowhere sells it":"Nowhere buys it"}${sys?` in ${esc(sys)}`:""}.</div>`;
+    return L.slice(0,25).map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
+      <div class="p ${i===0?"best":""}">${money(x.price)}</div>
+      ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
+      <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
+  const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
+  $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
+    <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
+    <div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>
+    <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
+    <div class="mk-h">Sell at <span class="muted" style="text-transform:none;letter-spacing:0">best price first, per SCU</span></div>${rows(r.sell,"sell")}${uexCredit(r.at)}`;
+  S.mkData={c,r,rows}; renderMarketPanel(); }
+// The commodity in place of the map: its picture, prices at a glance, and where to buy and sell it.
+// "See on map" swaps back to the map with every place that trades it marked.
+async function renderMarketPanel(){
+  const d=S.mkData; if(!d) return syncMarketPanel(); const {c,r,rows}=d;
+  const avg=(L,k)=>L.length?L.reduce((a,x)=>a+(x[k]||x.price),0)/L.length:null;
+  $("mk-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img" id="mkp-img">Loading picture…</div>
+    <div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div>
+      <div class="mkp-stats">${r.buy[0]?`<div><span>Cheapest buy</span><b>${money(r.buy[0].price)}</b></div>`:""}${r.sell[0]?`<div><span>Best sell</span><b>${money(r.sell[0].price)}</b></div>`:""}
+        ${r.buy[0]&&r.sell[0]?`<div><span>Best spread</span><b style="color:#57e39b">+${money(r.sell[0].price-r.buy[0].price)}</b></div>`:""}
+        <div><span>Sold at</span><b>${r.buy.length}</b></div><div><span>Bought at</span><b>${r.sell.length}</b></div></div>
+      <div class="row" style="gap:8px"><button class="btn" data-act="mkall">← All commodities</button><button class="btn primary" data-act="mkmap">See on map</button>${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
+    <div class="mkp-cols"><div><div class="mk-h">Buy at</div>${rows(r.buy,"buy")}</div><div><div class="mk-h">Sell at</div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
+  syncMarketPanel();
+  const img=await api().wiki_image(c.wiki||c.name); if(S.mkData?.c!==c) return;
+  const box=$("mkp-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:"No picture on the wiki"; }
+function syncMarketPanel(){ const on=S.tab==="market";
+  $("mk-panel").classList.toggle("show",on&&!S.mkMap&&!!S.mk); $("map-back").classList.toggle("show",on&&!!S.mkMap); }
+function toggleMarketMap(){ const d=S.mkData; if(!d) return;
+  S.mkMap=!S.mkMap;
+  if(S.mkMap){ const sys=$("mk-sys").value, keep=L=>L.filter(x=>x.place&&(!sys||x.system===sys)).slice(0,10);
+    const marks=[...keep(d.r.buy).map(x=>({name:x.place,label:`Buy ${shortMoney(x.price)}`,color:"#57e39b"})),
+                 ...keep(d.r.sell).map(x=>({name:x.place,label:`Sell ${shortMoney(x.price)}`,color:"#ffb454"}))];
+    const by={}; for(const m of marks) by[m.name]=by[m.name]?{...by[m.name],label:by[m.name].label+" · "+m.label}:m;
+    S.mapMarks=Object.values(by); const names=S.mapMarks.map(m=>m.name);
+    const first=S.locMap[names[0]]; if(first&&first.system!==S.system) setSystem(first.system,false);
+    if(names.length) fitRoute(true,names.filter(n=>S.locMap[n]?.system===(first?.system||S.system)));
+  } else S.mapMarks=null;
+  renderMarket(); }
+$("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
+  if(e.target.closest("[data-act=mkall]")){ S.mkSel=null; S.mkData=null; $("mk-search").value=""; return openMarket(); }
+  const c=e.target.closest("[data-mkc]"); if(c){ S.mkSel=S.mk.find(x=>String(x.id)===c.dataset.mkc); $("mk-search").value=S.mkSel.name; $("mk-panel").scrollTop=0; return renderMarket(); }
+  await tradeClick(e); };
+$("mk-search").addEventListener("input",()=>{ if(!S.mkSel||$("mk-search").value.trim().toLowerCase()!==S.mkSel.name.toLowerCase()){ if(S.mkSel&&!S.mkByName?.[$("mk-search").value.trim().toLowerCase()]){ S.mkSel=null; S.mkData=null; openMarket(); } else if(!S.mkSel) renderMarketGrid(); } });
+$("map-back").onclick=()=>{ if(S.mkMap) toggleMarketMap(); };
+$("mk-search").addEventListener("change",()=>{ const c=S.mkByName?.[$("mk-search").value.trim().toLowerCase()]; if(c){ S.mkSel=c; renderMarket(); } });
+$("mk-search").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const v=$("mk-search").value.trim().toLowerCase(); const c=S.mkByName?.[v]||S.mk?.find(x=>x.name.toLowerCase().includes(v)); if(c){ $("mk-search").value=c.name; S.mkSel=c; renderMarket(); } } });
+$("mk-sys").onchange=()=>{ if(S.mkSel) renderMarket(); };
+$("mk-out").onclick=e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap(); tradeClick(e); };
+// ---- Trade routes: best runs from a starting point for your cargo space and budget
+const trPref=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem("q-"+k)||""; localStorage.setItem("q-"+k,v); }catch{ return ""; } };
+async function openTrade(){
+  if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; return; }
+  const r=await api().uex_origins(); if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+  const cur=$("tr-from").value||trPref("from"); let html=r.here?`<option value="${r.here.kind}:${r.here.id}">Near me (${esc(r.here.name)})</option>`:"";
+  for(const sys of ["Stanton","Pyro","Nyx"]){ const g=r.items.filter(o=>o.system===sys); if(g.length) html+=`<optgroup label="${sys}">${g.map(o=>`<option value="${o.kind}:${o.id}">${esc(o.name)}</option>`).join("")}</optgroup>`; }
+  $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur;
+  if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
+  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-sys").dataset.init=1; }
+  const fl=await api().fleet_list(), keep=$("tr-ship").value||trPref("ship");
+  $("tr-ship").innerHTML=`<option value="">None Selected</option>`+fl.ships.filter(x=>x.scu>0).map(x=>`<option value="${x.uid}" data-scu="${x.scu}">${esc(x.full)} · ${x.scu} SCU${x.main?" ★":""}</option>`).join("")
+    +(fl.ships.length?"":`<option disabled>Add ships in My Fleet to pick them here</option>`);
+  const pick=[...$("tr-ship").options].find(o=>o.value===keep)||[...$("tr-ship").options].find(o=>o.value&&o.value===fl.main);
+  if(pick){ $("tr-ship").value=pick.value; $("tr-scu").value=pick.dataset.scu; }
+  if(!S.trDone) $("tr-out").innerHTML=`<div class="empty"><strong>Find a profitable run</strong>Pick where you'll start, enter your cargo space and budget, and Quantum ranks what to haul where by total profit.</div>`; }
+async function runTrade(){
+  const [kind,id]=($("tr-from").value||"").split(":"); if(!id) return toast("Pick where you'll start");
+  setPreview(null);
+  const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
+  trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
+  $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">Finding runs…</div>`;
+  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",$("tr-ship").value);
+  const r=await api().uex_routes(kind,+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
+  if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable runs</strong>Nothing from here makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}`; return; }
+  const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
+  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} run${r.total===1?"":"s"} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
+    `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
+      <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
+        Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
+      <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
+      <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small ${S.previewIdx===i?"primary":""}" data-prev="${i}">${S.previewIdx===i?"Previewing":"Preview"}</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
+        <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at);
+  S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; }
+$("tr-go").onclick=runTrade;
+$("tr-ship").onchange=()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu) $("tr-scu").value=o.dataset.scu; trPref("ship",$("tr-ship").value); };
+$("tr-scu").addEventListener("input",()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu&&$("tr-scu").value!==o.dataset.scu) $("tr-ship").value=""; });
+// Preview: draw the run (you → buy → sell) on the map without touching your route.
+function previewPlaces(from,to,what){ setPreview(null); if(!from||!to) return; S.preview=[from,to]; S.previewIdx=null;
+  S.previewLabels={[from]:`Buy ${what}`,[to]:`Sell ${what}`}; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false); fitRoute(true,S.preview); }
+function setPreview(i){ if(i==null){ if(S.preview){ S.preview=null; S.previewIdx=null; document.querySelectorAll(".tr-card.hl").forEach(c=>c.classList.remove("hl")); } return; }
+  const x=S.trRoutes[i]; S.preview=[x.from_place,x.to_place]; S.previewIdx=i; S.previewLabels={[x.from_place]:`Buy ${x.commodity}`,[x.to_place]:`Sell ${x.commodity}`};
+  fitRoute(true,S.preview); }
+$("tr-out").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(!e.target.closest("button,a")){ const c=e.target.closest("[data-tri]"); if(c){ openRunDetail(+c.dataset.tri); return; } }
+  const pv=e.target.closest("[data-prev]"); if(pv){ const i=+pv.dataset.prev; setPreview(S.previewIdx===i?null:i); redrawTradeButtons(); return; }
+  const b=e.target.closest("[data-run]"); if(!b) return; const x=S.trRoutes[+b.dataset.run];
+  await api().add_stops([x.from_place,x.to_place]); setPreview(null); redrawTradeButtons(); await poll();
+  toast(`Run added: buy ${x.commodity} at ${x.from_place}, sell at ${x.to_place}`); };
+function redrawTradeButtons(){ document.querySelectorAll("#tr-out [data-prev]").forEach(b=>{ const on=+b.dataset.prev===S.previewIdx;
+  b.textContent=on?"Previewing":"Preview"; b.classList.toggle("primary",on); b.closest(".tr-card").classList.toggle("hl",on); }); }
+
+// ---- Vehicles: every ship and ground vehicle, where to buy or rent it and for how much
+async function openVehicles(){
+  if(!S.live?.log?.uex_token){ $("vh-out").innerHTML=needToken; return; }
+  if(!S.veh){ $("vh-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading vehicles…</div>`;
+    const r=await api().uex_vehicles(); if(!r.ok){ $("vh-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+    S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; }
+  if($("vh-role").options.length<=1){ const keep=$("vh-role").value, roles=[...new Set(S.veh.flatMap(v=>v.roles))].sort();
+    $("vh-role").innerHTML=`<option value="">Any role</option>`+roles.map(x=>`<option>${esc(x)}</option>`).join(""); $("vh-role").value=keep; }
+  renderVehicles(); }
+function vehSpots(list,kind){
+  if(!list.length) return `<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${kind==="buy"?"Not sold in game":"Not for rent"}.</div>`;
+  return list.map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
+    <div class="p ${i===0?"best":""}">${money(x.price)}${kind==="rent"?`<small class="muted" style="font-weight:500"> /day</small>`:""}</div>
+    ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
+    <div class="m">${esc(x.system||"")}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
+function vehCard(v,pinned){ const open=pinned||S.vehOpen[v.id], b=v.buy[0], r=v.rent[0];
+  return `<div class="vh ${pinned||S.vehHl==v.id?"hl":""}" ${pinned?"":`id="vh-${v.id}"`}><div class="hd" data-vh="${v.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(v.full)}</div><div class="mk">${esc(v.maker)}${v.scu?` · ${v.scu} SCU`:""}${v.crew?` · crew ${esc(String(v.crew).replace(",","–"))}`:""}${v.pad?` · ${esc(v.pad)} pad`:""}</div></div>
+    <div class="pr">${b?money(b.price):r?"Rent only":"–"}${r?`<small>rent from ${shortMoney(r.price)}/day</small>`:""}</div>
+    ${v.roles.length?`<div class="tags">${v.roles.slice(0,5).map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}</div>
+    ${open?`<div class="bd"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}<div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}
+      <div class="row" style="gap:6px">${v.store?`<button class="btn small ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}${pinned?`<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button>`:""}</div></div>`:""}</div>`; }
+function vehList(){
+  const q=$("vh-search").value.trim().toLowerCase(), av=$("vh-avail").value, role=$("vh-role").value, sort=$("vh-sort").value;
+  let L=S.veh.filter(v=>(!q||`${v.full} ${v.maker}`.toLowerCase().includes(q))&&(!av||v[av].length)&&(!role||v.roles.includes(role)));
+  const cheapest=v=>v.buy[0]?.price??v.rent[0]?.price??9e12;
+  const dearest=v=>v.buy[0]?.price??v.rent[0]?.price??-1;
+  return [...L].sort(sort==="scu"?(a,b)=>b.scu-a.scu||cheapest(a)-cheapest(b):sort==="name"?(a,b)=>a.full.localeCompare(b.full)
+    :sort==="price_desc"?(a,b)=>dearest(b)-dearest(a):(a,b)=>cheapest(a)-cheapest(b)); }
+// The sidebar: the vehicle picked from the pictures pinned on top with its prices (so it's always there,
+// whatever the filters or list length), then the list.
+function renderVehicles(){
+  if(!S.veh) return;
+  const L=vehList(), shown=L.slice(0,150), sel=S.veh.find(v=>String(v.id)===String(S.vehSel));
+  $("vh-out").innerHTML=(sel?vehCard(sel,true):"")+`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${L.length} vehicle${L.length===1?"":"s"}${L.length>shown.length?` · showing ${shown.length}, search to narrow`:""}</div>`
+    +shown.map(v=>vehCard(v,false)).join("")+uexCredit(S.vehAt);
+  // The pictures only rebuild when the list itself changes, so picking one doesn't reload them all.
+  const key=L.map(v=>v.id).join(",")+"|"+$("vh-search").value;
+  if(S.vehDetail) return renderVehicleDetail(S.vehDetail);
+  if(key!==S.vehGalKey){ S.vehGalKey=key; $("vh-gallery").dataset.detail=""; renderGallery(L); } else markGallery(); }
+function markGallery(){ for(const c of $("vh-gallery").querySelectorAll("[data-vg]")) c.classList.toggle("hl",String(c.dataset.vg)===String(S.vehSel??S.vehHl)); }
+// Pictures of the vehicles in the list, in place of the map while the Vehicles tab is open.
+function renderGallery(L){
+  const g=$("vh-gallery"), q=$("vh-search").value.trim();
+  g.innerHTML=`<div class="gh"><b>${q?`“${esc(q)}”`:"Vehicles"}</b>${L.length} shown · click one for prices and where to get it</div><div class="grid">${L.slice(0,150).map(v=>{
+    const b=v.buy[0], r=v.rent[0];
+    return `<div class="vg" data-vg="${v.id}"><div class="ph">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('No picture'))">`:"No picture"}</div>
+      <div class="tx"><b>${esc(v.full)}</b><span>${b?money(b.price):r?`Rent ${shortMoney(r.price)}/day`:"Not sold in game"}${v.scu?` · ${v.scu} SCU`:""}</span></div></div>`; }).join("")}</div>`;
+  markGallery(); }
+$("vh-gallery").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-act=vhback]")){ S.vehDetail=null; S.vehGalKey=null; return renderVehicles(); }
+  const c=e.target.closest("[data-vg]"); if(!c) return;
+  S.vehSel=c.dataset.vg; S.vehHl=null; S.vehDetail=c.dataset.vg; renderVehicles(); $("pane-vehicles").scrollTop=0; };
+// A vehicle's own page: picture, roles, crew and beds, cargo, size, flight, quantum, defences, weapons.
+async function renderVehicleDetail(id){
+  const g=$("vh-gallery"), v=S.veh.find(x=>String(x.id)===String(id)); if(!v) return;
+  if(g.dataset.detail!==String(id)) g.innerHTML=`<div class="muted" style="margin:20px">Loading ${esc(v.full)}…</div>`; g.dataset.detail=String(id); g.scrollTop=0;
+  const d=await api().vehicle_detail(v.id); if(S.vehDetail!==String(id)) return;
+  const n=x=>x==null||x===""?null:Math.round(x).toLocaleString(), dash=x=>x??"–";
+  const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
+  const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
+  g.innerHTML=`<button class="btn" data-act="vhback" style="margin-bottom:14px">← All vehicles</button>
+    <div class="mkp-head"><div class="mkp-img">${v.photo?`<img src="${esc(v.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
+      <div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div>
+        ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
+        <div class="mkp-stats">${[["Crew",crew],["Cargo",v.scu?`${v.scu} SCU`:null],["Beds",d.beds],["Medical beds",d.medical_beds],["Buy",v.buy[0]?money(v.buy[0].price):null],["Rent",v.rent[0]?`${shortMoney(v.rent[0].price)}/day`:null]]
+          .filter(c=>c[1]!=null&&c[1]!==0).map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
+        <div class="row" style="gap:8px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
+    ${d.description?`<div class="desc" style="max-width:900px;margin:0 0 14px;color:var(--ink-2);line-height:1.5">${esc(d.description)}</div>`:""}
+    <div class="vd-grid">
+      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
+      ${sec("Cargo & storage",[["Cargo grid",d.scu?`${d.scu} SCU`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
+      ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
+      ${sec("Flight",[["SCM",d.scm&&`${d.scm} m/s`],["Boost",d.boost&&`${d.boost} m/s`],["Max",d.max&&`${d.max} m/s`],["Pitch / yaw / roll",d.pitch&&`${d.pitch} / ${d.yaw} / ${d.roll} °/s`],["Hydrogen fuel",d.h_fuel&&`${d.h_fuel} SCU`]])}
+      ${sec("Quantum",[["Speed",d.qt_speed&&`${fmtBig(d.qt_speed)}/s`],["Range",d.qt_range&&fmtBig(d.qt_range)],["Spool",d.qt_spool&&`${d.qt_spool} s`],["Quantum fuel",d.q_fuel&&`${d.q_fuel} SCU`]])}
+      ${sec("Defence",[["Shield HP",n(d.shield)],["Shield type",d.shield_face],["Hull HP",n(d.hull)],["Armor HP",n(d.armor)],["Countermeasures",d.countermeasures],["IR / EM",d.ir&&`${fmtBig(d.ir)} / ${fmtBig(d.em)}`],["Cross-section",n(d.cs)]])}
+      ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
+      ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
+      <div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}<div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div>
+    </div>
+    <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`; }
+for(const id of ["vh-search","vh-avail","vh-role","vh-sort"]) $(id).addEventListener(id==="vh-search"?"input":"change",()=>{ S.vehDetail=null; renderVehicles(); });
+$("vh-out").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-unpin]")){ S.vehSel=null; S.vehDetail=null; S.vehGalKey=null; renderVehicles(); return; }
+  const h=e.target.closest("[data-vh]"); if(!h||h.dataset.pinned) return; const id=h.dataset.vh;
+  S.vehOpen[id]=!S.vehOpen[id]; S.vehHl=id; if(S.vehOpen[id]) S.vehDetail=id; renderVehicles();
+  $("vh-gallery").querySelector(`[data-vg="${id}"]`)?.scrollIntoView({behavior:"smooth",block:"nearest"}); };
+
+// ---- Components: ship upgrades (coolers, power plants, quantum drives, shields, weapons…) and where to buy them
+async function openComponents(){
+  if(!S.live?.log?.uex_token){ $("cp-out").innerHTML=needToken; return; }
+  if(!S.cpCats){ const r=await api().uex_component_categories(); if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+    S.cpCats=r.items; const secs=[...new Set(r.items.map(c=>c.section))];
+    $("cp-cat").innerHTML=secs.map(sec=>`<optgroup label="${esc(sec)}">${r.items.filter(c=>c.section===sec).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
+    const pref=r.items.find(c=>/quantum drive/i.test(c.name))||r.items.find(c=>/cooler/i.test(c.name))||r.items[0]; if(pref) $("cp-cat").value=pref.id; }
+  if(!S.cpItems) await loadComponents(); else renderComponents(); }
+async function loadComponents(){
+  const id=$("cp-cat").value; if(!id) return; $("cp-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`;
+  const r=await api().uex_components(+id); if($("cp-cat").value!==id) return;
+  if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
+  S.cpItems=r.items; S.cpAt=r.at; S.cpSel=null; S.cpDetail=null; S.cpGalKey=null;
+  const sizes=[...new Set(r.items.map(i=>i.size).filter(x=>x!=null&&x!==""))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  $("cp-size").innerHTML=`<option value="">Any size</option>`+sizes.map(x=>`<option value="${esc(x)}">Size ${esc(x)}</option>`).join("");
+  renderComponents(); }
+function cpCard(i,pinned){ const b=i.buy[0];
+  return `<div class="vh ${pinned?"hl":""}"><div class="hd" data-cp="${i.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(i.name)}</div>
+      <div class="mk">${esc(i.maker)}${i.size!=null&&i.size!==""?` · size ${esc(i.size)}`:""}${i.grade?` · grade ${esc(i.grade)}`:""}${i.vehicle?` · ${esc(i.vehicle)}`:""}</div></div>
+    <div class="pr">${b?money(b.price):i.exclusive?"Pledge only":"–"}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div></div>
+    ${pinned?`<div class="bd"><div id="cp-img"></div>${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin:6px 0">${esc(i.note)}</div>`:""}
+      <div class="mk-h">Buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${i.exclusive?"Not sold in game (pledge or subscriber exclusive)":"Not reported in any shop yet. Some components only come with ships or as loot"}.</div>`}
+      <div class="row" style="gap:6px">${i.wiki?`<button class="btn small ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn small ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button></div></div>`:""}</div>`; }
+function renderComponents(){
+  if(!S.cpItems) return; const q=$("cp-search").value.trim().toLowerCase(), size=$("cp-size").value;
+  const L=S.cpItems.filter(i=>(!q||`${i.name} ${i.maker}`.toLowerCase().includes(q))&&(!size||String(i.size)===size));
+  const sel=S.cpItems.find(i=>String(i.id)===String(S.cpSel));
+  $("cp-out").innerHTML=(sel?cpCard(sel,true):"")+`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${L.length} component${L.length===1?"":"s"} · click one for where to buy it</div>`
+    +L.slice(0,200).map(i=>cpCard(i,false)).join("")+uexCredit(S.cpAt);
+  const gk=L.map(i=>i.id).join(",");
+  if(S.cpDetail) renderComponentDetail(S.cpDetail);
+  else if(gk!==S.cpGalKey){ S.cpGalKey=gk; renderComponentGrid(L); } else markComponentGrid();
+  if(sel) api().wiki_image(sel.wiki||sel.name).then(img=>{ const el=$("cp-img"); if(el&&String(S.cpSel)===String(sel.id)&&img) el.innerHTML=`<img class="cp-img" src="${esc(img)}" alt="" referrerpolicy="no-referrer">`; }); }
+async function renderComponentGrid(L){
+  const cat=$("cp-cat").selectedOptions[0]?.textContent||"Components", fl=await api().fleet_list(), main=fl.ships.find(x=>x.main);
+  $("cp-panel").innerHTML=(main?`<div class="main-ship">${main.photo?`<img src="${esc(main.photo)}" alt="" referrerpolicy="no-referrer">`:""}<div style="flex:1"><div class="muted" style="font-size:12px">Main ship</div><b>${esc(main.full)}</b></div>
+      <button class="btn small" data-act="openfleet">Fit components in My Fleet</button></div>`:"")
+    +`<div class="gh"><b>${esc(cat)}</b>${L.length} · click one for where to buy it</div><div class="grid">${L.slice(0,200).map(i=>`<div class="vg" data-cpc="${i.id}"><div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
+      <div class="tx"><b>${esc(i.name)}</b><span>${i.size!=null&&i.size!==""?`S${esc(i.size)} · `:""}${esc(i.maker)}${i.buy[0]?` · ${money(i.buy[0].price)}`:i.exclusive?" · pledge only":""}</span></div></div>`).join("")}</div>`;
+  markComponentGrid(); fillPictures($("cp-panel")); }
+function markComponentGrid(){ for(const c of $("cp-panel").querySelectorAll("[data-cpc]")) c.classList.toggle("hl",c.dataset.cpc===String(S.cpSel)); }
+$("cp-panel").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-act=openfleet]")) return document.querySelector('.tab[data-tab="fleet"]').click();
+  if(e.target.closest("[data-act=cpback]")){ S.cpDetail=null; S.cpGalKey=null; return renderComponents(); }
+  const c=e.target.closest("[data-cpc]"); if(!c) return; S.cpSel=c.dataset.cpc; S.cpDetail=c.dataset.cpc; renderComponents(); $("pane-components").scrollTop=0; };
+// A component's own page in place of the grid: picture, what it is, its numbers, where to buy it.
+const CP_STATS=[["dps","DPS",n=>Math.round(n).toLocaleString()],["alpha","Damage per shot",n=>Math.round(n*10)/10],["rpm","Fire rate",n=>`${Math.round(n)} rpm`],
+  ["damage_type","Damage type",x=>x],["range","Range",n=>`${Math.round(n).toLocaleString()} m`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],["ammo","Ammo",n=>n],
+  ["missile","Missile damage",n=>Math.round(n).toLocaleString()],["shield_hp","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n)}/s`],
+  ["regen_delay","Regen delay after hit",n=>`${n} s`],["down_delay","Regen delay when down",n=>`${n} s`],["qt_speed","Quantum speed",n=>`${fmtBig(n)}/s`],
+  ["qt_spool","Spool time",n=>`${n} s`],["qt_cooldown","Cooldown",n=>`${n} s`],["qt_fuel","Quantum fuel use",n=>n],["power","Power output",n=>`${n} pips`],
+  ["coolant_make","Cooling",n=>`${n}/s`],["power_use","Power use",n=>`${n} pips`],["em","EM signature",n=>Math.round(n).toLocaleString()],["ir","IR signature",n=>Math.round(n).toLocaleString()],
+  ["health","Health",n=>Math.round(n).toLocaleString()]];
+async function renderComponentDetail(id){
+  const i=S.cpItems.find(x=>String(x.id)===String(id)), g=$("cp-panel"); if(!i) return;
+  const gm=i.game||{}, st=gm.stats||{};
+  const rows=CP_STATS.filter(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(st[k]))}</b></div>`).join("");
+  g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc($("cp-cat").selectedOptions[0]?.textContent||"components")}</button>
+    <div class="mkp-head"><div class="mkp-img" id="cpd-img">Loading picture…</div>
+      <div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div>
+        <div class="mkp-stats">${[["Size",(gm.size??i.size)!=null?`S${gm.size??i.size}`:null],["Grade",gm.grade||i.grade],["Class",gm.class],["Price",i.buy[0]?money(i.buy[0].price):i.exclusive?"Pledge only":null],["Sold at",i.buy.length||null]]
+          .filter(c=>c[1]!=null&&c[1]!=="").map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
+        <div class="row" style="gap:8px">${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
+    ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px;max-width:900px">${esc(i.note)}</div>`:""}
+    <div class="vd-grid">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
+      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0">${i.exclusive?"Not sold in game (pledge or subscriber exclusive).":"Not reported in any shop yet. Some components only come with ships or as loot."}</div>`}</div></div>
+    <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki.</div>`;
+  g.scrollTop=0;
+  const img=await api().wiki_image(i.wiki||i.name); if(String(S.cpDetail)!==String(id)) return;
+  const box=$("cpd-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:"No picture on the wiki"; }
+$("cp-cat").addEventListener("change",loadComponents);
+$("cp-size").addEventListener("change",()=>{ S.cpDetail=null; renderComponents(); });
+$("cp-search").addEventListener("input",()=>{ S.cpDetail=null; renderComponents(); });
+$("cp-out").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-unpin]")){ S.cpSel=null; S.cpDetail=null; S.cpGalKey=null; renderComponents(); return; }
+  const h=e.target.closest("[data-cp]"); if(!h||h.dataset.pinned) return; S.cpSel=h.dataset.cp; S.cpDetail=h.dataset.cp; renderComponents(); $("pane-components").scrollTop=0; };
+
+// ---- My Fleet: ships you own, your main one, and what's fitted in each slot
+const fmtBig=n=>n==null?"–":n>=1e9?`${(n/1e9).toFixed(1)} Gm`:n>=1e6?`${(n/1e6).toFixed(1)} Mm`:Math.round(n).toLocaleString();
+async function openFleet(){
+  if(!S.live?.log?.uex_token){ $("fl-out").innerHTML=needToken; $("fl-panel").innerHTML=""; return; }
+  if(!S.veh){ const r=await api().uex_vehicles(); if(r.ok){ S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; } }
+  $("fl-dl").innerHTML=(S.veh||[]).map(v=>`<option value="${esc(v.full)}">${esc(v.maker)}${v.scu?` · ${v.scu} SCU`:""}</option>`).join("");
+  await renderFleet(); }
+async function renderFleet(){
+  const fl=await api().fleet_list(); S.fleet=fl.ships;
+  if(!S.flSel||!fl.ships.some(x=>x.uid===S.flSel)) S.flSel=fl.main||fl.ships[0]?.uid||null;
+  $("fl-out").innerHTML=fl.ships.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${fl.ships.length} ship${fl.ships.length===1?"":"s"} · ★ is your main ship (used for trade runs and components)</div>`
+    +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}"><div class="hd" data-fl="${x.uid}"><div><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
+      <div class="mk">${esc(x.maker)}${x.scu?` · ${x.scu} SCU`:""}${x.swaps?` · ${x.swaps} upgrade${x.swaps===1?"":"s"}`:" · stock"}</div></div>
+      <div class="row" style="gap:4px">${x.main?"":`<button class="btn small ghost" data-flmain="${x.uid}" title="Make this your main ship">★</button>`}<button class="btn small ghost" data-fldel="${x.uid}" title="Remove from your fleet">✕</button></div></div></div>`).join("")
+    :`<div class="empty"><strong>No ships yet</strong>Add the ships you own. Your main ship fills in cargo space for trade runs, and each ship gets slots for its components.</div>`;
+  if(S.flSel) renderShip(S.flSel); else $("fl-panel").innerHTML=`<div class="empty" style="margin-top:60px"><strong>My Fleet</strong>Add a ship on the left to see its components here.</div>`; }
+// Stat labels: [key, label, format, lower-is-better]
+const SHIP_STATS=[["dps","DPS (pilot)",n=>Math.round(n).toLocaleString()],["missile_dmg","Missile dmg",n=>Math.round(n).toLocaleString()],
+  ["shield","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n).toLocaleString()}/s`],["hull","Hull HP",n=>Math.round(n).toLocaleString()],
+  ["scm","SCM",n=>`${n} m/s`],["max","Max speed",n=>`${n} m/s`],["qt_speed","Quantum",n=>`${fmtBig(n)}/s`],["qt_range","QT range",n=>fmtBig(n)],
+  ["em","EM",n=>fmtBig(n),true],["ir","IR",n=>fmtBig(n),true]];
+const ITEM_STAT={dps:["DPS",n=>Math.round(n).toLocaleString()],missile:["Damage",n=>Math.round(n).toLocaleString()],shield_hp:["Shield HP",n=>Math.round(n).toLocaleString()],
+  qt_speed:["Speed",n=>`${fmtBig(n)}/s`],cooling:["Cooling",n=>`${n} seg`],power:["Power",n=>`${n} seg`]};
+const KEY_FOR={WeaponGun:"dps",Missile:"missile",Shield:"shield_hp",QuantumDrive:"qt_speed",Cooler:"cooling",PowerPlant:"power"};
+const deltaTxt=(d,fmt,lowerBetter)=>{ if(!d) return ""; const good=lowerBetter?d<0:d>0; return `<em class="${good?"up":"down"}">${d>0?"+":"−"}${fmt(Math.abs(d))}</em>`; };
+// One compact power panel (collapsed by default): a bar per system, cooling, reset.
+function powerPanel(r){
+  const P=r.power, users=[...(r.fixed||[]).map(x=>({...x,name:x.label})),
+    ...r.slots.filter(x=>x.power&&x.type!=="WeaponGun").map(x=>({...x,name:{Cooler:"Cooler",Shield:"Shield",Radar:"Radar",QuantumDrive:"Quantum"}[x.type]||x.label}))];
+  const order={weapons:0,FlightController:1,Shield:2,Radar:3,QuantumDrive:4,LifeSupportGenerator:5,Cooler:6};
+  users.sort((a,b)=>(order[a.type]??9)-(order[b.type]??9));
+  const label=u=>({weapons:"Weapons",FlightController:"Thrusters",LifeSupportGenerator:"Life support"}[u.type]||u.name);
+  return `<div class="pwr-panel">
+    <div class="pwr-head"><b>Power</b><span class="muted">${P.pips_used} of ${P.pips_gen} pips in use · cooling ${P.cooling}%${P.cooling_auto?"":" (set by you)"}</span><span class="spacer"></span>
+      <button class="btn small ghost" data-pauto="1">Reset to auto</button></div>
+    <div class="pwr-cols">${users.map(u=>`<div class="pc" title="${esc(u.stock?.name||"")}">
+      <div class="bars">${Array.from({length:u.power.max},(_,i)=>`<i data-ppip="${esc(u.port)}" data-n="${u.power.max-i}" class="${u.power.max-i<=u.power.pips?"on":""}"></i>`).join("")}</div>
+      <b>${u.power.pips}</b><span>${esc(label(u))}</span></div>`).join("")}</div>
+    <div class="pwr-foot muted">Click a bar to change a system's power; click its top lit block to lower it. Cooling
+      <input class="field" id="fl-cool" type="number" min="0" max="100" value="${P.cooling}" style="width:58px;padding:2px 6px;margin:0 4px">%
+      ${P.cooling_auto?"(worked out)":`<a data-coolauto="1" style="cursor:pointer;text-decoration:underline">work it out</a>`}</div></div>`; }
+async function renderShip(uid){
+  if(!S.flLoad||S.flLoad.uid!==uid) $("fl-panel").innerHTML=`<div class="muted" style="margin:20px">Loading the ship's components…</div>`;
+  const r=await api().fleet_loadout(uid); if(S.flSel!==uid) return;
+  const ship=(S.fleet||[]).find(x=>x.uid===uid);
+  if(!r.ok){ $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${ship?.photo?`<img src="${esc(ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div><div><h2>${esc(ship?.full||"")}</h2><div class="unknown" style="margin-top:10px">${esc(r.error)}</div></div></div>`; return; }
+  S.flLoad=r; const st=r.stats, dl=r.delta||{};
+  const chips=SHIP_STATS.filter(([k])=>st[k]!=null&&st[k]!=="").map(([k,lab,fmt,lb])=>`<div class="${dl[k]?"chg":""}"><span>${lab}</span><b>${fmt(st[k])}</b>${deltaTxt(dl[k],fmt,lb)}</div>`).join("")
+    +(r.ship.scu?`<div><span>Cargo</span><b>${r.ship.scu} SCU</b></div>`:"");
+  const changed=r.slots.filter(sl=>sl.fitted).length;
+  const groups={}; for(const sl of r.slots) (groups[sl.label]=groups[sl.label]||[]).push(sl);
+  const card=sl=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
+      maker=sl.fitted?sl.fitted_maker:sl.stock?.maker, val=k&&stats[k], stockVal=k&&sl.stock?.stats?.[k], open=S.flSlot===sl.port;
+    return `<div class="slot ${sl.fitted?"fit":""} ${open?"open":""}">
+      <div class="top"><span class="sz">S${esc(sl.size??"?")}</span>${grade?`<span class="gr">${esc(grade)}</span>`:""}
+        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}</span></div>
+        ${val?`<div class="val"><b>${ITEM_STAT[k][1](val)}</b><span>${ITEM_STAT[k][0]}</span>${sl.fitted&&stockVal?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</div>`:""}</div>
+      ${sl.fitted?`<div class="was">Stock: ${esc(sl.stock?.name||"none")}</div>`:""}
+
+      <div class="acts">${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}">Back to stock</button>`:""}<button class="btn small ${open?"":"primary"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div>
+      ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
+  $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
+      <div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock · stats include your changes`:"Stock loadout"}</div>
+        <div class="mkp-stats">${chips}</div>
+        ${r.power?.pips_gen?`<div class="pwr-row">
+          <div class="seg-mini" title="What's powered: Combat = weapons and shields on, quantum drive off. Travel = quantum drive on, weapons and shields off."><button data-pmode="scm" class="${r.power.mode!=="nav"?"on":""}">Combat · SCM</button><button data-pmode="nav" class="${r.power.mode==="nav"?"on":""}">Travel · NAV</button></div>
+          <button class="btn small ghost" data-ptoggle="1">${S.flPowerOpen?"Hide power ▴":"Power ▾"}</button>
+          ${r.power.custom?`<span class="muted" style="font-size:12px">custom power</span>`:""}</div>`:""}</div></div>
+    ${r.power?.pips_gen&&S.flPowerOpen?powerPanel(r):""}
+    <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
+      return `<div class="sg ${wide}"><div class="mk-h">${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
+    <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
+  if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size); } }
+async function loadSlotOptions(type,size){
+  const box=$("fl-opts"); if(!box) return; box.innerHTML=`<div class="muted" style="font-size:12px">Loading what fits, with each one's numbers…</div>`;
+  const r=await api().fleet_options(type,size?+size:0,S.flSel); if(!$("fl-opts")) return;
+  if(!r.ok){ $("fl-opts").innerHTML=`<div class="unknown">${esc(r.error)}</div>`; return; }
+  S.flOpts=r; renderSlotOptions(); }
+function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) return;
+  if(!r.items.length){ box.innerHTML=`<div class="muted" style="font-size:12.5px">UEX lists nothing else of this kind at this size.</div>`; return; }
+  const k=r.key, sort=S.flSort||(k?"best":"price"), sl=S.flLoad?.slots.find(x=>x.port===S.flSlot), cur=k&&(sl?.fitted?sl.fitted_stats?.[k]:sl?.stock?.stats?.[k]);
+  const q=(S.flQuery||"").trim().toLowerCase();
+  const L=r.items.filter(i=>!q||`${i.name} ${i.maker} ${i.class||""} ${i.grade||""}`.toLowerCase().includes(q)).sort(sort==="best"&&k?(a,b)=>(b.stats[k]||0)-(a.stats[k]||0)
+    :sort==="stealth"?(a,b)=>((a.stats.em??9e9)+(a.stats.ir??0))-((b.stats.em??9e9)+(b.stats.ir??0))
+    :sort==="price_desc"?(a,b)=>(a.price==null)-(b.price==null)||(b.price||0)-(a.price||0)
+    :(a,b)=>(a.price==null)-(b.price==null)||(a.price||0)-(b.price||0));
+  const hadFocus=document.activeElement?.id==="fl-q";
+  box.innerHTML=`<div class="row" style="gap:6px;margin-bottom:8px"><input class="field" id="fl-q" placeholder="Search by name, maker or class" value="${esc(S.flQuery||"")}" style="flex:1;min-width:160px;padding:4px 8px" autocomplete="off">
+      <span class="muted" style="font-size:12px">${L.length} that fit</span>
+      ${k?`<select class="field" id="fl-sort" style="width:auto;padding:3px 8px"><option value="best" ${sort==="best"?"selected":""}>Most ${ITEM_STAT[k][0]}</option><option value="stealth" ${sort==="stealth"?"selected":""}>Stealthiest (lowest EM/IR)</option><option value="price" ${sort==="price"?"selected":""}>Price: Low to High</option><option value="price_desc" ${sort==="price_desc"?"selected":""}>Price: High to Low</option></select>`:`<select class="field" id="fl-sort" style="width:auto;padding:3px 8px"><option value="price" ${sort==="price"?"selected":""}>Price: Low to High</option><option value="price_desc" ${sort==="price_desc"?"selected":""}>Price: High to Low</option></select>`}</div>`
+    +L.map((i,n)=>{ const v=k&&i.stats[k];
+      return `<div class="opt"><div class="nm"><b>${esc(i.name)}${n===0&&sort==="best"&&v?' <span class="best-tag">best</span>':""}</b><span>${esc(i.maker)}${i.grade?` · grade ${esc(i.grade)}`:""}${i.class?` · ${esc(i.class)}`:""}${i.stats.em!=null?` · EM ${fmtBig(i.stats.em)}`:""}${i.buy[0]?` · ${i.buy[0].place?`<a data-open="${esc(i.buy[0].place)}">${esc(i.buy[0].where)}</a>`:esc(i.buy[0].where)}`:" · not in shops"}</span></div>
+        ${v?`<div class="val"><b>${ITEM_STAT[k][1](v)}</b>${cur?deltaTxt(v-cur,ITEM_STAT[k][1]):""}</div>`:"<div></div>"}
+        <div class="pr">${i.price?money(i.price):"–"}</div><button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button></div>`; }).join("");
+  const so=$("fl-sort"); if(so) so.onchange=()=>{ S.flSort=so.value; renderSlotOptions(); };
+  const qi=$("fl-q"); if(qi){ qi.oninput=()=>{ S.flQuery=qi.value; const pos=qi.selectionStart; renderSlotOptions(); const n=$("fl-q"); n.focus(); n.setSelectionRange(pos,pos); };
+    if(hadFocus){ qi.focus(); } } }
+$("fl-panel").addEventListener("change",async e=>{ if(e.target.id!=="fl-cool") return;
+  await api().fleet_set_power(S.flSel,null,null,e.target.value===""?"auto":(+e.target.value||0)); renderShip(S.flSel); });
+$("fl-add-btn").onclick=async()=>{ const v=(S.veh||[]).find(x=>x.full.toLowerCase()===$("fl-add").value.trim().toLowerCase());
+  if(!v) return toast("Pick a ship from the suggestions"); const r=await api().fleet_add(v.id); if(!r.ok) return toast(r.error);
+  $("fl-add").value=""; S.flSel=r.uid; S.flSlot=null; toast(`${v.full} added to your fleet`); renderFleet(); };
+$("fl-add").addEventListener("keydown",e=>{ if(e.key==="Enter") $("fl-add-btn").click(); });
+$("fl-out").onclick=async e=>{
+  const m=e.target.closest("[data-flmain]"); if(m){ await api().fleet_set_main(m.dataset.flmain); S.cpGalKey=null; return renderFleet(); }
+  const d=e.target.closest("[data-fldel]"); if(d){ await api().fleet_remove(d.dataset.fldel); return renderFleet(); }
+  const h=e.target.closest("[data-fl]"); if(h){ S.flSel=h.dataset.fl; S.flSlot=null; renderFleet(); } };
+$("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
+  const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; return renderShip(S.flSel); }
+  const fit=e.target.closest("[data-flfit]"); if(fit){ await api().fleet_set_slot(S.flSel,S.flSlot,fit.dataset.flfit,fit.dataset.uuid||null); toast(`Fitted ${fit.dataset.flfit}`); S.flSlot=null; S.flOpts=null; return renderFleet(); }
+  const pip=e.target.closest("[data-ppip]"); if(pip){ const sl=[...S.flLoad.slots,...(S.flLoad.fixed||[])].find(x=>x.port===pip.dataset.ppip), n=+pip.dataset.n;
+    await api().fleet_set_part_power(S.flSel,pip.dataset.ppip,sl?.power?.pips===n?n-1:n); return renderShip(S.flSel); }
+  if(e.target.closest("[data-pauto]")){ await api().fleet_set_power(S.flSel,null,null,null,true); return renderShip(S.flSel); }
+  const pm=e.target.closest("[data-pmode]"); if(pm){ await api().fleet_set_power(S.flSel,null,pm.dataset.pmode,null); return renderShip(S.flSel); }
+  if(e.target.closest("[data-ptoggle]")){ S.flPowerOpen=!S.flPowerOpen; return renderShip(S.flSel); }
+  if(e.target.closest("[data-coolauto]")){ await api().fleet_set_power(S.flSel,null,null,"auto"); return renderShip(S.flSel); }
+  const rs=e.target.closest("[data-flreset]"); if(rs){ await api().fleet_set_slot(S.flSel,rs.dataset.flreset,null); return renderFleet(); } };
+
+// ---- Trade routes: details panel, and your own runs tracked start to finish
+const TRADE_DISCLAIMER=`<div class="disclaim"><b>Estimates only.</b> Profits and ROI come from prices other players reported to UEX; prices and stock change all the time. Check the terminal before you buy.</div>`;
+const sumCell=(lab,val,cls="")=>val==null||val===""?"":`<div class="${cls}"><span>${lab}</span><b>${val}</b></div>`;
+function closeRunDetail(){ S.trOpen=null; $("tr-panel")?.classList.remove("show"); document.querySelectorAll(".tr-card.open").forEach(c=>c.classList.remove("open")); }
+// Details of a found run beside the map: the commodity, both ends, the numbers, when prices were reported.
+async function openRunDetail(i){
+  const x=S.trRoutes?.[i]; if(!x) return; S.trOpen=i;
+  document.querySelectorAll(".tr-card").forEach(c=>c.classList.toggle("open",+c.dataset.tri===i));
+  const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
+  const yes=b=>b?"Yes":"No";
+  const p=$("tr-panel"); p.classList.add("show");
+  p.innerHTML=`<div class="trd-head row" style="align-items:center;margin-bottom:10px"><span class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Trade route</span><span class="spacer"></span><button class="iconbtn" data-act="trclose" title="Close">✕</button></div>
+    <div class="trd-top"><div class="trd-map" id="trd-map"><span class="lbl">Route</span></div>
+      <div class="trd-info"><div class="trd-pic" id="trd-img"></div>
+        <h2 style="margin:0">${esc(x.commodity)}</h2>
+        <div class="sub muted" style="margin:2px 0 10px">${x.units.toLocaleString()} SCU · ${esc(x.from_where)} → ${esc(x.to_where)}${x.cross_system?' · <span style="color:#ffb454">crosses systems</span>':""}</div>
+        <div class="mkp-stats" style="clear:both">${sumCell("Profit",`+${money(x.profit)}`)}${sumCell("Cost",money(x.cost))}${sumCell("Revenue",money(x.units*x.sell))}
+          ${sumCell("Per SCU",`+${money(x.sell-x.buy)}`)}${sumCell("ROI",x.roi!=null?`${Math.round(x.roi)}%`:null)}${sumCell("Distance",x.dist?fmtDist(x.dist):null)}</div>
+        <div class="row" style="gap:6px;flex-wrap:wrap">${x.from_place&&x.to_place?`<button class="btn primary" data-act="trstart">Plan this route</button><button class="btn" data-act="tradd">Add stops to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
+          ${x.url?`<button class="btn ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div></div>
+    <div class="trd-body">
+    <div class="trd-cols"><div class="vd-sec"><div class="mk-h">Buy at</div>
+      <div class="vd-row"><span>Terminal</span><b>${end(x.from_place,x.from)}</b></div>
+      <div class="vd-row"><span>Where</span><b>${esc(x.from_where)}</b></div>
+      <div class="vd-row"><span>Price</span><b>${money(x.buy)}/SCU</b></div>
+      ${x.scu_from?`<div class="vd-row"><span>In stock</span><b>${x.scu_from.toLocaleString()} SCU</b></div>`:""}
+      ${x.boxes_from?`<div class="vd-row"><span>Box sizes</span><b>${esc(x.boxes_from)} SCU</b></div>`:""}
+      <div class="vd-row"><span>Freight elevator / dock</span><b>${yes(x.elevator_from||x.dock_from)}</b></div>
+      ${x.faction_from?`<div class="vd-row"><span>Faction</span><b>${esc(x.faction_from)}</b></div>`:""}</div>
+    <div class="vd-sec"><div class="mk-h">Sell at</div>
+      <div class="vd-row"><span>Terminal</span><b>${end(x.to_place,x.to)}</b></div>
+      <div class="vd-row"><span>Where</span><b>${esc(x.to_where)}</b></div>
+      <div class="vd-row"><span>Price</span><b>${money(x.sell)}/SCU</b></div>
+      ${x.scu_to?`<div class="vd-row"><span>Demand</span><b>${x.scu_to.toLocaleString()} SCU</b></div>`:""}
+      ${x.boxes_to?`<div class="vd-row"><span>Box sizes</span><b>${esc(x.boxes_to)} SCU</b></div>`:""}
+      <div class="vd-row"><span>Freight elevator / dock</span><b>${yes(x.elevator_to)}</b></div>
+      <div class="vd-row"><span>Refuel</span><b>${yes(x.refuel_to)}</b></div>
+      ${x.faction_to?`<div class="vd-row"><span>Faction</span><b>${esc(x.faction_to)}</b></div>`:""}</div></div>
+    <div class="muted" style="font-size:12px;margin:4px 0 10px">${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}</div>
+    ${TRADE_DISCLAIMER}</div>`;
+  if(x.from_place&&x.to_place) requestAnimationFrame(()=>previewPlaces(x.from_place,x.to_place,x.commodity));   // after layout, so the map window is measured
+  const img=await api().wiki_image(x.commodity); if(S.trOpen!==i) return;
+  const b=$("trd-img"); if(b) b.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:""; if(!img) b.style.display="none"; }
+$("tr-panel").onclick=async e=>{ if(await tradeClick(e)) return; const x=S.trRoutes?.[S.trOpen];
+  if(e.target.closest("[data-act=trclose]")){ closeRunDetail(); setPreview(null); return; }
+  if(e.target.closest("[data-act=tradd]")&&x){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); }
+  if(e.target.closest("[data-act=trstart]")&&x){
+    const r=await api().trade_run_save({commodity:x.commodity,units:x.units,from_place:x.from_place,to_place:x.to_place,from_terminal:x.from,to_terminal:x.to,plan_buy:x.buy,plan_sell:x.sell,url:x.url});
+    if(!r.ok) return toast(r.error); await api().add_stops([x.from_place,x.to_place]); await poll();
+    toast(`Route planned: ${x.commodity}. Track it under Planned Routes`); showTradeView("mine"); } };
+// ---- My runs
+const STAGES=[["planned","Planned"],["bought","Bought"],["transit","In transit"],["sold","Sold"]];
+function showTradeView(v){ S.trView=v; for(const b of document.querySelectorAll("[data-trv]")) b.classList.toggle("on",b.dataset.trv===v);
+  $("tr-find").hidden=v!=="find"; $("tr-mine").hidden=v!=="mine"; if(v==="mine"){ closeRunDetail(); renderRuns(); } }
+document.querySelector(".tr-tabs").onclick=e=>{ const b=e.target.closest("[data-trv]"); if(b) showTradeView(b.dataset.trv); };
+function runProfit(r){ const buy=r.buy_price??r.plan_buy, sell=r.sell_price??r.plan_sell;
+  if(!r.units||buy==null||sell==null) return null; return {v:r.units*(sell-buy)-(+r.handling||0), actual:r.buy_price!=null&&r.sell_price!=null}; }
+function runForm(r){ r=r||{}; const v=k=>esc(r[k]??"");
+  return `<div class="run-form" data-runform="${esc(r.id||"")}">
+    <span class="k">Commodity</span><input class="field" data-f="commodity" list="mk-dl" value="${v("commodity")}" placeholder="Like “Laranite”">
+    <span class="k">Amount</span><div class="row" style="gap:6px"><input class="field" data-f="units" type="number" min="0" value="${v("units")}" style="flex:1"><span class="muted">SCU</span></div>
+    <span class="k">Buy at</span><input class="field" data-f="from_place" list="places-dl" value="${v("from_place")}" placeholder="Station, city or outpost">
+    <span class="k">Paid</span><div class="row" style="gap:6px"><input class="field" data-f="buy_price" type="number" min="0" value="${esc(r.buy_price??r.plan_buy??"")}" style="flex:1"><span class="muted">aUEC/SCU</span></div>
+    <span class="k">Sell at</span><input class="field" data-f="to_place" list="places-dl" value="${v("to_place")}" placeholder="Station, city or outpost">
+    <span class="k">Sold for</span><div class="row" style="gap:6px"><input class="field" data-f="sell_price" type="number" min="0" value="${esc(r.sell_price??"")}" placeholder="${r.plan_sell?`expected ${Math.round(r.plan_sell)}`:"when you've sold"}" style="flex:1"><span class="muted">aUEC/SCU</span></div>
+    <span class="k" title="What auto loading and unloading cost you in total. Taken off the profit.">Auto load / unload</span><div class="row" style="gap:6px"><input class="field" data-f="handling" type="number" min="0" value="${esc(r.handling??0)}" style="flex:1"><span class="muted">aUEC</span></div>
+    <span class="k">Notes</span><input class="field" data-f="notes" value="${v("notes")}" placeholder="Optional">
+    <span></span><div class="row" style="gap:6px"><button class="btn primary small" data-act="runsave">${r.id?"Save":"Create route"}</button><button class="btn ghost small" data-act="runcancel">Cancel</button></div></div>`; }
+async function renderRuns(){
+  const r=await api().trade_runs(); S.runs=r.runs||[]; const n=S.runs.filter(x=>x.stage!=="sold").length;
+  $("tr-mine-n").textContent=n?`(${n})`:"";
+  if(!S.mk&&S.live?.log?.uex_token){ const c=await api().uex_commodities(); if(c.ok){ S.mk=c.items; S.mkByName=Object.fromEntries(c.items.map(x=>[x.name.toLowerCase(),x]));
+    $("mk-dl").innerHTML=c.items.map(x=>`<option value="${esc(x.name)}"></option>`).join(""); } }
+  const card=x=>{ const st=STAGES.findIndex(s=>s[0]===x.stage), pr=runProfit(x), t=x.times||{};
+    const next={planned:["bought","Mark bought"],bought:["transit","Departed"],transit:["sold","Mark sold"]}[x.stage];
+    return `<div class="contract ${x.stage==="sold"?"done":""}" data-run="${x.id}"><h3>${esc(x.commodity)}${x.units?` <span class="muted" style="font-weight:500">· ${x.units} SCU</span>`:""}</h3>
+      <div class="trackno" title="Click to copy">Job ID # <b>${esc(x.tracking_no||"")}</b></div>
+      <div class="sub">${esc(x.from_place||"?")} → ${esc(x.to_place||"?")}</div>
+      <div class="track"><div class="runbar">${STAGES.map((s,k)=>`<i class="${k<=st?"on":""}"></i>`).join("")}</div>
+        <div class="runlabels">${STAGES.map(([key,lab],k)=>`<div class="${k<=st?"done":""}">${lab}${t[key]?`<br><span class="muted">${new Date(t[key]*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>`:""}</div>`).join("")}</div></div>
+      <div class="facts" style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-2);margin:6px 0">
+        ${x.buy_price!=null?`<span>Paid ${money(x.buy_price)}/SCU</span>`:x.plan_buy!=null?`<span>Expected buy ${money(x.plan_buy)}/SCU</span>`:""}
+        ${x.sell_price!=null?`<span>Sold ${money(x.sell_price)}/SCU</span>`:x.plan_sell!=null?`<span>Expected sell ${money(x.plan_sell)}/SCU</span>`:""}
+        ${pr?`<span style="color:${pr.v>=0?"#57e39b":"#ff8f8f"};font-weight:600">${pr.actual?"Profit":"Est. profit"} ${pr.v>=0?"+":"−"}${money(Math.abs(pr.v))}</span>`:""}
+        ${+x.handling?`<span>Load/unload −${money(+x.handling)}</span>`:""}
+        ${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
+      ${S.runEdit===x.id?runForm(x):`<div class="row" style="gap:6px;flex-wrap:wrap">
+        ${next?`${next[0]!=="transit"?`<input class="field" data-price="${x.id}" type="number" min="0" placeholder="${next[0]==="bought"?"Paid":"Sold for"} /SCU" value="${esc(next[0]==="bought"?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??""))}" style="width:120px;padding:4px 8px">`:""}<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
+        ${st>0?`<button class="btn small ghost" data-runstage="${STAGES[st-1][0]}" title="Undo the last step">Back</button>`:""}
+        ${x.from_place&&x.to_place?`<button class="btn small ghost" data-runprev="1">Map</button><button class="btn small ghost" data-runroute="1">Add to route</button>`:""}
+        <span class="spacer"></span><button class="btn small ghost" data-runedit="1">Edit</button><button class="btn small ghost" data-rundel="1" style="color:var(--danger)">Delete</button></div>`}</div>`; };
+  const open=S.runs.filter(x=>x.stage!=="sold"), done=S.runs.filter(x=>x.stage==="sold");
+  const total=done.reduce((a,x)=>a+((runProfit(x)||{}).v||0),0);
+  $("tr-mine-out").innerHTML=(S.runEdit==="new"?runForm(null):`<button class="btn primary" data-act="runnew" style="width:100%;margin-bottom:10px">+ Create my own trade route</button>`)
+    +(open.length?open.map(card).join(""):S.runEdit==="new"?"":`<div class="empty"><strong>No Planned Routes</strong>Start one from the Find Routes tab, or create your own above.</div>`)
+    +(done.length?`<details class="finished" ${S.runsDoneOpen?"open":""}><summary>Finished (${done.length}) · ${total>=0?"+":"−"}${money(Math.abs(total))}</summary>${done.map(card).join("")}</details>`:""); }
+$("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("summary")){ setTimeout(()=>{ S.runsDoneOpen=!!$("tr-mine-out").querySelector("details.finished")?.open; },0); return; }
+  const tn=e.target.closest(".trackno"); if(tn){ const n=tn.querySelector("b").textContent; try{ await navigator.clipboard.writeText(n); toast(`Copied ${n}`); }catch{ toast(n); } return; }
+  if(e.target.closest("[data-act=runnew]")){ S.runEdit="new"; return renderRuns(); }
+  if(e.target.closest("[data-act=runcancel]")){ S.runEdit=null; return renderRuns(); }
+  if(e.target.closest("[data-act=runsave]")){ const f=e.target.closest("[data-runform]"), data={id:f.dataset.runform||undefined};
+    for(const i of f.querySelectorAll("[data-f]")) data[i.dataset.f]=i.value.trim();
+    for(const k of ["from_place","to_place"]) if(data[k]&&!S.locMap[data[k]]) return toast(`Pick “${data[k]}” from the suggestions so it can go on the map`);
+    const r=await api().trade_run_save(data); if(!r.ok) return toast(r.error); S.runEdit=null; toast("Route saved"); return renderRuns(); }
+  const c=e.target.closest("[data-run]"); if(!c) return; const x=S.runs.find(r=>r.id===c.dataset.run);
+  const sg=e.target.closest("[data-runstage]"); if(sg){ const price=c.querySelector(`[data-price="${x.id}"]`)?.value; await api().trade_run_stage(x.id,sg.dataset.runstage,price||null); return renderRuns(); }
+  if(e.target.closest("[data-runedit]")){ S.runEdit=x.id; return renderRuns(); }
+  if(e.target.closest("[data-rundel]")){ await api().trade_run_delete(x.id); toast("Route deleted"); return renderRuns(); }
+  if(e.target.closest("[data-runprev]")) return previewPlaces(x.from_place,x.to_place,x.commodity);
+  if(e.target.closest("[data-runroute]")){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); } };
+
 // =================================================================== data sync
 async function loadStatic(){
   const st=await api().get_static(); S.staticVersion=st.version; S.systems=st.systems||S.systems; S.wiki=st.wiki;
-  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l]));
+  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l])); renderOffmap();
   $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.pos&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
+// The UEX tabs only appear once a UEX token is saved; removing it hides them again.
+function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
+  for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
+  if(!on&&["market","trade","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
 async function poll(){
-  const live=await api().get_live(); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
+  const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   if(live.static_version!==S.staticVersion) await loadStatic();
@@ -1482,7 +2237,7 @@ async function init(){
   await poll(); renderContracts(); requestAnimationFrame(frame);
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
-  if(S.selected?.kind==="settings"){ if(!(a&&$("detail").contains(a)&&a.tagName==="SELECT")) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
+  if(S.selected?.kind==="settings"){ if(!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
 }
 window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); try{ await init(); } finally {
   setTimeout(()=>$("splash").classList.add("hide"), Math.max(0,1400-(performance.now()-t0))); } });
