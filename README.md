@@ -50,8 +50,6 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 ### Requirements
 
 - Windows 10 or 11
-- [Python 3.11 or newer](https://www.python.org/downloads/) (when installing, tick *Add Python to PATH*)
-- Microsoft Edge WebView2 Runtime. It's already on most Windows 10/11 PCs; if the window opens blank, [install it from Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/).
 
 ### Install and run
 
