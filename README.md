@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/quantum-logo.svg" alt="Quantum by microTech" width="820">
+  <img src="images/quantum-banner.svg" alt="Quantum by microTech" width="820">
 </p>
 
 <p align="center">
