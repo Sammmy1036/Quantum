@@ -79,8 +79,8 @@ The **Commodities**, **Trade Routes**, **Vehicles**, **Components** and **My Fle
 The new tabs appear straight away, and Settings shows how many UEX trade terminals were matched to places on the map.
 
 Things to know:
-- The token is stored only in your local `settings.json`. **Don't commit that file** (see [privacy](#your-data-and-privacy)).
-- UEX allows 120 requests a minute. Quantum caches its data (places for a day, prices and routes for 30 minutes) and stays well under the limit.
+- The token is stored only in your local `settings.json`.
+- UEX allows 120 requests a minute. Quantum caches its data (places for a day, prices and routes for 30 minutes) and should stay well under the limit.
 - UEX prices are reported by players. They can be out of date, so check the terminal before you buy.
 
 ## Using Quantum in game
@@ -114,30 +114,16 @@ You can change both in **Settings**. The `/showlocation` key starts unset on a f
 
 Positions come from community datasets, and component stats come from the game files.
 
-- **Map data:** `python import_data.py`
-- **Component stats after a patch:** export the game data with [unp4k](https://github.com/dolkensp/unp4k), then run:
-  ```bash
-  python export_resources.py "C:\path\to\unpacked\Data"
-  python build_component_stats.py "C:\path\to\components.json" "C:\path\to\resources.json"
-  ```
-  This rebuilds `component_stats.json` (weapon DPS, shields, quantum drives, power and signatures).
 - **Gateways and other places without positions:** dock there, press F10, then click **I'm here: set position** on the place's card. Positions are saved to `places.json`, which is safe to share.
 
 ## Your data and privacy
 
-Quantum keeps everything on your PC. These files hold personal data and are listed in `.gitignore`:
+Quantum does not transmit or store your API token. It is stored locally on your own machine and only communicates with UEX servers.
 
 | File | Holds |
 |---|---|
 | `settings.json` | Your UEX token, hotkeys, route, fleet and planned trade routes |
 | `uex_cache/` | Cached UEX and wiki data |
-
-If you forked the repo before `settings.json` was ignored, stop tracking it (your copy stays):
-
-```bash
-git rm --cached settings.json
-git commit -m "Stop tracking personal settings"
-```
 
 ## Credits
 
