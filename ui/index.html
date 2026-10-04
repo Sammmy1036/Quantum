@@ -479,6 +479,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-views{margin:0 0 12px 2px;align-self:flex-start}
 #dr-panel > *{flex:none}
 #dr-panel > .dr-list,#dr-panel > .dr-guide{flex:1 1 auto;min-height:0;overflow:auto}
+#dr-panel > .dr-guide{overflow:hidden}#dr-panel > .dr-guide.tight{overflow:auto}
 .cm-pill{color:#7fe7ff;white-space:nowrap}
 #update-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;width:min(560px,92%);background:var(--panel);border:1px solid rgba(75,141,255,.6);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
 #update-bar .row{gap:8px;align-items:center}
@@ -583,6 +584,84 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .svc .desc{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
 .svc .none{font-size:12.5px;color:var(--dim)}
 .wikibox{border-top:1px solid var(--line-2);margin-top:10px;padding-top:8px;font-size:13px}
+/* ---------- trade runs: every action on one row ---------- */
+.run-acts{display:flex;flex-wrap:nowrap;align-items:center;gap:3px;margin-top:6px}
+.run-acts .btn.small{padding:4px 5px;font-size:11.5px;flex:none}.run-acts .spacer{flex:1;min-width:0}
+.run-acts .btn.icon{padding:4px 7px;font-size:13px}
+/* ---------- datarunner: FAQ, live contributions, map jobs ---------- */
+.dr-faq details{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:8px;max-width:900px}
+.dr-faq summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style-position:inside}
+.dr-faq details[open] summary{border-bottom:1px solid var(--line)}
+.dr-faq .a{padding:4px 16px 12px;color:var(--ink-2);line-height:1.6;max-width:75ch}.dr-faq .a b{color:var(--ink)}.dr-faq .a ul{margin:6px 0;padding-left:20px}
+.faq-you{display:flex;align-items:center;gap:14px;max-width:900px;border:1px solid rgba(242,193,78,.4);background:rgba(242,193,78,.06);border-radius:10px;padding:10px 14px;margin:0 0 12px}
+.faq-you .stars{position:relative;letter-spacing:2px;color:var(--panel-3);line-height:1}.faq-you .stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f2c14e;font-style:normal}
+.faq-ranks{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin:8px 0 4px}
+.faq-ranks div{border-top:3px solid var(--panel-3);padding-top:5px}.faq-ranks div.on{border-top-color:#f2c14e}
+.faq-ranks b{display:block;font-size:13px}.faq-ranks span{font-size:11.5px;color:var(--dim)}
+.dr-rep.live{border-color:rgba(127,231,255,.4)}
+.dr-rep .cb-pic{width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line-2);flex:none}
+.dr-job.map{border-style:dashed}
+/* ---------- datarunner: top 10 ---------- */
+.top-hero{display:grid;grid-template-columns:auto auto 1fr;grid-template-areas:"crown av who" "big big big";gap:14px 18px;align-items:center;max-width:1100px;
+  border:1px solid rgba(242,193,78,.55);border-radius:14px;padding:18px 22px;margin:0 2px 14px;
+  background:radial-gradient(120% 160% at 0% 0%,rgba(242,193,78,.16),transparent 55%),linear-gradient(120deg,rgba(75,141,255,.10),transparent 70%)}
+.top-hero .crown{grid-area:crown;font:700 34px var(--display);color:#f2c14e;text-shadow:0 0 18px rgba(242,193,78,.45)}
+.top-hero .av{grid-area:av;width:88px;height:88px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--panel-3);border:3px solid #f2c14e;
+  box-shadow:0 0 0 5px rgba(242,193,78,.14);font:700 34px var(--display);color:var(--ink-2)}
+.top-hero .av img,.top-row .av img{width:100%;height:100%;object-fit:cover}
+.top-hero .who{grid-area:who;min-width:0}.top-hero .lbl{font-size:12px;color:#f3d68c}
+.top-hero h2{font:600 26px var(--display);margin:2px 0 6px;overflow-wrap:anywhere}
+.top-hero .rk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}.top-hero .rk>b{font:600 16px var(--display)}
+.top-hero .big{grid-area:big;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;border-top:1px solid rgba(242,193,78,.25);padding-top:12px}
+.top-hero .big b{display:block;font:600 24px var(--display);font-variant-numeric:tabular-nums}.top-hero .big span{font-size:12px;color:var(--ink-2)}
+.dr-top10 .stars,.top-hero .stars{position:relative;letter-spacing:2px;color:var(--panel-3);line-height:1}
+.dr-top10 .stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f2c14e;font-style:normal}
+.top-list{max-width:1100px}
+.top-row{display:grid;grid-template-columns:34px 40px minmax(140px,1.4fr) 120px repeat(6,minmax(54px,.6fr));gap:10px;align-items:center;
+  padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin:0 2px 6px}
+.top-row .pl{font:700 17px var(--display);color:var(--dim);text-align:center}
+.top-row.p2 .pl{color:#d5dde8}.top-row.p3 .pl{color:#d9a066}
+.top-row .av{width:40px;height:40px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--panel-3);font:700 16px var(--display);color:var(--ink-2)}
+.top-row.p2 .av{border:2px solid #c7d0dc}.top-row.p3 .av{border:2px solid #c98a4b}
+.top-row .nm{min-width:0}.top-row .nm b{overflow-wrap:anywhere}.top-row .nm>div{margin-top:3px}
+.top-row .st{display:flex;align-items:center;gap:6px;font-size:13px}
+.top-row .n b{display:block;font:600 15px var(--display);font-variant-numeric:tabular-nums}.top-row .n span{font-size:11px;color:var(--dim)}
+.top-row.you,.top-hero.you{border-color:rgba(127,231,255,.6)}
+.you-tag{font:600 11px var(--text);color:#06202a;background:var(--you);border-radius:999px;padding:1px 8px;vertical-align:middle}
+.top-note{max-width:1100px;margin:8px 2px;color:var(--ink-2);font-size:13px}.top-note a{color:var(--route-2);cursor:pointer;text-decoration:underline}
+@media (max-width:1250px){ .top-row{grid-template-columns:30px 36px minmax(120px,1fr) 110px repeat(3,minmax(54px,.6fr))}
+  .top-row>:nth-child(7),.top-row>:nth-child(8),.top-row>:nth-child(9){display:none} .top-hero .big{grid-template-columns:repeat(3,minmax(0,1fr))} }
+/* ---------- components: landing page, filters, fitting ---------- */
+.cp-crumb{display:flex;align-items:center;gap:10px;margin:0 0 10px}.cp-crumb b{font:600 16px var(--display)}
+.cp-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 8px}
+.cp-filters label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink-2);min-width:0}
+.cp-filters label.wide{grid-column:1/-1}.cp-filters label[hidden]{display:none}
+.cp-filters .field{width:100%;min-width:0;padding:6px 8px}
+.cp-nav{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:7px 8px;color:var(--ink)}
+.cp-nav:hover{background:var(--panel-2);border-color:var(--line)}
+.cp-nav .ic svg,.cp-tile .ic svg{width:18px;height:18px;stroke:#9cc8ff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block}
+.cp-nav .t{flex:1}.cp-nav small{font-size:10.5px;color:#9fe0b4;border:1px solid rgba(87,227,155,.35);border-radius:999px;padding:1px 7px}.cp-nav i{color:var(--dim);font-style:normal}
+.cp-land{max-width:1200px}
+.cp-hero{margin:4px 2px 18px}.cp-hero h2{font:600 24px var(--display);margin:0 0 6px}.cp-hero p{margin:0;color:var(--ink-2);max-width:68ch;line-height:1.55}
+.cp-sec{margin-bottom:22px}.cp-sec h3{font:600 15px var(--display);margin:0 2px 10px;color:var(--ink);padding-bottom:6px;border-bottom:1px solid var(--line)}
+.cp-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.cp-tile{display:flex;align-items:center;gap:12px;text-align:left;padding:14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink)}
+.cp-tile:hover{border-color:rgba(140,196,255,.55);background:linear-gradient(180deg,rgba(47,134,255,.10),var(--panel-2))}
+.cp-tile .ic{flex:none;width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:rgba(47,134,255,.12);border:1px solid rgba(111,190,255,.25)}
+.cp-tile .ic svg{width:22px;height:22px}
+.cp-tile b{display:block;font-size:14.5px}.cp-tile small{display:block;font-size:12px;color:var(--ink-2);margin-top:2px}
+.vg .tx .kt{display:block;color:#9fe0b4;font-weight:600;margin-top:2px}
+.fits{display:block;font-size:12px;font-weight:600;color:#7fe7ff;margin-top:2px}.vg .tx .fits{color:#7fe7ff}
+.cp-fits{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 10px}
+.fit-yes{font-size:12.5px;font-weight:600;color:#9fe0b4;border:1px solid rgba(87,227,155,.45);background:rgba(87,227,155,.08);border-radius:999px;padding:3px 10px}
+.fit-no{font-size:12.5px;color:var(--dim);border:1px solid var(--line-2);border-radius:999px;padding:3px 10px}
+.vh .pr .noshop{font-size:12px;font-weight:500;color:var(--ink-2)}
+.vd-sec.cp-fit{grid-column:1/-1}
+.cp-fitship{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:10px 12px;margin-bottom:8px}
+.cp-fitship .hd{display:flex;align-items:center;gap:10px;margin-bottom:6px}.cp-fitship .hd img{width:64px;aspect-ratio:16/9;object-fit:cover;border-radius:6px}
+.cp-fitship .hd .chip{font-size:11px;border:1px solid var(--line-2);border-radius:999px;padding:1px 8px;color:var(--ink-2)}.cp-fitship .hd .btn{margin-left:auto}
+.cp-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+.cp-slot small{display:block;color:var(--ink-2);font-size:12px}.cp-on{color:var(--ok);font-weight:600;font-size:12.5px;white-space:nowrap}
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
 </style>
 </head>
@@ -698,11 +777,21 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
     </section>
 
     <section class="pane" id="pane-components">
-      <input class="search" id="cp-search" placeholder="Component, like “Atlas” or “Bulwark”" autocomplete="off">
-      <div class="vh-filters" style="grid-template-columns:2fr 1fr">
-        <select class="field" id="cp-cat"></select>
-        <select class="field" id="cp-size"><option value="">Any size</option></select></div>
-      <div id="cp-out"></div>
+      <div id="cp-home"></div>
+      <div id="cp-browse" hidden>
+        <div class="cp-crumb"><button class="btn small ghost" id="cp-back" title="Back to every component category">← All categories</button><b id="cp-title"></b></div>
+        <input class="search" id="cp-search" placeholder="Name or maker, like “Atlas” or “Behring”" autocomplete="off">
+        <div class="cp-filters">
+          <label><span>Size</span><select class="field" id="cp-size"><option value="">Any</option></select></label>
+          <label><span>Grade</span><select class="field" id="cp-grade"><option value="">Any</option></select></label>
+          <label><span>Maker</span><select class="field" id="cp-maker"><option value="">Any</option></select></label>
+          <label><span>Where</span><select class="field" id="cp-avail"><option value="">Anywhere</option><option value="buy">Buy from a shop</option><option value="noshop">Not in shops: loot, crafting or ship stock</option></select></label>
+          <label class="wide" id="cp-ship-wrap"><span>Fits a ship in My Fleet</span><select class="field" id="cp-ship"><option value="">Any ship</option></select></label>
+          <label class="wide"><span>Sort</span><select class="field" id="cp-sort"></select></label>
+        </div>
+        <div class="row" style="justify-content:space-between;margin:2px 2px 0"><span class="muted" id="cp-count" style="font-size:12px"></span><button class="btn small ghost" id="cp-reset" hidden>Clear filters</button></div>
+        <div id="cp-out"></div>
+      </div>
     </section>
 
     <section class="pane" id="pane-fleet">
@@ -1354,18 +1443,27 @@ function renderDetail(){
       <div class="sub">Trade data (UEX)</div>
       <div class="note" style="margin:4px 0 12px">
         <label class="k" for="s-uex" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></label>
-        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved. Paste a new one to replace it":"Paste your UEX Bearer Token"}" style="flex:1" autocomplete="off">
+        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
           <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
         <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
           Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. It stays on this PC.</div>
         <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
         <label class="k" for="s-drsecret" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key, for price reports)</span></label>
-        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved. Paste a new one to replace it":"Paste your UEX Secret Key"}" style="flex:1" autocomplete="off">
+        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":""}" style="flex:1" autocomplete="off">
           <button class="btn small" data-a="drsecret">Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
         <div class="muted" style="font-size:12px;margin-top:6px">Only needed to report prices from the Datarunner tab. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>. It stays on this PC.</div>
         <div class="muted" style="font-size:12px;margin-top:12px">${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); return "Community prices: checking…"; }
           if(!c||!c.url) return "Community prices: off.";
-          return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div></div>
+          return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div>
+        <label class="k" for="s-trust" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">Trusted contributor key <span class="muted" style="font-weight:400">(optional)</span></label>
+        <div class="row" style="gap:6px"><input class="field" id="s-trust" type="password" placeholder="${S.trust?.has_key?"Trusted key saved.":"Only if the server owner gave you one"}" style="flex:1" autocomplete="off">
+          <button class="btn small" data-a="trustsave">Save</button>${S.trust?.has_key?`<button class="btn small ghost" data-a="trustclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">${(()=>{ const t=S.trust; if(t===undefined){ S.trust=null; api().trust_status().then(x=>{ S.trust=x; renderDetail(); }); return "Checking…"; }
+          if(!t||!t.has_key) return "Trusted contributors' pictures and station positions go live straight away, without review. It stays on this PC.";
+          if(!t.user) return `<span style="color:#ffd38a">Add your UEX Secret Key above, so the server knows whose key this is.</span>`;
+          return t.trusted?`<span style="color:#9fe0b4">Trusted as ${esc(t.user)}</span>: your pictures and station positions go live straight away.`
+            :t.trusted===null?`<span style="color:#ffd38a">Couldn't check it with the server just now.</span>`
+            :`<span style="color:#ffb4b4">The server doesn't accept this key for ${esc(t.user)}.</span> Pictures and stations are reviewed as usual.`; })()}</div></div>
       <div class="sub">Hotkeys</div>
       ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
@@ -1462,6 +1560,9 @@ function renderDetail(){
     if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
       const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; }
       S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
+    if(a==="trustsave"){ const v=$("s-trust").value.trim(); if(!v) return toast("Paste the key first"); S.trust=await api().set_trust_key(v);
+      toast(S.trust.trusted?"Trusted: your pictures and stations go live straight away":"Saved, but the server didn't accept it"); renderDetail(); return; }
+    if(a==="trustclear"){ S.trust=await api().set_trust_key(""); toast("Trusted key removed"); renderDetail(); return; }
     if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
       toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
     if(a==="updcheck"){ const st=await api().update_status(true); S.qVersion=st.current;
@@ -2162,52 +2263,119 @@ $("vh-out").onclick=async e=>{ if(await tradeClick(e)) return;
   const h=e.target.closest("[data-vh]"); if(!h||h.dataset.pinned) return; const id=h.dataset.vh;
   S.vehSel=id; S.vehHl=null; S.vehDetail=id; renderVehicles(); $("pane-vehicles").scrollTop=0; };
 
-// ---- Components: ship upgrades (coolers, power plants, quantum drives, shields, weapons…) and where to buy them
+// ---- Components: a landing page of every category first; pick one to browse it with filters, open a
+// part for its numbers and shops, and fit it to a ship in My Fleet.
+const CP_KEY={WeaponGun:["dps","DPS"],Missile:["missile","Damage"],Shield:["shield_hp","Shield HP"],QuantumDrive:["qt_speed","Quantum speed"],
+  Cooler:["coolant_make","Cooling"],PowerPlant:["power","Power output"]};
+const CP_ICONS=[[/cooler/i,'<path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/><path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>'],
+  [/power/i,'<path d="M13 2L5 13.5h6L10 22l9-12h-6z"/>'],[/shield/i,'<path d="M12 2.5l8 3v6c0 5-3.5 8.8-8 10-4.5-1.2-8-5-8-10v-6z"/>'],
+  [/quantum|jump/i,'<circle cx="12" cy="12" r="8"/><path d="M15.5 15.5L20 20"/><circle cx="12" cy="12" r="3"/>'],
+  [/radar|scanner/i,'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/>'],
+  [/missile|torpedo|bomb/i,'<path d="M5 19l3-6 9-9 3 0 0 3-9 9-6 3z"/><path d="M8 13l3 3"/>'],
+  [/mining|laser|salvage|tractor/i,'<path d="M3 21l7-7"/><path d="M10 14l4-10 6 6-10 4z"/>'],
+  [/gun|weapon|turret/i,'<path d="M3 10h13l2-2h3v5h-5l-1 2H9l-1 4H5l1-4H3z"/>']];
+const cpIcon=c=>`<svg viewBox="0 0 24 24" aria-hidden="true">${(CP_ICONS.find(([re])=>re.test(`${c.name} ${c.section}`))||[0,'<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>'])[1]}</svg>`;
+const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
+const cpGrade=i=>String(i.game?.grade||i.grade||"");
 async function openComponents(){
-  if(!S.live?.log?.uex_token){ $("cp-out").innerHTML=needToken; return; }
-  if(!S.cpCats){ const r=await api().uex_component_categories(); if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-    S.cpCats=r.items; const secs=[...new Set(r.items.map(c=>c.section))];
-    $("cp-cat").innerHTML=secs.map(sec=>`<optgroup label="${esc(sec)}">${r.items.filter(c=>c.section===sec).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</optgroup>`).join("");
-    const pref=r.items.find(c=>/quantum drive/i.test(c.name))||r.items.find(c=>/cooler/i.test(c.name))||r.items[0]; if(pref) $("cp-cat").value=pref.id; }
-  if(!S.cpItems) await loadComponents(); else renderComponents(); }
-async function loadComponents(){
-  const id=$("cp-cat").value; if(!id) return; $("cp-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`;
-  if($("cp-panel").classList.contains("show")) $("cp-panel").innerHTML=qLoader(`Loading ${$("cp-cat").selectedOptions[0]?.textContent||"components"}…`);
-  const r=await api().uex_components(+id); if($("cp-cat").value!==id) return;
-  if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  S.cpItems=r.items; S.cpAt=r.at; S.cpSel=null; S.cpDetail=null; S.cpGalKey=null;
-  const sizes=[...new Set(r.items.map(i=>i.size).filter(x=>x!=null&&x!==""))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
-  $("cp-size").innerHTML=`<option value="">Any size</option>`+sizes.map(x=>`<option value="${esc(x)}">Size ${esc(x)}</option>`).join("");
-  renderComponents(); }
-function cpCard(i,pinned){ const b=i.buy[0];
+  if(!S.live?.log?.uex_token){ cpShowBrowse(false); $("cp-home").innerHTML=needToken; $("cp-panel").innerHTML=""; return; }
+  if(!S.cpCats){ $("cp-home").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`; $("cp-panel").innerHTML=qLoader("Loading components…");
+    const r=await api().uex_component_categories(); if(!r.ok){ $("cp-home").innerHTML=`<div class="empty">${esc(r.error)}</div>`; $("cp-panel").innerHTML=""; return; }
+    S.cpCats=r.items; S.cpEmpty=S.cpEmpty||new Set(); }
+  if(!S.cpCat) return renderCpHome();
+  cpShowBrowse(true); if(!S.cpItems) await loadComponents(); else { S.cpGalKey=null; renderComponents(); } }
+function cpShowBrowse(on){ $("cp-home").hidden=on; $("cp-browse").hidden=!on; }
+function cpGroups(q){ const cats=(S.cpCats||[]).filter(c=>!S.cpEmpty.has(c.id)&&(!q||`${c.section} ${c.name}`.toLowerCase().includes(q)));
+  return [...new Set(cats.map(c=>c.section))].map(sec=>[sec,cats.filter(c=>c.section===sec)]); }
+// The landing page: the sidebar lists every category by section; the big panel shows them as tiles.
+async function renderCpHome(){ S.cpCat=null; S.cpItems=null; S.cpDetail=null; S.cpSel=null; cpShowBrowse(false);
+  if(!$("cp-home-q")) $("cp-home").innerHTML=`<input class="search" id="cp-home-q" placeholder="Find a category, like “Coolers”" autocomplete="off"><div id="cp-home-list"></div>`;
+  const q=$("cp-home-q").value.trim().toLowerCase(), G=cpGroups(q);
+  $("cp-home-list").innerHTML=G.length?G.map(([sec,L])=>`<div class="mk-h">${esc(sec)}</div>${L.map(c=>`<button class="cp-nav" data-cpcat="${c.id}"><span class="ic">${cpIcon(c)}</span><span class="t">${esc(c.name)}</span>${c.slot?`<small title="Can be fitted to ships in My Fleet">Fleet</small>`:""}<i>›</i></button>`).join("")}`).join("")
+    :`<div class="empty">No category matches “${esc(q)}”</div>`;
+  const fl=await api().fleet_list(); if(S.cpCat) return; const main=fl.ships.find(x=>x.main);
+  $("cp-panel").innerHTML=`<div class="cp-land"><div class="cp-hero"><h2>Components</h2><p>Pick a category to browse. Each one has filters, numbers from the game files, the shops that sell it, and a button to fit a part to any ship in your fleet.</p></div>
+    ${main?`<div class="main-ship">${main.photo?`<img src="${esc(main.photo)}" alt="" referrerpolicy="no-referrer">`:""}<div style="flex:1"><div class="muted" style="font-size:12px">Main ship</div><b>${esc(main.full)}</b></div><button class="btn small" data-act="openfleet">Open My Fleet</button></div>`
+      :`<div class="main-ship"><div style="flex:1"><b>No ships in My Fleet yet</b><div class="muted" style="font-size:12.5px">Add the ships you own there, then fit parts to them from any component page.</div></div><button class="btn small" data-act="openfleet">Open My Fleet</button></div>`}
+    ${G.map(([sec,L])=>`<section class="cp-sec"><h3>${esc(sec)}</h3><div class="cp-tiles">${L.map(c=>`<button class="cp-tile" data-cpcat="${c.id}"><span class="ic">${cpIcon(c)}</span><span><b>${esc(c.name)}</b><small>${c.slot?"Browse, buy and fit to My Fleet":"Browse and buy"}</small></span></button>`).join("")}</div></section>`).join("")
+      ||`<div class="empty">No category matches “${esc(q)}”</div>`}</div>`; }
+async function openCpCat(id){ const c=(S.cpCats||[]).find(x=>String(x.id)===String(id)); if(!c) return;
+  S.cpCat=c; S.cpItems=null; S.cpFit=null; S.cpDetail=null; S.cpSel=null; S.cpGalKey=null;
+  for(const k of ["cp-search","cp-size","cp-grade","cp-maker","cp-avail","cp-ship"]) $(k).value="";
+  $("cp-title").textContent=c.name; cpShowBrowse(true); $("pane-components").scrollTop=0; await loadComponents(); }
+async function loadComponents(){ const c=S.cpCat; if(!c) return;
+  $("cp-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`; $("cp-count").textContent=""; $("cp-panel").innerHTML=qLoader(`Loading ${c.name}…`);
+  const [r,fl]=await Promise.all([api().uex_components(+c.id),api().fleet_list()]); if(S.cpCat!==c) return;
+  if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; $("cp-panel").innerHTML=""; return; }
+  if(!r.items.length){ S.cpEmpty.add(c.id); toast(`Nothing is listed under ${c.name}, so it's been taken off the list`); return renderCpHome(); }
+  S.cpItems=r.items; S.cpAt=r.at;
+  const opts=(vals,label)=>`<option value="">Any</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(label(v))}</option>`).join("");
+  const num=(a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true});
+  $("cp-size").innerHTML=opts([...new Set(r.items.map(cpSize).filter(Boolean))].sort(num),v=>`Size ${v}`);
+  $("cp-grade").innerHTML=opts([...new Set(r.items.map(cpGrade).filter(Boolean))].sort(),v=>`Grade ${v}`);
+  $("cp-maker").innerHTML=opts([...new Set(r.items.map(i=>i.game?.maker||i.maker).filter(Boolean))].sort(),v=>v);
+  const key=CP_KEY[c.slot];
+  $("cp-sort").innerHTML=`${key?`<option value="key">${esc(key[1])}: best first</option>`:""}<option value="price">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="size">Size</option><option value="name">A–Z</option>`;
+  $("cp-ship-wrap").hidden=!c.slot||!fl.ships.length;
+  $("cp-ship").innerHTML=`<option value="">Any ship</option>`+fl.ships.map(s=>`<option value="${esc(s.uid)}">${esc(s.full)}${s.main?" (main)":""}</option>`).join("");
+  renderComponents();
+  if(c.slot&&fl.ships.length) cpFitData().then(f=>{ if(f&&S.cpCat===c&&S.cpItems){ S.cpGalKey=null; if(!S.cpDetail) renderComponents(); } }); }
+// The size filter "fits a ship" needs that ship's slots: fetched once per category, for every ship.
+async function cpFitData(){ const c=S.cpCat; if(!c?.slot) return null;
+  if(!S.cpFit||S.cpFit.cat!==c.id){ const r=await api().component_fit_targets(c.name); if(S.cpCat!==c) return null; S.cpFit={...r,cat:c.id}; }
+  return S.cpFit; }
+function cpFiltered(){ const q=$("cp-search").value.trim().toLowerCase(), size=$("cp-size").value, grade=$("cp-grade").value, maker=$("cp-maker").value,
+    avail=$("cp-avail").value, ship=$("cp-ship").value, sort=$("cp-sort").value;
+  let fits=null; if(ship&&S.cpFit?.ok){ const sh=S.cpFit.ships.find(s=>s.uid===ship); fits=new Set((sh?.slots||[]).map(s=>String(s.size))); }
+  const L=S.cpItems.filter(i=>(!q||`${i.name} ${i.maker} ${i.game?.maker||""}`.toLowerCase().includes(q))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
+    &&(!maker||(i.game?.maker||i.maker)===maker)&&(avail!=="buy"||i.buy.length)&&(avail!=="noshop"||!i.buy.length)&&(!fits||fits.has(cpSize(i))));
+  const price=i=>i.buy[0]?.price??null, key=CP_KEY[S.cpCat?.slot]?.[0], kv=i=>+(i.game?.stats?.[key])||null;
+  const by={price:(a,b)=>(price(a)==null)-(price(b)==null)||(price(a)??0)-(price(b)??0),
+    price_desc:(a,b)=>(price(a)==null)-(price(b)==null)||(price(b)??0)-(price(a)??0),
+    size:(a,b)=>cpSize(a).localeCompare(cpSize(b),undefined,{numeric:true})||(a.name||"").localeCompare(b.name||""),
+    name:(a,b)=>(a.name||"").localeCompare(b.name||""), key:(a,b)=>(kv(a)==null)-(kv(b)==null)||(kv(b)??0)-(kv(a)??0)}[sort];
+  if(by) L.sort(by); return {L, fits, ship}; }
+// Which of your ships have a slot this part fits (same kind and size). Null until the fleet's slots are known.
+function cpFitsShips(i){ const f=S.cpFit; if(!f?.ok||f.cat!==S.cpCat?.id||!f.ships?.length) return null; const sz=cpSize(i);
+  return f.ships.filter(s=>s.slots.some(x=>!sz||String(x.size)===sz)); }
+// Only your main ship is called out; the component page's "Fit to a ship" section covers the rest.
+function cpFitsLine(i){ const main=cpFitsShips(i)?.find(s=>s.main); return main?`<span class="fits" title="Has a slot this fits">✓ Fits your ${esc(main.name)}</span>`:""; }
+function cpKeyText(i){ const k=CP_KEY[S.cpCat?.slot], v=k&&i.game?.stats?.[k[0]]; if(!v) return "";
+  const f=CP_STATS.find(x=>x[0]===k[0]); return `${f?f[2](v):v}${k[0]==="dps"?" DPS":k[0]==="shield_hp"?" HP":k[0]==="missile"?" dmg":""}`; }
+function cpCard(i,pinned){ const b=i.buy[0], kt=cpKeyText(i);
   return `<div class="vh ${pinned?"hl":""}"><div class="hd" data-cp="${i.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(i.name)}</div>
-      <div class="mk">${esc(i.maker)}${i.size!=null&&i.size!==""?` · size ${esc(i.size)}`:""}${i.grade?` · grade ${esc(i.grade)}`:""}${i.vehicle?` · ${esc(i.vehicle)}`:""}</div></div>
-    <div class="pr">${b?money(b.price):i.exclusive?"Pledge only":"–"}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div></div>
-    ${pinned?`<div class="bd">${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin:6px 0">${esc(i.note)}</div>`:""}
-      <div class="mk-h">Buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${i.exclusive?"Not sold in game (pledge or subscriber exclusive)":"Not reported in any shop yet. Some components only come with ships or as loot"}.</div>`}
-      <div class="row" style="gap:6px">${i.wiki?`<button class="btn small ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn small ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button></div></div>`:""}</div>`; }
-function renderComponents(){
-  if(!S.cpItems) return; const q=$("cp-search").value.trim().toLowerCase(), size=$("cp-size").value;
-  const L=S.cpItems.filter(i=>(!q||`${i.name} ${i.maker}`.toLowerCase().includes(q))&&(!size||String(i.size)===size));
+      <div class="mk">${esc(i.game?.maker||i.maker)}${cpSize(i)?` · size ${esc(cpSize(i))}`:""}${cpGrade(i)?` · grade ${esc(cpGrade(i))}`:""}${kt?` · ${esc(kt)}`:""}</div>${cpFitsLine(i)}</div>
+    <div class="pr">${b?money(b.price):`<span class="noshop">Not in shops</span>`}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div></div>
+    ${pinned?`<div class="bd"><div class="row" style="gap:6px">${i.wiki?`<button class="btn small ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn small ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button></div></div>`:""}</div>`; }
+async function renderComponents(){
+  if(!S.cpItems) return;
+  if($("cp-ship").value&&(!S.cpFit||S.cpFit.cat!==S.cpCat.id)){ $("cp-out").innerHTML=`<div class="muted" style="margin-top:10px">Checking that ship's slots…</div>`; await cpFitData(); if(!S.cpItems) return; }
+  const {L,fits,ship}=cpFiltered(), any=["cp-search","cp-size","cp-grade","cp-maker","cp-avail","cp-ship"].some(k=>$(k).value);
   const sel=S.cpItems.find(i=>String(i.id)===String(S.cpSel));
-  $("cp-out").innerHTML=(sel?cpCard(sel,true):"")+`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${L.length} component${L.length===1?"":"s"} · click one for where to buy it</div>`
-    +L.slice(0,200).map(i=>cpCard(i,false)).join("")+uexCredit(S.cpAt);
-  const gk=L.map(i=>i.id).join(",");
+  $("cp-reset").hidden=!any;
+  $("cp-count").textContent=`${L.length} of ${S.cpItems.length} · click one for its page`;
+  const why=ship&&fits&&!fits.size?`<div class="unknown" style="margin:8px 0">${esc(S.cpFit.ships.find(s=>s.uid===ship)?.error||`That ship has no ${S.cpFit.label?.toLowerCase()||""} slots.`)}</div>`:"";
+  $("cp-out").innerHTML=(sel?cpCard(sel,true):"")+why+(L.length?L.slice(0,200).map(i=>cpCard(i,false)).join(""):`<div class="empty">Nothing matches these filters.<br><br><button class="btn small" data-cpreset="1">Clear filters</button></div>`)+uexCredit(S.cpAt);
+  const gk=JSON.stringify([S.cpCat.id,L.map(i=>i.id)]);
   if(S.cpDetail) renderComponentDetail(S.cpDetail);
   else if(gk!==S.cpGalKey){ S.cpGalKey=gk; renderComponentGrid(L); } else markComponentGrid(); }
-async function renderComponentGrid(L){
-  const cat=$("cp-cat").selectedOptions[0]?.textContent||"Components", fl=await api().fleet_list(), main=fl.ships.find(x=>x.main);
-  $("cp-panel").innerHTML=(main?`<div class="main-ship">${main.photo?`<img src="${esc(main.photo)}" alt="" referrerpolicy="no-referrer">`:""}<div style="flex:1"><div class="muted" style="font-size:12px">Main ship</div><b>${esc(main.full)}</b></div>
-      <button class="btn small" data-act="openfleet">Fit components in My Fleet</button></div>`:"")
-    +`<div class="gh"><b>${esc(cat)}</b>${L.length} · click one for where to buy it</div><div class="grid">${L.slice(0,200).map(i=>`<div class="vg" data-cpc="${i.id}"><div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
-      <div class="tx"><b>${esc(i.name)}</b><span>${i.size!=null&&i.size!==""?`S${esc(i.size)} · `:""}${esc(i.maker)}${i.buy[0]?` · ${money(i.buy[0].price)}`:i.exclusive?" · pledge only":""}</span></div></div>`).join("")}</div>`;
+function renderComponentGrid(L){ const c=S.cpCat;
+  $("cp-panel").innerHTML=`<div class="gh"><button class="btn small ghost" data-act="cphome">← All categories</button><b>${esc(c.name)}</b>${L.length} shown · click one for its page</div>
+    ${L.length?`<div class="grid">${L.slice(0,200).map(i=>{ const kt=cpKeyText(i); return `<div class="vg" data-cpc="${i.id}"><div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
+      <div class="tx"><b>${esc(i.name)}</b><span>${cpSize(i)?`S${esc(cpSize(i))} · `:""}${cpGrade(i)?`${esc(cpGrade(i))} · `:""}${esc(i.game?.maker||i.maker)}${i.buy[0]?` · ${money(i.buy[0].price)}`:" · not in shops"}</span>${kt?`<span class="kt">${esc(kt)}</span>`:""}${cpFitsLine(i)}</div></div>`; }).join("")}</div>`
+      :`<div class="empty">Nothing matches these filters.<br><br><button class="btn small" data-cpreset="1">Clear filters</button></div>`}`;
   markComponentGrid(); fillPictures($("cp-panel")); }
 function markComponentGrid(){ for(const c of $("cp-panel").querySelectorAll("[data-cpc]")) c.classList.toggle("hl",c.dataset.cpc===String(S.cpSel)); }
+function cpReset(){ for(const k of ["cp-search","cp-size","cp-grade","cp-maker","cp-avail","cp-ship"]) $(k).value=""; S.cpDetail=null; renderComponents(); }
 $("cp-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-act=openfleet]")) return document.querySelector('.tab[data-tab="fleet"]').click();
+  if(e.target.closest("[data-act=cphome]")) return renderCpHome();
+  if(e.target.closest("[data-cpreset]")) return cpReset();
+  const cat=e.target.closest("[data-cpcat]"); if(cat) return openCpCat(cat.dataset.cpcat);
+  const fit=e.target.closest("[data-cpfit]"); if(fit) return cpFitTo(fit);
   if(e.target.closest("[data-act=cpback]")){ S.cpDetail=null; S.cpGalKey=null; return renderComponents(); }
   const c=e.target.closest("[data-cpc]"); if(!c) return; S.cpSel=c.dataset.cpc; S.cpDetail=c.dataset.cpc; renderComponents(); $("pane-components").scrollTop=0; };
-// A component's own page in place of the grid: picture, what it is, its numbers, where to buy it.
+// A component's own page in place of the grid: picture, what it is, its numbers, where to buy it, and fitting.
 const CP_STATS=[["dps","DPS",n=>Math.round(n).toLocaleString()],["alpha","Damage per shot",n=>Math.round(n*10)/10],["rpm","Fire rate",n=>`${Math.round(n)} rpm`],
   ["damage_type","Damage type",x=>x],["range","Range",n=>`${Math.round(n).toLocaleString()} m`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],["ammo","Ammo",n=>n],
   ["missile","Missile damage",n=>Math.round(n).toLocaleString()],["shield_hp","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n)}/s`],
@@ -2219,23 +2387,53 @@ async function renderComponentDetail(id){
   const i=S.cpItems.find(x=>String(x.id)===String(id)), g=$("cp-panel"); if(!i) return;
   const gm=i.game||{}, st=gm.stats||{};
   const rows=CP_STATS.filter(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(st[k]))}</b></div>`).join("");
-  g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc($("cp-cat").selectedOptions[0]?.textContent||"components")}</button>
+  g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc(S.cpCat?.name||"components")}</button>
     <div class="mkp-head"><div class="mkp-img" id="cpd-img">${qPic()}</div>
       <div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div>
-        <div class="mkp-stats">${[["Size",(gm.size??i.size)!=null?`S${gm.size??i.size}`:null],["Grade",gm.grade||i.grade],["Class",gm.class],["Price",i.buy[0]?money(i.buy[0].price):i.exclusive?"Pledge only":null],["Sold at",i.buy.length||null]]
+        <div class="cp-fits" id="cpd-fits">${cpFitsBadges(i)}</div>
+        <div class="mkp-stats">${[["Size",cpSize(i)?`S${cpSize(i)}`:null],["Grade",cpGrade(i)||null],["Class",gm.class],["Price",i.buy[0]?money(i.buy[0].price):"Not in shops"],["Sold at",i.buy.length||null]]
           .filter(c=>c[1]!=null&&c[1]!=="").map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
         <div class="row" style="gap:8px">${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
     ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px;max-width:900px">${esc(i.note)}</div>`:""}
     <div class="vd-grid">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
-      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0">${i.exclusive?"Not sold in game (pledge or subscriber exclusive).":"Not reported in any shop yet. Some components only come with ships or as loot."}</div>`}</div></div>
-    <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki.</div>`;
-  g.scrollTop=0;
+      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, from crafting, or fitted stock on a ship.</div>`}</div>
+      <div class="vd-sec cp-fit" id="cpd-fit"><div class="mk-h">Fit to a ship in My Fleet</div><div class="muted" style="font-size:13px">Checking your ships…</div></div></div>
+    <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki; ship slots from the Star Citizen Wiki.</div>`;
+  g.scrollTop=0; renderCpFit(i);
   const img=await api().wiki_image(i.wiki||i.name); if(String(S.cpDetail)!==String(id)) return;
   const box=$("cpd-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:picMissing("component",i.wiki||i.name); }
-$("cp-cat").addEventListener("change",loadComponents);
-$("cp-size").addEventListener("change",()=>{ S.cpDetail=null; renderComponents(); });
+function cpFitsBadges(i){ const L=cpFitsShips(i), main=S.cpFit?.ships?.find(s=>s.main); if(!L||!main) return "";
+  return L.some(s=>s.main)?`<span class="fit-yes">✓ Fits your ${esc(main.name)}</span>`:`<span class="fit-no">Doesn't fit your ${esc(main.name)}</span>`; }
+// Each ship in the fleet with the slots this part fits (same kind, same size), what's in them now, and Fit here.
+async function renderCpFit(i){ const c=S.cpCat, head=`<div class="mk-h">Fit to a ship in My Fleet</div>`, set=h=>{ const b=$("cpd-fit"); if(b&&String(S.cpDetail)===String(i.id)) b.innerHTML=head+h; };
+  if(!c?.slot) return set(`<div class="muted" style="font-size:13px;line-height:1.5">My Fleet loadouts don't have ${esc(c?.name?.toLowerCase()||"these")} slots, so they can't be fitted there yet.</div>`);
+  const f=await cpFitData(); if(String(S.cpDetail)!==String(i.id)) return;
+  if($("cpd-fits")) $("cpd-fits").innerHTML=cpFitsBadges(i);
+  if(!f?.ok) return set(`<div class="warnbox">${esc(f?.error||"Couldn't read your fleet's slots")}</div>`);
+  if(!f.ships.length) return set(`<div class="muted" style="font-size:13px;line-height:1.5;margin-bottom:8px">No ships in My Fleet yet. Add the ships you own, then come back to fit this.</div><button class="btn small" data-act="openfleet">Open My Fleet</button>`);
+  const sz=cpSize(i), nm=i.name.toLowerCase();
+  set(f.ships.slice().sort((a,b)=>b.main-a.main).map(sh=>{ const ok=sh.slots.filter(s=>!sz||String(s.size)===sz), free=ok.filter(s=>(s.fitted||s.stock||"").toLowerCase()!==nm);
+    const sizes=[...new Set(sh.slots.map(s=>`S${s.size}`))].join(", ");
+    return `<div class="cp-fitship"><div class="hd">${sh.photo?`<img src="${esc(sh.photo)}" alt="" referrerpolicy="no-referrer">`:""}<b>${esc(sh.name)}</b>${sh.main?`<span class="chip">Main</span>`:""}
+        ${free.length>1?`<button class="btn small" data-cpfit="${esc(sh.uid)}" data-all="1">Fit all ${free.length}</button>`:""}</div>
+      ${sh.error?`<div class="muted" style="font-size:12.5px">${esc(sh.error)}</div>`:ok.length?ok.map(s=>{ const cur=s.fitted||s.stock, here=(cur||"").toLowerCase()===nm;
+        return `<div class="cp-slot"><span><b>${esc(s.label)} S${esc(s.size)}</b>${s.where?` <span class="muted">${esc(s.where)}</span>`:""}<small>${cur?`Now: ${esc(cur)}${s.fitted?" (your swap)":" (stock)"}`:"Empty"}</small></span>
+          ${here?`<span class="cp-on">✓ Fitted</span>`:`<button class="btn small primary" data-cpfit="${esc(sh.uid)}" data-port="${esc(s.port)}">Fit here</button>`}</div>`; }).join("")
+        :`<div class="muted" style="font-size:12.5px">${sh.slots.length?`No size ${esc(sz)} ${esc(f.label.toLowerCase())} slot. This ship's are ${esc(sizes)}.`:`No ${esc(f.label.toLowerCase())} slots.`}</div>`}</div>`; }).join("")); }
+async function cpFitTo(btn){ const i=S.cpItems?.find(x=>String(x.id)===String(S.cpDetail)), f=S.cpFit; if(!i||!f) return;
+  const sh=f.ships.find(s=>s.uid===btn.dataset.cpfit); if(!sh) return; const nm=i.name.toLowerCase(), sz=cpSize(i);
+  const ports=btn.dataset.all?sh.slots.filter(s=>(!sz||String(s.size)===sz)&&(s.fitted||s.stock||"").toLowerCase()!==nm):sh.slots.filter(s=>s.port===btn.dataset.port);
+  btn.disabled=true; btn.textContent="Fitting…";
+  for(const s of ports){ const r=await api().fleet_set_slot(sh.uid,s.port,i.name,i.uuid||null); if(!r.ok){ toast(r.error); break; } s.fitted=i.name; }
+  toast(`${i.name} fitted to ${sh.name}${ports.length>1?` (${ports.length} slots)`:""}. My Fleet shows the new numbers`); renderCpFit(i); }
+$("cp-home").addEventListener("input",e=>{ if(e.target.id==="cp-home-q") renderCpHome(); });
+$("cp-home").onclick=async e=>{ if(await tradeClick(e)) return; const cat=e.target.closest("[data-cpcat]"); if(cat) openCpCat(cat.dataset.cpcat); };
+$("cp-back").onclick=()=>renderCpHome();
+$("cp-reset").onclick=cpReset;
+for(const k of ["cp-size","cp-grade","cp-maker","cp-avail","cp-ship","cp-sort"]) $(k).addEventListener("change",()=>{ S.cpDetail=null; renderComponents(); });
 $("cp-search").addEventListener("input",()=>{ S.cpDetail=null; renderComponents(); });
 $("cp-out").onclick=async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-cpreset]")) return cpReset();
   if(e.target.closest("[data-unpin]")){ S.cpSel=null; S.cpDetail=null; S.cpGalKey=null; renderComponents(); return; }
   const h=e.target.closest("[data-cp]"); if(!h||h.dataset.pinned) return; S.cpSel=h.dataset.cp; S.cpDetail=h.dataset.cp; renderComponents(); $("pane-components").scrollTop=0; };
 
@@ -2473,13 +2671,12 @@ async function renderRuns(){
         ${pr?`<span style="color:${pr.v>=0?"#57e39b":"#ff8f8f"};font-weight:600">${pr.actual?"Profit":"Est. profit"} ${pr.v>=0?"+":"−"}${money(Math.abs(pr.v))}</span>`:""}
         ${+x.load_fee?`<span>Loading fee −${money(+x.load_fee)}</span>`:""}${+x.unload_fee?`<span>Unloading fee −${money(+x.unload_fee)}</span>`:""}${+x.handling?`<span>Load/unload −${money(+x.handling)}</span>`:""}
         ${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
-      ${S.runEdit===x.id?runForm(x):`<div class="row" style="gap:6px;flex-wrap:wrap">
-        ${next&&next[0]!=="transit"?`<div class="stepbox">
+      ${S.runEdit===x.id?runForm(x):`${next&&next[0]!=="transit"?`<div class="stepbox">
           <label><span>${next[0]==="bought"?"Paid":"Sold for"} per SCU</span><input class="field" data-price="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??""))}"></label>
-          <label title="If you used auto ${next[0]==="bought"?"loading":"unloading"}, what it cost. It comes off the profit."><span>Auto ${next[0]==="bought"?"loading":"unloading"} fee</span><input class="field" data-fee="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.load_fee??0):(x.unload_fee??0))}"></label>
-          <button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button></div>`:next?`<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
-        ${st>0?`<button class="btn small ghost" data-runstage="${STAGES[st-1][0]}" title="Undo the last step">Back</button>`:""}
-        ${x.from_place&&x.to_place?`<button class="btn small ghost" data-runprev="1">Map</button><button class="btn small ghost" data-runroute="1">Add to route</button>`:""}
+          <label title="If you used auto ${next[0]==="bought"?"loading":"unloading"}, what it cost. It comes off the profit."><span>Auto ${next[0]==="bought"?"loading":"unloading"} fee</span><input class="field" data-fee="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.load_fee??0):(x.unload_fee??0))}"></label></div>`:""}
+        <div class="run-acts">${next?`<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
+        ${st>0?`<button class="btn small ghost icon" data-runstage="${STAGES[st-1][0]}" title="Back a step (undo)" aria-label="Back a step">↶</button>`:""}
+        ${x.from_place&&x.to_place?`<button class="btn small ghost" data-runprev="1" title="Show the route on the map">Map</button><button class="btn small ghost" data-runroute="1" title="Add both stops to your route">+ Route</button>`:""}
         <span class="spacer"></span>${x.from_place&&x.to_place&&(x.buy_price||x.plan_buy)&&(x.sell_price||x.plan_sell)?`<button class="btn small ghost" data-runshare="1" title="Show this route to other Quantum users in Find Routes for a week">Share</button>`:""}<button class="btn small ghost" data-runedit="1">Edit</button><button class="btn small ghost" data-rundel="1" style="color:var(--danger)">Delete</button></div>`}</div>`; };
   const open=S.runs.filter(x=>x.stage!=="sold"), done=S.runs.filter(x=>x.stage==="sold");
   const total=done.reduce((a,x)=>a+((runProfit(x)||{}).v||0),0);
@@ -2545,7 +2742,9 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-photosend
   inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
     try{ b.disabled=true; b.textContent="Sending…"; const data=await shrinkPicture(f);
       const r=await api().photo_submit(b.dataset.photosend,b.dataset.photoname,data);
-      if(r.ok){ b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Thanks! Sent for review",className:"pic-sent"})); }
+      if(r.ok&&r.approved){ const box=b.closest(".pic-none"), im=Object.assign(document.createElement("img"),{src:data,alt:""});
+        if(box){ box.replaceWith(im); } else b.replaceWith(im); toast("Picture live on Quantum for everyone"); }
+      else if(r.ok){ b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Thanks! Sent for review",className:"pic-sent"})); }
       else { toast(r.error||"Couldn't send it"); b.disabled=false; b.textContent="Send a picture"; } }
     catch(err){ toast(err.message); b.disabled=false; b.textContent="Send a picture"; } };
   inp.click(); },true);
@@ -2586,14 +2785,16 @@ async function openDatarunner(id){
     :"Land or dock somewhere and the terminal there is picked for you.";
   $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
   $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env} (from Game.log)`:"Couldn't read it from Game.log";
-  renderDrStats(r.stats); renderDrPanel(); renderDrShots(); }
+  renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs(); }
 
 // ---- the main panel: header with progress, kiosk-style tabs, rows, send bar
 function drRowsOf(side){ return S.dr.rows.map((x,i)=>[x,i]).filter(([x])=>x.side===side); }
 function renderDrPanel(){ const d=S.dr, r=d.pf, P=$("dr-panel");
   if(d.view==="mine") return renderDrMine();
   if(d.view==="jobs") return renderDrJobs();
-  if(!r.id_terminal){ P.innerHTML=drViews()+drGuide(); return; }
+  if(d.view==="faq") return renderDrFaq();
+  if(d.view==="top") return renderDrTop();
+  if(!r.id_terminal){ P.innerHTML=drViews()+drGuide(); fitDrGuide(); return; }
   const n=s=>drRowsOf(s).length;
   P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>${esc(r.terminal||"")}</h2><div class="where">${esc(r.where||"")}</div></div>
       <div class="dr-meter" id="dr-meter"></div></div>
@@ -2603,7 +2804,7 @@ function renderDrPanel(){ const d=S.dr, r=d.pf, P=$("dr-panel");
     <div class="dr-send" id="dr-send"></div>`;
   renderDrList(); renderDrSend(); drAckGate(); }
 function drViews(){ const d=S.dr, n=d.pf.reports_count||0;
-  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports${n?` <span>${n}</span>`:""}</button></div>`; }
+  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports${n?` <span>${n}</span>`:""}</button><button data-drview="top" class="${d.view==="top"?"on":""}">Top 10</button><button data-drview="faq" class="${d.view==="faq"?"on":""}">FAQ</button></div>`; }
 // Shown once, before the first report: reports carry the user's UEX name, and bad ones cost them.
 function drAckGate(){ if(S.dr.pf.ack) return;
   const el=drSheet(`<h3>Before you report</h3>
@@ -2671,10 +2872,16 @@ function drMove(i,dir){ const rows=[...$("dr-list").querySelectorAll(".dr-row")]
 $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
   const tab=e.target.closest("[data-drtab]"); if(tab){ d.tab=tab.dataset.drtab; return renderDrPanel(); }
   const vw=e.target.closest("[data-drview]"); if(vw){ d.view=vw.dataset.drview; return renderDrPanel(); }
+  const tr=e.target.closest("[data-top=refresh]"); if(tr){ tr.disabled=true; tr.textContent="Refreshing…"; return renderDrTop(true); }
   const rf=e.target.closest("[data-mine=refresh]"); if(rf){ rf.disabled=true; rf.textContent="Refreshing…"; return renderDrMine(true,true); }
   const js=e.target.closest("[data-jobsort]"); if(js){ S.drJobSort=js.dataset.jobsort; return renderDrJobs(); }
   const jr=e.target.closest("[data-jobreport]"); if(jr){ const id=+jr.dataset.jobreport; S.dr.view="enter"; const v=S.dr.view; S.dr=null;
     await openDatarunner(id); S.dr.view=v; return renderDrPanel(); }
+  const mj=e.target.closest("[data-mapjob],[data-cbmap]"); if(mj){ const nm=mj.dataset.mapjob||mj.dataset.cbmap;
+    document.querySelector('.tab[data-tab="places"]').click(); select({kind:"loc",name:nm}); focusLoc(nm,false); return; }
+  const mh=e.target.closest("[data-maphere]"); if(mh){ mh.disabled=true; mh.textContent="Mapping…"; const r=await api().set_place_here(mh.dataset.maphere);
+    if(!r.ok){ mh.disabled=false; mh.textContent="I'm here: map it"; return toast(r.error); }
+    await loadStatic(); await poll(); toast(`${mh.dataset.maphere} is on your map. It goes live for everyone once a second datarunner agrees`); return renderDrJobs(); }
   const jt=e.target.closest("[data-jobroute]"); if(jt){ await api().add_stops([jt.dataset.jobroute]); await poll(); toast(`Added ${jt.dataset.jobroute} to the route`); return; }
   const card=e.target.closest(".dr-rep[data-k]"); if(card&&!e.target.closest("button")){ card.classList.toggle("open"); return; }
   if(e.target.closest('[data-act="shoot"]')) return $("dr-shoot").click();
@@ -2761,12 +2968,94 @@ async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true; b.te
 
 // ---- "My reports": everything sent, and how UEX's review is going for each
 const DR_ST={pending:["Waiting for review","#8cc4ff"],under_review:["In Review","#f2c14e"],queued:["Waiting for the PTU build to go live","#a8bbd4"],
-  approved:["Approved","#57e39b"],consolidated:["Live on UEX","#3ccf6e"],declined:["Declined","#ff6b6b"],expired:["Expired before review","#6f82a0"]};
-const DR_SUM={pending:"waiting for review",under_review:"in review",queued:"waiting for PTU",approved:"approved",consolidated:"live on UEX",declined:"declined",expired:"expired"};
+  approved:["Approved","#57e39b"],consolidated:["Live on UEX","#3ccf6e"],declined:["Rejected","#ff6b6b"],expired:["Expired before review","#6f82a0"]};
+const DR_SUM={pending:"waiting for review",under_review:"in review",queued:"waiting for PTU",approved:"approved",consolidated:"live on UEX",declined:"rejected",expired:"expired"};
 function drOverall(e){ if(e.test) return ["Test: not sent","#c3a6ff"]; const s=e.states||[];
   if(e.no_decision) return ["No decision from UEX","#6f82a0"];
   if(!s.length) return ["Sent, waiting for UEX","#8cc4ff"];
   for(const k of ["declined","under_review","pending","queued","expired","approved","consolidated"]) if(s.includes(k)) return DR_ST[k]; return ["Sent","#a8bbd4"]; }
+// ---- Top 10: the best Quantum datarunners, from the community server. Ranked like the ranks are:
+// most approved reports, then star rating.
+function drAv(x,cls){ const ini=esc((x.username||"?")[0].toUpperCase()), pic=x.avatar||x.avatar_url;
+  return `<div class="${cls}">${pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${ini}'}))">`:`<span>${ini}</span>`}</div>`; }
+const drRankBadge=name=>`<span class="rank-badge r${Math.max(0,DR_RANKS.findIndex(r=>r[1]===name))}">${esc(name)}</span>`;
+async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
+  if(!P.querySelector(".dr-top10")) P.innerHTML=`${drViews()}${qLoader("Loading the top datarunners…")}`;
+  if(force||!S.drTop||Date.now()-S.drTopAt>120000){ const r=await api().dr_leaderboard(); if(r.ok){ S.drTop=r; S.drTopAt=Date.now(); } else if(!S.drTop){
+    if(d.view!=="top") return; P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">${esc(r.error)}<div class="row" style="margin-top:8px"><button class="btn small" data-top="refresh">Try again</button></div></div>`; return; } }
+  if(d.view!=="top") return;
+  const r=S.drTop, top=r.top||[], me=r.me, you=x=>r.you&&x.username.toLowerCase()===r.you;
+  const since=ts=>ts?new Date(ts*1000).toLocaleDateString([], {month:"short",year:"numeric"}):null;
+  const one=top[0];
+  const hero=one?`<div class="top-hero ${you(one)?"you":""}">
+      <div class="crown">#1</div>${drAv(one,"av")}
+      <div class="who"><div class="lbl">Top datarunner</div><h2>${esc(one.username)}${you(one)?` <span class="you-tag">You</span>`:""}</h2>
+        <div class="rk">${drRankBadge(one.rank)} ${drStarBar(one.rated?one.stars:0,20)} <b>${one.rated?one.stars.toFixed(1):"–"}</b>${since(one.since)?`<span class="muted">Datarunner since ${since(one.since)}</span>`:""}</div></div>
+      <div class="big">${[[one.approved,"Approved reports"],[one.prices,"Prices approved"],[one.terminals,"Terminals"],[one.stations,"Stations mapped"],[one.week,"This week"]]
+        .map(([n,l])=>`<div><b>${(n||0).toLocaleString()}</b><span>${l}</span></div>`).join("")}</div></div>`:"";
+  const row=x=>`<div class="top-row ${you(x)?"you":""} p${x.place}"><div class="pl">${x.place}</div>${drAv(x,"av")}
+      <div class="nm"><b>${esc(x.username)}</b>${you(x)?` <span class="you-tag">You</span>`:""}<div>${drRankBadge(x.rank)}</div></div>
+      <div class="st">${drStarBar(x.rated?x.stars:0,14)} <b>${x.rated?x.stars.toFixed(1):"–"}</b></div>
+      <div class="n"><b>${x.approved}</b><span>approved</span></div><div class="n"><b>${x.sent}</b><span>sent</span></div>
+      <div class="n"><b>${x.prices}</b><span>prices</span></div><div class="n"><b>${x.terminals}</b><span>terminals</span></div>
+      <div class="n"><b>${x.stations}</b><span>stations</span></div><div class="n"><b>${x.week}</b><span>this week</span></div></div>`;
+  P.innerHTML=`${drViews()}<div class="dr-list dr-top10"><div class="dr-top" style="margin-top:4px"><div><h2>Top 10 datarunners</h2>
+      <div class="where">Ranked by approved reports, then star rating. ${r.total?`${r.total} Quantum datarunner${r.total===1?" has":"s have"} an approved report.`:""}</div></div>
+      <div style="margin-left:auto"><button class="btn small" data-top="refresh">Refresh</button></div></div>
+    ${top.length?`${hero}<div class="top-list">${top.slice(1).map(row).join("")}</div>
+      ${me&&me.place>10?`<div class="mk-h">Where you stand</div><div class="top-list">${row(me)}</div>`
+        :!me&&r.you?`<div class="top-note">You're not on the board yet: your first approved report puts you on it. <a data-drview="jobs">Find a job</a></div>`:""}`
+      :`<div class="dr-empty">No approved reports yet. The first datarunner with one takes #1. <a data-drview="jobs" style="cursor:pointer;text-decoration:underline">Find a job</a></div>`}
+    <div class="uex-credit">From the Quantum server: reports sent through Quantum that UEX approved, plus approved pictures and station positions. Updated every couple of minutes.</div></div>`; }
+// ---- FAQ: how stars, ranks and jobs work (the same rules the Quantum server uses)
+const DR_RANKS=[[0,"Unranked"],[1,"Trainee"],[11,"Runner"],[26,"Field Analyst"],[51,"Trade Analyst"],[101,"Quantum Analyst"]];
+async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
+  if(!P.querySelector(".dr-faq")) P.innerHTML=`${drViews()}${qLoader("Loading your rating…")}`;
+  let p=S.drProf; if(!p){ try{ p=await api().dr_profile(false); if(p?.ok) S.drProf=p; }catch(e){ p=null; } }
+  if(d.view!=="faq") return;
+  const ranks=p?.ranks||DR_RANKS, dec=p?.ok?drDecided(p):null, nx=p?.rank?.next;
+  const you=p?.ok&&p.username?`<div class="faq-you">${drStarBar(p.rated?p.stars:0,22)}<div><b>${p.rated?p.stars.toFixed(1):"Unrated"}</b> <span class="muted">${esc(p.rank.name)}</span>
+      <div class="muted" style="font-size:12.5px">${p.rated?`${dec.approved} Approved, ${dec.rejected} Rejected`:"No approved reports yet"} · ${p.accepted} approved report${p.accepted===1?"":"s"}${nx?` · ${nx.at-p.rank.count} more to ${esc(nx.name)}`:""}</div></div></div>`:"";
+  const qa=[
+    ["How is my star rating worked out?",`<p>Every price row, picture and station position you send counts once it's decided:</p>
+      <ul><li><b>Approved</b> (or Live on UEX, or Live on Quantum) counts as <b>5 stars</b>.</li><li><b>Rejected</b> counts as <b>1 star</b>.</li></ul>
+      <p>Your rating is the average of all of them. For example, 9 approved rows and 1 rejected row: (9 × 5 + 1 × 1) ÷ 10 = <b>4.6 stars</b>.</p>`],
+    ["What doesn't count toward my stars?",`<p>Anything UEX or Quantum hasn't decided yet: rows waiting for review or in review, rows that expired before anyone reviewed them, and reports with no decision after 14 days (Quantum stops asking about those). Test-mode reports never count.</p>`],
+    ["Why does it say Unrated?",`<p>You start unrated. Your first approved report sets you to 5.0 stars, and from then on approved ones keep it up and rejected ones bring it down.</p>`],
+    ["How do ranks work?",`<p>Your rank goes by how many reports have been approved. A price report counts once UEX approves any of its rows. Each approved picture and each station position that goes live on Quantum counts as one too.</p>
+      <div class="faq-ranks">${ranks.slice(1).map((r,i)=>`<div class="${p?.rank?.name===r[1]?"on":""}"><b>${esc(r[1])}</b><span>${r[0]}${i===ranks.length-2?"+":"–"+(ranks[i+2][0]-1)} approved</span></div>`).join("")}</div>`],
+    ["What's the difference between Approval and stars?",`<p><b>Approval</b> is the share of your decided price rows that UEX approved, worked out from this PC's report log. <b>Stars</b> also include your pictures and station positions, and are kept on the Quantum server.</p>`],
+    ["What are Jobs, and how do they help my rating?",`<p>Jobs are things worth doing for every trader: terminals whose prices are the most out of date, and stations that aren't on the map yet. A job doesn't give stars by itself; the report you send for it does, once it's approved.</p>
+      <ul><li><b>Report a terminal:</b> go there, screenshot the kiosk and send what it shows. Older data replaced means more help to everyone.</li>
+      <li><b>Map a station:</b> fly there, type /showlocation in game chat and press <b>I'm here: map it</b>. It goes live on Quantum once a second datarunner's reading agrees, and then counts as approved.</li></ul>`],
+    ["What do Live on UEX and Live on Quantum mean?",`<p><b>Live on UEX:</b> UEX has merged your prices into its own data. <b>Live on Quantum:</b> every Quantum user sees it now: your picture is the one shown for that item, or your station is on everyone's map. Price reports also show for Quantum users within seconds of UEX listing them, for up to 72 hours or until UEX's own data is newer.</p>`],
+    ["Why would a report get rejected?",`<ul><li>A price, SCU or inventory level that doesn't match the kiosk.</li><li>A screenshot that doesn't show every item you reported.</li>
+      <li>A typo: prices more than 25% from UEX's average are held for a person to check.</li><li>Guessed or copied data.</li></ul><p>Repeated rejections can get your UEX datarunner access suspended, and Quantum can stop sharing your reports.</p>`],
+    ["Can I report the same thing again?",`<p>Yes, once the kiosk changes. The same item at the same terminal can be reported once every 5 minutes.</p>`],
+    ["Where is my profile kept?",`<p>On the Quantum server, under your UEX username, so it survives reinstalling Quantum. A report only counts after UEX's own record shows your username sent it, so nobody can add to or take from your profile.</p>`]];
+  P.innerHTML=`${drViews()}<div class="dr-list dr-faq"><div class="dr-top" style="margin-top:4px"><div><h2>FAQ</h2><div class="where">How star ratings, ranks and jobs work.</div></div></div>${you}
+    ${qa.map(([q,a],i)=>`<details ${i<2?"open":""}><summary>${q}</summary><div class="a">${a}</div></details>`).join("")}</div>`; }
+// The step-by-step guide fits the panel instead of scrolling: its text is scaled down until it fits.
+// Fitted again whenever the panel or anything in the guide changes size, so the app's fonts loading
+// after the first fit (they're bigger than the fallback) can't push it into a scroll bar.
+function fitDrGuide(){ const g=$("dr-panel").querySelector(".dr-guide"); if(!g) return;
+  if(!g._fitObs&&window.ResizeObserver){ g._fitObs=new ResizeObserver(()=>{ cancelAnimationFrame(S.drFitRaf); S.drFitRaf=requestAnimationFrame(fitDrGuide); });
+    g._fitObs.observe(g); for(const c of g.children) g._fitObs.observe(c); }
+  if(!g.clientHeight) return;
+  const fits=()=>g.scrollHeight<=g.clientHeight+1;
+  g.style.fontSize=""; g.classList.remove("tight"); const max=parseFloat(getComputedStyle(g).fontSize);
+  if(fits()) return;
+  let lo=8, hi=max;
+  for(let k=0;k<10;k++){ const mid=(lo+hi)/2; g.style.fontSize=mid+"px"; if(fits()) lo=mid; else hi=mid; }
+  g.style.fontSize=lo+"px"; if(!fits()) g.classList.add("tight"); }        // a very small window: scroll after all
+window.addEventListener("resize",()=>{ clearTimeout(S.drFitT); S.drFitT=setTimeout(fitDrGuide,60); });
+document.fonts?.ready?.then(()=>fitDrGuide());
+// Terminal and screenshot come first: no screenshot without the game and a terminal, no note without a terminal.
+function drSyncInputs(){ const term=!!S.dr?.pf?.id_terminal, game=!S.live?.game_off, b=$("dr-shoot"), n=$("dr-note");
+  if(!S.drWaiting){ b.disabled=!term||!game;
+    b.title=!game?"Start Star Citizen first: the screenshot is taken from the game window":!term?"Pick the terminal first, above":""; }
+  n.disabled=!term; n.placeholder=term?"Like “terminal not working”":"Pick a terminal first";
+  const h=$("dr-shot-hint"); if(h&&(!term||!game)) h.textContent=!game?"Start Star Citizen and open the kiosk to take a screenshot.":"Pick the terminal above, then take a screenshot of its kiosk."; }
 // ---- With no terminal picked: how reporting works, step by step
 function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?.shot_hotkey;
   const steps=[
@@ -2775,7 +3064,7 @@ function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?
     ["Take a screenshot",`Open the kiosk's list in game and press ${k?`<b>${esc(k)}</b>`:"your screenshot key (set it in Settings)"}, or use Take screenshot on the left. It must show every item you report; for a long list, scroll and take another.`],
     ["Check each row","Matches the kiosk: <b>No Changes</b> (or Space). Different: type the stock and price, set the inventory bar. Gone from the kiosk: <b>Not Sold Here</b>."],
     ["Submit Report","Look it over, confirm the screenshot shows everything, and send. It goes to UEX under your account and shows up for Quantum users straight away."],
-    ["Follow it in My Reports","See when UEX approves it, climb the ranks and keep your star rating up."]];
+    ["Follow it in My Reports",`See when UEX approves it, climb the ranks and keep your star rating up. <a data-drview="faq" style="cursor:pointer;text-decoration:underline">How ratings work</a>`]];
   return `<div class="dr-guide">
     <h2>Report Prices, step by step</h2>
     <div class="muted" style="margin:-4px 0 14px;font-size:13px">Every report keeps trade data fresh for everyone on UEX and Quantum.</div>
@@ -2800,36 +3089,59 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
       <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}${j.dist!=null?` · ${fmtDist(j.dist)} away`:""}</div>
         <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":Math.round(j.oldest)+" d"} · <span style="color:#9fe0b4">replaces ~${Math.round(j.days)} days of old data</span></div></div>
-      <div class="go">${j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}<button class="btn small primary" data-jobreport="${j.id}">Report it</button></div></div>`; };
-  P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Terminals whose prices are the most out of date. Refresh them and every trader on UEX and Quantum benefits.</div></div>
+      <div class="go">${j.place&&S.locMap[j.place]?.unplaced?`<button class="btn small ghost" data-mapjob="${esc(j.place)}" title="${esc(j.place)} isn't on the map yet: map it while you're there">Map it too</button>`
+        :j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}<button class="btn small primary" data-jobreport="${j.id}">Report it</button></div></div>`; };
+  // Stations Quantum can't place yet: go there, /showlocation, and they go on everyone's map.
+  const pl=S.live?.player, mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
+    .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
+  const reading=L=>L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body));
+  const mapCard=L=>`<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="No position for this station yet">?</div>
+      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}
+        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Dock there, type <b>/showlocation</b> in game chat, then map it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
+      <div class="go">${reading(L)?`<button class="btn small primary" data-maphere="${esc(L.name)}" title="Use your last /showlocation as this station's position">I'm here: map it</button>`
+        :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}</div></div>`;
+  P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Stations missing from the map and terminals with the oldest prices. Each one you do helps every trader on UEX and Quantum.</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}</div>
-    ${uexCredit(r.at)}`; }
+    <div class="dr-list dr-jobs">${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
+      <div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
+      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}${uexCredit(r.at)}</div>`; }
 
 // Pictures and station positions sent through Quantum, reviewed on the Quantum server rather than UEX.
-const CB_ST={submitted:["Submitted","#8cc4ff"],in_review:["In Review","#f2c14e"],approved:["Approved","#57e39b"],shared:["Shared on the map","#3ccf6e"],rejected:["Rejected","#ff6b6b"]};
-function drContribCard(c){ const [label,col]=CB_ST[c.status]||[c.status,"#a8bbd4"];
+// "Live on Quantum": every Quantum user sees it now (the picture shown for that item, or the station on the map).
+const CB_ST={submitted:["Submitted","#8cc4ff"],in_review:["In Review","#f2c14e"],approved:["Approved","#57e39b"],live:["⚡ Live on Quantum","#7fe7ff"],
+  shared:["⚡ Live on Quantum","#7fe7ff"],rejected:["Rejected","#ff6b6b"]};
+function drContribCard(c){ const [label,col]=CB_ST[c.status]||[c.status,"#a8bbd4"], live=c.status==="live"||c.status==="shared";
   const what=c.type==="photo"?`Picture · ${esc(c.name)}`:`Station position · ${esc(c.name)}`;
-  const sub=c.type==="photo"?`${esc(c.kind||"item")} picture, reviewed by Quantum`:`${esc(c.system||"")} · shared once a second datarunner's reading agrees`;
-  return `<div class="dr-rep contrib"><div class="hd"><div><b>${what}</b><div class="muted" style="font-size:12px">${sub} · ${new Date(c.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div></div>
-    <span class="badge" style="color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div></div>`; }
+  const sub=c.type==="photo"?(live?`${esc(c.kind||"item")} picture, shown to every Quantum user`:c.status==="approved"?`${esc(c.kind||"item")} picture, approved; a newer one is shown now`:`${esc(c.kind||"item")} picture, reviewed by Quantum`)
+    :(live?`${esc(c.system||"")} · on every Quantum user's map`:`${esc(c.system||"")} · goes live once a second datarunner's reading agrees`);
+  const view=live?(c.type==="photo"&&c.url?`<img class="cb-pic" src="${esc(c.url)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="this.remove()">`
+    :c.type==="place"&&S.locMap?.[c.name]?.pos?`<button class="btn small ghost" data-cbmap="${esc(c.name)}">Show on map</button>`:""):"";
+  return `<div class="dr-rep contrib ${live?"live":""}"><div class="hd">${view&&c.type==="photo"?view:""}<div><b>${what}</b><div class="muted" style="font-size:12px">${sub} · ${new Date(c.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div></div>
+    ${view&&c.type==="place"?`<span style="margin-left:auto">${view}</span>`:""}<span class="badge" style="${view&&c.type==="place"?"margin-left:0;":""}color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div></div>`; }
 
+// Approved and rejected: what the stars are worked out from (price rows, pictures, station positions).
+// From the server when it sends them; worked out here for an older server.
+function drDecided(p){ if(p?.decided) return p.decided; const c=p?.contrib||[];
+  return {approved:(p?.rows?.approved||0)+c.filter(x=>["approved","shared","live"].includes(x.status)).length,
+          rejected:(p?.rows?.declined||0)+c.filter(x=>x.status==="rejected").length}; }
 // The datarunner's card: UEX name and avatar, rank, stars, and how far to the next rank.
 function drProfileCard(p){ if(!p?.ok) return "";
   if(!p.username) return `<div class="dr-prof"><div class="av">?</div><div><b>Your datarunner profile</b><div class="muted" style="font-size:12.5px;margin-top:3px">Add your UEX Secret Key in Settings to see your UEX name, rank and star rating.</div></div></div>`;
   const nx=p.rank.next, prev=[...p.ranks].reverse().find(x=>p.rank.count>=x[0])?.[0]||0;
   const pct=nx?Math.min(100,(p.rank.count-prev)/(nx.at-prev)*100):100, left=nx?nx.at-p.rank.count:0;
   const pic=p.avatar||p.avatar_url;   // downloaded by Quantum, or else straight from UEX
+  const dec=drDecided(p);
   const av=pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc((p.username||'?')[0].toUpperCase())}'}))">`:esc((p.username||"?")[0].toUpperCase());
   return `<div class="dr-prof">
     <div class="av" title="${esc(p.avatar_raw?"UEX avatar: "+p.avatar_raw:"No avatar set at UEX")}">${av}</div>
     <div class="who"><b>${esc(p.username)}</b>${p.name&&p.name!==p.username?`<span class="muted"> · ${esc(p.name)}</span>`:""}
       <div class="rk"><span class="rank-badge r${p.ranks.findIndex(x=>x[1]===p.rank.name)}">${esc(p.rank.name)}</span>
-        ${drStarBar(p.rated?p.stars:0,20)} <b>${p.rated?p.stars.toFixed(1):"0.0"}</b><span class="muted">${p.rated?` · ${p.rows.approved} approved, ${p.rows.declined} declined`:" · your first approved report sets 5 stars"}</span></div>
-      <div class="nx">${nx?`<div class="bar"><i style="width:${pct}%"></i></div><span>${left} more accepted report${left===1?"":"s"} to <b>${esc(nx.name)}</b></span>`:`<span>Highest rank reached. Thank you, datarunner.</span>`}</div></div>
-    <div class="nums"><div><b>${p.accepted}</b><span>accepted</span></div><div><b>${p.reports}</b><span>sent</span></div></div>
+        ${drStarBar(p.rated?p.stars:0,20)} <b>${p.rated?p.stars.toFixed(1):"0.0"}</b><span class="muted" title="What your star rating is worked out from: every price row, picture and station position that's been decided">${p.rated?` · ${dec.approved} Approved, ${dec.rejected} Rejected`:" · your first approved report sets 5 stars"}</span></div>
+      <div class="nx">${nx?`<div class="bar"><i style="width:${pct}%"></i></div><span>${left} more approved report${left===1?"":"s"} to <b>${esc(nx.name)}</b></span>`:`<span>Highest rank reached. Thank you, datarunner.</span>`}</div></div>
+    <div class="nums"><div><b>${p.accepted}</b><span>Approved</span></div><div><b>${p.reports}</b><span>Sent</span></div></div>
     ${p.uex_banned?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">UEX has suspended your datarunner access, so new reports won't be accepted.</div>`:p.uex_datarunner===0?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">Your UEX account isn't a datarunner yet. Turn it on in your UEX profile to send reports.</div>`:""}
     ${p.banned?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">Your reports are no longer shared with Quantum users${p.ban_reason?`: ${esc(p.ban_reason)}`:""}.</div>`:""}
     <div class="ladder">${p.ranks.slice(1).map((x,i)=>`<span class="${x[1]===p.rank.name?"on":p.rank.count>=x[0]?"done":""}">${esc(x[1])}<small>${x[0]}${i===p.ranks.length-2?"+":"–"+(p.ranks[i+2][0]-1)}</small></span>`).join("")}</div>
@@ -2843,7 +3155,7 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
   if(d.view!=="mine") return;
   if(!r?.ok){ P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">Couldn't load your reports: ${esc(r?.error||"unknown error")}.
       <div class="row" style="margin-top:8px"><button class="btn small" data-mine="refresh">Try again</button></div></div>`; return; }
-  if(pr?.ok) d.pf.stats.rating={stars:pr.stars, rated:pr.rated, rank:pr.rank.name};
+  if(pr?.ok){ d.pf.stats.rating={stars:pr.stars, rated:pr.rated, rank:pr.rank.name}; S.drProf=pr; }
   S.drApproval=r.approval; renderDrStats(d.pf.stats);
   if(announce) toast(!r.waiting?"All your reports are decided: nothing to ask UEX"
     :r.asked?`Updated from UEX: ${r.waiting} report${r.waiting===1?"":"s"} still waiting`
@@ -2858,7 +3170,7 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
         <span style="color:${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"#6f82a0":s2?s2[1]:"var(--dim)"}">${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"No decision":s2?esc(s2[0]):e.test?"":"–"}</span></div>`; }).join("")}
         ${e.no_decision?`<div class="muted" style="font-size:11.5px;margin-top:6px">UEX didn't decide on this within 14 days, so Quantum stopped asking. It doesn't count toward your rating.</div>`:""}</div></div>`; };
   P.innerHTML=`${drViews()}${drProfileCard(pr)}<div class="dr-top"><div><h2>My Reports</h2><div class="where">${r.live?"Their review status comes from UEX.":"Test mode: these were saved to a folder, not sent, so UEX has no status for them."}</div></div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">${r.approval!=null?`<span class="chip" style="border-color:#57e39b66;color:#9fe0b4">${r.approval}% approved</span>`:""}<button class="btn small" data-mine="refresh">Refresh</button></div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">${r.approval!=null?`<span class="chip" style="border-color:#57e39b66;color:#9fe0b4">${r.approval}% Approval</span>`:""}<button class="btn small" data-mine="refresh">Refresh</button></div></div>
     ${sum?`<div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 2px 10px">${sum}</div>`:""}
     ${r.error?`<div class="warnbox">Couldn't get the review status from UEX: ${esc(r.error)}</div>`:""}
     ${!r.can_check&&r.reports.some(e=>!e.test)?`<div class="warnbox">Add your datarunner secret key in Settings to see what UEX did with your reports.</div>`:""}
@@ -2868,11 +3180,11 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
 // ---- sidebar: stats, screenshots, details
 function drStarBar(stars,size){ return `<span class="stars" style="${size?`font-size:${size}px`:""}">★★★★★<i style="width:${(stars||0)/5*100}%">★★★★★</i></span>`; }
 function drStars(r){ if(!r) return "";
-  return `<div class="dr-rating" title="Your first report UEX approves sets 5 stars. Approved rows keep it up, declined ones bring it down.">${drStarBar(r.rated?r.stars:0)}<b>${r.rated?r.stars.toFixed(1):"–"}</b><span class="muted" style="font-size:12px">${r.rated?esc(r.rank||"datarunner rating"):"Unrated: no reports approved yet"}</span></div>`; }
+  return `<div class="dr-rating" title="Your first approved report sets 5 stars. Approved ones keep it up, rejected ones bring it down. See FAQ on the Datarunner page.">${drStarBar(r.rated?r.stars:0)}<b>${r.rated?r.stars.toFixed(1):"–"}</b><span class="muted" style="font-size:12px">${r.rated?esc(r.rank||"datarunner rating"):"Unrated: no reports approved yet"}</span></div>`; }
 function renderDrStats(st){ if(!st) return; const s=st.session, a=st.all;
   $("dr-stats").innerHTML=`${drStars(st.rating)}<b style="font-size:13px">This session</b>
     <div class="big"><div><b>${s.reports}</b><span>reports</span></div><div><b>${s.prices}</b><span>prices</span></div><div><b>${Math.round(s.days)}</b><span>days of old data replaced</span></div></div>
-    <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} reports · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% approved</b>`:""}</div>`; }
+    <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} reports · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% Approval</b>`:""}</div>`; }
 async function renderDrShots(){ const r=await api().dr_shots(), st=await api().dr_status(); const was=drLocked();
   S.drShotCount=r.shots.length; S.drShotKey=st.shot_hotkey||"";
   if(S.dr&&S.dr.view!=="mine"&&was!==drLocked()) renderDrList();
@@ -2881,7 +3193,7 @@ async function renderDrShots(){ const r=await api().dr_shots(), st=await api().d
   $("dr-shots-clear").hidden=!r.shots.length;
   $("dr-shot-hint").textContent=(st.shot_hotkey?`Press ${st.shot_hotkey} in game with the kiosk on screen. `:"Set a screenshot key in Settings to take them from the game. ")
     +(r.shots.length?"Long list? Scroll and take another; they're joined into one picture.":"The whole kiosk must be in it, showing the prices you report.");
-  renderDrSend(); }
+  renderDrSend(); drSyncInputs(); }
 // Terminal: type any part of the place or terminal name ("new bab", "tressler admin"); where you are comes first.
 { const q=$("dr-term-q"), list=$("dr-term-list"); let hi=0, shown=[];
   const draw=()=>{ const words=q.value.toLowerCase().split(/\s+/).filter(Boolean), cur=S.dr?.pf?.id_terminal;
@@ -2912,7 +3224,7 @@ $("dr-shoot").onclick=async()=>{ const b=$("dr-shoot"); if(b.disabled) return; b
     S.drJobSeen=job?.n;
     if(job?.state!=="done") return toast(job?.error||"The screenshot didn't finish. Settings > Log shows where it stopped");
     await renderDrShots(); drPreview(job.index);
-  } finally { S.drWaiting=false; b.disabled=false; b.textContent="Take screenshot"; } };
+  } finally { S.drWaiting=false; b.textContent="Take screenshot"; drSyncInputs(); } };
 $("dr-shots-clear").onclick=async()=>{ await api().dr_clear_shots(null); renderDrShots(); };
 $("dr-shots").onclick=async e=>{ const x=e.target.closest("[data-drx]"); if(x){ await api().dr_clear_shots(+x.dataset.drx); $("dr-view").classList.remove("show"); return renderDrShots(); }
   const im=e.target.closest(".dr-shot img"); if(im) drPreview([...$("dr-shots").querySelectorAll(".dr-shot img")].indexOf(im)); };
@@ -2940,7 +3252,7 @@ async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
-  if(live.static_version!==S.staticVersion) await loadStatic();
+  if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
   const here=live.player?.system||live.where?.system;
   if(here && here!==prevSys){ renderSysSeg(); if(S.autoSystem && here!==S.system) setSystem(here); }
   const rk=JSON.stringify([live.route,live.legs.map(x=>x&&Math.round(x/1000)),live.stop_roles,live.route_warning]); if(rk!==S.routeKey){ S.routeKey=rk; renderRoute(); renderResults(); }
@@ -2954,6 +3266,7 @@ async function poll(){
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
+  if(S.tab==="datarunner"&&S.dr&&(!!live.game_off)!==S.drGameOff){ S.drGameOff=!!live.game_off; drSyncInputs(); }
   const dq=live.datarunner?.seq; if(dq!==undefined&&dq!==S.drSeq){ const grew=S.drSeq!==undefined&&live.datarunner.shots>(S.drShotN||0);
     S.drSeq=dq; S.drShotN=live.datarunner.shots; if(grew) toast(`Terminal screenshot ${live.datarunner.shots} saved for your UEX report`); if(S.tab==="datarunner") renderDrShots(); }
 }

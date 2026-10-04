@@ -164,7 +164,7 @@ class Api:
         self._dr_job = {"state": "idle", "n": 0}
         self._dr_terminal = None
         self._community = community.Community(lambda: self._settings.get("community_url"),
-                                              lambda: not self._dr.live)
+                                              lambda: not self._dr.live, lambda: self._settings.get("trust_key"))
         threading.Thread(target=self._sync_places, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
@@ -1063,9 +1063,21 @@ class Api:
         if entry:
             self._community.post_place(name, entry, self._dr_cfg().get("username"))
 
+    PLACES_SYNC_EVERY = 10 * 60          # s: how often shared station positions are fetched again
+
     def _sync_places(self):
-        """Background, at start fetch the shared positions and put any new ones on the map."""
+        """Background: fetch the shared station positions at start, then every 10 minutes, and put any
+        new ones on the map. A station two datarunners just agreed on shows up (and leaves the
+        Not on the map yet list and the Jobs) without restarting Quantum."""
         time.sleep(3)                                          # let start-up finish first
+        while True:
+            try:
+                self._sync_places_once()
+            except Exception as e:
+                print("place sync:", e, flush=True)
+            time.sleep(self.PLACES_SYNC_EVERY)
+
+    def _sync_places_once(self):
         got = self._community.places()
         if got is None:
             return
@@ -1886,6 +1898,22 @@ class Api:
     def community_status(self):
         return {"url": self._community.url, **self._community.health()}
 
+    def trust_status(self):
+        """Settings: whether a trusted contributor key is saved and whether the server accepts it."""
+        key = self._settings.get("trust_key")
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        return {"has_key": bool(key), "user": user,
+                "trusted": self._community.trusted(user) if key and user else False}
+
+    def set_trust_key(self, key):
+        key = (key or "").strip()
+        if key:
+            self._settings["trust_key"] = key
+        else:
+            self._settings.pop("trust_key", None)
+        self._save_settings()
+        return self.trust_status()
+
     def set_community_url(self, url):
         """The Quantum API server for community prices; empty turns them off."""
         url = (url or "").strip().rstrip("/")
@@ -1991,6 +2019,49 @@ class Api:
         self._avatar_direct.add(raw)
         return None
 
+    def _dr_share_user(self, user):
+        """Send the server your UEX avatar and name when they change (or once a day), so other
+        datarunners see your picture on the Top 10. Only what UEX's /user said, nothing else."""
+        if not user or not user.get("username"):
+            return
+        cfg = self._dr_cfg()
+        key = [user["username"], user.get("avatar")]
+        sent = cfg.get("user_shared") or {}
+        if sent.get("key") == key and time.time() - sent.get("at", 0) < 86400:
+            return
+        if self._community.update_user(user["username"], user["username"], user.get("avatar")):
+            cfg["user_shared"] = {"key": key, "at": int(time.time())}
+            self._save_settings()
+
+    def dr_leaderboard(self):
+        """Top 10 Quantum datarunners from the community server, with their UEX avatars."""
+        if not self._community.url:
+            return {"ok": False, "error": "Community features are off, so there's no leaderboard"}
+        user = self._dr_uex_user() or {}
+        me = (user.get("username") or self._dr_cfg().get("username") or "").strip()
+        self._dr_share_user(user)
+        r = self._community.leaderboard(me or None)
+        if not r:
+            return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+        rows = list(r.get("top") or []) + ([r["me"]] if r.get("me") else [])
+        from concurrent.futures import ThreadPoolExecutor
+
+        def pic(x):
+            raw = x.get("avatar")
+            if me and x.get("username", "").lower() == me.lower() and user.get("avatar"):
+                raw = user["avatar"]                           # yours: straight from UEX, always current
+            # Downloaded here when UEX allows it; its image CDN often only serves browsers, so the
+            # page also gets the direct link and loads it itself (like the My Reports card does).
+            x["avatar_url"] = self._dr_avatar_urls(raw)[0] if raw else None
+            try:
+                x["avatar"] = self._dr_avatar(raw) if raw else None
+            except Exception:
+                x["avatar"] = None
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            list(ex.map(pic, rows))
+        return {"ok": True, "top": r.get("top") or [], "me": r.get("me"), "total": r.get("total", 0),
+                "you": me.lower() or None, "at": time.time()}
+
     def dr_profile(self, refresh=False):
         try:
             return self._dr_profile(refresh)
@@ -2065,9 +2136,13 @@ class Api:
         (so it survives a reinstall); without the server it's worked out from this PC's report log."""
         user = self._dr_uex_user(refresh) or {}
         name = user.get("username") or self._dr_cfg().get("username")
+        threading.Thread(target=self._dr_share_user, args=(user,), daemon=True).start()
         prof = self._community.profile(name) if name else None
         if prof:
             out = dict(prof, source="server")
+            for c in out.get("contrib") or []:                 # pictures: a full link to the server's copy
+                if isinstance(c.get("url"), str) and c["url"].startswith("/"):
+                    c["url"] = self._community.url + c["url"]
             local_sent = sum(1 for e in self._dr_report_log() if not e.get("test") and e.get("ids"))
             out["reports"] = max(out.get("reports") or 0, local_sent)
         else:
@@ -2079,6 +2154,7 @@ class Api:
             out = {"username": name, "stars": r["stars"], "rated": r["rated"], "accepted": accepted,
                    "reports": sum(1 for e in reps["reports"] if not e.get("test")),
                    "rows": {"approved": r["approved"], "declined": r["declined"]}, "rank": self._dr_rank(accepted),
+                   "decided": {"approved": r["approved"], "rejected": r["declined"]},
                    "banned": False, "source": "local"}
         raw = user.get("avatar") or out.get("avatar")
         out.update(ok=True, name=user.get("name"), avatar=self._dr_avatar(raw), avatar_url=self._dr_avatar_urls(raw)[0] if raw else None,
@@ -2314,6 +2390,60 @@ class Api:
     COMPONENT_SKIP = ("clothing", "armor", "undersuit", "jumpsuit", "helmet", "personal", "fps", "food", "drink",
                       "medical", "tool", "decoration", "flair", "paint", "livery", "utility")
 
+    # Categories UEX lists that hold no ship components (whole ships are on the Vehicles tab)
+    COMPONENT_EMPTY = ("vehicle",)
+
+    @staticmethod
+    def _slot_type_for(category):
+        """The My Fleet slot type a UEX component category fits ("Coolers" -> "Cooler"), or None."""
+        nm = (category or "").lower()
+        if any(k in nm for k in ("rack", "turret", "module", "gadget", "mount", "gimbal", "attachment")):
+            return None
+        for typ, (_, words) in fleet.SLOT_TYPES.items():
+            if any(w in nm for w in words):
+                return typ
+        return None
+
+    def component_fit_targets(self, category):
+        """For the Components tab's "Fit to a ship": every ship in My Fleet with its slots of the kind
+        this category fits, and what's in each now (your swap, else stock)."""
+        slot = self._slot_type_for(category)
+        if not slot:
+            return {"ok": True, "slot": None, "ships": []}
+        return self._uex_call(lambda: self._fit_targets(slot))
+
+    def _fit_targets(self, slot):
+        rows = self._vehicle_rows()
+        fl = list(self._fleet())
+
+        def one(f):
+            v = rows.get(f["vehicle_id"], {})
+            name = v.get("name") or f["name"]
+            out = {"uid": f["uid"], "name": v.get("name_full") or f["name"], "main": bool(f.get("main")),
+                   "photo": v.get("url_photo"), "slots": []}
+            try:
+                data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
+                                              v.get("name_full")])
+            except Exception:
+                data = None
+            if not data:
+                out["error"] = "The Star Citizen Wiki has no loadout for this ship (or it can't be reached)"
+                return out
+            fitted = f.get("loadout") or {}
+            for s_ in fleet.Wiki.loadout(data)["slots"]:
+                if s_["type"] != slot:
+                    continue
+                fit = fitted.get(s_["port"])
+                fit = {"name": fit} if isinstance(fit, str) else fit
+                out["slots"].append({"port": s_["port"], "label": s_["label"], "size": s_.get("size"),
+                                     "where": s_.get("where") or "", "stock": (s_.get("stock") or {}).get("name"),
+                                     "fitted": fit["name"] if fit else None})
+            return out
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            ships = list(ex.map(one, fl))
+        return {"ok": True, "slot": slot, "label": fleet.SLOT_TYPES[slot][0], "ships": ships}
+
     def _game_view(self, uuid, name, size):
         """A component's numbers from the game files, for its detail page."""
         try:
@@ -2339,8 +2469,10 @@ class Api:
             def txt(c):
                 return f"{c.get('section') or ''} {c.get('name') or ''}".lower()
             pick = [c for c in items if any(h in txt(c) for h in self.COMPONENT_HINTS)
-                    and not any(k in txt(c) for k in self.COMPONENT_SKIP)] or items
-            out = [{"id": c["id"], "name": c.get("name"), "section": c.get("section") or "Other"} for c in pick]
+                    and not any(k in txt(c) for k in self.COMPONENT_SKIP)
+                    and (c.get("name") or "").strip().lower().rstrip("s") not in self.COMPONENT_EMPTY] or items
+            out = [{"id": c["id"], "name": c.get("name"), "section": c.get("section") or "Other",
+                    "slot": self._slot_type_for(c.get("name"))} for c in pick]
             out.sort(key=lambda c: (c["section"], c["name"] or ""))
             return {"ok": True, "items": out}
         return self._uex_call(run)
