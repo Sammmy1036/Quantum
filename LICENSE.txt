@@ -1,5 +1,7 @@
 MIT License
 
+Copyright (c) 2026 Sammy (github.com/Sammmy1036)
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -19,19 +21,50 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
+Third-party code
+
+Quantum includes or loads code from other projects, each under its own license:
+
+  - three.js (ui/vendor/three.min.js): MIT License, Copyright (c) 2010-2023
+    three.js authors. See ui/vendor/three.LICENSE.
+  - Ed25519 signature verification (updater.py): follows the reference
+    implementation in RFC 8032. Code components of IETF documents are
+    available under the Simplified BSD License, Copyright (c) IETF Trust and
+    the persons identified as the document authors.
+  - Fonts Michroma, Exo 2 and Inter, loaded from Google Fonts at run time:
+    SIL Open Font License 1.1.
+
+-------------------------------------------------------------------------------
 Third-party data and trademarks
 
 The MIT License above covers Quantum's own code. Data Quantum downloads or
 ships keeps its own terms:
 
-  - Star Citizen Wiki (starcitizen.tools, api.star-citizen.wiki): content under
-    CC BY-SA 4.0.
-  - UEX Corp (uexcorp.space): prices and trade data, used under UEX's API terms
-    with each user's own token.
+  - Star Citizen Wiki (starcitizen.tools, api.star-citizen.wiki): content,
+    including ship data, loadouts and pictures, under CC BY-SA 4.0.
+  - UEX Corp (uexcorp.space): prices, trade data, vehicles and items, used
+    under UEX's API terms with each user's own token. Datarunner price reports
+    are sent to UEX under each user's own UEX account and UEX's datarunner
+    rules.
   - Valalol / Star-Citizen-Navigation and starnav: community navigation data,
     under their own licenses.
   - Component statistics extracted from the Star Citizen game files.
 
+-------------------------------------------------------------------------------
+Community contributions
+
+Prices, station positions, pictures and trade routes that Quantum users share
+through the Quantum community server are contributed by those users. By
+sending a picture, a user confirms they took it or otherwise have the right to
+share it, and agrees that it may be shown to other Quantum users. Pictures can
+be reviewed, rejected or removed by the server owner at any time. Shared data
+is provided as is, like the rest of the Software, and may be inaccurate or out
+of date.
+
+-------------------------------------------------------------------------------
+Unofficial fan project
+
 Quantum is an unofficial fan project and is not affiliated with or endorsed by
 Cloud Imperium Games. Star Citizen(R), Roberts Space Industries(R) and Cloud
-Imperium(R) are registered trademarks of Cloud Imperium Rights LLC.
+Imperium(R) are registered trademarks of Cloud Imperium Rights LLC. microTech is
+a fictional company from the game; its name is used in the spirit of the game.
