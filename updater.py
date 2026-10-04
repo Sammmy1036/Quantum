@@ -2,13 +2,16 @@
 
 At start-up Quantum asks GitHub for the latest release. If its tag (v1.4.0) is newer than VERSION
 below, the page offers the update with your release notes. Updating:
-  1. downloads Quantum.exe and Quantum.exe.sig from the release, next to the running exe;
+  1. downloads the installer (Quantum-Setup-<version>.exe) and its .sig from the release, to the
+     temp folder;
   2. checks the signature: an Ed25519 signature, made on your PC with sign_release.py, over
-     "Quantum <version>" and the file's SHA-256. Quantum only installs what that key signed,
+     "Quantum <version>" and the file's SHA-256. Quantum only runs what that key signed,
      so even someone with access to the GitHub account can't push a different file;
-  3. renames the running exe to Quantum.old.exe (Windows allows renaming a running exe), puts the
-     new one in its place, starts it and closes. The new one deletes Quantum.old.exe.
-Settings, fleet and reports live in files beside the exe and aren't touched.
+  3. runs the installer silently into the folder Quantum is installed in and closes. The installer
+     replaces Quantum.exe and _internal (the UI lives there too) and starts the new version.
+The whole installer is used rather than Quantum.exe alone: a PyInstaller folder build keeps the UI,
+libraries and data in _internal, and an exe on its own would leave those at the old version.
+Settings, fleet and reports live in files beside the exe and the installer leaves them alone.
 
 Running from source (python app.py), it only tells you an update exists and links to the release.
 No dependencies: Ed25519 verification is the reference algorithm from RFC 8032.
@@ -26,7 +29,7 @@ from pathlib import Path
 
 VERSION = "0.0.0.1"                     # bump this for every release; the tag is this (a leading "v" is fine)
 REPO = "Sammmy1036/Quantum"
-ASSET = "Quantum.exe"
+ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   # the Inno Setup installer
 # The public half of your signing key (sign_release.py --keygen prints it). Updates are refused
 # until it's set.
 PUBLIC_KEY = ""
@@ -162,11 +165,16 @@ class Updater:
         self.state = {"stage": "idle"}               # idle | downloading | verifying | ready | error
         self._lock = threading.Lock()
 
+    @staticmethod
+    def _dl_dir():
+        return Path(os.environ.get("TEMP") or os.environ.get("TMP") or Path.home()) / "QuantumUpdate"
+
     def cleanup(self):
-        """At start: remove what the last update left behind."""
-        for name in ("Quantum.old.exe", "Quantum.new.exe"):
+        """At start: remove what the last update left behind (and files from the old exe-only updater)."""
+        for f in [self.exe.parent / "Quantum.old.exe", self.exe.parent / "Quantum.new.exe",
+                  *(self._dl_dir().glob("Quantum-Setup-*.exe") if self._dl_dir().exists() else [])]:
             try:
-                (self.exe.parent / name).unlink()
+                f.unlink()
             except OSError:
                 pass
 
@@ -181,14 +189,16 @@ class Updater:
         if rel.get("draft") or rel.get("prerelease") or not newer(tag, VERSION):
             return {"available": False, "current": VERSION}
         assets = {a.get("name"): a.get("browser_download_url") for a in rel.get("assets") or []}
+        setup = next((n for n in assets if n and ASSET.match(n)), None)
         self.latest = {"available": True, "current": VERSION, "version": tag.lstrip("v"), "notes": rel.get("body") or "",
-                       "url": rel.get("html_url"), "exe": assets.get(ASSET), "sig": assets.get(ASSET + ".sig"),
+                       "url": rel.get("html_url"), "exe": assets.get(setup) if setup else None,
+                       "sig": assets.get(setup + ".sig") if setup else None, "file": setup,
                        "published": rel.get("published_at")}
         self.latest["can_install"] = bool(self.frozen and PUBLIC_KEY and self.latest["exe"] and self.latest["sig"])
         if not PUBLIC_KEY:
             self.latest["why_not"] = "This build has no update key, so it can't install updates itself"
         elif not (self.latest["exe"] and self.latest["sig"]):
-            self.latest["why_not"] = f"The release is missing {ASSET} or {ASSET}.sig"
+            self.latest["why_not"] = "The release is missing Quantum-Setup-<version>.exe or its .sig"
         elif not self.frozen:
             self.latest["why_not"] = "Running from source: download it from GitHub"
         return dict(self.latest)
@@ -212,7 +222,8 @@ class Updater:
         return {"ok": True}
 
     def _download(self, rel):
-        new = self.exe.parent / "Quantum.new.exe"
+        self._dl_dir().mkdir(parents=True, exist_ok=True)
+        new = self._dl_dir() / f"Quantum-Setup-{rel['version']}.exe"
         try:
             self._set(stage="downloading", done=0, total=0)
             with urllib.request.urlopen(urllib.request.Request(rel["sig"], headers=UA), timeout=30) as r:
@@ -232,7 +243,7 @@ class Updater:
             if not verify(bytes.fromhex(PUBLIC_KEY), signed_message(rel["version"], h.hexdigest()), sig):
                 new.unlink(missing_ok=True)
                 return self._set(stage="error", error="The download isn't signed by Quantum's release key, so it wasn't installed")
-            self._set(stage="ready", version=rel["version"])
+            self._set(stage="ready", version=rel["version"], file=str(new))
         except Exception as e:
             try:
                 new.unlink(missing_ok=True)
@@ -241,21 +252,16 @@ class Updater:
             self._set(stage="error", error=f"Download failed: {e}")
 
     def install_and_restart(self):
-        """Swap the verified exe in and start it. The caller closes Quantum right after."""
-        if self.progress().get("stage") != "ready":
+        """Run the verified installer silently into this install's folder. It closes Quantum,
+        replaces the program files and starts the new version. The caller closes Quantum right after."""
+        st = self.progress()
+        if st.get("stage") != "ready" or not st.get("file") or not Path(st["file"]).exists():
             return {"ok": False, "error": "The update isn't downloaded yet"}
-        new, old = self.exe.parent / "Quantum.new.exe", self.exe.parent / "Quantum.old.exe"
-        try:
-            old.unlink(missing_ok=True)
-            os.replace(self.exe, old)                 # a running exe can be renamed on Windows
-            os.replace(new, self.exe)
-        except OSError as e:
-            try:
-                if not self.exe.exists() and old.exists():
-                    os.replace(old, self.exe)         # put things back as they were
-            except OSError:
-                pass
-            return {"ok": False, "error": f"Couldn't replace Quantum.exe: {e}"}
+        args = [st["file"], "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS",
+                f"/DIR={self.exe.parent}"]
         flags = 0x00000008 | 0x00000200 if os.name == "nt" else 0   # DETACHED_PROCESS | NEW_PROCESS_GROUP
-        subprocess.Popen([str(self.exe), "--updated"], cwd=str(self.exe.parent), creationflags=flags, close_fds=True)
+        try:
+            subprocess.Popen(args, cwd=str(Path(st["file"]).parent), creationflags=flags, close_fds=True)
+        except OSError as e:
+            return {"ok": False, "error": f"Couldn't start the installer: {e}"}
         return {"ok": True}
