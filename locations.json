@@ -198,17 +198,17 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 2.48000002,
-   "rotation_offset_deg": 117.719924,
+   "rotation_offset_deg": 117.45860432919373,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1436815.0,
    "system": "Stanton",
    "internal": "Stanton1",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1790616305.2963688,
-   "calibrated_place": "Lorville (estimated)",
+   "calibrated_at": 1791017664.0962946,
+   "calibrated_place": "HDMS Pinewood",
    "community_offset_deg": 152.9598871,
-   "calibration_quality": "estimate"
+   "calibration_quality": "place"
   },
   {
    "name": "Ita",

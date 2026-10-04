@@ -25,6 +25,8 @@ if AVAILABLE:
                                     ctypes.c_int, ctypes.c_int, wintypes.UINT)
     user32.ShowWindow.argtypes = (wintypes.HWND, ctypes.c_int)
     user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
+    user32.BringWindowToTop.argtypes = (wintypes.HWND,)
+    user32.SetActiveWindow.argtypes = (wintypes.HWND,)
     user32.IsIconic.argtypes = (wintypes.HWND,)
     user32.IsWindowVisible.argtypes = (wintypes.HWND,)
     user32.GetWindowTextW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)

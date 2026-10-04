@@ -92,27 +92,42 @@ button{cursor:pointer}
 .obj .where{color:#ffb3d6;font-size:12.5px;cursor:pointer}
 .obj .where:hover{text-decoration:underline}
 .trackno{font:500 12px ui-monospace,Consolas,monospace;color:var(--ink-2);margin:2px 0 6px;cursor:copy;letter-spacing:.04em}.trackno b{color:var(--ink);font-weight:600}
-.vh-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}.vh-filters .field{width:100%;min-width:0;padding-left:8px;padding-right:4px}
+.vh-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;margin-bottom:12px}.vh-filters .field{width:100%;min-width:0;padding-left:8px;padding-right:4px}
 .vh.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
 #vh-gallery{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:20px 22px 30px;display:none}
 #vh-gallery.show{display:block}
 #detail{z-index:40}
+.stepbox{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;width:100%;margin-bottom:4px}
+.stepbox label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink-2)}.stepbox .field{width:130px;padding:4px 8px}
 .runbar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 6px}.runbar i{height:6px;border-radius:3px;background:#223251}.runbar i.on{background:#57e39b}
 .runlabels{display:grid;grid-template-columns:repeat(4,1fr);font-size:11.5px;color:var(--dim);line-height:1.35}.runlabels .done{color:var(--ink)}
-.side-panel{position:absolute;inset:0;z-index:30;overflow:hidden;display:none;flex-direction:column;padding:16px 22px 0;pointer-events:none}
-.side-panel.show{display:flex}
-.side-panel .trd-head,.side-panel .trd-info,.side-panel .trd-body{pointer-events:auto}
-.side-panel .trd-top{display:grid;grid-template-columns:minmax(320px,1.15fr) 1fr;gap:20px;height:min(46%,440px);min-height:260px;flex:none;pointer-events:none}
+/* The route page: one page that scrolls as a whole. A single framed 2x2 grid (commodity | map,
+   buy | sell) with divider lines, then the footer. The map cell is a window onto the live map. */
+.side-panel{position:absolute;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;display:none;padding:8px 20px 10px;pointer-events:none}
+.trd-x{position:absolute;top:10px;right:10px;z-index:2}
+.trd-fit{transform-origin:top left}
+.side-panel.show{display:block}
+.side-panel .trd-head,.side-panel .trd-info,.side-panel .trd-grid > .vd-sec,.side-panel .trd-footer{pointer-events:auto}
+.trd-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(440px,auto) auto;border:1px solid var(--line);border-radius:16px;margin-bottom:14px;pointer-events:none}
+.trd-grid > *{min-width:0}
+.trd-grid > .trd-info{border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:16px 0 0 0}
+.trd-grid > .trd-map{border-bottom:1px solid var(--line);border-radius:0 16px 0 0}
+.trd-grid > .vd-sec{margin:0;border:0;border-radius:0;background:var(--panel-2);padding:8px 20px 16px}
+.trd-grid > .vd-sec.buy{border-right:1px solid var(--line);border-radius:0 0 0 16px}.trd-grid > .vd-sec.sell{border-radius:0 0 16px 0}
+@media (max-width:1000px){.trd-grid{grid-template-columns:1fr}.trd-grid > .trd-map{height:320px}.trd-grid > *{border-right:0!important}}
+.trd-footer{text-align:center;font-size:12.5px;color:var(--ink-2);max-width:980px;margin:0 auto}.trd-footer .disclaim{margin:4px 0 0;text-align:center}
+.trd-grid .mk-h{font-size:13px;margin:10px 0 6px}
+.trd-grid > .vd-sec .vd-row{font-size:15px;padding:8px 0}.trd-grid .vd-row .good{color:#57e39b}.trd-grid .vd-row .warn{color:#ffb454}
+.trd-facts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}.trd-facts span{font-size:12px;background:var(--panel-3);border-radius:8px;padding:3px 9px;color:var(--ink-2)}
+
 /* the map shows through this window; everything around it is page */
 /* not positioned on purpose: its shadow paints with the page backgrounds, so the text and cards around
    it stay on top while everything outside the window is covered */
-.trd-map{border:1px solid var(--line);border-radius:14px;box-shadow:0 0 0 9999px var(--bg,#05080f);pointer-events:none;padding:8px 10px}
+.trd-map{box-shadow:0 0 0 9999px var(--bg,#05080f);pointer-events:none;padding:10px 12px;min-height:440px}
 .trd-map .lbl{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:rgba(5,8,15,.7);padding:2px 8px;border-radius:6px}
-.trd-info{overflow:auto;min-width:0}.trd-info .trd-pic{height:120px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:1px solid var(--line);float:right;margin:0 0 8px 12px;background:var(--panel)}
+.trd-info{min-width:0;background:var(--panel-2);padding:16px 20px;position:relative;z-index:1}.trd-info .trd-pic{width:min(100%,420px);aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin:4px 0 12px;background:var(--panel)}
 .trd-info .trd-pic img{width:100%;height:100%;object-fit:cover}
-.side-panel .trd-body{flex:1;overflow:auto;padding:14px 0 26px;min-height:0}
-.side-panel .trd-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 16px}
-@media (max-width:1000px){.side-panel .trd-top{grid-template-columns:1fr;height:auto}.trd-map{height:220px}}
+body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd-open .ov.camtxt,body.trd-open .ov.bottomright{visibility:hidden}
 .tr-tabs{display:flex;margin:0 0 10px}.tr-tabs button{flex:1;white-space:nowrap;padding:6px 8px}
 .tr-card{cursor:pointer}.tr-card.open{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
 .disclaim{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-left:3px solid #ffb454;border-radius:8px;padding:7px 10px;margin:6px 0 10px;line-height:1.45}
@@ -135,6 +150,7 @@ button{cursor:pointer}
 .offmap .t{color:var(--ink-2);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
 .offmap a{display:block;color:var(--ink);cursor:pointer;padding:2px 0}.offmap a:hover{color:var(--route-2)}.offmap a.gw{color:#c9a6ff}
 .vd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 18px;align-items:start}
+.vd-grid.vd-shop{grid-template-columns:repeat(auto-fill,minmax(320px,440px));margin-top:16px}
 .vd-sec{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:4px 14px 10px;margin-bottom:12px}
 .vd-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}.vd-row:last-child{border-bottom:0}
 .vd-row span{color:var(--ink-2)}.vd-tags{grid-column:auto;margin:6px 0 2px}.vd-tags span{font-size:11.5px;background:var(--panel-3);border-radius:8px;padding:2px 8px;color:var(--ink-2);margin-right:4px;display:inline-block}
@@ -145,6 +161,8 @@ button{cursor:pointer}
 .pc{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:58px}
 .pc .bars{display:flex;flex-direction:column;gap:3px}.pc .bars i{width:30px;height:8px;border-radius:2px;background:var(--panel-3);cursor:pointer}.pc .bars i.on{background:var(--route)}.pc .bars i:hover{outline:1px solid var(--route-2)}
 .pc b{font-size:13px}.pc span{font-size:11px;color:var(--ink-2);text-align:center}
+.pwr-ic{width:20px;height:20px;fill:none;stroke:var(--ink-2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.pc.off{opacity:.38}.pc.off .bars i{cursor:not-allowed}.pc.off .bars i:hover{outline:none}
 .pwr-foot{font-size:12px;margin-top:10px;display:flex;align-items:center;flex-wrap:wrap}
 .pwr-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:-4px;font-size:13px}
 .seg-mini{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:8px}.seg-mini button{background:none;border:0;color:var(--ink-2);padding:4px 10px;font:600 12px var(--text);cursor:pointer}.seg-mini button.on{background:var(--route);color:#fff}
@@ -374,6 +392,183 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .splash .load span{display:block;height:100%;width:40%;background:var(--brand-grad);animation:load 1.1s ease-in-out infinite}
 @keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
 .credit{color:var(--dim);font-size:11.5px;margin-top:8px}
+/* datarunner: manual entry, built for speed. Row states: untouched (quiet), same (green: matches the
+   kiosk), edit (blue: you changed something), gone (struck). Data age runs fresh green to stale red. */
+.dr-mode{border:1px dashed rgba(242,193,78,.55);background:rgba(242,193,78,.07);color:#f3d68c;border-radius:8px;padding:9px 10px;font-size:12.5px;line-height:1.45}
+.dr-mode.live{border:1px solid rgba(60,207,110,.5);background:rgba(60,207,110,.07);color:#a8ecbe}
+.dr-mode .row{margin-top:6px}
+.dr-shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:4px 0 8px}
+.dr-shot{position:relative;border:1px solid var(--line-2);border-radius:6px;overflow:hidden;background:var(--panel-2)}
+.dr-shot img{display:block;width:100%;cursor:zoom-in}
+.dr-shot button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);background:rgba(3,6,12,.8);color:var(--ink);line-height:1}
+.dr-shot span{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--ink-2);text-shadow:0 1px 2px #000}
+#dr-view .dv-img{max-width:100%;border:1px solid var(--line-2);border-radius:8px;display:block}
+.dr-sizes{display:flex;flex-wrap:wrap;gap:4px}
+.dr-sizes label{border:1px solid var(--line-2);border-radius:5px;padding:2px 7px;font-size:12px;cursor:pointer;color:var(--ink-2)}
+.dr-sizes input{display:none}.dr-sizes label:has(input:checked){border-color:var(--route);color:var(--ink);background:rgba(75,141,255,.15)}
+.dr-stats{border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;margin-top:14px;background:linear-gradient(180deg,rgba(87,227,155,.06),transparent 70%)}
+.dr-stats .big{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0 4px}
+.dr-stats .big div{display:flex;flex-direction:column}
+.dr-stats .big b{font:600 20px var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.dr-stats .big span{font-size:11.5px;color:var(--dim)}
+.dr-stats .all{font-size:12px;color:var(--ink-2)}
+/* main panel */
+#dr-panel{padding-bottom:0;display:none;flex-direction:column;overflow:hidden}
+#dr-panel.show{display:flex}
+.dr-top{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin:0 2px 12px}
+.dr-top h2{font:600 19px var(--display);margin:0}
+.dr-top .where{color:var(--ink-2);font-size:13px;margin-top:2px}
+.dr-meter{margin-left:auto;min-width:220px}
+.dr-meter .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);margin-bottom:5px}
+.dr-meter .lbl b{color:var(--ink)}
+.dr-meter .bar{height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden}
+.dr-meter .bar i{display:block;height:100%;background:linear-gradient(90deg,#3ccf6e,#7fe7ff);border-radius:3px;transition:width .25s}
+.dr-tabs{display:flex;gap:0;border-bottom:2px solid var(--route);margin-bottom:10px}
+.dr-tabs button{background:var(--panel-2);border:1px solid var(--line-2);border-bottom:0;border-radius:8px 8px 0 0;padding:7px 18px;font:600 13px var(--display);letter-spacing:.06em;color:var(--ink-2);margin-right:4px}
+.dr-tabs button.on{background:var(--route);border-color:var(--route);color:#fff}
+.dr-tabs button span{font:500 11.5px var(--text);opacity:.8;margin-left:6px;letter-spacing:0}
+.dr-keys{margin-left:auto;align-self:center;font-size:11.5px;color:var(--dim);padding-bottom:6px}
+.dr-keys kbd{font:600 10.5px var(--text);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--ink-2);background:var(--panel-2)}
+.dr-list{flex:1;overflow:auto;padding:2px 2px 16px;min-height:0}
+.dr-row{display:grid;grid-template-columns:46px minmax(150px,1.3fr) 108px 128px minmax(170px,1fr) 236px;gap:10px;align-items:center;padding:8px 12px 8px 8px;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel-2);outline:none}
+.dr-row:focus{box-shadow:0 0 0 2px rgba(127,231,255,.55)}
+.dr-row.same{border-color:rgba(60,207,110,.45);border-left-color:#3ccf6e;background:rgba(60,207,110,.06)}
+.dr-row.edit{border-color:rgba(75,141,255,.55);border-left-color:var(--route);background:rgba(75,141,255,.07)}
+.dr-row.gone{border-left-color:var(--danger);background:rgba(255,107,107,.05)}
+.dr-row.gone .nm b{text-decoration:line-through;color:var(--dim)}
+.dr-row.gone .val,.dr-row.gone .inv{opacity:.3;pointer-events:none}
+.dr-row.cool{opacity:.55}
+.dr-row .age{font:700 11px var(--text);text-align:center;border-radius:6px;padding:4px 0;font-variant-numeric:tabular-nums}
+.age.a0{color:#57e39b;background:rgba(87,227,155,.12)}.age.a1{color:var(--ink-2);background:var(--panel-3)}
+.age.a2{color:#f2c14e;background:rgba(242,193,78,.13)}.age.a3{color:#ff8a5c;background:rgba(255,138,92,.15)}
+.dr-row .nm b{font-weight:600}.dr-row .nm div{font-size:11.5px;color:var(--dim);margin-top:2px}
+.dr-row .val input{width:100%;padding:5px 7px;font-variant-numeric:tabular-nums}
+.dr-row .val .was{font-size:11px;margin-top:3px;color:var(--dim);white-space:nowrap;min-height:13px}
+.dr-row .val .was s{opacity:.8}.dr-row .val .was .up{color:#57e39b}.dr-row .val .was .down{color:#ff8a5c}.dr-row .val .was .warn{color:#ffd38a}
+.dr-row .inv{display:flex;flex-direction:column;gap:4px}
+.dr-row .segs{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dr-row .segs button{height:16px;border:1px solid var(--line-2);border-radius:3px;background:var(--panel);padding:0}
+.dr-row .segs button.f{border-color:transparent}
+.dr-row .segs.l1 button.f,.dr-row .segs.l2 button.f{background:#ff6b6b}
+.dr-row .segs.l3 button.f,.dr-row .segs.l4 button.f{background:#f2c14e}
+.dr-row .segs.l5 button.f,.dr-row .segs.l6 button.f,.dr-row .segs.l7 button.f{background:#57e39b}
+.dr-row .inv span{font-size:11px;color:var(--ink-2)}
+.dr-row .acts{display:flex;gap:6px;justify-content:flex-end}
+.dr-row .acts .ok{min-width:112px}
+.dr-row .acts button{border:1px solid var(--line-2);background:var(--panel);border-radius:7px;padding:6px 10px;font-weight:600;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+.dr-row .acts .ok.on{background:#3ccf6e;border-color:#3ccf6e;color:#03140a}
+.dr-row .acts .gn.on{background:rgba(255,107,107,.18);border-color:var(--danger);color:#ffb4b4}
+.dr-row.pop .acts .ok.on{animation:drpop .32s ease-out}
+@keyframes drpop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.dr-row.pop .acts .ok.on{animation:none}.dr-meter .bar i{transition:none}}
+.dr-add{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:8px;margin:10px 0 0;max-width:460px}
+.dr-empty{color:var(--ink-2);font-size:13px;padding:14px 4px}
+/* send bar */
+.dr-send{flex:none;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line-2);margin:0 -24px;padding:12px 24px 14px;background:rgba(5,8,15,.96);backdrop-filter:blur(4px)}
+.dr-send .chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line-2);border-radius:999px;padding:4px 10px;color:var(--ink-2)}
+.dr-send .chip.y{border-color:rgba(60,207,110,.5);color:#a8ecbe}.dr-send .chip.n{border-color:rgba(242,193,78,.55);color:#f3d68c;cursor:pointer}
+.dr-send .go{margin-left:auto;min-width:220px}
+.dr-sheet{position:absolute;left:24px;right:24px;bottom:64px;max-height:70%;overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;box-shadow:0 -10px 40px rgba(0,0,0,.55);z-index:5}
+.dr-sheet h3{font:600 16px var(--display);margin:0 0 4px}
+.dr-sheet ul{margin:8px 0 0 18px;padding:0;font-size:13px;line-height:1.6}
+.dr-sheet .done{display:flex;gap:14px;align-items:center}
+.dr-sheet .done .tick{width:46px;height:46px;border-radius:50%;background:#3ccf6e;color:#03140a;display:grid;place-items:center;font:700 24px var(--text);flex:none}
+.dr-sheet .done .tick{animation:drpop .4s ease-out}
+.dr-msg{margin-top:10px;font-size:13px;line-height:1.5}
+.dr-msg ul{margin:4px 0 0 18px;padding:0}
+.dr-views{margin:0 0 12px 2px;align-self:flex-start}
+#dr-panel > *{flex:none}
+#dr-panel > .dr-list,#dr-panel > .dr-guide{flex:1 1 auto;min-height:0;overflow:auto}
+.cm-pill{color:#7fe7ff;white-space:nowrap}
+#update-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;width:min(560px,92%);background:var(--panel);border:1px solid rgba(75,141,255,.6);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
+#update-bar .row{gap:8px;align-items:center}
+#update-bar .notes{max-height:180px;overflow:auto;white-space:pre-wrap;color:var(--ink-2);font-size:12.5px;margin:8px 0 0;border-top:1px solid var(--line);padding-top:8px}
+#update-bar .bar{height:5px;border-radius:3px;background:var(--panel-3);overflow:hidden;margin-top:8px}#update-bar .bar i{display:block;height:100%;background:linear-gradient(90deg,#8fe3ff,#2f86ff)}
+.q-loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none}
+.q-loader svg{width:64px;height:64px;filter:drop-shadow(0 0 18px rgba(47,134,255,.35));animation:qpulse 1.8s ease-in-out infinite}
+.q-loader .bar{width:220px;height:4px;border-radius:2px;background:var(--panel-3);overflow:hidden;position:relative}
+.q-loader .bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:2px;background:linear-gradient(90deg,#8fe3ff,#2f86ff);animation:qbar 1.2s ease-in-out infinite}
+.q-loader .txt{font-size:13.5px;color:var(--ink-2)}
+.desc{max-width:1400px;color:var(--ink-2);font-size:13.5px;line-height:1.55;margin:8px 0 12px}
+.desc p{margin:0 0 8px}.desc details summary{cursor:pointer;color:var(--route-2);font-size:12.5px;margin-bottom:6px}
+.desc .src{font-size:11px;color:var(--dim)}
+.pic-none{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--dim);font-size:13px}
+.pic-none .pic-sent,.pic-sent{color:#9fe0b4;font-style:normal;font-size:12.5px}
+.q-loader.small{position:static;width:100%;height:100%}.q-loader.small .bar{width:50%}
+@keyframes qbar{0%{left:-40%}100%{left:100%}}
+@keyframes qpulse{50%{opacity:.75;transform:scale(.96)}}
+@media (prefers-reduced-motion:reduce){.q-loader svg,.q-loader .bar i{animation:none}.q-loader .bar i{left:30%}}
+.dr-combo{position:relative}
+.dr-combo input{width:100%}
+.dr-combo-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);max-height:320px;overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:8px;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.dr-combo-list.open{display:block}
+.dr-combo-list div{padding:7px 10px;cursor:pointer;font-size:13px;line-height:1.3}
+.dr-combo-list div small{display:block;color:var(--dim);font-size:11.5px}
+.dr-combo-list div.hi,.dr-combo-list div:hover{background:rgba(75,141,255,.18)}
+.dr-combo-list .none{color:var(--dim);cursor:default}
+.dr-ver{font-size:13px;padding:6px 2px;color:var(--ink)}
+.dr-ver.bad{color:#ffb4b4}
+.dr-lock{display:flex;gap:10px;align-items:center;border:1px solid rgba(242,193,78,.55);background:rgba(242,193,78,.08);color:#f3d68c;border-radius:10px;padding:10px 12px;margin:0 2px 10px;font-size:13px}
+.dr-lock.flash{animation:drflash .6s ease-out 2}
+@keyframes drflash{50%{background:rgba(242,193,78,.25)}}
+@media (prefers-reduced-motion:reduce){.dr-lock.flash{animation:none}}
+.dr-row.locked .val input,.dr-row.locked .segs button,.dr-row.locked .acts button{cursor:not-allowed}
+.dr-row.locked .val input{opacity:.6}
+.dr-check{display:flex;gap:8px;align-items:flex-start;margin-top:8px;font-size:13px;cursor:pointer;line-height:1.45}
+.dr-check input{margin-top:3px}
+.dr-rating{display:flex;align-items:center;gap:8px;margin:8px 0 2px}
+.dr-rating .stars{position:relative;font-size:18px;letter-spacing:2px;color:var(--panel-3);line-height:1}
+.dr-rating .stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f2c14e;font-style:normal}
+.dr-rating b{font:600 16px var(--display)}.dr-views button span{opacity:.75}
+.dr-sheet.ack{top:50%;bottom:auto;left:50%;right:auto;transform:translate(-50%,-50%);width:min(520px,90%);max-height:none;border-color:rgba(255,107,107,.45);z-index:6;box-shadow:0 0 0 100vmax rgba(3,6,12,.7),0 20px 60px rgba(0,0,0,.6)}
+#dr-panel .chip{display:inline-flex;align-items:center;font-size:12px;border:1px solid var(--line-2);border-radius:999px;padding:3px 10px}
+.dr-prof{display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;margin:0 2px 16px;background:linear-gradient(120deg,rgba(75,141,255,.10),rgba(242,193,78,.05) 60%,transparent)}
+.dr-prof .av{width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--panel-3);display:grid;place-items:center;font:700 26px var(--display);color:var(--ink-2);border:2px solid rgba(242,193,78,.5)}
+.dr-prof .av img{width:100%;height:100%;object-fit:cover}
+.dr-prof .who>b{font:600 18px var(--display)}
+.dr-prof .rk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:12.5px}
+.dr-prof .rk>b{font:600 15px var(--display)}
+.dr-prof .stars{position:relative;letter-spacing:2px;color:var(--panel-3);line-height:1}
+.dr-prof .stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f2c14e;font-style:normal}
+.rank-badge{font:700 11px var(--text);letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:3px 10px;border:1px solid}
+.rank-badge.r0{color:var(--dim);border-color:var(--line-2)}.rank-badge.r1{color:#a8bbd4;border-color:#a8bbd466}
+.rank-badge.r2{color:#8cc4ff;border-color:#8cc4ff66}.rank-badge.r3{color:#57e39b;border-color:#57e39b66}
+.rank-badge.r4{color:#c3a6ff;border-color:#c3a6ff66}.rank-badge.r5{color:#f2c14e;border-color:#f2c14e;background:rgba(242,193,78,.12)}
+.dr-prof .nx{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:var(--ink-2)}
+.dr-prof .nx .bar{width:180px;height:6px;border-radius:3px;background:var(--panel-3);overflow:hidden}
+.dr-prof .nx .bar i{display:block;height:100%;background:linear-gradient(90deg,#4b8dff,#f2c14e)}
+.dr-prof .nums{display:flex;gap:18px;text-align:center}
+.dr-prof .nums b{display:block;font:600 22px var(--display)}.dr-prof .nums span{font-size:11.5px;color:var(--dim)}
+.dr-prof .ladder{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
+.dr-prof .ladder span{font-size:11.5px;text-align:center;border-top:3px solid var(--panel-3);padding-top:5px;color:var(--dim)}
+.dr-prof .ladder span small{display:block;font-size:10.5px}
+.dr-prof .ladder .done{border-top-color:#4b8dff;color:var(--ink-2)}
+.dr-prof .ladder .on{border-top-color:#f2c14e;color:var(--ink);font-weight:600}
+.dr-guide{width:min(100%,max(760px,72%));max-width:1500px;margin:6px auto 0;align-self:center;padding:4px 6px 20px;font-size:clamp(13px,calc(8px + .45vw),18px)}
+.dr-guide h2{font:600 1.55em var(--display);margin:0 0 8px}
+.dr-guide > .muted{font-size:1em!important}
+.dr-guide ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dr-guide ol > li{display:flex;gap:.9em;align-items:flex-start;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:.8em 1em;font-size:1em;line-height:1.5}
+.dr-guide ol > li b{font-size:1.05em}
+.dr-guide ol > li div div{color:var(--ink-2)}
+.dr-guide .n{flex:none;width:2em;height:2em;border-radius:50%;display:grid;place-items:center;font:700 1em var(--display);background:rgba(75,141,255,.18);color:#8cc4ff;border:1px solid rgba(75,141,255,.5)}
+.dr-guide .tips{margin-top:1.1em;border:1px solid rgba(242,193,78,.4);background:rgba(242,193,78,.06);border-radius:10px;padding:.8em 1.1em;font-size:1em}
+.dr-guide .btn{font-size:1em;padding:.55em 1.1em}
+.dr-guide .tips ul{margin:6px 0 0 18px;padding:0;line-height:1.6;color:var(--ink-2)}
+.dr-job{display:grid;grid-template-columns:28px 46px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:6px}
+.dr-job.here{border-color:rgba(60,207,110,.5)}
+.dr-job .n{font:600 15px var(--display);color:var(--dim);text-align:center}
+.dr-job .age{font:700 11px var(--text);text-align:center;border-radius:6px;padding:4px 0}
+.dr-job .go{display:flex;gap:6px}
+#dr-panel .chip.y{border-color:rgba(60,207,110,.5);color:#a8ecbe}
+.dr-rep{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:8px;cursor:pointer}
+.dr-rep .hd{display:flex;align-items:center;gap:12px;padding:10px 12px}
+.dr-rep.contrib{cursor:default}
+.dr-rep .badge{margin-left:auto;font-size:12px;font-weight:600;border:1px solid;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.dr-rep .bd{display:none;border-top:1px solid var(--line);padding:6px 12px 10px}
+.dr-rep.open .bd{display:block}
+.dr-rep .ln{display:grid;grid-template-columns:minmax(160px,1.2fr) 1fr minmax(140px,.8fr);gap:10px;font-size:12.5px;padding:4px 0}
+.dr-rep .ln span:last-child{text-align:right}
 .credit a{color:var(--route-2);cursor:pointer;text-decoration:none}
 .svc{margin:2px 0 12px}
 .svc .jur{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);margin:0 0 8px}
@@ -410,6 +605,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <button class="tab" role="tab" data-tab="places" aria-selected="false">POI</button>
       <button class="tab uex-tab" role="tab" data-tab="market" aria-selected="false" hidden>Commodities</button>
       <button class="tab uex-tab" role="tab" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
+      <button class="tab uex-tab" role="tab" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
       <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
       <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
       <button class="tab uex-tab" role="tab" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
@@ -475,6 +671,23 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <div id="tr-mine" hidden><div id="tr-mine-out"></div></div>
     </section>
 
+    <section class="pane" id="pane-datarunner">
+      <div class="dr-mode" id="dr-mode"></div>
+      <div class="mk-h">Terminal</div>
+      <div class="dr-combo"><input class="field" id="dr-term-q" placeholder="Type a place or terminal, e.g. New Babbage" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="dr-term-list"><div class="dr-combo-list" id="dr-term-list" role="listbox"></div></div>
+      <div class="muted" id="dr-here" style="font-size:12px;margin:5px 2px 0"></div>
+      <div class="mk-h">Screenshot of the terminal</div>
+      <div class="dr-shots" id="dr-shots"></div>
+      <div class="row" style="gap:6px"><button class="btn" id="dr-shoot" style="flex:1">Take screenshot</button><button class="btn ghost" id="dr-shots-clear">Clear</button></div>
+      <div class="muted" id="dr-shot-hint" style="font-size:12px;margin:6px 2px 0"></div>
+      <div class="mk-h">More details <span class="muted" style="text-transform:none;letter-spacing:0">optional</span></div>
+      <div class="setgrid" style="grid-template-columns:110px 1fr;margin-top:4px">
+        <span class="k">Game version</span><div class="dr-ver" id="dr-ver" title="Read from Game.log"></div>
+        <span class="k">Note</span><input class="field" id="dr-note" maxlength="500" placeholder="Like “terminal not working”">
+      </div>
+      <div class="dr-stats" id="dr-stats"></div>
+    </section>
+
     <section class="pane" id="pane-vehicles">
       <input class="search" id="vh-search" placeholder="Ship or vehicle, like “Cutlass” or “Drake”" autocomplete="off">
       <div class="vh-filters">
@@ -520,6 +733,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
     <div id="vh-gallery"></div>
     <div id="mk-panel" class="pic-panel"></div>
     <div id="tr-panel" class="side-panel"></div>
+    <div id="dr-panel" class="pic-panel"></div>
+    <div id="update-bar" hidden></div>
+    <div id="dr-view" class="pic-panel" style="z-index:31"></div>
     <div id="cp-panel" class="pic-panel"></div>
     <div id="fl-panel" class="pic-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
@@ -713,10 +929,12 @@ function zoomPath(d, w0, w1){ const rho=Math.SQRT2;
   const b0=(w1*w1-w0*w0+4*d*d)/(2*w0*2*d), b1=(w1*w1-w0*w0-4*d*d)/(2*w1*2*d);
   const r0=-Math.asinh(b0), r1=-Math.asinh(b1), S=(r1-r0)/rho, c0=Math.cosh(r0);
   return {S, at:s=>[w0/(2*d)*(c0*Math.tanh(rho*s+r0)-Math.sinh(r0)), w0*c0/Math.cosh(rho*s+r0)]}; }
-function flyTo(focus,dist,{pitch=null,yaw=null,dur=null}={}){
-  // Already gliding to the same thing (the follow camera asks again on every update)? Keep going.
-  const key=JSON.stringify(focus);
-  if(S.anim&&S.anim.key===key&&Math.abs(Math.log(dist/S.anim.toDist))<0.2) return;
+function flyTo(focus,dist,{pitch=null,yaw=null,dur=null,key=null}={}){
+  // Already gliding to the same thing? Keep going, just aim at where it is now. The follow camera
+  // asks again on every position update with slightly different coordinates; restarting the glide
+  // each time is what made the fly-in go zoom, pause, zoom, pause.
+  key=key||JSON.stringify(focus);
+  if(S.anim&&S.anim.key===key&&Math.abs(Math.log(dist/S.anim.toDist))<0.6){ S.focus=focus; return; }
   const fromDir=norm3([camera.position.x,camera.position.y,camera.position.z]), fromUp=[camera.up.x,camera.up.y,camera.up.z];
   setLock(lockBodyOf(focus)); if(yaw!=null) S.cam.yaw=yaw;
   const from=[...S.cam.target], goal=focusPos(focus,now()), k=2*Math.tan(camera.fov*Math.PI/360);
@@ -739,8 +957,9 @@ function updateCamera(t){
   if(S.anim){ const a=S.anim; dir=norm3(dir.map((v,i)=>a.fromDir[i]+(v-a.fromDir[i])*e)); up=norm3(up.map((v,i)=>a.fromUp[i]+(v-a.fromUp[i])*e)); if(e>=1) S.anim=null; }
   camera.position.set(dir[0]*c.dist,dir[1]*c.dist,dir[2]*c.dist); camera.up.set(up[0],up[1],up[2]);
   // Keep what you're looking at clear of the cards on the left: shift the view's centre right.
-  const want=viewShift(); S.shift=(S.shift||0)+(want-(S.shift||0))*0.12;
-  const fr=mapWindow(), wantV=fr?(H/2-(fr.y+fr.h/2)):0; S.vshift=(S.vshift||0)+(wantV-(S.vshift||0))*0.12;
+  const fr=mapWindow(), ease=fr?1:0.12;                // the route page's map follows its scrolling exactly
+  const want=viewShift(); S.shift=(S.shift||0)+(want-(S.shift||0))*ease;
+  const wantV=fr?(H/2-(fr.y+fr.h/2)):0; S.vshift=(S.vshift||0)+(wantV-(S.vshift||0))*ease;
   if(Math.abs(S.shift)>0.5||Math.abs(S.vshift)>0.5) camera.setViewOffset(W,H,-S.shift,S.vshift,W,H); else camera.clearViewOffset();
   camera.near=Math.max(0.5,c.dist*1e-4); camera.far=1e14; camera.updateProjectionMatrix(); camera.lookAt(0,0,0); camera.updateMatrixWorld();
 }
@@ -762,7 +981,7 @@ function followNow(){ const live=S.live, p=live?.player; if(!p) return;
   if(live.route?.length && S.locMap[live.route[0]]?.system===p.system) fitRoute(false,[live.route[0]]); else focusPlayer(true); }
 function focusPlayer(quiet){ const p=S.live?.player; if(!p) return quiet?null:toast("Type /showlocation in game chat first");
   if(p.system!==S.system) setSystem(p.system,false);
-  if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), TOPDOWN); else flyTo({kind:"point",pos:p.pos}, 5e6); }
+  if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), {...TOPDOWN,key:"player:"+p.body}); else flyTo({kind:"point",pos:p.pos}, 5e6, {key:"player:space"}); }
 
 // =================================================================== projection & occlusion
 const V3=new THREE.Vector3();
@@ -1051,7 +1270,7 @@ function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const cha
   if(changed){ setLock(null); S.anim=null; buildSystem(); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
 function renderSysSeg(){ const here=S.live?.game_off?null:(S.live?.player?.system||S.live?.where?.system);
   $("sysSeg").innerHTML=S.systems.map(s=>{ const w=wikiSystem(s); const tip=w?`${w.affiliation} · ${w.star_type||""}`:"";
-    return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}${s===here?'<span class="here" title="You are here"></span>':""}</button>`; }).join(""); }
+    return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}</button>`; }).join(""); }
 $("sysSeg").onclick=e=>{ const b=e.target.closest("button"); if(b){ S.autoSystem=false; setSystem(b.dataset.s); } };
 function buildLayers(){
   const el=$("layer-list"); el.innerHTML="";
@@ -1124,6 +1343,7 @@ function renderDetail(){
     const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
     const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
+      <div class="row" style="gap:8px;margin:-4px 0 12px;font-size:12.5px"><span class="muted">Quantum ${esc(S.qVersion||"")}</span><button class="btn small ghost" data-a="updcheck">Check for updates</button></div>
       <div class="sub" style="margin-top:6px">Game.log</div>
       <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
@@ -1133,16 +1353,25 @@ function renderDetail(){
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
       <div class="sub">Trade data (UEX)</div>
       <div class="note" style="margin:4px 0 12px">
-        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Token saved. Paste a new one to replace it":"Paste your UEX access token"}" style="flex:1" autocomplete="off">
+        <label class="k" for="s-uex" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></label>
+        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved. Paste a new one to replace it":"Paste your UEX Bearer Token"}" style="flex:1" autocomplete="off">
           <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
         <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
           Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. It stays on this PC.</div>
-        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div></div>
+        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
+        <label class="k" for="s-drsecret" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key, for price reports)</span></label>
+        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved. Paste a new one to replace it":"Paste your UEX Secret Key"}" style="flex:1" autocomplete="off">
+          <button class="btn small" data-a="drsecret">Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Only needed to report prices from the Datarunner tab. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>. It stays on this PC.</div>
+        <div class="muted" style="font-size:12px;margin-top:12px">${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); return "Community prices: checking…"; }
+          if(!c||!c.url) return "Community prices: off.";
+          return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div></div>
       <div class="sub">Hotkeys</div>
       ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
         <span class="k">Show / hide Quantum</span><select class="field" id="s-hotkey">${keyOpts(a.hotkey,a.loc_hotkey)}</select>
         <span class="k">Type /showlocation</span><select class="field" id="s-lochotkey">${keyOpts(a.loc_hotkey,a.hotkey)}</select>
+        <span class="k">Terminal screenshot</span><select class="field" id="s-shothotkey">${keys.map(k=>`<option value="${k}" ${k===(a.shot_hotkey||"")?"selected":""} ${k&&(k===a.hotkey||k===a.loc_hotkey)?"disabled":""}>${k||"Off"}${k&&(k===a.hotkey||k===a.loc_hotkey)?" (used)":""}</option>`).join("")}</select>
         <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
       </div>
       <div class="sub" style="margin-top:12px">Log</div>
@@ -1154,6 +1383,8 @@ function renderDetail(){
       await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value);
       await poll(); renderStatus(); renderDetail(); toast("Saved"); };
     for(const id of ["s-hotkey","s-lochotkey","s-chat"]) $(id).onchange=save;
+    $("s-shothotkey").onchange=async e=>{ const r=await api().dr_set_hotkey(e.target.value); await poll(); renderDetail();
+      toast(r.shot_hotkey?`${r.shot_hotkey} takes a terminal screenshot for your UEX report`:"Screenshot key off"); };
     $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
       toast(e.target.checked?"Game.log will be cleared when Quantum starts (unless the game is running)":"Game.log will be left as is"); };
   } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
@@ -1231,6 +1462,14 @@ function renderDetail(){
     if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
       const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; }
       S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
+    if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
+      toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
+    if(a==="updcheck"){ const st=await api().update_status(true); S.qVersion=st.current;
+      if(st.latest?.available){ await api().update_skip(""); renderUpdateBar(true); toast(`Quantum ${st.latest.version} is available`); }
+      else toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); return; }
+    if(a==="drsecret"){ const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
+      const r=await api().dr_set_secret(v); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key saved"); renderDetail(); return; }
+    if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); return; }
     if(a==="uexclear"){ await api().set_uex_token(""); S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
     if(a==="jump") jumpThrough(sel.name);
@@ -1298,6 +1537,7 @@ function renderHud(){
 
 // =================================================================== sidebar
 for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.dataset.tab;
+  if(S.selected){ S.selected=null; renderDetail(); }      // the card for what you clicked on the map belongs to that view
   for(const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected",String(x===t));
   for(const p of document.querySelectorAll(".pane")) p.classList.toggle("active",p.id==="pane-"+S.tab);
   if(S.tab==="places") $("search").focus(); if(S.tab==="waypoints") renderWaypoints(true);
@@ -1305,6 +1545,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.tab!=="market"){ S.mkMap=false; S.mapMarks=null; } syncMarketPanel();
   $("cp-panel").classList.toggle("show",S.tab==="components"); $("fl-panel").classList.toggle("show",S.tab==="fleet");
   if(S.tab==="components") openComponents(); if(S.tab==="fleet") openFleet();
+  $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- route
@@ -1364,7 +1605,7 @@ function mapWindow(){ if(!tradePanelOpen()) return null; const f=$("trd-map"), b
   const a=f.getBoundingClientRect(), b=base.getBoundingClientRect(); if(!a.width||!a.height) return null;
   return {x:a.left-b.left, y:a.top-b.top, w:a.width, h:a.height}; }
 function viewShift(){ const fr=mapWindow(); if(fr) return fr.x+fr.w/2-W/2;
-  return $("hud").childElementCount&&W>900?Math.min(260,($("hud").offsetWidth+28)/2):0; }
+  return 0; }   // the next-stop card only covers the top corner: centre the view in the middle of the map
 function fitHalf(){ const half=Math.tan(camera.fov*Math.PI/360);
   const fr=mapWindow(); if(fr) return Math.min(half*fr.h/H, half*fr.w/H)*0.82;
   const shift=viewShift();
@@ -1391,7 +1632,7 @@ function fitRoute(reveal=true, only=null){
   // every one fits beside the cards (it used to stay centred on your planet, pushing stops off screen).
   const lo=[0,1,2].map(i=>Math.min(...nodes.map(n=>n.g[i]))), hi=[0,1,2].map(i=>Math.max(...nodes.map(n=>n.g[i])));
   const cen=[0,1,2].map(i=>(lo[i]+hi[i])/2); const rad=Math.max(...nodes.map(n=>d3(n.g,cen)),B?B.radius*1.5:1e5);
-  const h=fitHalf(); flyTo({kind:"point",pos:cen}, rad*Math.sqrt(1+h*h)/h, {pitch:0.95});
+  const h=fitHalf(); flyTo({kind:"point",pos:cen}, rad*Math.sqrt(1+h*h)/h, {pitch:0.95, key:"fit:"+(only||[]).join("|")});
   if(reveal) S.reveal=performance.now();
 }
 $("btn-optimize").onclick=async()=>{ const r=await api().optimize_route(); await poll(); if(!r.ok) return toast(r.error); toast(r.saved>1?`Shorter by ${fmtDist(r.saved)}`:"Already the shortest order"); };
@@ -1713,7 +1954,7 @@ async function renderMarket(){
     return L.slice(0,25).map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
       <div class="p ${i===0?"best":""}">${money(x.price)}</div>
       ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
-      <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
+      <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.community?` · <span class="cm-pill" title="Reported by a Quantum datarunner and checked against UEX's copy of the report. UEX hasn't finished reviewing it yet.">⚡ ${agoTs(x.community.at)}, awaiting UEX review</span>`:x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
   const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
   $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
     <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
@@ -1726,16 +1967,19 @@ async function renderMarket(){
 async function renderMarketPanel(){
   const d=S.mkData; if(!d) return syncMarketPanel(); const {c,r,rows}=d;
   const avg=(L,k)=>L.length?L.reduce((a,x)=>a+(x[k]||x.price),0)/L.length:null;
-  $("mk-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img" id="mkp-img">Loading picture…</div>
+  $("mk-panel").innerHTML=`<button class="btn" data-act="mkall" style="margin-bottom:14px">← All commodities</button>
+    <div class="mkp-head"><div class="mkp-img" id="mkp-img">${qPic()}</div>
     <div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div>
       <div class="mkp-stats">${r.buy[0]?`<div><span>Cheapest buy</span><b>${money(r.buy[0].price)}</b></div>`:""}${r.sell[0]?`<div><span>Best sell</span><b>${money(r.sell[0].price)}</b></div>`:""}
         ${r.buy[0]&&r.sell[0]?`<div><span>Best spread</span><b style="color:#57e39b">+${money(r.sell[0].price-r.buy[0].price)}</b></div>`:""}
         <div><span>Sold at</span><b>${r.buy.length}</b></div><div><span>Bought at</span><b>${r.sell.length}</b></div></div>
-      <div class="row" style="gap:8px"><button class="btn" data-act="mkall">← All commodities</button><button class="btn primary" data-act="mkmap">See on map</button>${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
+      <div class="desc" id="mkp-desc"></div>
+      <div class="row" style="gap:8px"><button class="btn primary" data-act="mkmap">See on map</button>${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
     <div class="mkp-cols"><div><div class="mk-h">Buy at</div>${rows(r.buy,"buy")}</div><div><div class="mk-h">Sell at</div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
   syncMarketPanel();
+  api().wiki_text(c.wiki||c.name).then(t=>{ const el=$("mkp-desc"); if(el&&S.mkData?.c===c&&t) el.innerHTML=wikiDesc(t,c.wiki); });
   const img=await api().wiki_image(c.wiki||c.name); if(S.mkData?.c!==c) return;
-  const box=$("mkp-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:"No picture on the wiki"; }
+  const box=$("mkp-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:picMissing("commodity",c.wiki||c.name); }
 function syncMarketPanel(){ const on=S.tab==="market";
   $("mk-panel").classList.toggle("show",on&&!S.mkMap&&!!S.mk); $("map-back").classList.toggle("show",on&&!!S.mkMap); }
 function toggleMarketMap(){ const d=S.mkData; if(!d) return;
@@ -1774,36 +2018,56 @@ async function openTrade(){
     +(fl.ships.length?"":`<option disabled>Add ships in My Fleet to pick them here</option>`);
   const pick=[...$("tr-ship").options].find(o=>o.value===keep)||[...$("tr-ship").options].find(o=>o.value&&o.value===fl.main);
   if(pick){ $("tr-ship").value=pick.value; $("tr-scu").value=pick.dataset.scu; }
-  if(!S.trDone) $("tr-out").innerHTML=`<div class="empty"><strong>Find a profitable run</strong>Pick where you'll start, enter your cargo space and budget, and Quantum ranks what to haul where by total profit.</div>`; }
+  if(!S.trDone) $("tr-out").innerHTML=`<div class="empty"><strong>Find a profitable route</strong>Pick where you'll start, enter your cargo space and budget, and Quantum ranks what to haul where by total profit.</div>`; }
 async function runTrade(){
   const [kind,id]=($("tr-from").value||"").split(":"); if(!id) return toast("Pick where you'll start");
   setPreview(null);
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
   trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
-  $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">Finding runs…</div>`;
+  $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">Finding routes…</div>`;
   const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",$("tr-ship").value);
   const r=await api().uex_routes(kind,+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable runs</strong>Nothing from here makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}`; return; }
+  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>Nothing from here makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
-  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} run${r.total===1?"":"s"} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
+  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
     `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
       <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
       <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small ${S.previewIdx===i?"primary":""}" data-prev="${i}">${S.previewIdx===i?"Previewing":"Preview"}</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
-        <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at);
-  S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; }
+        <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
+  S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; renderSharedRoutes(); }
 $("tr-go").onclick=runTrade;
 $("tr-ship").onchange=()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu) $("tr-scu").value=o.dataset.scu; trPref("ship",$("tr-ship").value); };
 $("tr-scu").addEventListener("input",()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu&&$("tr-scu").value!==o.dataset.scu) $("tr-ship").value=""; });
 // Preview: draw the run (you → buy → sell) on the map without touching your route.
 function previewPlaces(from,to,what){ setPreview(null); if(!from||!to) return; S.preview=[from,to]; S.previewIdx=null;
-  S.previewLabels={[from]:`Buy ${what}`,[to]:`Sell ${what}`}; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false); fitRoute(true,S.preview); }
+  S.previewLabels={[from]:`Buy ${what}`,[to]:`Sell ${what}`}; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false);
+  if(tradePanelOpen()) return framePreview(); fitRoute(true,S.preview); }
+// Inside the route page: centre on the middle of the run and size it to the map window, seen more from
+// above so both ends and their labels sit inside it (your own position isn't part of this framing).
+function framePreview(){ const t=now(), a=nodeOf(S.preview[0],t), b=nodeOf(S.preview[1],t); if(!a||!b) return fitRoute(true,S.preview);
+  const mid=[0,1,2].map(i=>(a.g[i]+b.g[i])/2), r=Math.max(d3(a.g,b.g)/2,2e5), h=fitHalf();
+  flyTo({kind:"point",pos:mid}, r*1.45/h, {pitch:1.25}); }
 function setPreview(i){ if(i==null){ if(S.preview){ S.preview=null; S.previewIdx=null; document.querySelectorAll(".tr-card.hl").forEach(c=>c.classList.remove("hl")); } return; }
   const x=S.trRoutes[i]; S.preview=[x.from_place,x.to_place]; S.previewIdx=i; S.previewLabels={[x.from_place]:`Buy ${x.commodity}`,[x.to_place]:`Sell ${x.commodity}`};
   fitRoute(true,S.preview); }
-$("tr-out").onclick=async e=>{ if(await tradeClick(e)) return;
+// Routes other Quantum users shared, under the UEX results (only those starting where you picked).
+async function renderSharedRoutes(){ const box=$("tr-shared"); if(!box) return;
+  const from=$("tr-from").selectedOptions[0]?.textContent?.replace(/^[●\s]+/,"").split(" (")[0].trim();
+  const r=await api().shared_routes(from||null); if(!$("tr-shared")) return; S.trShared=r.routes||[];
+  if(!S.trShared.length){ box.innerHTML=""; return; }
+  box.innerHTML=`<div class="mk-h" style="margin-top:16px">Shared by Quantum users <span class="muted" style="text-transform:none;letter-spacing:0">their own routes, last 7 days</span></div>`
+    +S.trShared.map((x,i)=>`<div class="tr-card shared"><div class="top"><b>${esc(x.commodity)}</b>${x.units?`<span class="muted">${x.units.toLocaleString()} SCU</span>`:""}<span class="profit">+${money(x.per_scu)}/SCU</span></div>
+      <div class="leg">Buy at <a data-open="${esc(x.from_place)}" style="cursor:pointer;text-decoration:underline">${esc(x.from_terminal||x.from_place)}</a> <span class="muted">${esc(x.from_place)} · ${money(x.buy)}/SCU</span><br>
+        Sell at <a data-open="${esc(x.to_place)}" style="cursor:pointer;text-decoration:underline">${esc(x.to_terminal||x.to_place)}</a> <span class="muted">${esc(x.to_place)} · ${money(x.sell)}/SCU</span></div>
+      <div class="facts"><span>by ${esc(x.username)}</span><span>${esc(agoTs(x.at))}</span>${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
+      <div class="row" style="margin-top:8px;gap:6px"><button class="btn small primary" data-sharedrun="${i}">Add to Planned Routes</button></div></div>`).join(""); }
+$("tr-out").onclick=async e=>{ const sh=e.target.closest("[data-sharedrun]"); if(sh){ const x=S.trShared[+sh.dataset.sharedrun];
+    const r=await api().trade_run_save({commodity:x.commodity,units:x.units,from_place:x.from_place,to_place:x.to_place,from_terminal:x.from_terminal,to_terminal:x.to_terminal,plan_buy:x.buy,plan_sell:x.sell,notes:`Shared by ${x.username}`});
+    toast(r.ok?"Added to Planned Routes":(r.error||"Couldn't add it")); return; }
+  if(await tradeClick(e)) return;
   if(!e.target.closest("button,a")){ const c=e.target.closest("[data-tri]"); if(c){ openRunDetail(+c.dataset.tri); return; } }
   const pv=e.target.closest("[data-prev]"); if(pv){ const i=+pv.dataset.prev; setPreview(S.previewIdx===i?null:i); redrawTradeButtons(); return; }
   const b=e.target.closest("[data-run]"); if(!b) return; const x=S.trRoutes[+b.dataset.run];
@@ -1815,7 +2079,7 @@ function redrawTradeButtons(){ document.querySelectorAll("#tr-out [data-prev]").
 // ---- Vehicles: every ship and ground vehicle, where to buy or rent it and for how much
 async function openVehicles(){
   if(!S.live?.log?.uex_token){ $("vh-out").innerHTML=needToken; return; }
-  if(!S.veh){ $("vh-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading vehicles…</div>`;
+  if(!S.veh){ $("vh-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading vehicles…</div>`; if($("vh-gallery").classList.contains("show")) $("vh-gallery").innerHTML=qLoader("Loading vehicles…");
     const r=await api().uex_vehicles(); if(!r.ok){ $("vh-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
     S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; }
   if($("vh-role").options.length<=1){ const keep=$("vh-role").value, roles=[...new Set(S.veh.flatMap(v=>v.roles))].sort();
@@ -1846,7 +2110,7 @@ function renderVehicles(){
   if(!S.veh) return;
   const L=vehList(), shown=L.slice(0,150), sel=S.veh.find(v=>String(v.id)===String(S.vehSel));
   $("vh-out").innerHTML=(sel?vehCard(sel,true):"")+`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${L.length} vehicle${L.length===1?"":"s"}${L.length>shown.length?` · showing ${shown.length}, search to narrow`:""}</div>`
-    +shown.map(v=>vehCard(v,false)).join("")+uexCredit(S.vehAt);
+    +shown.filter(v=>!sel||v.id!==sel.id).map(v=>vehCard(v,false)).join("")+uexCredit(S.vehAt);
   // The pictures only rebuild when the list itself changes, so picking one doesn't reload them all.
   const key=L.map(v=>v.id).join(",")+"|"+$("vh-search").value;
   if(S.vehDetail) return renderVehicleDetail(S.vehDetail);
@@ -1867,19 +2131,19 @@ $("vh-gallery").onclick=async e=>{ if(await tradeClick(e)) return;
 // A vehicle's own page: picture, roles, crew and beds, cargo, size, flight, quantum, defences, weapons.
 async function renderVehicleDetail(id){
   const g=$("vh-gallery"), v=S.veh.find(x=>String(x.id)===String(id)); if(!v) return;
-  if(g.dataset.detail!==String(id)) g.innerHTML=`<div class="muted" style="margin:20px">Loading ${esc(v.full)}…</div>`; g.dataset.detail=String(id); g.scrollTop=0;
+  if(g.dataset.detail!==String(id)) g.innerHTML=qLoader(`Loading ${v.full}…`); g.dataset.detail=String(id); g.scrollTop=0;
   const d=await api().vehicle_detail(v.id); if(S.vehDetail!==String(id)) return;
   const n=x=>x==null||x===""?null:Math.round(x).toLocaleString(), dash=x=>x??"–";
   const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
   const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
   g.innerHTML=`<button class="btn" data-act="vhback" style="margin-bottom:14px">← All vehicles</button>
-    <div class="mkp-head"><div class="mkp-img">${v.photo?`<img src="${esc(v.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
+    <div class="mkp-head"><div class="mkp-img">${v.photo?`<img src="${esc(v.photo)}" alt="" referrerpolicy="no-referrer">`:picMissing("vehicle",v.full)}</div>
       <div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div>
         ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
         <div class="mkp-stats">${[["Crew",crew],["Cargo",v.scu?`${v.scu} SCU`:null],["Beds",d.beds],["Medical beds",d.medical_beds],["Buy",v.buy[0]?money(v.buy[0].price):null],["Rent",v.rent[0]?`${shortMoney(v.rent[0].price)}/day`:null]]
           .filter(c=>c[1]!=null&&c[1]!==0).map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
         <div class="row" style="gap:8px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
-    ${d.description?`<div class="desc" style="max-width:900px;margin:0 0 14px;color:var(--ink-2);line-height:1.5">${esc(d.description)}</div>`:""}
+    ${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
     <div class="vd-grid">
       ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
       ${sec("Cargo & storage",[["Cargo grid",d.scu?`${d.scu} SCU`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
@@ -1889,15 +2153,14 @@ async function renderVehicleDetail(id){
       ${sec("Defence",[["Shield HP",n(d.shield)],["Shield type",d.shield_face],["Hull HP",n(d.hull)],["Armor HP",n(d.armor)],["Countermeasures",d.countermeasures],["IR / EM",d.ir&&`${fmtBig(d.ir)} / ${fmtBig(d.em)}`],["Cross-section",n(d.cs)]])}
       ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
       ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
-      <div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}<div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div>
     </div>
+    <div class="vd-grid vd-shop"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div></div>
     <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`; }
 for(const id of ["vh-search","vh-avail","vh-role","vh-sort"]) $(id).addEventListener(id==="vh-search"?"input":"change",()=>{ S.vehDetail=null; renderVehicles(); });
 $("vh-out").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-unpin]")){ S.vehSel=null; S.vehDetail=null; S.vehGalKey=null; renderVehicles(); return; }
   const h=e.target.closest("[data-vh]"); if(!h||h.dataset.pinned) return; const id=h.dataset.vh;
-  S.vehOpen[id]=!S.vehOpen[id]; S.vehHl=id; if(S.vehOpen[id]) S.vehDetail=id; renderVehicles();
-  $("vh-gallery").querySelector(`[data-vg="${id}"]`)?.scrollIntoView({behavior:"smooth",block:"nearest"}); };
+  S.vehSel=id; S.vehHl=null; S.vehDetail=id; renderVehicles(); $("pane-vehicles").scrollTop=0; };
 
 // ---- Components: ship upgrades (coolers, power plants, quantum drives, shields, weapons…) and where to buy them
 async function openComponents(){
@@ -1909,6 +2172,7 @@ async function openComponents(){
   if(!S.cpItems) await loadComponents(); else renderComponents(); }
 async function loadComponents(){
   const id=$("cp-cat").value; if(!id) return; $("cp-out").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`;
+  if($("cp-panel").classList.contains("show")) $("cp-panel").innerHTML=qLoader(`Loading ${$("cp-cat").selectedOptions[0]?.textContent||"components"}…`);
   const r=await api().uex_components(+id); if($("cp-cat").value!==id) return;
   if(!r.ok){ $("cp-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
   S.cpItems=r.items; S.cpAt=r.at; S.cpSel=null; S.cpDetail=null; S.cpGalKey=null;
@@ -1919,7 +2183,7 @@ function cpCard(i,pinned){ const b=i.buy[0];
   return `<div class="vh ${pinned?"hl":""}"><div class="hd" data-cp="${i.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(i.name)}</div>
       <div class="mk">${esc(i.maker)}${i.size!=null&&i.size!==""?` · size ${esc(i.size)}`:""}${i.grade?` · grade ${esc(i.grade)}`:""}${i.vehicle?` · ${esc(i.vehicle)}`:""}</div></div>
     <div class="pr">${b?money(b.price):i.exclusive?"Pledge only":"–"}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div></div>
-    ${pinned?`<div class="bd"><div id="cp-img"></div>${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin:6px 0">${esc(i.note)}</div>`:""}
+    ${pinned?`<div class="bd">${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin:6px 0">${esc(i.note)}</div>`:""}
       <div class="mk-h">Buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${i.exclusive?"Not sold in game (pledge or subscriber exclusive)":"Not reported in any shop yet. Some components only come with ships or as loot"}.</div>`}
       <div class="row" style="gap:6px">${i.wiki?`<button class="btn small ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn small ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button></div></div>`:""}</div>`; }
 function renderComponents(){
@@ -1930,8 +2194,7 @@ function renderComponents(){
     +L.slice(0,200).map(i=>cpCard(i,false)).join("")+uexCredit(S.cpAt);
   const gk=L.map(i=>i.id).join(",");
   if(S.cpDetail) renderComponentDetail(S.cpDetail);
-  else if(gk!==S.cpGalKey){ S.cpGalKey=gk; renderComponentGrid(L); } else markComponentGrid();
-  if(sel) api().wiki_image(sel.wiki||sel.name).then(img=>{ const el=$("cp-img"); if(el&&String(S.cpSel)===String(sel.id)&&img) el.innerHTML=`<img class="cp-img" src="${esc(img)}" alt="" referrerpolicy="no-referrer">`; }); }
+  else if(gk!==S.cpGalKey){ S.cpGalKey=gk; renderComponentGrid(L); } else markComponentGrid(); }
 async function renderComponentGrid(L){
   const cat=$("cp-cat").selectedOptions[0]?.textContent||"Components", fl=await api().fleet_list(), main=fl.ships.find(x=>x.main);
   $("cp-panel").innerHTML=(main?`<div class="main-ship">${main.photo?`<img src="${esc(main.photo)}" alt="" referrerpolicy="no-referrer">`:""}<div style="flex:1"><div class="muted" style="font-size:12px">Main ship</div><b>${esc(main.full)}</b></div>
@@ -1957,7 +2220,7 @@ async function renderComponentDetail(id){
   const gm=i.game||{}, st=gm.stats||{};
   const rows=CP_STATS.filter(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(st[k]))}</b></div>`).join("");
   g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc($("cp-cat").selectedOptions[0]?.textContent||"components")}</button>
-    <div class="mkp-head"><div class="mkp-img" id="cpd-img">Loading picture…</div>
+    <div class="mkp-head"><div class="mkp-img" id="cpd-img">${qPic()}</div>
       <div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div>
         <div class="mkp-stats">${[["Size",(gm.size??i.size)!=null?`S${gm.size??i.size}`:null],["Grade",gm.grade||i.grade],["Class",gm.class],["Price",i.buy[0]?money(i.buy[0].price):i.exclusive?"Pledge only":null],["Sold at",i.buy.length||null]]
           .filter(c=>c[1]!=null&&c[1]!=="").map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
@@ -1968,7 +2231,7 @@ async function renderComponentDetail(id){
     <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki.</div>`;
   g.scrollTop=0;
   const img=await api().wiki_image(i.wiki||i.name); if(String(S.cpDetail)!==String(id)) return;
-  const box=$("cpd-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:"No picture on the wiki"; }
+  const box=$("cpd-img"); if(box) box.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:picMissing("component",i.wiki||i.name); }
 $("cp-cat").addEventListener("change",loadComponents);
 $("cp-size").addEventListener("change",()=>{ S.cpDetail=null; renderComponents(); });
 $("cp-search").addEventListener("input",()=>{ S.cpDetail=null; renderComponents(); });
@@ -2001,6 +2264,16 @@ const ITEM_STAT={dps:["DPS",n=>Math.round(n).toLocaleString()],missile:["Damage"
   qt_speed:["Speed",n=>`${fmtBig(n)}/s`],cooling:["Cooling",n=>`${n} seg`],power:["Power",n=>`${n} seg`]};
 const KEY_FOR={WeaponGun:"dps",Missile:"missile",Shield:"shield_hp",QuantumDrive:"qt_speed",Cooler:"cooling",PowerPlant:"power"};
 const deltaTxt=(d,fmt,lowerBetter)=>{ if(!d) return ""; const good=lowerBetter?d<0:d>0; return `<em class="${good?"up":"down"}">${d>0?"+":"−"}${fmt(Math.abs(d))}</em>`; };
+// Simple line symbols for each power system, in the spirit of the in-game power screen.
+const PWR_ICONS={
+  weapons:'<circle cx="12" cy="12" r="6"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>',
+  FlightController:'<path d="M8 3h8l-1 7H9z"/><path d="M9 10c0 4 3 7 3 11 0-4 3-7 3-11"/>',
+  Shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  Radar:'<circle cx="12" cy="13" r="1.5"/><path d="M8.5 9.5a5 5 0 0 0 0 7M15.5 9.5a5 5 0 0 1 0 7M5.5 6.5a9 9 0 0 0 0 13M18.5 6.5a9 9 0 0 1 0 13"/>',
+  QuantumDrive:'<ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/>',
+  LifeSupportGenerator:'<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
+  Cooler:'<path d="M12 2v20M4 7l16 10M20 7L4 17"/><path d="M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/>'};
+const pwrIcon=t=>`<svg class="pwr-ic" viewBox="0 0 24 24" aria-hidden="true">${PWR_ICONS[t]||'<circle cx="12" cy="12" r="7"/>'}</svg>`;
 // One compact power panel (collapsed by default): a bar per system, cooling, reset.
 function powerPanel(r){
   const P=r.power, users=[...(r.fixed||[]).map(x=>({...x,name:x.label})),
@@ -2008,17 +2281,18 @@ function powerPanel(r){
   const order={weapons:0,FlightController:1,Shield:2,Radar:3,QuantumDrive:4,LifeSupportGenerator:5,Cooler:6};
   users.sort((a,b)=>(order[a.type]??9)-(order[b.type]??9));
   const label=u=>({weapons:"Weapons",FlightController:"Thrusters",LifeSupportGenerator:"Life support"}[u.type]||u.name);
+  const nav=r.power.mode==="nav", off=u=>nav?(u.type==="weapons"||u.type==="Shield"):u.type==="QuantumDrive";
   return `<div class="pwr-panel">
     <div class="pwr-head"><b>Power</b><span class="muted">${P.pips_used} of ${P.pips_gen} pips in use · cooling ${P.cooling}%${P.cooling_auto?"":" (set by you)"}</span><span class="spacer"></span>
       <button class="btn small ghost" data-pauto="1">Reset to auto</button></div>
-    <div class="pwr-cols">${users.map(u=>`<div class="pc" title="${esc(u.stock?.name||"")}">
-      <div class="bars">${Array.from({length:u.power.max},(_,i)=>`<i data-ppip="${esc(u.port)}" data-n="${u.power.max-i}" class="${u.power.max-i<=u.power.pips?"on":""}"></i>`).join("")}</div>
-      <b>${u.power.pips}</b><span>${esc(label(u))}</span></div>`).join("")}</div>
+    <div class="pwr-cols">${users.map(u=>`<div class="pc ${off(u)?"off":""}" title="${esc(off(u)?(u.type==="QuantumDrive"?"The quantum drive only takes power in Travel · NAV mode":"Weapons and shields take no power in Travel · NAV mode"):u.stock?.name||"")}">
+      <div class="bars">${Array.from({length:u.power.max},(_,i)=>`<i data-ppip="${esc(u.port)}" data-n="${u.power.max-i}" ${off(u)?`data-poff="${u.type==="QuantumDrive"?"q":"w"}"`:""} class="${u.power.max-i<=u.power.pips?"on":""}"></i>`).join("")}</div>
+      ${pwrIcon(u.type)}<b>${u.power.pips}</b><span>${esc(label(u))}</span></div>`).join("")}</div>
     <div class="pwr-foot muted">Click a bar to change a system's power; click its top lit block to lower it. Cooling
       <input class="field" id="fl-cool" type="number" min="0" max="100" value="${P.cooling}" style="width:58px;padding:2px 6px;margin:0 4px">%
       ${P.cooling_auto?"(worked out)":`<a data-coolauto="1" style="cursor:pointer;text-decoration:underline">work it out</a>`}</div></div>`; }
 async function renderShip(uid){
-  if(!S.flLoad||S.flLoad.uid!==uid) $("fl-panel").innerHTML=`<div class="muted" style="margin:20px">Loading the ship's components…</div>`;
+  if(!S.flLoad||S.flLoad.uid!==uid) $("fl-panel").innerHTML=qLoader("Loading the ship's components…");
   const r=await api().fleet_loadout(uid); if(S.flSel!==uid) return;
   const ship=(S.fleet||[]).find(x=>x.uid===uid);
   if(!r.ok){ $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${ship?.photo?`<img src="${esc(ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div><div><h2>${esc(ship?.full||"")}</h2><div class="unknown" style="margin-top:10px">${esc(r.error)}</div></div></div>`; return; }
@@ -2086,6 +2360,7 @@ $("fl-out").onclick=async e=>{
 $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; return renderShip(S.flSel); }
   const fit=e.target.closest("[data-flfit]"); if(fit){ await api().fleet_set_slot(S.flSel,S.flSlot,fit.dataset.flfit,fit.dataset.uuid||null); toast(`Fitted ${fit.dataset.flfit}`); S.flSlot=null; S.flOpts=null; return renderFleet(); }
+  const po=e.target.closest("[data-poff]"); if(po) return toast(po.dataset.poff==="q"?"The quantum drive only takes power in NAV mode. Switch to Travel · NAV first.":"Weapons and shields take no power in NAV mode. Switch to Combat · SCM first.");
   const pip=e.target.closest("[data-ppip]"); if(pip){ const sl=[...S.flLoad.slots,...(S.flLoad.fixed||[])].find(x=>x.port===pip.dataset.ppip), n=+pip.dataset.n;
     await api().fleet_set_part_power(S.flSel,pip.dataset.ppip,sl?.power?.pips===n?n-1:n); return renderShip(S.flSel); }
   if(e.target.closest("[data-pauto]")){ await api().fleet_set_power(S.flSel,null,null,null,true); return renderShip(S.flSel); }
@@ -2097,46 +2372,61 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
 // ---- Trade routes: details panel, and your own runs tracked start to finish
 const TRADE_DISCLAIMER=`<div class="disclaim"><b>Estimates only.</b> Profits and ROI come from prices other players reported to UEX; prices and stock change all the time. Check the terminal before you buy.</div>`;
 const sumCell=(lab,val,cls="")=>val==null||val===""?"":`<div class="${cls}"><span>${lab}</span><b>${val}</b></div>`;
-function closeRunDetail(){ S.trOpen=null; $("tr-panel")?.classList.remove("show"); document.querySelectorAll(".tr-card.open").forEach(c=>c.classList.remove("open")); }
+function closeRunDetail(){ S.trOpen=null; $("tr-panel")?.classList.remove("show"); document.body.classList.remove("trd-open"); document.querySelectorAll(".tr-card.open").forEach(c=>c.classList.remove("open")); }
 // Details of a found run beside the map: the commodity, both ends, the numbers, when prices were reported.
 async function openRunDetail(i){
   const x=S.trRoutes?.[i]; if(!x) return; S.trOpen=i;
   document.querySelectorAll(".tr-card").forEach(c=>c.classList.toggle("open",+c.dataset.tri===i));
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
   const yes=b=>b?"Yes":"No";
-  const p=$("tr-panel"); p.classList.add("show");
-  p.innerHTML=`<div class="trd-head row" style="align-items:center;margin-bottom:10px"><span class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Trade route</span><span class="spacer"></span><button class="iconbtn" data-act="trclose" title="Close">✕</button></div>
-    <div class="trd-top"><div class="trd-map" id="trd-map"><span class="lbl">Route</span></div>
-      <div class="trd-info"><div class="trd-pic" id="trd-img"></div>
+  const c=S.mkByName?.[x.commodity.toLowerCase()], box=(x.boxes_from||"").split(",").map(Number).filter(Boolean).pop();
+  const facts=[c?.kind, c?.illegal?'<span style="color:#ffb454">Illegal</span>':null, c?.raw?"Raw":null, c?.volatile?"Volatile in quantum":null,
+    box?`Biggest box here: ${box} SCU · ${Math.ceil(x.units/box)} box${Math.ceil(x.units/box)===1?"":"es"} for your load`:null,
+    x.scu_from&&x.scu_from<x.units?`<span style="color:#ffb454">Only ${x.scu_from} SCU in stock</span>`:null,
+    x.cross_system?"Needs a jump between systems":null].filter(Boolean);
+  // one end of the run: where it is, the price, what you'd trade there, and what the place has
+  const endBox=(title,place,term,where,price,qtyLab,qty,boxes,elev,dock,refuel,station,ground,monitored,faction,youLab,units,moneyLab)=>`<div class="vd-sec ${title==="Buy at"?"buy":"sell"}"><div class="mk-h">${title}</div>
+      <div class="vd-row"><span>Terminal</span><b>${end(place,term)}</b></div>
+      <div class="vd-row"><span>Where</span><b>${esc(where)}${station?" · space station":ground?" · on the ground":""}</b></div>
+      <div class="vd-row"><span>Price</span><b>${money(price)}/SCU</b></div>
+      <div class="vd-row"><span>${youLab}</span><b>${units.toLocaleString()} SCU</b></div>
+      <div class="vd-row"><span>${moneyLab}</span><b class="${moneyLab==="Revenue"?"good":""}">${money(units*price)}</b></div>
+      ${qty?`<div class="vd-row"><span>${qtyLab}</span><b class="${qty<units?"warn":""}">${qty.toLocaleString()} SCU</b></div>`:""}
+      ${boxes?`<div class="vd-row"><span>Box sizes</span><b>${esc(boxes)} SCU</b></div>`:""}
+      <div class="vd-row"><span>Freight elevator / dock</span><b>${yes(elev||dock)}</b></div>
+      <div class="vd-row"><span>Refuel</span><b>${yes(refuel)}</b></div>
+      ${monitored!=null?`<div class="vd-row"><span>Security</span><b>${monitored?"Monitored":'<span class="warn">Unmonitored</span>'}</b></div>`:""}
+      ${faction?`<div class="vd-row"><span>Faction</span><b>${esc(faction)}</b></div>`:""}</div>`;
+  const p=$("tr-panel"); p.classList.add("show"); document.body.classList.add("trd-open");
+  p.innerHTML=`<div class="trd-grid">
+      <div class="trd-info"><button class="iconbtn trd-x" data-act="trclose" title="Close">✕</button>
         <h2 style="margin:0">${esc(x.commodity)}</h2>
-        <div class="sub muted" style="margin:2px 0 10px">${x.units.toLocaleString()} SCU · ${esc(x.from_where)} → ${esc(x.to_where)}${x.cross_system?' · <span style="color:#ffb454">crosses systems</span>':""}</div>
-        <div class="mkp-stats" style="clear:both">${sumCell("Profit",`+${money(x.profit)}`)}${sumCell("Cost",money(x.cost))}${sumCell("Revenue",money(x.units*x.sell))}
+        <div class="sub muted" style="margin:2px 0 8px">${x.units.toLocaleString()} SCU · ${esc(x.from_where)} → ${esc(x.to_where)}${x.cross_system?' · <span style="color:#ffb454">crosses systems</span>':""}</div>
+        <div class="trd-pic" id="trd-img"></div>
+        <div class="mkp-stats">${sumCell("Profit",`+${money(x.profit)}`)}${sumCell("Cost",money(x.cost))}${sumCell("Revenue",money(x.units*x.sell))}
           ${sumCell("Per SCU",`+${money(x.sell-x.buy)}`)}${sumCell("ROI",x.roi!=null?`${Math.round(x.roi)}%`:null)}${sumCell("Distance",x.dist?fmtDist(x.dist):null)}</div>
         <div class="row" style="gap:6px;flex-wrap:wrap">${x.from_place&&x.to_place?`<button class="btn primary" data-act="trstart">Plan this route</button><button class="btn" data-act="tradd">Add stops to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
-          ${x.url?`<button class="btn ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div></div>
-    <div class="trd-body">
-    <div class="trd-cols"><div class="vd-sec"><div class="mk-h">Buy at</div>
-      <div class="vd-row"><span>Terminal</span><b>${end(x.from_place,x.from)}</b></div>
-      <div class="vd-row"><span>Where</span><b>${esc(x.from_where)}</b></div>
-      <div class="vd-row"><span>Price</span><b>${money(x.buy)}/SCU</b></div>
-      ${x.scu_from?`<div class="vd-row"><span>In stock</span><b>${x.scu_from.toLocaleString()} SCU</b></div>`:""}
-      ${x.boxes_from?`<div class="vd-row"><span>Box sizes</span><b>${esc(x.boxes_from)} SCU</b></div>`:""}
-      <div class="vd-row"><span>Freight elevator / dock</span><b>${yes(x.elevator_from||x.dock_from)}</b></div>
-      ${x.faction_from?`<div class="vd-row"><span>Faction</span><b>${esc(x.faction_from)}</b></div>`:""}</div>
-    <div class="vd-sec"><div class="mk-h">Sell at</div>
-      <div class="vd-row"><span>Terminal</span><b>${end(x.to_place,x.to)}</b></div>
-      <div class="vd-row"><span>Where</span><b>${esc(x.to_where)}</b></div>
-      <div class="vd-row"><span>Price</span><b>${money(x.sell)}/SCU</b></div>
-      ${x.scu_to?`<div class="vd-row"><span>Demand</span><b>${x.scu_to.toLocaleString()} SCU</b></div>`:""}
-      ${x.boxes_to?`<div class="vd-row"><span>Box sizes</span><b>${esc(x.boxes_to)} SCU</b></div>`:""}
-      <div class="vd-row"><span>Freight elevator / dock</span><b>${yes(x.elevator_to)}</b></div>
-      <div class="vd-row"><span>Refuel</span><b>${yes(x.refuel_to)}</b></div>
-      ${x.faction_to?`<div class="vd-row"><span>Faction</span><b>${esc(x.faction_to)}</b></div>`:""}</div></div>
-    <div class="muted" style="font-size:12px;margin:4px 0 10px">${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}</div>
-    ${TRADE_DISCLAIMER}</div>`;
+          ${x.url?`<button class="btn ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div>
+        <div class="trd-facts">${facts.map(f=>`<span>${f}</span>`).join("")}</div></div>
+      <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span></div>
+    ${endBox("Buy at",x.from_place,x.from,x.from_where,x.buy,"In stock",x.scu_from,x.boxes_from,x.elevator_from,x.dock_from,x.refuel_from,x.from_station,x.from_ground,x.from_monitored,x.faction_from,"You buy",x.units,"Cost")}
+    ${endBox("Sell at",x.to_place,x.to,x.to_where,x.sell,"Demand",x.scu_to,x.boxes_to,x.elevator_to,x.dock_to,x.refuel_to,x.to_station,x.to_ground,x.to_monitored,x.faction_to,"You sell",x.units,"Revenue")}</div>
+    <div class="trd-footer">${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
+  fitTradePanel();
   if(x.from_place&&x.to_place) requestAnimationFrame(()=>previewPlaces(x.from_place,x.to_place,x.commodity));   // after layout, so the map window is measured
   const img=await api().wiki_image(x.commodity); if(S.trOpen!==i) return;
-  const b=$("trd-img"); if(b) b.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer">`:""; if(!img) b.style.display="none"; }
+  const b=$("trd-img"); if(b) b.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onload="fitTradePanel()">`:`<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--dim);font-size:12px">No picture on the wiki</div>`; }
+// The route page scales as a whole (text, picture, map window, figures) so all four quadrants and the
+// footer fit the window without scrolling; bigger windows get it a little larger, small ones smaller.
+// CSS zoom re-lays it out at the new size, so nothing overflows sideways.
+function fitTradePanel(){ const p=$("tr-panel"); if(!p||!p.classList.contains("show")) return;
+  let w=p.querySelector(":scope > .trd-fit");
+  if(!w){ w=document.createElement("div"); w.className="trd-fit"; while(p.firstChild) w.appendChild(p.firstChild); p.appendChild(w); }
+  const cs=getComputedStyle(p), avail=p.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  let z=1; w.style.zoom=1;
+  for(let k=0;k<3;k++){ const h=w.getBoundingClientRect().height; if(!h) break;   // height changes with width, so settle in a few steps
+    z=Math.max(0.55,Math.min(1.3,z*avail/h)); w.style.zoom=z; } }
+addEventListener("resize",()=>{ clearTimeout(S.trFitT); S.trFitT=setTimeout(fitTradePanel,80); });
 $("tr-panel").onclick=async e=>{ if(await tradeClick(e)) return; const x=S.trRoutes?.[S.trOpen];
   if(e.target.closest("[data-act=trclose]")){ closeRunDetail(); setPreview(null); return; }
   if(e.target.closest("[data-act=tradd]")&&x){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); }
@@ -2150,7 +2440,9 @@ function showTradeView(v){ S.trView=v; for(const b of document.querySelectorAll(
   $("tr-find").hidden=v!=="find"; $("tr-mine").hidden=v!=="mine"; if(v==="mine"){ closeRunDetail(); renderRuns(); } }
 document.querySelector(".tr-tabs").onclick=e=>{ const b=e.target.closest("[data-trv]"); if(b) showTradeView(b.dataset.trv); };
 function runProfit(r){ const buy=r.buy_price??r.plan_buy, sell=r.sell_price??r.plan_sell;
-  if(!r.units||buy==null||sell==null) return null; return {v:r.units*(sell-buy)-(+r.handling||0), actual:r.buy_price!=null&&r.sell_price!=null}; }
+  if(!r.units||buy==null||sell==null) return null;
+  return {v:r.units*(sell-buy)-runFees(r), actual:r.buy_price!=null&&r.sell_price!=null}; }
+const runFees=r=>(+r.load_fee||0)+(+r.unload_fee||0)+(+r.handling||0);
 function runForm(r){ r=r||{}; const v=k=>esc(r[k]??"");
   return `<div class="run-form" data-runform="${esc(r.id||"")}">
     <span class="k">Commodity</span><input class="field" data-f="commodity" list="mk-dl" value="${v("commodity")}" placeholder="Like “Laranite”">
@@ -2159,7 +2451,8 @@ function runForm(r){ r=r||{}; const v=k=>esc(r[k]??"");
     <span class="k">Paid</span><div class="row" style="gap:6px"><input class="field" data-f="buy_price" type="number" min="0" value="${esc(r.buy_price??r.plan_buy??"")}" style="flex:1"><span class="muted">aUEC/SCU</span></div>
     <span class="k">Sell at</span><input class="field" data-f="to_place" list="places-dl" value="${v("to_place")}" placeholder="Station, city or outpost">
     <span class="k">Sold for</span><div class="row" style="gap:6px"><input class="field" data-f="sell_price" type="number" min="0" value="${esc(r.sell_price??"")}" placeholder="${r.plan_sell?`expected ${Math.round(r.plan_sell)}`:"when you've sold"}" style="flex:1"><span class="muted">aUEC/SCU</span></div>
-    <span class="k" title="What auto loading and unloading cost you in total. Taken off the profit.">Auto load / unload</span><div class="row" style="gap:6px"><input class="field" data-f="handling" type="number" min="0" value="${esc(r.handling??0)}" style="flex:1"><span class="muted">aUEC</span></div>
+    <span class="k" title="What auto loading cost you when buying. Taken off the profit.">Auto loading fee</span><div class="row" style="gap:6px"><input class="field" data-f="load_fee" type="number" min="0" value="${esc(r.load_fee??(r.handling??0))}" style="flex:1"><span class="muted">aUEC</span></div>
+    <span class="k" title="What auto unloading cost you when selling. Taken off the profit.">Auto unloading fee</span><div class="row" style="gap:6px"><input class="field" data-f="unload_fee" type="number" min="0" value="${esc(r.unload_fee??0)}" style="flex:1"><span class="muted">aUEC</span></div>
     <span class="k">Notes</span><input class="field" data-f="notes" value="${v("notes")}" placeholder="Optional">
     <span></span><div class="row" style="gap:6px"><button class="btn primary small" data-act="runsave">${r.id?"Save":"Create route"}</button><button class="btn ghost small" data-act="runcancel">Cancel</button></div></div>`; }
 async function renderRuns(){
@@ -2178,13 +2471,16 @@ async function renderRuns(){
         ${x.buy_price!=null?`<span>Paid ${money(x.buy_price)}/SCU</span>`:x.plan_buy!=null?`<span>Expected buy ${money(x.plan_buy)}/SCU</span>`:""}
         ${x.sell_price!=null?`<span>Sold ${money(x.sell_price)}/SCU</span>`:x.plan_sell!=null?`<span>Expected sell ${money(x.plan_sell)}/SCU</span>`:""}
         ${pr?`<span style="color:${pr.v>=0?"#57e39b":"#ff8f8f"};font-weight:600">${pr.actual?"Profit":"Est. profit"} ${pr.v>=0?"+":"−"}${money(Math.abs(pr.v))}</span>`:""}
-        ${+x.handling?`<span>Load/unload −${money(+x.handling)}</span>`:""}
+        ${+x.load_fee?`<span>Loading fee −${money(+x.load_fee)}</span>`:""}${+x.unload_fee?`<span>Unloading fee −${money(+x.unload_fee)}</span>`:""}${+x.handling?`<span>Load/unload −${money(+x.handling)}</span>`:""}
         ${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
       ${S.runEdit===x.id?runForm(x):`<div class="row" style="gap:6px;flex-wrap:wrap">
-        ${next?`${next[0]!=="transit"?`<input class="field" data-price="${x.id}" type="number" min="0" placeholder="${next[0]==="bought"?"Paid":"Sold for"} /SCU" value="${esc(next[0]==="bought"?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??""))}" style="width:120px;padding:4px 8px">`:""}<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
+        ${next&&next[0]!=="transit"?`<div class="stepbox">
+          <label><span>${next[0]==="bought"?"Paid":"Sold for"} per SCU</span><input class="field" data-price="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??""))}"></label>
+          <label title="If you used auto ${next[0]==="bought"?"loading":"unloading"}, what it cost. It comes off the profit."><span>Auto ${next[0]==="bought"?"loading":"unloading"} fee</span><input class="field" data-fee="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.load_fee??0):(x.unload_fee??0))}"></label>
+          <button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button></div>`:next?`<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
         ${st>0?`<button class="btn small ghost" data-runstage="${STAGES[st-1][0]}" title="Undo the last step">Back</button>`:""}
         ${x.from_place&&x.to_place?`<button class="btn small ghost" data-runprev="1">Map</button><button class="btn small ghost" data-runroute="1">Add to route</button>`:""}
-        <span class="spacer"></span><button class="btn small ghost" data-runedit="1">Edit</button><button class="btn small ghost" data-rundel="1" style="color:var(--danger)">Delete</button></div>`}</div>`; };
+        <span class="spacer"></span>${x.from_place&&x.to_place&&(x.buy_price||x.plan_buy)&&(x.sell_price||x.plan_sell)?`<button class="btn small ghost" data-runshare="1" title="Show this route to other Quantum users in Find Routes for a week">Share</button>`:""}<button class="btn small ghost" data-runedit="1">Edit</button><button class="btn small ghost" data-rundel="1" style="color:var(--danger)">Delete</button></div>`}</div>`; };
   const open=S.runs.filter(x=>x.stage!=="sold"), done=S.runs.filter(x=>x.stage==="sold");
   const total=done.reduce((a,x)=>a+((runProfit(x)||{}).v||0),0);
   $("tr-mine-out").innerHTML=(S.runEdit==="new"?runForm(null):`<button class="btn primary" data-act="runnew" style="width:100%;margin-bottom:10px">+ Create my own trade route</button>`)
@@ -2198,13 +2494,437 @@ $("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-act=runsave]")){ const f=e.target.closest("[data-runform]"), data={id:f.dataset.runform||undefined};
     for(const i of f.querySelectorAll("[data-f]")) data[i.dataset.f]=i.value.trim();
     for(const k of ["from_place","to_place"]) if(data[k]&&!S.locMap[data[k]]) return toast(`Pick “${data[k]}” from the suggestions so it can go on the map`);
+    data.handling=0;                                    // the two fee fields replace the old combined one
     const r=await api().trade_run_save(data); if(!r.ok) return toast(r.error); S.runEdit=null; toast("Route saved"); return renderRuns(); }
   const c=e.target.closest("[data-run]"); if(!c) return; const x=S.runs.find(r=>r.id===c.dataset.run);
-  const sg=e.target.closest("[data-runstage]"); if(sg){ const price=c.querySelector(`[data-price="${x.id}"]`)?.value; await api().trade_run_stage(x.id,sg.dataset.runstage,price||null); return renderRuns(); }
+  const sg=e.target.closest("[data-runstage]"); if(sg){ const price=c.querySelector(`[data-price="${x.id}"]`)?.value, fee=c.querySelector(`[data-fee="${x.id}"]`)?.value;
+    await api().trade_run_stage(x.id,sg.dataset.runstage,price||null,fee===""||fee==null?null:fee); return renderRuns(); }
   if(e.target.closest("[data-runedit]")){ S.runEdit=x.id; return renderRuns(); }
+  if(e.target.closest("[data-runshare]")){ const r=await api().share_route(x.id); toast(r.ok?"Shared: other Quantum users will see it in Find Routes for a week":(r.error||"Couldn't share it")); return; }
   if(e.target.closest("[data-rundel]")){ await api().trade_run_delete(x.id); toast("Route deleted"); return renderRuns(); }
   if(e.target.closest("[data-runprev]")) return previewPlaces(x.from_place,x.to_place,x.commodity);
   if(e.target.closest("[data-runroute]")){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); } };
+
+
+// ---- Updates: a newer release on GitHub is offered here; Quantum downloads it, checks its signature
+// and restarts into it.
+async function renderUpdateBar(force){ const b=$("update-bar"), u=S.live?.update;
+  if(!u&&!force){ b.hidden=true; return; }
+  const st=await api().update_status(), L=st.latest, pr=st.progress||{};
+  if(!L?.available||(st.skipped===L.version&&!force)){ b.hidden=true; return; }
+  const pct=pr.total?Math.round(pr.done/pr.total*100):null;
+  b.hidden=false;
+  b.innerHTML=`<div class="row"><b>Quantum ${esc(L.version)} is available</b><span class="muted">you have ${esc(st.current)}</span><span class="spacer"></span>
+      ${pr.stage==="downloading"?`<span class="muted">Downloading${pct!=null?` ${pct}%`:"…"}</span>`
+       :pr.stage==="verifying"?`<span class="muted">Checking the signature…</span>`
+       :pr.stage==="ready"?`<button class="btn small primary" data-up="install">Restart to update</button>`
+       :L.can_install?`<button class="btn small primary" data-up="get">Update now</button>`:`<button class="btn small primary" data-ext="${esc(L.url)}">Get it on GitHub</button>`}
+      ${pr.stage==="downloading"||pr.stage==="verifying"?"":`<button class="btn small ghost" data-up="later">Later</button>`}</div>
+    ${pr.stage==="downloading"?`<div class="bar"><i style="width:${pct??30}%"></i></div>`:""}
+    ${pr.stage==="error"?`<div class="warnbox" style="margin:8px 0 0">${esc(pr.error)}</div>`:""}
+    ${!L.can_install&&L.why_not?`<div class="muted" style="font-size:12px;margin-top:6px">${esc(L.why_not)}</div>`:""}
+    ${L.notes?`<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--route-2)">What's new</summary><div class="notes">${esc(L.notes)}</div></details>`:""}`;
+  if(pr.stage==="downloading"||pr.stage==="verifying") setTimeout(()=>renderUpdateBar(true),500); }
+$("update-bar").onclick=async e=>{ const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return; }
+  const a=e.target.closest("[data-up]")?.dataset.up; if(!a) return;
+  if(a==="get"){ const r=await api().update_download(); if(!r.ok) return toast(r.error); return renderUpdateBar(true); }
+  if(a==="install"){ $("update-bar").innerHTML=`<b>Restarting into the new version…</b>`; const r=await api().update_install(); if(!r.ok){ toast(r.error); renderUpdateBar(true); } return; }
+  if(a==="later"){ const st=await api().update_status(); await api().update_skip(st.latest?.version); $("update-bar").hidden=true; } };
+
+// A centred loading screen: the Quantum mark, an indeterminate bar, and what's happening.
+// No picture anywhere: anyone with a UEX token can send one in; it shows for everyone once approved.
+function picMissing(kind,name){ const can=!!S.live?.log?.uex_token;
+  return `<div class="pic-none"><span>No picture yet</span>${can?`<button class="btn small" data-photosend="${esc(kind)}" data-photoname="${esc(name)}">Send a picture</button>`:""}</div>`; }
+function shrinkPicture(file){ return new Promise((ok,bad)=>{ const im=new Image(), url=URL.createObjectURL(file);
+  im.onload=()=>{ const k=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement("canvas");
+    c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg",0.88)); };
+  im.onerror=()=>{ URL.revokeObjectURL(url); bad(new Error("That file isn't a picture")); }; im.src=url; }); }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-photosend]"); if(!b) return; e.stopPropagation();
+  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/png,image/jpeg,image/webp";
+  inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
+    try{ b.disabled=true; b.textContent="Sending…"; const data=await shrinkPicture(f);
+      const r=await api().photo_submit(b.dataset.photosend,b.dataset.photoname,data);
+      if(r.ok){ b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Thanks! Sent for review",className:"pic-sent"})); }
+      else { toast(r.error||"Couldn't send it"); b.disabled=false; b.textContent="Send a picture"; } }
+    catch(err){ toast(err.message); b.disabled=false; b.textContent="Send a picture"; } };
+  inp.click(); },true);
+// A wiki description: the first paragraph, with the rest behind "More".
+function wikiDesc(t,url){ const ps=String(t).split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean); if(!ps.length) return "";
+  const first=`<p>${esc(ps[0])}</p>`, rest=ps.slice(1).map(p=>`<p>${esc(p)}</p>`).join("");
+  return `${first}${rest?`<details><summary>More</summary>${rest}</details>`:""}<div class="src">From the Star Citizen Wiki</div>`; }
+function qPic(){ return `<div class="q-loader small" role="status" aria-label="Loading picture"><div class="bar"><i></i></div></div>`; }
+function qLoader(text){ return `<div class="q-loader" role="status" aria-live="polite"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/><path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/><path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>
+  <div class="bar"><i></i></div><div class="txt">${esc(text)}</div></div>`; }
+
+// =================================================================== datarunner (report prices to UEX)
+// Manual entry, made quick: every row starts from UEX's numbers. Most prices haven't moved, so the
+// main action is one tap (or Space) on "Same"; only what changed gets typed. Keyboard: ↑↓ move,
+// Space same, Enter edit, 1–7 inventory, G gone. The send bar keeps the checklist in sight.
+const DR_SIZES=[1,2,4,8,16,24,32];
+const drAge=ts=>{ if(!ts) return {t:"new",c:"a1",tip:"Not on UEX yet"}; const d=(Date.now()/1000-ts)/86400;
+  return {t:d*24<1?"now":d<1?`${Math.round(d*24)}h`:`${Math.round(d)}d`, c:d<1?"a0":d<3?"a1":d<7?"a2":"a3", tip:`UEX last updated ${agoTs(ts)}`}; };
+const drNum=v=>{ if(v==null||v==="") return null; const m=String(v).trim().toLowerCase().replace(/,/g,"").match(/^(\d+(?:\.\d+)?)\s*([km])?$/);
+  return m?Math.round(parseFloat(m[1])*({k:1e3,m:1e6}[m[2]]||1)*100)/100:NaN; };
+const drFmt=v=>v==null||isNaN(v)?"":Number(v).toLocaleString();
+async function openDatarunner(id){
+  if(!S.dr) $("dr-panel").innerHTML=qLoader("Loading the terminal…");
+  const r=await api().dr_prefill(id||null);
+  if(!r.ok){ $("dr-panel").innerHTML=`<div class="empty"><strong>Couldn't load UEX data</strong>${esc(r.error)}</div>`; return; }
+  S.drHasSecret=r.has_secret;
+  const keepSizes=S.dr?.pf?.id_terminal===r.id_terminal?[...S.dr.sizes]:[];
+  S.dr={pf:r, view:S.dr?.view||"enter", tab:S.dr?.pf?.id_terminal===r.id_terminal?S.dr.tab:(r.rows.some(x=>x.side==="buy")||!r.rows.length?"buy":"sell"),
+        rows:r.rows.map(x=>({...x, state:"", orig:{price:x.price,scu:x.scu,status:x.status}})), sizes:new Set(keepSizes), focus:0};
+  $("dr-mode").className="dr-mode"+(r.live?" live":""); $("dr-mode").hidden=r.live&&r.has_secret;
+  $("dr-mode").innerHTML=r.live?`Add your UEX Secret Key in Settings to send reports.`
+    :`<b>Test mode.</b> Reports are checked against UEX's rules and saved to a folder. Nothing is sent to UEX.
+      <div class="row"><button class="btn small ghost" id="dr-folder">Open test folder</button></div>`;
+  if($("dr-folder")) $("dr-folder").onclick=()=>api().dr_open_folder();
+  S.drTerms=r.terminals; const cur=r.terminals.find(t=>t.id===r.id_terminal);
+  $("dr-term-q").value=cur?`${cur.where} · ${cur.name}`:""; $("dr-term-q").dataset.label=$("dr-term-q").value;
+  $("dr-here").textContent=r.you_are_at?(r.terminals.some(t=>t.here)?`You're at ${r.you_are_at} (from the game log).`:`You're at ${r.you_are_at}, which has no commodity terminal on UEX.`)
+    :"Land or dock somewhere and the terminal there is picked for you.";
+  $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
+  $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env} (from Game.log)`:"Couldn't read it from Game.log";
+  renderDrStats(r.stats); renderDrPanel(); renderDrShots(); }
+
+// ---- the main panel: header with progress, kiosk-style tabs, rows, send bar
+function drRowsOf(side){ return S.dr.rows.map((x,i)=>[x,i]).filter(([x])=>x.side===side); }
+function renderDrPanel(){ const d=S.dr, r=d.pf, P=$("dr-panel");
+  if(d.view==="mine") return renderDrMine();
+  if(d.view==="jobs") return renderDrJobs();
+  if(!r.id_terminal){ P.innerHTML=drViews()+drGuide(); return; }
+  const n=s=>drRowsOf(s).length;
+  P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>${esc(r.terminal||"")}</h2><div class="where">${esc(r.where||"")}</div></div>
+      <div class="dr-meter" id="dr-meter"></div></div>
+    <div class="dr-tabs"><button data-drtab="buy" class="${d.tab==="buy"?"on":""}">BUY<span>${n("buy")}</span></button><button data-drtab="sell" class="${d.tab==="sell"?"on":""}">LOCAL MARKET VALUE<span>${n("sell")}</span></button>
+      <div class="dr-keys"><kbd>↑</kbd><kbd>↓</kbd> move · <kbd>Space</kbd> no changes · <kbd>Enter</kbd> edit · <kbd>1</kbd>–<kbd>7</kbd> inventory · <kbd>G</kbd> not sold here</div></div>
+    <div class="dr-list" id="dr-list"></div>
+    <div class="dr-send" id="dr-send"></div>`;
+  renderDrList(); renderDrSend(); drAckGate(); }
+function drViews(){ const d=S.dr, n=d.pf.reports_count||0;
+  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports${n?` <span>${n}</span>`:""}</button></div>`; }
+// Shown once, before the first report: reports carry the user's UEX name, and bad ones cost them.
+function drAckGate(){ if(S.dr.pf.ack) return;
+  const el=drSheet(`<h3>Before you report</h3>
+    <p style="margin:8px 0;line-height:1.55">Every report is sent under <b>your UEX account</b>. Only report what the kiosk shows right now, and check each price, SCU and inventory level before you send.</p>
+    <p style="margin:8px 0;line-height:1.55;color:#ffb4b4">UEX reviews every report. Wrong, guessed or made-up data gets reports declined, and repeated bad reports can get your datarunner access <b>suspended</b> or your UEX account <b>terminated</b>.</p>
+    <label class="row" style="gap:8px;margin:12px 0;cursor:pointer"><input type="checkbox" id="dr-ack-c"> I understand: I'll only report prices I've checked on the kiosk.</label>
+    <button class="btn primary" id="dr-ack-b" disabled style="width:100%">Start reporting</button>`);
+  el.classList.add("ack");
+  el.querySelector("#dr-ack-c").onchange=e=>{ el.querySelector("#dr-ack-b").disabled=!e.target.checked; };
+  el.querySelector("#dr-ack-b").onclick=async()=>{ await api().dr_ack(); S.dr.pf.ack=true; drSheet(null); }; }
+function drStatus(x){ const e=k=>{ const a=k==="price"?drNum(x[k]):x[k]==null||x[k]===""?null:+x[k], b=x.orig[k]==null?null:+x.orig[k]; return a!==b; };
+  return e("price")||e("scu")||e("status"); }
+// Changed from UEX -> "edit"; typed back to exactly UEX's values -> "same" (confirmed); nothing yet -> "".
+function drState(x){ if(drStatus(x)) return "edit"; return x.orig.price!=null&&x.price!=null&&x.price!==""?"same":""; }
+function drRowHtml(x,i){ const d=S.dr, st=d.pf.status_names, age=drAge(x.updated), cool=d.pf.cooldown?.[`${x.id_commodity}:${x.side}`], lock=drLocked();
+  const lvl=+x.status||0, p=drNum(x.price), was=x.orig.price, pv=d.pf.params?.price_variation;
+  let diff=""; if(x.state==="edit"&&was!=null&&p!=null&&!isNaN(p)&&p!==was){ const pct=Math.round((p-was)/was*1000)/10, far=pv&&Math.abs(pct)>pv;
+    diff=` · <s>${drFmt(was)}</s> <span class="${far?"warn":pct>0?"up":"down"}">${pct>0?"+":""}${pct}%${far?" check it":""}</span>`; }
+  else if(p!=null&&isNaN(p)) diff=` · <span class="warn">not a number</span>`;
+  const ro=cool?"disabled":lock?"readonly":"";
+  return `<div class="dr-row ${x.state} ${cool?"cool":""} ${lock?"locked":""}" tabindex="0" data-i="${i}">
+    <div class="age ${age.c}" title="${esc(x.community?"Reported by a Quantum datarunner "+agoTs(x.updated)+", awaiting UEX review":age.tip)}">${age.t}</div>
+    <div class="nm"><b>${esc(x.name||"#"+x.id_commodity)}</b><div>${cool?`Sent ${Math.max(1,Math.round((300-cool)/60))} min ago, again in ${Math.ceil(cool/60)} min`:x.orig.price==null?"Not on UEX here yet":(x.community?`<span class="cm-pill">⚡ Quantum datarunner</span> `:"UEX ")+drFmt(x.orig.scu)+" SCU · "+drFmt(x.orig.price)}</div></div>
+    <div class="val"><input class="field" data-k="scu" inputmode="decimal" ${ro} value="${esc(x.scu??"")}" placeholder="SCU" aria-label="${x.side==="buy"?"Stock":"Demand"} in SCU"><div class="was">${x.side==="buy"?"Stock":"Demand"}</div></div>
+    <div class="val"><input class="field" data-k="price" inputmode="decimal" ${ro} value="${esc(x.price??"")}" placeholder="aUEC" aria-label="Price per SCU"><div class="was">Price per SCU${diff}</div></div>
+    <div class="inv"><div class="segs l${lvl}">${[1,2,3,4,5,6,7].map(n=>`<button data-lvl="${n}" class="${n<=lvl?"f":""}" title="${n} · ${esc(st[n])}" aria-label="${esc(st[n])}"></button>`).join("")}</div><span>${lvl?esc(st[lvl]):"Inventory?"}</span></div>
+    <div class="acts"><button class="ok ${x.state==="same"?"on":""}" data-act="same" title="Price, stock and inventory all match the kiosk (Space)">${x.state==="same"?"✓ No Changes":"No Changes"}</button><button class="gn ${x.state==="gone"?"on":""}" data-act="gone" title="The kiosk doesn't list this commodity any more (G). For no stock, set the inventory bar to Out of stock instead.">Not Sold Here</button></div></div>`; }
+// Data can only be entered once there's a screenshot: UEX checks every report against it.
+function drLocked(){ return !(S.drShotCount>0); }
+function drLockHtml(){ const k=S.drShotKey; return drLocked()?`<div class="dr-lock" id="dr-lock">📷 <span><b>Screenshot required before entering data.</b> Open the kiosk in game and ${k?`press <b>${esc(k)}</b>`:"use <b>Take screenshot</b> on the left"}. UEX checks every report against it.</span></div>`:""; }
+function drNeedShot(){ const el=$("dr-lock"); toast(`Take a screenshot of the kiosk first${S.drShotKey?` (press ${S.drShotKey} in game)`:""}`);
+  if(el){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); el.scrollIntoView({block:"nearest"}); } }
+function renderDrList(){ const d=S.dr, L=drRowsOf(d.tab), el=$("dr-list"); if(!el) return;
+  el.innerHTML=drLockHtml()+(L.length?L.map(([x,i])=>drRowHtml(x,i)).join(""):`<div class="dr-empty">UEX lists nothing on this tab here. If the kiosk shows something, add it below.</div>`)
+    +`<div class="dr-add"><select class="field" id="dr-add-c"><option value="">Add a commodity the kiosk shows…</option>${d.pf.commodities.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select><button class="btn" id="dr-add-b">Add</button></div>
+    ${uexCredit(d.pf.at)}`;
+  renderDrMeter(); }
+function drRedrawRow(i,pop){ const el=$("dr-list")?.querySelector(`.dr-row[data-i="${i}"]`); if(!el||!el.isConnected) return renderDrList();
+  const tmp=document.createElement("div"); tmp.innerHTML=drRowHtml(S.dr.rows[i],i); const nw=tmp.firstElementChild;
+  const f=document.activeElement, k=el.contains(f)&&f.dataset?.k, pos=k?f.selectionStart:null;
+  try{ el.replaceWith(nw); }catch(e){ return; }    // already replaced by a redraw from the same blur
+  if(pop) nw.classList.add("pop");
+  if(k){ const inp=nw.querySelector(`[data-k="${k}"]`); inp.focus(); try{ inp.setSelectionRange(pos,pos); }catch(e){} } else if(f===el) nw.focus();
+  renderDrMeter(); renderDrSend(); }
+function renderDrMeter(){ const L=drRowsOf(S.dr.tab), done=L.filter(([x])=>x.state).length, m=$("dr-meter"); if(!m) return;
+  m.innerHTML=`<div class="lbl"><span>${S.dr.tab==="buy"?"BUY":"LOCAL MARKET VALUE"} checked</span><b>${done} of ${L.length}</b></div><div class="bar"><i style="width:${L.length?done/L.length*100:0}%"></i></div>`; }
+function drReady(){ const d=S.dr; return d.rows.filter(x=>x.state); }
+function renderDrSend(){ const el=$("dr-send"); if(!el||!S.dr) return; const n=drReady().length, shots=S.drShotCount||0, d=S.dr;
+  el.innerHTML=`<span class="chip y">✓ ${esc(d.pf.terminal||"Terminal")}</span>
+    <span class="chip ${shots?"y":"n"}" ${shots?"":`data-act="shoot"`} title="${shots?"":"UEX needs a screenshot of the kiosk"}">${shots?`✓ ${shots} screenshot${shots>1?"s":""}`:"📷 Screenshot Required"}</span>
+    ${n?`<span class="chip y">✓ ${n} row${n===1?"":"s"} ready</span><button class="btn primary go" id="dr-go">Submit Report</button>`:""}`; }
+
+// ---- editing
+function drCooling(i){ const x=S.dr.rows[i], c=S.dr.pf.cooldown?.[`${x.id_commodity}:${x.side}`];
+  if(c) toast(`You reported ${x.name} here less than 5 minutes ago. UEX takes it again in ${Math.ceil(c/60)} min`); return !!c; }
+function drSet(i,patch,pop){ if(drLocked()) return drNeedShot(); if(drCooling(i)) return; const x=S.dr.rows[i]; Object.assign(x,patch);
+  if(!("state" in patch)) x.state=x.state==="gone"?"gone":drState(x);
+  drRedrawRow(i,pop); }
+function drToggleSame(i){ if(drLocked()) return drNeedShot(); if(drCooling(i)) return; const x=S.dr.rows[i];
+  if(x.state==="same") return drSet(i,{state:""});
+  if(x.orig.price==null) return toast("Nothing on UEX to match here: type what the kiosk shows");
+  drSet(i,{state:"same",price:x.orig.price,scu:x.orig.scu,status:x.orig.status},true); }
+function drMove(i,dir){ const rows=[...$("dr-list").querySelectorAll(".dr-row")], at=rows.findIndex(r=>+r.dataset.i===i);
+  const nx=rows[Math.max(0,Math.min(rows.length-1,at+dir))]; nx?.focus(); nx?.scrollIntoView({block:"nearest"}); }
+$("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
+  const tab=e.target.closest("[data-drtab]"); if(tab){ d.tab=tab.dataset.drtab; return renderDrPanel(); }
+  const vw=e.target.closest("[data-drview]"); if(vw){ d.view=vw.dataset.drview; return renderDrPanel(); }
+  const rf=e.target.closest("[data-mine=refresh]"); if(rf){ rf.disabled=true; rf.textContent="Refreshing…"; return renderDrMine(true,true); }
+  const js=e.target.closest("[data-jobsort]"); if(js){ S.drJobSort=js.dataset.jobsort; return renderDrJobs(); }
+  const jr=e.target.closest("[data-jobreport]"); if(jr){ const id=+jr.dataset.jobreport; S.dr.view="enter"; const v=S.dr.view; S.dr=null;
+    await openDatarunner(id); S.dr.view=v; return renderDrPanel(); }
+  const jt=e.target.closest("[data-jobroute]"); if(jt){ await api().add_stops([jt.dataset.jobroute]); await poll(); toast(`Added ${jt.dataset.jobroute} to the route`); return; }
+  const card=e.target.closest(".dr-rep[data-k]"); if(card&&!e.target.closest("button")){ card.classList.toggle("open"); return; }
+  if(e.target.closest('[data-act="shoot"]')) return $("dr-shoot").click();
+  if(e.target.id==="dr-go") return drReview();
+  if(e.target.id==="dr-add-b"){ const c=$("dr-add-c").value; if(!c) return toast("Pick a commodity to add");
+    const com=d.pf.commodities.find(x=>String(x.id)===c); if(d.rows.some(x=>String(x.id_commodity)===c&&x.side===d.tab)) return toast(`${com.name} is already on this tab`);
+    d.rows.push({id_commodity:com.id,name:com.name,side:d.tab,price:null,scu:null,status:null,state:"",orig:{},updated:null}); renderDrPanel();
+    $("dr-list").querySelector(`.dr-row[data-i="${d.rows.length-1}"] [data-k="scu"]`)?.focus(); return; }
+  if(e.target.closest(".dr-sheet")) return;
+  const rowEl=e.target.closest(".dr-row[data-i]"); if(!rowEl) return; const i=+rowEl.dataset.i;
+  if(drLocked()&&(e.target.closest("[data-lvl],[data-act],[data-k]"))) return drNeedShot();
+  const lv=e.target.closest("[data-lvl]"); if(lv) return drSet(i,{status:+lv.dataset.lvl});
+  const act=e.target.closest("[data-act]")?.dataset.act;
+  if(act==="same") return drToggleSame(i);
+  if(act==="gone") return drSet(i,{state:d.rows[i].state==="gone"?"":"gone"}); });
+$("dr-panel").addEventListener("input",e=>{ const k=e.target.dataset?.k, rowEl=e.target.closest(".dr-row[data-i]"); if(!k||!rowEl) return;
+  const i=+rowEl.dataset.i, x=S.dr.rows[i]; x[k]=e.target.value; x.state=drState(x);
+  rowEl.className=`dr-row ${x.state}`; renderDrMeter(); renderDrSend(); });
+$("dr-panel").addEventListener("change",e=>{ if(e.target.id==="dr-jobs-sys"){ S.drJobSys=e.target.value; return renderDrJobs(); } const k=e.target.dataset?.k, rowEl=e.target.closest(".dr-row[data-i]"); if(!k||!rowEl) return;
+  const i=+rowEl.dataset.i, v=drNum(e.target.value); if(v!=null&&!isNaN(v)) S.dr.rows[i][k]=v;   // "12k" -> 12000
+  drSet(i,{}); });
+$("dr-panel").addEventListener("keydown",e=>{ if(!S.dr||e.target.closest(".dr-sheet")) return; const rowEl=e.target.closest(".dr-row[data-i]"); if(!rowEl) return;
+  const i=+rowEl.dataset.i, inInput=!!e.target.dataset?.k;
+  if(inInput){
+    if(e.key==="Enter"){ e.preventDefault(); e.target.dispatchEvent(new Event("change",{bubbles:true}));
+      const row=$("dr-list").querySelector(`.dr-row[data-i="${i}"]`);
+      if(e.target.dataset.k==="scu"){ const pr=row.querySelector('[data-k="price"]'); pr.focus(); pr.select(); } else { row.focus(); drMove(i,1); } }
+    else if(e.key==="Escape"){ e.target.dispatchEvent(new Event("change",{bubbles:true})); $("dr-list").querySelector(`.dr-row[data-i="${i}"]`)?.focus(); }
+    return; }
+  const k=e.key.toLowerCase();
+  if(k==="arrowdown"||k==="j"){ e.preventDefault(); drMove(i,1); }
+  else if(k==="arrowup"||k==="k"){ e.preventDefault(); drMove(i,-1); }
+  else if(k===" "||k==="s"){ e.preventDefault(); drToggleSame(i); const nowSame=S.dr.rows[i].state==="same"; if(nowSame) setTimeout(()=>drMove(i,1),60); }
+  else if(k==="enter"||k==="e"){ e.preventDefault(); if(drLocked()) return drNeedShot(); const inp=rowEl.querySelector('[data-k="scu"]'); inp.focus(); inp.select(); }
+  else if(k==="g"){ e.preventDefault(); drSet(i,{state:S.dr.rows[i].state==="gone"?"":"gone"}); }
+  else if(/^[1-7]$/.test(k)){ e.preventDefault(); drSet(i,{status:+k}); } });
+$("dr-panel").addEventListener("keydown",e=>{ if(drLocked()&&e.target.dataset?.k&&e.key.length===1){ e.preventDefault(); drNeedShot(); } },true);
+$("dr-panel").addEventListener("focusin",e=>{ if(e.target.dataset?.k&&!drLocked()) setTimeout(()=>{ try{ e.target.select(); }catch(x){} },0); });   // typing replaces the old value
+
+// ---- review and send (step 6 of the UEX guide: look it over once more)
+function drForm(){ const d=S.dr;
+  return {id_terminal:d.pf.id_terminal, details:$("dr-note").value, container_sizes:[...d.sizes],
+    rows:drReady().map(x=>({id_commodity:x.id_commodity, side:x.side, price:x.state==="gone"?null:drNum(x.price), scu:x.state==="gone"?null:drNum(x.scu), status:x.status, missing:x.state==="gone", include:true}))}; }
+const drName=id=>S.dr?.pf.commodities.find(c=>c.id===id)?.name||"#"+id;
+function drSheet(html){ $("dr-panel").querySelector(".dr-sheet")?.remove(); if(!html) return; const el=document.createElement("div"); el.className="dr-sheet"; el.innerHTML=html; $("dr-panel").appendChild(el); return el; }
+async function drReview(){ const d=S.dr, form=drForm(); if(!form.rows.length) return;
+  const r=await api().dr_check(form); if(!r.ok) return toast(r.error);
+  const st=d.pf.status_names, line=p=>{ const side="price_buy" in p||"scu_buy" in p||"status_buy" in p?"buy":"sell";
+    return p.is_missing?`<li><b>${esc(drName(p.id_commodity))}</b>: not sold here any more</li>`
+      :`<li><b>${esc(drName(p.id_commodity))}</b> · ${side==="buy"?"BUY":"LMV"} · ${p["scu_"+side]!=null?drFmt(p["scu_"+side])+" SCU":"<b style='color:#ffb4b4'>no stock</b>"} · ${p["price_"+side]!=null?money(p["price_"+side]):"<b style='color:#ffb4b4'>no price</b>"} · ${p["status_"+side]?esc(st[p["status_"+side]]):"<b style='color:#ffb4b4'>no inventory</b>"}</li>`; };
+  // More than UEX's tolerance from its average: each needs its own "yes, really" before sending.
+  const warns=r.warnings?.length?`<div class="warnbox" style="margin:10px 0 0;border-color:rgba(242,193,78,.6);background:rgba(242,193,78,.08);color:#f3d68c">
+      <b>${r.warnings.length===1?"This price is":"These prices are"} more than ${d.pf.params?.price_variation||25}% away from UEX's average.</b> UEX flags reports like this for manual review, and a typo here is the most common reason reports get declined. Check each one on the kiosk:
+      ${r.warnings.map((w,j)=>`<label class="dr-check"><input type="checkbox" class="dr-confirm"> <span>${esc(drName(w.id_commodity))}: the kiosk really shows <b>${money(w.price)}</b> (${w.off_pct>0?"+":""}${w.off_pct}% vs ${money(w.avg)})</span></label>`).join("")}</div>`:"";
+  const errs=r.errors.length?`<div class="warnbox" style="margin:10px 0 0">${r.live?"Can't send this yet":"UEX would refuse this"}:<ul>${r.errors.map(e=>`<li>${esc(e.text)}</li>`).join("")}</ul></div>`:"";
+  const can=!r.errors.length||!r.live;
+  const el=drSheet(`<h3>Does this match the kiosk and your screenshot?</h3><div class="muted" style="font-size:12.5px">${esc(r.where||"")} · ${esc(r.terminal||"")} · ${r.shots?`${r.shots} screenshot${r.shots>1?"s":""}`:"no screenshot"} · game ${esc(r.game_version||"unknown")}</div>
+    <ul>${r.prices.map(line).join("")}</ul>
+    <div style="font-size:12.5px;margin-top:8px;line-height:1.5">📷 UEX verifies every report against your screenshot. It must show <b>every item you're reporting</b>, with its stock, price and inventory. If part of the list was scrolled out of view, scroll and take another screenshot; they're joined into one picture.</div>
+    ${warns}${errs}
+    ${can?`<label class="dr-check" style="margin-top:12px"><input type="checkbox" class="dr-confirm"> <span>I confirm the screenshot lists all items I've reported updates on, and that this data is correct.</span></label>`:""}
+    <div class="muted" style="font-size:12px;margin-top:8px">${r.live?"This goes out under your UEX account. Wrong reports get declined, and repeated ones can get your datarunner access suspended.":"Test mode: this is saved to a folder, not sent."}</div>
+    <div class="row" style="gap:8px;margin-top:12px">${can?`<button class="btn primary" id="dr-send-now" style="flex:1" disabled>${r.errors.length?"Save anyway to inspect":"Submit Report"}</button>`:""}<button class="btn ghost" id="dr-back">Back to editing</button></div>`);
+  el.querySelector("#dr-back").onclick=()=>drSheet(null);
+  const go=el.querySelector("#dr-send-now"), boxes=[...el.querySelectorAll(".dr-confirm")];
+  boxes.forEach(b=>b.onchange=()=>{ if(go) go.disabled=!boxes.every(x=>x.checked); });
+  go?.addEventListener("click",drSave); }
+async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true; b.textContent="Submitting…"; const r=await api().dr_submit(drForm());
+  if(r.ok){ const days=r.refreshed_days||0;
+    drSheet(`<div class="done"><div class="tick">✓</div><div><h3>${r.test?"Test report saved":"Sent to UEX for review"}</h3>
+      <div>${r.rows} row${r.rows===1?"":"s"} from ${esc(d.pf.terminal||"")}${days>=1?` · replaced <b>${Math.round(days)} days</b> of old data`:""}. Thanks, datarunner.</div>
+      ${r.community?(r.community.ok?`<div style="font-size:12.5px;margin-top:4px;color:#7fe7ff">⚡ ${r.community.states?.verified?"Shared with Quantum users now":r.community.states?.test?"Shared with Quantum users in test mode":"Sent to the community server, waiting for UEX to list it"}.</div>`
+        :`<div style="font-size:12.5px;margin-top:4px;color:#ffd38a">Couldn't share it with Quantum users: ${esc(r.community.error||"")}${r.community.detail?` (${esc(r.community.detail)})`:""}</div>`):""}
+      ${r.test?`<div class="row" style="margin-top:8px"><button class="btn small ghost" id="dr-folder2">Open test folder</button></div>`:""}</div>
+      <button class="btn ghost" id="dr-back" style="margin-left:auto">Done</button></div>`);
+    $("dr-back").onclick=()=>drSheet(null); if($("dr-folder2")) $("dr-folder2").onclick=()=>api().dr_open_folder();
+    const now=Date.now()/1000; for(const x of d.rows) if(x.state){ if(x.state!=="gone"){ x.orig={price:drNum(x.price),scu:drNum(x.scu),status:+x.status}; x.updated=now; } x.state=""; }
+    d.pf.cooldown=(await api().dr_prefill(d.pf.id_terminal)).cooldown||{};
+    d.pf.reports_count=(d.pf.reports_count||0)+1; const vb=$("dr-panel").querySelector('[data-drview="mine"]'); if(vb) vb.innerHTML=`My Reports <span>${d.pf.reports_count}</span>`;
+    renderDrStats(r.stats); renderDrList(); renderDrSend(); renderDrShots(); }
+  else { b.disabled=false; b.textContent="Try again";
+    drSheet(`<h3>${r.test?"Saved for inspection, but UEX would refuse it":r.already_sent?"Already at UEX":"Not sent"}</h3><ul>${(r.errors||[{text:r.error||r.status}]).map(e=>`<li>${esc(e.text)}</li>`).join("")}</ul>
+      <div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost" id="dr-back">Back to editing</button></div>`); $("dr-back").onclick=()=>drSheet(null); } }
+
+// ---- "My reports": everything sent, and how UEX's review is going for each
+const DR_ST={pending:["Waiting for review","#8cc4ff"],under_review:["In Review","#f2c14e"],queued:["Waiting for the PTU build to go live","#a8bbd4"],
+  approved:["Approved","#57e39b"],consolidated:["Live on UEX","#3ccf6e"],declined:["Declined","#ff6b6b"],expired:["Expired before review","#6f82a0"]};
+const DR_SUM={pending:"waiting for review",under_review:"in review",queued:"waiting for PTU",approved:"approved",consolidated:"live on UEX",declined:"declined",expired:"expired"};
+function drOverall(e){ if(e.test) return ["Test: not sent","#c3a6ff"]; const s=e.states||[];
+  if(e.no_decision) return ["No decision from UEX","#6f82a0"];
+  if(!s.length) return ["Sent, waiting for UEX","#8cc4ff"];
+  for(const k of ["declined","under_review","pending","queued","expired","approved","consolidated"]) if(s.includes(k)) return DR_ST[k]; return ["Sent","#a8bbd4"]; }
+// ---- With no terminal picked: how reporting works, step by step
+function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?.shot_hotkey;
+  const steps=[
+    ["Go to a commodity kiosk","Any terminal that buys or sells cargo. Not sure where? <a data-drview=\"jobs\" style=\"cursor:pointer;text-decoration:underline\">Jobs</a> lists the ones with the oldest prices."],
+    ["Pick the terminal","Land or dock and Quantum picks it from the game log. Or type it on the left, like “New Babbage”. Its commodities load with UEX's current numbers."],
+    ["Take a screenshot",`Open the kiosk's list in game and press ${k?`<b>${esc(k)}</b>`:"your screenshot key (set it in Settings)"}, or use Take screenshot on the left. It must show every item you report; for a long list, scroll and take another.`],
+    ["Check each row","Matches the kiosk: <b>No Changes</b> (or Space). Different: type the stock and price, set the inventory bar. Gone from the kiosk: <b>Not Sold Here</b>."],
+    ["Submit Report","Look it over, confirm the screenshot shows everything, and send. It goes to UEX under your account and shows up for Quantum users straight away."],
+    ["Follow it in My Reports","See when UEX approves it, climb the ranks and keep your star rating up."]];
+  return `<div class="dr-guide">
+    <h2>Report Prices, step by step</h2>
+    <div class="muted" style="margin:-4px 0 14px;font-size:13px">Every report keeps trade data fresh for everyone on UEX and Quantum.</div>
+    <ol>${steps.map(([t,d],i)=>`<li><span class="n">${i+1}</span><div><b>${t}</b><div>${d}</div></div></li>`).join("")}</ol>
+    <div class="tips"><b>Keep your reports approved</b>
+      <ul><li>Only report what the kiosk shows right now: never guess.</li>
+        <li>Double-check prices more than 25% away from UEX's average; they're held for manual review.</li>
+        <li>You can report the same item at the same terminal once every 5 minutes.</li></ul></div>
+    <div class="row" style="gap:8px;margin-top:16px"><button class="btn primary" data-drview="jobs">Find a terminal to update</button><button class="btn" data-drview="mine">My Reports</button></div></div>`; }
+
+// ---- Jobs: terminals with the most out-of-date prices, as things to go and do
+async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
+  if(!P.querySelector(".dr-jobs")) P.innerHTML=`${drViews()}${qLoader("Finding the stalest terminals…")}`;
+  const sort=S.drJobSort||"oldest";
+  const r=await api().dr_jobs(S.drJobSys===undefined?null:S.drJobSys||null, sort); if(d.view!=="jobs") return;
+  if(!r.ok){ P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div>`; return; }
+  if(S.drJobSys===undefined&&r.you_in){ S.drJobSys=r.you_in; return renderDrJobs(); }      // start with the system you're in
+  const card=(j,i)=>{ const a=drAge(Date.now()/1000-j.median*86400);
+    return `<div class="dr-job ${j.here?"here":""}">
+      <div class="n">${i+1}</div>
+      <div class="age ${a.c}" title="Half this terminal's prices are older than this">${a.t}</div>
+      <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
+        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}${j.dist!=null?` · ${fmtDist(j.dist)} away`:""}</div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":Math.round(j.oldest)+" d"} · <span style="color:#9fe0b4">replaces ~${Math.round(j.days)} days of old data</span></div></div>
+      <div class="go">${j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}<button class="btn small primary" data-jobreport="${j.id}">Report it</button></div></div>`; };
+  P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Terminals whose prices are the most out of date. Refresh them and every trader on UEX and Quantum benefits.</div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
+        <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
+    <div class="dr-list dr-jobs">${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}</div>
+    ${uexCredit(r.at)}`; }
+
+// Pictures and station positions sent through Quantum, reviewed on the Quantum server rather than UEX.
+const CB_ST={submitted:["Submitted","#8cc4ff"],in_review:["In Review","#f2c14e"],approved:["Approved","#57e39b"],shared:["Shared on the map","#3ccf6e"],rejected:["Rejected","#ff6b6b"]};
+function drContribCard(c){ const [label,col]=CB_ST[c.status]||[c.status,"#a8bbd4"];
+  const what=c.type==="photo"?`Picture · ${esc(c.name)}`:`Station position · ${esc(c.name)}`;
+  const sub=c.type==="photo"?`${esc(c.kind||"item")} picture, reviewed by Quantum`:`${esc(c.system||"")} · shared once a second datarunner's reading agrees`;
+  return `<div class="dr-rep contrib"><div class="hd"><div><b>${what}</b><div class="muted" style="font-size:12px">${sub} · ${new Date(c.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div></div>
+    <span class="badge" style="color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div></div>`; }
+
+// The datarunner's card: UEX name and avatar, rank, stars, and how far to the next rank.
+function drProfileCard(p){ if(!p?.ok) return "";
+  if(!p.username) return `<div class="dr-prof"><div class="av">?</div><div><b>Your datarunner profile</b><div class="muted" style="font-size:12.5px;margin-top:3px">Add your UEX Secret Key in Settings to see your UEX name, rank and star rating.</div></div></div>`;
+  const nx=p.rank.next, prev=[...p.ranks].reverse().find(x=>p.rank.count>=x[0])?.[0]||0;
+  const pct=nx?Math.min(100,(p.rank.count-prev)/(nx.at-prev)*100):100, left=nx?nx.at-p.rank.count:0;
+  const pic=p.avatar||p.avatar_url;   // downloaded by Quantum, or else straight from UEX
+  const av=pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc((p.username||'?')[0].toUpperCase())}'}))">`:esc((p.username||"?")[0].toUpperCase());
+  return `<div class="dr-prof">
+    <div class="av" title="${esc(p.avatar_raw?"UEX avatar: "+p.avatar_raw:"No avatar set at UEX")}">${av}</div>
+    <div class="who"><b>${esc(p.username)}</b>${p.name&&p.name!==p.username?`<span class="muted"> · ${esc(p.name)}</span>`:""}
+      <div class="rk"><span class="rank-badge r${p.ranks.findIndex(x=>x[1]===p.rank.name)}">${esc(p.rank.name)}</span>
+        ${drStarBar(p.rated?p.stars:0,20)} <b>${p.rated?p.stars.toFixed(1):"0.0"}</b><span class="muted">${p.rated?` · ${p.rows.approved} approved, ${p.rows.declined} declined`:" · your first approved report sets 5 stars"}</span></div>
+      <div class="nx">${nx?`<div class="bar"><i style="width:${pct}%"></i></div><span>${left} more accepted report${left===1?"":"s"} to <b>${esc(nx.name)}</b></span>`:`<span>Highest rank reached. Thank you, datarunner.</span>`}</div></div>
+    <div class="nums"><div><b>${p.accepted}</b><span>accepted</span></div><div><b>${p.reports}</b><span>sent</span></div></div>
+    ${p.uex_banned?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">UEX has suspended your datarunner access, so new reports won't be accepted.</div>`:p.uex_datarunner===0?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">Your UEX account isn't a datarunner yet. Turn it on in your UEX profile to send reports.</div>`:""}
+    ${p.banned?`<div class="warnbox" style="grid-column:1/-1;margin:6px 0 0">Your reports are no longer shared with Quantum users${p.ban_reason?`: ${esc(p.ban_reason)}`:""}.</div>`:""}
+    <div class="ladder">${p.ranks.slice(1).map((x,i)=>`<span class="${x[1]===p.rank.name?"on":p.rank.count>=x[0]?"done":""}">${esc(x[1])}<small>${x[0]}${i===p.ranks.length-2?"+":"–"+(p.ranks[i+2][0]-1)}</small></span>`).join("")}</div>
+    ${p.source==="local"?`<div class="muted" style="grid-column:1/-1;font-size:11.5px">Worked out on this PC: the Quantum server couldn't be reached.</div>`:p.test?`<div class="muted" style="grid-column:1/-1;font-size:11.5px">Test mode: test reports don't count toward rank or stars.</div>`:""}
+  </div>`; }
+async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
+  if(!refresh) P.innerHTML=`${drViews()}${qLoader("Loading your reports…")}`;
+  let r, pr;
+  try{ [r,pr]=await Promise.all([api().dr_reports(!!refresh), api().dr_profile(!!refresh)]); }
+  catch(e){ r={ok:false,error:String(e?.message||e)}; }
+  if(d.view!=="mine") return;
+  if(!r?.ok){ P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">Couldn't load your reports: ${esc(r?.error||"unknown error")}.
+      <div class="row" style="margin-top:8px"><button class="btn small" data-mine="refresh">Try again</button></div></div>`; return; }
+  if(pr?.ok) d.pf.stats.rating={stars:pr.stars, rated:pr.rated, rank:pr.rank.name};
+  S.drApproval=r.approval; renderDrStats(d.pf.stats);
+  if(announce) toast(!r.waiting?"All your reports are decided: nothing to ask UEX"
+    :r.asked?`Updated from UEX: ${r.waiting} report${r.waiting===1?"":"s"} still waiting`
+    :`Checked UEX ${Math.max(1,Math.round(r.checked_ago||0))} s ago. Refresh can ask again in ${Math.max(1,60-Math.round(r.checked_ago||0))} s`);
+  const sum=Object.entries(r.summary||{}).map(([k,n])=>`<span class="chip" style="border-color:${DR_ST[k][1]}55;color:${DR_ST[k][1]}">${n} ${esc(DR_SUM[k])}</span>`).join("");
+  const st=d.pf.status_names;
+  const card=(e,i)=>{ const [label,col]=drOverall(e);
+    return `<div class="dr-rep" data-k="${i}"><div class="hd"><div><b>${esc(e.terminal||"Terminal")}</b><div class="muted" style="font-size:12px">${esc(e.where||"")} · ${new Date(e.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})} · ${e.rows.length} row${e.rows.length===1?"":"s"}${e.ids?.length?` · UEX #${esc(e.ids.join(", #"))}`:""}</div></div>
+      <span class="badge" style="color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div>
+      <div class="bd">${e.rows.map(x=>{ const s2=x.uex&&DR_ST[x.uex]; return `<div class="ln"><span>${esc(x.name||"#"+x.id_commodity)} <span class="muted">${x.side==="buy"?"BUY":"LMV"}</span></span>
+        <span>${x.missing?"no longer traded":`${x.price!=null?money(x.price):"?"} · ${drFmt(x.scu)} SCU · ${esc(st[x.status]||"?")}`}</span>
+        <span style="color:${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"#6f82a0":s2?s2[1]:"var(--dim)"}">${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"No decision":s2?esc(s2[0]):e.test?"":"–"}</span></div>`; }).join("")}
+        ${e.no_decision?`<div class="muted" style="font-size:11.5px;margin-top:6px">UEX didn't decide on this within 14 days, so Quantum stopped asking. It doesn't count toward your rating.</div>`:""}</div></div>`; };
+  P.innerHTML=`${drViews()}${drProfileCard(pr)}<div class="dr-top"><div><h2>My Reports</h2><div class="where">${r.live?"Their review status comes from UEX.":"Test mode: these were saved to a folder, not sent, so UEX has no status for them."}</div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">${r.approval!=null?`<span class="chip" style="border-color:#57e39b66;color:#9fe0b4">${r.approval}% approved</span>`:""}<button class="btn small" data-mine="refresh">Refresh</button></div></div>
+    ${sum?`<div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 2px 10px">${sum}</div>`:""}
+    ${r.error?`<div class="warnbox">Couldn't get the review status from UEX: ${esc(r.error)}</div>`:""}
+    ${!r.can_check&&r.reports.some(e=>!e.test)?`<div class="warnbox">Add your datarunner secret key in Settings to see what UEX did with your reports.</div>`:""}
+    <div class="dr-list">${(()=>{ const items=[...r.reports.map((e,k)=>({at:e.at||0,h:card(e,k)})),...(pr?.contrib||[]).map(c=>({at:c.at||0,h:drContribCard(c)}))].sort((a,b)=>b.at-a.at);
+      return items.length?items.map(x=>x.h).join(""):`<div class="dr-empty">No reports yet. Your price reports, pictures and station positions show up here with their status.</div>`; })()}</div>`; }
+
+// ---- sidebar: stats, screenshots, details
+function drStarBar(stars,size){ return `<span class="stars" style="${size?`font-size:${size}px`:""}">★★★★★<i style="width:${(stars||0)/5*100}%">★★★★★</i></span>`; }
+function drStars(r){ if(!r) return "";
+  return `<div class="dr-rating" title="Your first report UEX approves sets 5 stars. Approved rows keep it up, declined ones bring it down.">${drStarBar(r.rated?r.stars:0)}<b>${r.rated?r.stars.toFixed(1):"–"}</b><span class="muted" style="font-size:12px">${r.rated?esc(r.rank||"datarunner rating"):"Unrated: no reports approved yet"}</span></div>`; }
+function renderDrStats(st){ if(!st) return; const s=st.session, a=st.all;
+  $("dr-stats").innerHTML=`${drStars(st.rating)}<b style="font-size:13px">This session</b>
+    <div class="big"><div><b>${s.reports}</b><span>reports</span></div><div><b>${s.prices}</b><span>prices</span></div><div><b>${Math.round(s.days)}</b><span>days of old data replaced</span></div></div>
+    <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} reports · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% approved</b>`:""}</div>`; }
+async function renderDrShots(){ const r=await api().dr_shots(), st=await api().dr_status(); const was=drLocked();
+  S.drShotCount=r.shots.length; S.drShotKey=st.shot_hotkey||"";
+  if(S.dr&&S.dr.view!=="mine"&&was!==drLocked()) renderDrList();
+  else if($("dr-lock")) $("dr-lock").outerHTML=drLockHtml();
+  $("dr-shots").innerHTML=r.shots.map((s,i)=>`<div class="dr-shot"><img src="${s.thumb}" alt="Screenshot ${i+1}"><span>${i+1} · ${s.w}×${s.h}</span><button data-drx="${i}" aria-label="Remove screenshot ${i+1}">×</button></div>`).join("");
+  $("dr-shots-clear").hidden=!r.shots.length;
+  $("dr-shot-hint").textContent=(st.shot_hotkey?`Press ${st.shot_hotkey} in game with the kiosk on screen. `:"Set a screenshot key in Settings to take them from the game. ")
+    +(r.shots.length?"Long list? Scroll and take another; they're joined into one picture.":"The whole kiosk must be in it, showing the prices you report.");
+  renderDrSend(); }
+// Terminal: type any part of the place or terminal name ("new bab", "tressler admin"); where you are comes first.
+{ const q=$("dr-term-q"), list=$("dr-term-list"); let hi=0, shown=[];
+  const draw=()=>{ const words=q.value.toLowerCase().split(/\s+/).filter(Boolean), cur=S.dr?.pf?.id_terminal;
+    const all=S.drTerms||[], match=t=>{ const h=`${t.where} ${t.name} ${t.system||""}`.toLowerCase(); return words.every(w=>h.includes(w)); };
+    shown=(q.value===q.dataset.label?all:all.filter(match)).slice(0,60); hi=Math.max(0,Math.min(hi,shown.length-1));
+    list.innerHTML=shown.length?shown.map((t,j)=>`<div data-j="${j}" class="${j===hi?"hi":""}" role="option" aria-selected="${t.id===cur}">${t.here?"● ":""}${esc(t.name)}<small>${esc(t.where)}${t.system?` · ${esc(t.system)}`:""}</small></div>`).join("")
+      :`<div class="none">No terminal matches “${esc(q.value)}”</div>`;
+    list.classList.add("open"); q.setAttribute("aria-expanded","true"); list.querySelector(".hi")?.scrollIntoView({block:"nearest"}); };
+  const close=()=>{ list.classList.remove("open"); q.setAttribute("aria-expanded","false"); };
+  const pick=t=>{ if(!t) return; close(); q.value=`${t.where} · ${t.name}`; q.dataset.label=q.value; q.blur(); S.dr=null; openDatarunner(t.id); };
+  q.addEventListener("focus",()=>{ q.select(); hi=0; draw(); });
+  q.addEventListener("input",()=>{ hi=0; draw(); });
+  q.addEventListener("keydown",e=>{ if(e.key==="ArrowDown"){ e.preventDefault(); hi=Math.min(hi+1,shown.length-1); draw(); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); hi=Math.max(hi-1,0); draw(); }
+    else if(e.key==="Enter"){ e.preventDefault(); pick(shown[hi]); }
+    else if(e.key==="Escape"){ q.value=q.dataset.label||""; close(); q.blur(); } });
+  q.addEventListener("blur",()=>setTimeout(()=>{ if(document.activeElement!==q){ close(); q.value=q.dataset.label||""; } },150));
+  list.addEventListener("mousedown",e=>{ const o=e.target.closest("[data-j]"); if(o){ e.preventDefault(); pick(shown[+o.dataset.j]); } }); }
+// Counts down on the button, then Quantum steps out of the way, the game is shot, and Quantum comes back.
+$("dr-shoot").onclick=async()=>{ const b=$("dr-shoot"); if(b.disabled) return; b.disabled=true; S.drWaiting=true;
+  try{
+    for(const n of [3,2,1]){ b.textContent=`Screenshot in ${n}…`; await new Promise(r=>setTimeout(r,1000)); }
+    b.textContent="Taking screenshot…"; const st=await api().dr_capture(0);
+    if(!st.ok) return toast(st.error||"Couldn't start the screenshot");
+    if(/busy/.test(st.text||"")) return toast("Still working on the last screenshot. Try again in a few seconds");
+    const t0=Date.now(); let job;
+    while(Date.now()-t0<30000){ await new Promise(r=>setTimeout(r,300)); job=await api().dr_job(); if(job.state==="done"||job.state==="error") break; }
+    S.drJobSeen=job?.n;
+    if(job?.state!=="done") return toast(job?.error||"The screenshot didn't finish. Settings > Log shows where it stopped");
+    await renderDrShots(); drPreview(job.index);
+  } finally { S.drWaiting=false; b.disabled=false; b.textContent="Take screenshot"; } };
+$("dr-shots-clear").onclick=async()=>{ await api().dr_clear_shots(null); renderDrShots(); };
+$("dr-shots").onclick=async e=>{ const x=e.target.closest("[data-drx]"); if(x){ await api().dr_clear_shots(+x.dataset.drx); $("dr-view").classList.remove("show"); return renderDrShots(); }
+  const im=e.target.closest(".dr-shot img"); if(im) drPreview([...$("dr-shots").querySelectorAll(".dr-shot img")].indexOf(im)); };
+// A screenshot at readable size over the report, to check the whole kiosk and its prices are in it.
+async function drPreview(i){ const r=await api().dr_shot_image(i); if(!r.ok) return; const v=$("dr-view");
+  v.innerHTML=`<div class="gh"><b>Screenshot ${i+1}</b>${r.w}×${r.h} · check the whole kiosk and the prices you report are readable
+    <span class="spacer" style="flex:1"></span><button class="btn" data-dv="close">Back to the report</button><button class="btn ghost" data-dv="del">Remove it</button></div>
+    <img class="dv-img" src="${r.src}" alt="Screenshot ${i+1} of the terminal">`;
+  v.dataset.i=i; v.classList.add("show"); v.scrollTop=0; }
+$("dr-view").onclick=async e=>{ const a=e.target.closest("[data-dv]")?.dataset.dv; if(!a) return;
+  if(a==="del"){ await api().dr_clear_shots(+$("dr-view").dataset.i); renderDrShots(); }
+  $("dr-view").classList.remove("show"); };
 
 // =================================================================== data sync
 async function loadStatic(){
@@ -2215,7 +2935,7 @@ async function loadStatic(){
 // The UEX tabs only appear once a UEX token is saved; removing it hides them again.
 function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
-  if(!on&&["market","trade","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
+  if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
 async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
@@ -2228,6 +2948,14 @@ async function poll(){
   if(ck!==S.contractsKey||Math.round(live.now)%30===0){ S.contractsKey=ck; renderContracts(); }
   const ar=live.arrived; if(ar&&ar.at!==S.arrSeen){ if(S.arrSeen!==undefined) toast(ar.advanced?`Arrived at ${ar.place}${live.route.length?". Next: "+live.route[0]:". Route complete"}`:`Arrived at ${ar.place}`); S.arrSeen=ar.at; }
   renderHud(); renderStatus(); renderCapture(); renderWaypoints(false);
+  if(S.qVersion===undefined){ S.qVersion=""; api().update_status().then(st=>{ S.qVersion=st.current; if(st.just_updated) toast(`Quantum updated to ${st.current}`); }); }
+  if((live.update?.version||null)!==(S.updSeen||null)){ S.updSeen=live.update?.version||null; renderUpdateBar(); }
+  S.drHasSecret=!!live.datarunner?.has_secret;
+  { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
+    if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
+      if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
+  const dq=live.datarunner?.seq; if(dq!==undefined&&dq!==S.drSeq){ const grew=S.drSeq!==undefined&&live.datarunner.shots>(S.drShotN||0);
+    S.drSeq=dq; S.drShotN=live.datarunner.shots; if(grew) toast(`Terminal screenshot ${live.datarunner.shots} saved for your UEX report`); if(S.tab==="datarunner") renderDrShots(); }
 }
 async function init(){
   resize(); buildLayers(); buildFilters(); await loadStatic();

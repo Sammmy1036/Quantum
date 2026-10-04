@@ -11,6 +11,7 @@ import secrets
 import urllib.parse
 import urllib.request
 import os
+import re
 import math
 import sys
 import threading
@@ -21,10 +22,13 @@ import webbrowser
 
 import webview
 
+import community
+import datarunner
 import fleet
 import gateways
 import services
 import uex
+import updater
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
@@ -34,17 +38,51 @@ from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
 
 FROZEN = getattr(sys, "frozen", False)
+
+
+def report_ids(v):
+    """UEX's ids_reports, however it comes back (a list, a number or "1,2,3"), as ["1", "2", "3"]."""
+    if v is None:
+        return []
+    if isinstance(v, (list, tuple)):
+        return [str(int(x)) for x in v if str(x).strip().lstrip("-").isdigit()]
+    return re.findall(r"\d+", str(v))
+
+
+def wintypes_hwnd(n):
+    from ctypes import wintypes
+    return wintypes.HWND(n)
+
+
+def wintypes_hwnd_type():
+    from ctypes import wintypes
+    return wintypes.HWND
+
+
+def ctypes_int_type():
+    import ctypes
+    return ctypes.c_int
+
+
+def ctypes_dword():
+    from ctypes import wintypes
+    return wintypes.DWORD()
+
+
+def ctypes_byref(x):
+    import ctypes
+    return ctypes.byref(x)
 # Your data (locations, settings, calibrations, logs learned) lives next to Quantum.exe when packaged,
-# next to app.py otherwise. The bundled files (ui/, assets/, shipped calibrations) live in RES.
 HERE = Path(sys.executable).parent if FROZEN else Path(__file__).resolve().parent
 RES = Path(getattr(sys, "_MEIPASS", HERE))
 DB_PATH = HERE / "locations.json"
 MISSIONS_PATH = HERE / "missions.json"
 SETTINGS_PATH = HERE / "settings.json"
 SERVICES_PATH = HERE / "services.json"    # location services from the Star Citizen Wiki API
-WIKI_PATH = HERE / "wiki_systems.json"   # Star Citizen Wiki system info (CC BY-SA 4.0), from import_data.py
+WIKI_PATH = HERE / "wiki_systems.json"   # Star Citizen Wiki system info (CC BY-SA 4.0)
 CAL_PATH = HERE / "calibrations.json"
 PLACES_PATH = HERE / "places.json"
+COMMUNITY_PLACES_PATH = HERE / "community_places.json"
 SYSTEM_ORDER = {"Stanton": 0, "Pyro": 1, "Nyx": 2}
 VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"), ("is_military", "Combat"),
                  ("is_bomber", "Bomber"), ("is_exploration", "Exploration"), ("is_medical", "Medical"),
@@ -53,21 +91,20 @@ VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", 
                  ("is_industrial", "Industrial"), ("is_science", "Science"), ("is_stealth", "Stealth"),
                  ("is_carrier", "Carrier"), ("is_interdiction", "Interdiction"), ("is_emp", "EMP"),
                  ("is_construction", "Construction"), ("is_datarunner", "Data running"), ("is_qed", "Quantum snare")]      # gateway positions you measured with /showlocation; shareable
-# Where a hangar reading in each city is anchored: its spaceport (or the city if the data has no spaceport).
+# Where a hangar reading in each city is anchored its spaceport (or the city if the data has no spaceport).
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
                "Orison": "August Dunlow Spaceport", "Lorville": "Lorville", "Levski": "Levski"}
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
 BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum  
 
 class Api:
-    """Public methods are callable from JS as window.pywebview.api.<name>(...)."""
 
     def __init__(self):
         self._lock = threading.RLock()
         self._db = NavDB.load(DB_PATH)
         self._db.path = DB_PATH
         self._renamed = rename_gateways(self._db)
-        ren, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
+        ren, self._unplaced = gateways.apply(self._db, self._learned_places())
         self._renamed.update(ren)
         self._db.save()
         for path in (BUILTIN_CAL_PATH, CAL_PATH):
@@ -80,11 +117,11 @@ class Api:
             except Exception:
                 pass
         self._settings = self._load_settings()
-        # Stations Quantum's data lacks, from UEX's station list (cached; nothing is fetched here).
+        # Stations Quantum's data lacks, from UEX's station list.
         self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
         self._uex_amen = {}
         self._wikiapi = fleet.Wiki(HERE / "uex_cache")
-        # Component numbers from the game files (build_component_stats.py), preferred over the wiki.
+        # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
         self._renamed.update(self._apply_uex_stations(offline=True))
         ren = self._renamed
@@ -122,6 +159,20 @@ class Api:
         if a.get("action") == "showlocation" and not a.get("loc_hotkey"):
             a["loc_hotkey"], a["hotkey"] = a["hotkey"], "F9" if a["hotkey"] != "F9" else ""
         self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False)
+        self._dr = datarunner.Submitter(HERE / "datarunner_test")
+        self._dr_shots, self._dr_seq = [], 0
+        self._dr_job = {"state": "idle", "n": 0}
+        self._dr_terminal = None
+        self._community = community.Community(lambda: self._settings.get("community_url"),
+                                              lambda: not self._dr.live)
+        threading.Thread(target=self._sync_places, daemon=True).start()
+        self._updater = updater.Updater()
+        self._updater.cleanup()
+        self._update = None
+        threading.Thread(target=self._check_update, daemon=True).start()
+        self._dr_session = {"reports": 0, "prices": 0, "terminals": [], "days": 0.0, "started": time.time()}
+        self._sender.on_shot = lambda: self._dr_start_job(from_button=False)
+        self._sender.configure(shot_hotkey=(self._settings.get("datarunner") or {}).get("shot_hotkey", ""))
 
     # ------------------------------------------------------------ internals
     def _load_settings(self):
@@ -462,7 +513,7 @@ class Api:
         except uex.UexError:
             outposts = {}
         st_by_name = {s_.get("name"): s_ for s_ in stations}
-        learned = gateways.load_learned(PLACES_PATH)
+        learned = self._learned_places()
         bodies = {n for n in self._db.bodies}
         self._uex_pending = getattr(self, "_uex_pending", {})
         for tid, t in terms.items():
@@ -485,10 +536,10 @@ class Api:
                 if l.get("local") and l.get("body") in bodies:
                     loc = Location(name, "surface", tuple(l["local"]), l["body"], source="db", system=sysn,
                                    qt=True, category="station" if station else "outpost",
-                                   notes=f"From UEX{where}. Position from your /showlocation")
+                                   notes=f"From UEX{where}. Position from " + ("Quantum datarunners' /showlocation" if l.get("community") else "your /showlocation"))
                 else:
                     loc = Location(name, "space", tuple(l["pos"]), None, source="db", system=sysn, qt=True,
-                                   category="station", notes="From UEX. Position from your /showlocation")
+                                   category="station", notes="From UEX. Position from " + ("Quantum datarunners' /showlocation" if l.get("community") else "your /showlocation"))
                 self._db.locations[name] = loc
                 self._unplaced.pop(name, None)
             else:
@@ -569,7 +620,7 @@ class Api:
             return (cur["near"], cur["at"], "jump") if cur.get("near") in locs else (None, 0, None)
         q = self._tracker.qt or {}
         if q.get("selected") and not q.get("arrived") and time.time() - q["selected"] < 1800:
-            return None, 0, None                      # mid-jump: you're not at the old place any more
+            return None, 0, None                      # mid-jump you're not at the old place any more
         w = self._tracker.where or {}
         wp = self._tracker.place_for_code(w["code"]) if w.get("code") else None
         options = []
@@ -638,6 +689,12 @@ class Api:
             self._try_autocal()   # also when the log event arrives after the reading
             w = self._tracker.where or {}
             live["autoloc"] = self._sender.status()
+            up = self._update
+            if up and up.get("available") and up.get("version") != self._settings.get("skip_update"):
+                live["update"] = {"version": up["version"], "stage": self._updater.progress().get("stage")}
+            live["datarunner"] = {"shots": len(self._dr_shots), "seq": self._dr_seq, "job": self._dr_job.get("n"),
+                                 "job_state": self._dr_job.get("state"),
+                                 "has_secret": bool(self._dr_cfg().get("secret"))}
             live["calibration"] = self._calibration
             live["calib_suggest"] = self._calib_suggestion()
             live["at_place"] = ({"name": self._tracker.place_for_code(w["code"]), "code": w["code"], "at": w.get("at")}
@@ -689,7 +746,6 @@ class Api:
             self._save_settings()
 
     def _drop_orphan_mission_stops(self):
-        """Remove auto-created contract stops nothing points at any more."""
         used = {t["place"] for t in self._route} | ({self._guide} if self._guide else set())
         for c in self._tracker.contracts.values():
             if not is_tracked(c):
@@ -993,6 +1049,39 @@ class Api:
             self._db_changed()
             return {"ok": True, "name": loc.name, "body": loc.body}
 
+    # ---- station positions shared between Quantum users
+    def _learned_places(self):
+        """Positions for places the map is missing: your own /showlocation readings (places.json) win;
+        other Quantum users' agreed readings (from the server, kept in community_places.json) fill
+        the rest."""
+        merged = dict(gateways.load_learned(COMMUNITY_PLACES_PATH))
+        merged.update(gateways.load_learned(PLACES_PATH))
+        return merged
+
+    def _share_place(self, name):
+        entry = gateways.load_learned(PLACES_PATH).get(name)
+        if entry:
+            self._community.post_place(name, entry, self._dr_cfg().get("username"))
+
+    def _sync_places(self):
+        """Background, at start fetch the shared positions and put any new ones on the map."""
+        time.sleep(3)                                          # let start-up finish first
+        got = self._community.places()
+        if got is None:
+            return
+        if got == gateways.load_learned(COMMUNITY_PLACES_PATH):
+            return
+        try:
+            COMMUNITY_PLACES_PATH.write_text(json.dumps({"places": got}, indent=1), encoding="utf-8")
+        except OSError:
+            return
+        with self._lock:
+            ren, self._unplaced = gateways.apply(self._db, self._learned_places())
+            self._renamed.update(ren)
+            self._apply_uex_stations(offline=True)
+            self._db.save()
+            self._db_changed()
+
     def set_place_here(self, name):
         """You're docked at a gateway station: use your last /showlocation as its position."""
         with self._lock:
@@ -1011,7 +1100,8 @@ class Api:
                 return {"ok": False, "error": f"That reading is near {body.name}, not at the gateway. "
                                               "Take it while docked at the station"}
             gateways.save_learned(PLACES_PATH, name, system, self._player)
-            _, self._unplaced = gateways.apply(self._db, gateways.load_learned(PLACES_PATH))
+            self._share_place(name)
+            _, self._unplaced = gateways.apply(self._db, self._learned_places())
             self._apply_uex_stations(offline=True)          # keep the UEX-only places alongside
             self._db.save()
             self._db_changed()
@@ -1036,6 +1126,7 @@ class Api:
         else:
             places[name] = {"system": system, "pos": list(self._player), "at": time.time()}
         PLACES_PATH.write_text(json.dumps({"places": places}, indent=1), encoding="utf-8")
+        self._share_place(name)
         self._db.locations.pop(name, None)
         self._unplaced.pop(name, None)
         self._apply_uex_stations(offline=True)
@@ -1118,6 +1209,7 @@ class Api:
         self._sender.configure(hotkey, 0, open_chat, None, True, loc_hotkey, False)
         st = self._sender.status()
         self._settings["autoloc"] = {k: st[k] for k in ("hotkey", "loc_hotkey", "open_chat")}
+        self._settings.setdefault("datarunner", {})["shot_hotkey"] = st["shot_hotkey"]   # may have lost a clash
         self._save_settings()
         return st
 
@@ -1211,6 +1303,882 @@ class Api:
             st["unmatched"] = [n for n in st["unmatched"] if services._key(n) not in pending]
         return st
 
+    # ------------------------------------------------------------ datarunner (UEX price reports)
+    def _dr_cfg(self):
+        return self._settings.setdefault("datarunner", {})
+
+    def _dr_log(self, text):
+        self._sender._event(f"Screenshot: {text}")       # shows in Settings > Log, for troubleshooting
+
+    def _dr_timed(self, what, fn, timeout=2.0):
+        """Run a window call with a time limit. Some of them wait on another program (or on Quantum's own
+        window thread), and a call that never returns must not stop the screenshot."""
+        box = {}
+        th = threading.Thread(target=lambda: box.setdefault("r", fn()), daemon=True)
+        th.start()
+        th.join(timeout)
+        if th.is_alive():
+            self._dr_log(f"{what} didn't respond, carrying on")
+        return box.get("r")
+
+    def _dr_take_shot(self, from_button=False):
+        """Add a screenshot of the game to the report being prepared.
+        Quantum minimises itself if it's in the way, the game is brought forward, the shot is taken,
+        and Quantum is put back the way it was (on top again, or pinned if it was the F9 overlay).
+        Every window call is non-blocking or time-limited, so this always finishes."""
+        if os.name != "nt":
+            return datarunner.capture()                    # raises: Windows only
+        u = overlay.user32
+        u.ShowWindowAsync.argtypes = (wintypes_hwnd_type(), ctypes_int_type())
+        ASYNC = 0x4000                                     # SWP_ASYNCWINDOWPOS: post it, don't wait
+        keep = overlay.SWP_NOMOVE | overlay.SWP_NOSIZE | 0x0010   # + SWP_NOACTIVATE
+        # The exact title first: a browser tab about Star Citizen also has "star citizen" in its title.
+        wins = datarunner.game_windows()                  # biggest "Star Citizen" window = the game
+        self._dr_log("game windows: " + ("; ".join(f"{w}×{h} at {x},{y}" for _, (x, y, w, h) in wins) or "none"))
+        game = wins[0][0] if wins else None
+        if not game:
+            raise datarunner.DatarunnerError("Star Citizen isn't open. Open the terminal in game first")
+        me = u.FindWindowW(None, overlay.WINDOW_TITLE)
+        showing = bool(me) and bool(u.IsWindowVisible(me)) and not u.IsIconic(me)
+        pinned = showing and overlay._is_overlay_up(me)
+        hide = showing and (from_button or pinned)
+        try:
+            if hide:
+                self._dr_log("minimising Quantum")
+                if pinned:
+                    u.SetWindowPos(me, overlay.HWND_NOTOPMOST, 0, 0, 0, 0, keep | ASYNC)
+                u.ShowWindowAsync(me, 6)                   # SW_MINIMIZE
+            if u.IsIconic(game):
+                u.ShowWindowAsync(game, 9)                 # SW_RESTORE
+            self._dr_log("bringing Star Citizen forward")
+            u.SetWindowPos(game, wintypes_hwnd(0), 0, 0, 0, 0, keep | ASYNC)   # HWND_TOP
+            u.SetForegroundWindow(game)
+            time.sleep(0.8 if hide else 0.15)              # minimise animation, then the game redraws
+            self._dr_log("capturing")
+            shot = datarunner.capture(game)
+        finally:
+            if hide:
+                self._dr_restore_me(me, pinned)
+        return shot
+
+    def _dr_restore_me(self, me, pinned):
+        """Put Quantum back in view after a screenshot."""
+        u = overlay.user32
+        self._dr_log("bringing Quantum back")
+        # pywebview's own restore tells WebView2 it's visible again (a plain restore can leave it blank)
+        self._dr_timed("restoring the window", lambda: webview.windows[0].restore(), 2.0)
+        if u.IsIconic(me):
+            u.ShowWindowAsync(me, 9)                       # SW_RESTORE
+        keep = overlay.SWP_NOMOVE | overlay.SWP_NOSIZE | 0x0010 | 0x0040 | 0x4000   # + SHOWWINDOW, ASYNC
+        # Raising a window above the game needs no focus rights: pin it for a moment, then unpin
+        # (or leave it pinned if it was up as the F9 overlay).
+        u.SetWindowPos(me, overlay.HWND_TOPMOST, 0, 0, 0, 0, keep)
+        if not pinned:
+            time.sleep(0.15)
+            u.SetWindowPos(me, overlay.HWND_NOTOPMOST, 0, 0, 0, 0, keep)
+        self._dr_timed("focusing Quantum", lambda: overlay._force_foreground(me), 1.5)
+        self._dr_timed("redrawing", self._nudge_redraw, 1.5)
+
+    def _dr_start_job(self, from_button=False):
+        """Screenshot, then read it, on a thread of its own: the page polls dr_job() and is never left
+        waiting on a call that can't return."""
+        with self._lock:
+            if self._dr_job.get("state") == "shooting" and time.time() - self._dr_job.get("started", 0) < 25:
+                return "busy with the last screenshot"
+            self._dr_job = {"state": "shooting", "n": self._dr_job.get("n", 0) + 1, "started": time.time(),
+                            "from_button": from_button}
+        threading.Thread(target=self._dr_run_job, args=(from_button,), daemon=True).start()
+        return "taking a screenshot"
+
+    def _set_job(self, **kw):
+        with self._lock:
+            self._dr_job.update(kw)
+
+    def _dr_run_job(self, from_button):
+        try:
+            shot = self._dr_take_shot(from_button)
+        except Exception as e:                            
+            self._dr_log(f"failed ({e})")
+            return self._set_job(state="error", error=str(e))
+        with self._lock:
+            self._dr_shots = (self._dr_shots + [shot])[-datarunner.MAX_SHOTS:]
+            self._dr_seq += 1
+            index = len(self._dr_shots) - 1
+        rx, ry = getattr(shot, "rect", (0, 0, 0, 0))[:2]
+        self._dr_log(f"saved {shot.w}×{shot.h} ({getattr(shot, 'how', '?')}) from {rx},{ry}")
+        self._set_job(state="done", index=index)
+
+    def dr_capture(self, delay=0):
+        """Screenshot button (the page counts down first). Returns at once; poll dr_job()."""
+        return {"ok": True, "text": self._dr_start_job(from_button=True)}
+
+    def dr_job(self):
+        """Where the last screenshot is up to."""
+        with self._lock:
+            job = dict(self._dr_job)
+        if job.get("state") == "shooting" and time.time() - job.get("started", 0) > 25:
+            job.update(state="error", error="The screenshot took too long. Settings > Log shows the step it stopped at")
+        return job
+
+    def dr_status(self):
+        c = self._dr_cfg()
+        return {"live": self._dr.live, "has_secret": bool(c.get("secret")), "shot_hotkey": self._sender.shot_hotkey,
+                "folder": str(self._dr.test_dir), "shots": len(self._dr_shots)}
+
+    def dr_set_secret(self, secret):
+        secret = (secret or "").strip()
+        if secret:
+            self._dr_cfg()["secret"] = secret
+        else:
+            self._dr_cfg().pop("secret", None)
+        self._save_settings()
+        return {"ok": True, "has_secret": bool(secret)}
+
+    def dr_set_hotkey(self, key):
+        self._sender.configure(shot_hotkey=key or "")
+        self._dr_cfg()["shot_hotkey"] = self._sender.shot_hotkey
+        self._save_settings()
+        return {"ok": True, "shot_hotkey": self._sender.shot_hotkey}
+
+    def dr_shot_image(self, index):
+        try:
+            sh = self._dr_shots[int(index)]
+        except (IndexError, ValueError, TypeError):
+            return {"ok": False}
+        return {"ok": True, "src": datarunner.thumbnail(sh, 1600), "w": sh.w, "h": sh.h}
+
+    def dr_shots(self):
+        return {"shots": [{"thumb": datarunner.thumbnail(s), "w": s.w, "h": s.h, "at": s.at} for s in self._dr_shots],
+                "seq": self._dr_seq}
+
+    def dr_clear_shots(self, index=None):
+        with self._lock:
+            if index is None:
+                self._dr_shots = []
+            elif 0 <= int(index) < len(self._dr_shots):
+                self._dr_shots.pop(int(index))
+            self._dr_seq += 1
+        return self.dr_shots()
+
+    def _dr_terminals(self):
+        return {i: t for i, t in self._uex.terminals().items() if t.get("type", "commodity") == "commodity"}
+
+    def _dr_game_build(self):
+        running = self._game_on()
+        path = self._tracker.log_path or ""
+        env = next((c for c in ("EPTU", "PTU", "TECH-PREVIEW", "HOTFIX", "LIVE")
+                    if f"\\{c}\\" in path.upper().replace("/", "\\")), "LIVE")
+        # The log knows the release (Branch: sc-alpha-4.10.0, FileVersion: 4.10.193.11644) but not
+        # which patch of it: a 4.10.1 hotfix still says 4.10.0 / 4.10.193. So the log gives major.minor,
+        # and UEX's own version list (the numbering the community uses) gives the patch, as long as
+        # both agree on the release. If they don't (a new release UEX hasn't listed), the log wins.
+        logged = None
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as fh:
+                head = fh.read(200_000)
+            m = (re.search(r"Branch:\s*sc-alpha-(\d+\.\d+(?:\.\d+)?)", head)
+                 or re.search(r"(?:File|Product)Version:\s*(\d+\.\d+)\.", head)
+                 or re.search(r"sc-alpha-(\d+\.\d+(?:\.\d+)?)", head))
+            logged = m.group(1) if m else None
+        except OSError:
+            pass
+        version = logged
+        if logged:
+            release = ".".join(logged.split(".")[:2])
+            try:
+                rows, _ = self._uex.get("game_versions")
+                listed = (rows[0] if rows else {}).get("ptu" if "PTU" in env else "live") or ""
+            except uex.UexError:
+                listed = ""
+            if listed == release or listed.startswith(release + "."):
+                version = listed
+        return version, env, running
+
+    def _dr_game_version(self):
+        """LIVE or PTU version for the report: from UEX's version list, picked by which Game.log is read."""
+        ptu = "ptu" in (self._tracker.log_path or "").lower().replace("/", "\\").split("\\")
+        try:
+            rows, _ = self._uex.get("game_versions")
+            v = rows[0] if rows else {}
+        except uex.UexError:
+            v = {}
+        return (v.get("ptu") if ptu else v.get("live")) or "", "PTU" if ptu else "LIVE"
+
+    def _dr_params(self):
+        try:
+            rows, _ = self._uex.get("data_parameters")
+            p = rows[0] if rows else {}
+        except uex.UexError:
+            return {}
+        com = p.get("commodity") if isinstance(p.get("commodity"), dict) else p
+        glob = p.get("global") if isinstance(p.get("global"), dict) else p
+        return {"accepting": glob.get("is_accepting_reports", 1), "accepting_ptu": glob.get("is_accepting_ptu_reports"),
+                "commodity_accepted": com.get("is_accepted", 1), "price_variation": com.get("price_variation")}
+
+    def dr_prefill(self, id_terminal=None):
+        """Everything the report form can fill in by itself: the terminal where the game log puts you,
+        what it trades with UEX's current numbers, the game version and UEX's limits."""
+        def run():
+            terms = self._dr_terminals()
+            places = self._uex.place_map(self._db.locations)
+            spot, _, how = self._log_spot(self._tracker.cur or {}) if self._game_on() else (None, 0, None)
+            here = {i for i, p in places.items() if p and p == spot and i in terms}
+            tid = int(id_terminal) if id_terminal else (min(here) if here else None)
+            self._dr_terminal = tid
+            listing = sorted(({"id": i, "name": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
+                               "here": i in here} for i, t in terms.items()),
+                             key=lambda x: (not x["here"], x["system"] or "", x["where"] or "", x["name"] or ""))
+            rows, at = self._uex.get("commodities_prices_all")
+            rows = self._community.overlay(rows)
+            coms, _ = self._uex.get("commodities")
+            names = {c["id"]: c["name"] for c in coms}
+            out, boxes = [], set()
+            for r in rows:
+                if r.get("id_terminal") != tid:
+                    continue
+                for side, scu_key in (("buy", "scu_buy"), ("sell", "scu_sell_stock")):
+                    if r.get(f"price_{side}"):
+                        out.append({"id_commodity": r["id_commodity"], "name": names.get(r["id_commodity"], r.get("commodity_name")),
+                                    "side": side, "price": r[f"price_{side}"], "scu": r.get(scu_key) or r.get(f"scu_{side}"),
+                                    "status": r.get(f"status_{side}"), "avg": r.get(f"price_{side}_avg"),
+                                    "updated": (r.get(f"community_{side}") or {}).get("at") or r.get("date_modified"),
+                                    "community": r.get(f"community_{side}")})
+                for b in str(r.get("container_sizes") or "").replace(";", ",").split(","):
+                    if b.strip().isdigit() and int(b) in datarunner.CONTAINER_SIZES:
+                        boxes.add(int(b))
+            out.sort(key=lambda x: (x["side"] != "buy", x["name"] or ""))
+            version, env, running = self._dr_game_build()
+            t = terms.get(tid) or {}
+            return {"ok": True, "terminals": listing, "id_terminal": tid, "terminal": t.get("name"),
+                    "where": uex.where(t) if t else None, "you_are_at": spot, "how": how,
+                    "rows": out, "commodities": sorted(({"id": i, "name": n} for i, n in names.items()), key=lambda c: c["name"]),
+                    "uex_sizes": sorted(boxes), "game_running": running, "game_version": version, "env": env,
+                    "params": self._dr_params(), "status_names": datarunner.STATUS, "at": at,
+                    "stats": self.dr_stats(), "cooldown": self._dr_cooldowns(tid),
+                    "ack": bool(self._dr_cfg().get("ack")), "reports_count": sum(1 for e in self._dr_report_log() if not (self._dr.live and e.get("test"))), **self.dr_status()}
+        return self._uex_call(run)
+
+    def _dr_build(self, form):
+        version, env, running = self._dr_game_build()
+        form = dict(form, game_version=version or "")      # from Game.log only, never typed in
+        terms = self._dr_terminals()
+        coms = {c["id"] for c in self._uex.get("commodities")[0]}
+        shot = datarunner.screenshot_b64(self._dr_shots)
+        body = datarunner.build_payload(form, shot, production=self._dr.live)
+        errs = datarunner.validate(body, terms, coms, need_screenshot=True, history=self._dr.history())
+        if not running:
+            errs.insert(0, "game_not_running")
+        elif not version:
+            errs.insert(0, "game_version_unknown")
+        params = self._dr_params()
+        if params and not params.get("accepting"):
+            errs.insert(0, "service_unavailable")
+        avg = {}
+        for r in self._uex.get("commodities_prices_all")[0]:
+            if r.get("id_terminal") == body.get("id_terminal"):
+                for side in ("buy", "sell"):
+                    avg[(r["id_commodity"], side)] = r.get(f"price_{side}_avg") or r.get(f"price_{side}")
+        warns = datarunner.price_warnings(body, avg, params.get("price_variation"))
+        return body, errs, warns, terms
+
+    def _dr_after_send(self, body, form, t, res):
+        """Bookkeeping once UEX has accepted a report. Each step on its own: the report is already at
+        UEX, so a problem here must never turn into "not sent" (and a retry UEX refuses as a duplicate)."""
+        import traceback
+        sides = [r.get("side") for r in form.get("rows") or [] if r.get("include")]
+        data = res.get("data") or {}
+        for step in (lambda: res.__setitem__("refreshed_days", self._dr_count(body)),
+                     lambda: self._dr_log_report(body, form, t, res),
+                     lambda: res.__setitem__("community", self._community.post(
+                         body, sides, report_ids(data.get("ids_reports")),
+                         data.get("username") or self._dr_cfg().get("username"), data.get("date_added"),
+                         test=bool(res.get("test")), display=(self._dr_cfg().get("uex_user") or {}).get("username"),
+                         avatar=(self._dr_cfg().get("uex_user") or {}).get("avatar"))),
+                     self.dr_clear_shots):
+            try:
+                step()
+            except Exception:
+                traceback.print_exc()
+
+    def _dr_explain_duplicate(self, body, form, t, res):
+        """UEX says it already has these items from the last 5 minutes. Look up what it has from this
+        datarunner at this terminal: usually an earlier click that did go through. If so, say so, and
+        add it to My Reports so nothing is lost."""
+        secret, user = self._dr_cfg().get("secret"), self._dr_cfg().get("username")
+        if not secret:
+            return
+        try:
+            params = {"type": "commodity", "id_terminal": body.get("id_terminal"), "limit": 20}
+            if user:
+                params["username"] = user
+            rows = self._uex._fetch("data_info", params, headers={"secret-key": secret}, timeout=15)
+        except uex.UexError:
+            return
+        now = time.time()
+        mine = [r for r in rows if r.get("is_owner", 1) and now - (r.get("date_added") or 0) < 900]
+        if not mine:
+            return
+        names = {}
+        try:
+            names = {c["id"]: c["name"] for c in self._uex.get("commodities", offline=True)[0]}
+        except uex.UexError:
+            pass
+        mins = max(1, round((now - max(r.get("date_added") or now for r in mine)) / 60))
+        items = ", ".join(sorted({names.get(r.get("id_commodity"), "#" + str(r.get("id_commodity"))) for r in mine}))
+        res["errors"] = [{"code": "duplicated_report",
+                          "text": f"Your report of {items} here already reached UEX {mins} min ago "
+                                  f"({mine[0].get('status') or 'pending'}), so this one is a repeat. Nothing more to do: "
+                                  "it's in My Reports now."}]
+        res["already_sent"] = True
+        known = {i for e in self._dr_report_log() for i in e.get("ids", [])}
+        ids = [str(r.get("id")) for r in mine]
+        if not set(ids) & known:
+            fake = {"ok": True, "test": False, "data": {"ids_reports": ",".join(ids), "date_added": min(r.get("date_added") or now for r in mine),
+                                                         "username": mine[0].get("username")}}
+            try:
+                self._dr_log_report(body, form, t, fake)
+                self._dr_count(body)
+                self._dr._sides = [r.get("side") for r in form.get("rows") or [] if r.get("include")]
+                self._dr._remember(body, min(r.get("date_added") or now for r in mine), self._dr._sides)
+            except Exception:
+                pass
+
+    def _dr_dup_text(self, body, form):
+        """Which rows Quantum's own 5-minute check holds back, and for how long."""
+        now, hist, names = time.time(), self._dr.history(), {}
+        try:
+            names = {c["id"]: c["name"] for c in self._uex.get("commodities", offline=True)[0]}
+        except uex.UexError:
+            pass
+        sides = [r.get("side") for r in form.get("rows") or [] if r.get("include")]
+        out = []
+        for i, p in enumerate(body.get("prices") or []):
+            side = sides[i] if i < len(sides) else "buy"
+            t = hist.get(f"{body.get('id_terminal')}:{p.get('id_commodity')}:{side}")
+            if t and now - t < datarunner.DUPLICATE_WINDOW:
+                out.append(f"{names.get(p.get('id_commodity'), '#' + str(p.get('id_commodity')))} "
+                           f"(again in {max(1, round((datarunner.DUPLICATE_WINDOW - (now - t)) / 60))} min)")
+        return ("You sent " + ", ".join(out) + " from here less than 5 minutes ago. "
+                "UEX takes each item once every 5 minutes; untick those rows or wait") if out else None
+
+    def dr_check(self, form):
+        """Step 6 of the UEX guide, "review one final time": everything the report would send, the
+        problems UEX would refuse it for, and prices far enough off to double-check. Nothing is saved."""
+        def run():
+            body, errs, warns, terms = self._dr_build(form)
+            t = terms.get(body.get("id_terminal")) or {}
+            return {"ok": True, "live": self._dr.live, "terminal": t.get("name"), "where": uex.where(t) if t else None,
+                    "prices": body.get("prices") or [], "shots": len(self._dr_shots),
+                    "container_sizes": body.get("container_sizes"), "game_version": body.get("game_version"),
+                    "errors": [{"code": c, "text": (self._dr_dup_text(body, form) or datarunner.message(c))
+                                if c == "duplicated_report" else datarunner.message(c)} for c in errs], "warnings": warns}
+        return self._uex_call(run)
+
+    def dr_submit(self, form):
+        """Save the report (test mode) or send it (live). The page reviews it with dr_check first."""
+        def run():
+            body, errs, warns, terms = self._dr_build(form)
+            if errs and self._dr.live:         # live: don't send what UEX will refuse anyway
+                dup = self._dr_dup_text(body, form) if "duplicated_report" in errs else None
+                return {"ok": False, "status": errs[0], "errors": [
+                    {"code": c, "text": dup if c == "duplicated_report" and dup else datarunner.message(c)} for c in errs]}
+            t = terms.get(body.get("id_terminal")) or {}
+            res = self._dr.submit(body, self._uex.token, self._dr_cfg().get("secret", ""),
+                                  f"{t.get('name') or ''} {uex.where(t) if t else ''}", errs, warns,
+                                  sides=[r.get("side") for r in form.get("rows") or [] if r.get("include")])
+            res["warnings"] = warns
+            res["rows"] = len(body.get("prices") or [])
+            if res.get("ok"):
+                self._dr_after_send(body, form, t, res)
+            elif res.get("status") == "duplicated_report" and not res.get("test"):
+                self._dr_explain_duplicate(body, form, t, res)
+            res["stats"] = self.dr_stats()
+            return res
+        return self._uex_call(run)
+
+    def _dr_count(self, body):
+        """A sent report into the stats: this session's and all-time (test reports kept apart).
+        Also how stale the data it replaced was, which is the fun number."""
+        now, tid = time.time(), body.get("id_terminal")
+        ages = {}
+        try:
+            for r in self._uex.get("commodities_prices_all", offline=True)[0]:
+                if r.get("id_terminal") == tid and r.get("date_modified"):
+                    ages[r["id_commodity"]] = max(0.0, (now - r["date_modified"]) / 86400)
+        except uex.UexError:
+            pass
+        days = sum(ages.get(p.get("id_commodity"), 0) for p in body.get("prices") or [])
+        n = len(body.get("prices") or [])
+        ses = self._dr_session
+        ses["reports"] += 1
+        ses["prices"] += n
+        ses["days"] += days
+        if tid not in ses["terminals"]:
+            ses["terminals"].append(tid)
+        key = "stats_test" if not self._dr.live else "stats"
+        all_ = self._dr_cfg().setdefault(key, {"reports": 0, "prices": 0, "days": 0.0, "terminals": []})
+        all_["reports"] += 1
+        all_["prices"] += n
+        all_["days"] = round(all_["days"] + days, 1)
+        if tid not in all_["terminals"]:
+            all_["terminals"].append(tid)
+        all_["last"] = now
+        self._save_settings()
+        return round(days, 1)
+
+    def dr_stats(self):
+        ses = self._dr_session
+        all_ = self._dr_cfg().get("stats_test" if not self._dr.live else "stats") or {}
+        return {"session": {"reports": ses["reports"], "prices": ses["prices"], "terminals": len(ses["terminals"]),
+                            "days": round(ses["days"], 1)},
+                "all": {"reports": all_.get("reports", 0), "prices": all_.get("prices", 0),
+                        "terminals": len(all_.get("terminals", [])), "days": all_.get("days", 0)},
+                "test": not self._dr.live, "rating": self._dr_cfg().get("rating")}
+
+    def _dr_cooldowns(self, tid):
+        """Rows sent from here in the last 5 minutes, which UEX won't take again yet: {"id:side": seconds left}."""
+        now, out = time.time(), {}
+        for k, t in self._dr.history().items():
+            t_id, cid, side = k.split(":")
+            left = datarunner.DUPLICATE_WINDOW - (now - t)
+            if str(t_id) == str(tid) and left > 0:
+                out[f"{cid}:{side}"] = int(left)
+        return out
+
+    # ---- the datarunner's own reports and what UEX did with them
+    REPORT_STATUS = ("pending", "under_review", "queued", "approved", "consolidated", "declined", "expired")
+
+    def _dr_report_log(self):
+        try:
+            log = json.loads((HERE / "datarunner_reports.json").read_text(encoding="utf-8"))
+        except Exception:
+            return []
+        for e in log:
+            e["ids"] = report_ids(",".join(map(str, e.get("ids") or [])))
+        return log
+
+    def _dr_log_report(self, body, form, term, res):
+        """Every report sent (or saved in test mode), newest first, so the "My reports" view can follow
+        it through UEX's review. UEX returns its report IDs; their status comes from /data_info."""
+        names = {}
+        try:
+            names = {c["id"]: c["name"] for c in self._uex.get("commodities", offline=True)[0]}
+        except uex.UexError:
+            pass
+        data = res.get("data") or {}
+        ids = report_ids(data.get("ids_reports")) if not res.get("test") else []
+        sides = [r.get("side") for r in form.get("rows") or [] if r.get("include")]
+        rows = []
+        for i, p in enumerate(body.get("prices") or []):
+            side = sides[i] if i < len(sides) else "buy"
+            rows.append({"id_commodity": p.get("id_commodity"), "name": names.get(p.get("id_commodity")), "side": side,
+                         "price": p.get(f"price_{side}"), "scu": p.get(f"scu_{side}"), "status": p.get(f"status_{side}"),
+                         "missing": bool(p.get("is_missing"))})
+        entry = {"at": int(data.get("date_added") or time.time()), "test": bool(res.get("test")), "ids": ids,
+                 "username": data.get("username"), "id_terminal": body.get("id_terminal"), "terminal": term.get("name"),
+                 "where": uex.where(term) if term else None, "rows": rows}
+        log = [entry] + self._dr_report_log()
+        try:
+            (HERE / "datarunner_reports.json").write_text(json.dumps(log[:300], indent=1), encoding="utf-8")
+        except OSError:
+            pass
+        if data.get("username"):
+            self._dr_cfg()["username"] = data["username"]
+            self._save_settings()
+
+    def dr_reports(self, refresh=False):
+        try:
+            return self._dr_reports(refresh)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()                        # shows in the console window, for troubleshooting
+            return {"ok": False, "error": f"{type(e).__name__}: {e}", "reports": [], "summary": {}}
+
+    def _dr_reports(self, refresh=False):
+        """The "My reports" view: what was sent, and each report's state at UEX (pending, under review,
+        approved, live, declined, expired). Test reports were never sent, so they have none."""
+        log = self._dr_report_log()
+        if self._dr.live:                                  # test reports were never sent: not in the live list
+            log = [e for e in log if not e.get("test")]
+        secret, user = self._dr_cfg().get("secret"), self._dr_cfg().get("username")
+        # Reports this PC doesn't know about (a reinstall, another PC) come back from the server.
+        prof = self._community.profile(user) if user else None
+        if prof and prof.get("history"):
+            known = {i for e in log for i in e.get("ids", [])}
+            try:
+                terms, names = self._uex.terminals(), {c["id"]: c["name"] for c in self._uex.get("commodities", offline=True)[0]}
+            except uex.UexError:
+                terms, names = {}, {}
+            for h in prof["history"]:
+                if h.get("test") or set(h.get("ids", [])) & known:
+                    continue
+                t = terms.get(h["id_terminal"]) or {}
+                log.append({"at": h["at"], "test": False, "ids": h["ids"], "username": user, "id_terminal": h["id_terminal"],
+                            "terminal": t.get("name"), "where": uex.where(t) if t else None, "from_server": True,
+                            "rows": [dict(r, name=names.get(r["id_commodity"])) for r in h["rows"]]})
+            log.sort(key=lambda e: -e.get("at", 0))
+        # Only reports still waiting on UEX are looked up: ones UEX has decided are kept as they are,
+        # and after 14 days without a decision Quantum stops asking (see FOLLOW_FOR).
+        now = time.time()
+        waiting = [e for e in log if not e.get("test") and e.get("ids") and not e.get("final")
+                   and now - e.get("at", 0) <= self.FOLLOW_FOR]
+        found, error, asked = {}, None, False
+        if waiting and secret and self._uex.token:
+            cache = getattr(self, "_dr_info_cache", None)
+            if cache and time.time() - cache[0] < (60 if refresh else 300):   # gentle on UEX: 5 min, Refresh 1 min
+                found = cache[1]
+            else:
+                try:
+                    params = {"type": "commodity", "limit": 100}
+                    if user:
+                        params["username"] = user
+                    for r in self._uex._fetch("data_info", params, headers={"secret-key": secret}, timeout=15):
+                        if r.get("is_owner", 1):
+                            found.setdefault(str(r.get("id")), []).append(r)
+                    self._dr_info_cache = (time.time(), found)
+                    asked = True
+                except uex.UexError as e:
+                    error = str(e)
+        self._dr_backfill(log, prof)
+        out, changed = [], False
+        for e in log:
+            rows = [dict(r) for r in e.get("rows", [])]
+            states = []
+            if e.get("final") or (not e.get("test") and now - e.get("at", 0) > self.FOLLOW_FOR):
+                # decided earlier, or no longer followed: show what UEX last said
+                states = list(e.get("states") or [])
+                out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
+                continue
+            if not e.get("test"):
+                for rid in e.get("ids", []):
+                    for r in found.get(rid, []):
+                        if abs((r.get("date_added") or e["at"]) - e["at"]) > 86400:
+                            continue                       # the same ID in another partition of UEX's table
+                        states.append(r.get("status"))
+                        for row in rows:
+                            if row["id_commodity"] == r.get("id_commodity") and "uex" not in row:
+                                row["uex"] = r.get("status")
+                                row["checked"] = r.get("date_checked")
+                                break
+            if not states and e.get("states"):
+                states = list(e["states"])                 # nothing new from UEX this time: keep what it said
+                for row in rows:
+                    row.setdefault("uex", (e.get("row_states") or {}).get(str(row["id_commodity"])))
+            elif states and states != e.get("states"):
+                e["states"], changed = states, True
+                e["row_states"] = {str(r["id_commodity"]): r.get("uex") for r in rows if r.get("uex")}
+                if all(st in self.DECIDED for st in states):
+                    e["final"] = True                          # UEX is done with it: never asked about again
+            out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
+        if changed:
+            self._dr_save_states(log)
+        counted = [s for e in out for s in e["states"] if not e.get("no_decision")]
+
+        summary = {k: counted.count(k) for k in self.REPORT_STATUS if counted.count(k)}
+        decided = sum(summary.get(k, 0) for k in ("approved", "consolidated", "declined"))
+        ok = summary.get("approved", 0) + summary.get("consolidated", 0)
+        return {"ok": True, "reports": out, "summary": summary, "approval": round(ok / decided * 100) if decided else None,
+
+                "error": error, "can_check": bool(secret and self._uex.token), "live": self._dr.live,
+                "asked": asked, "waiting": len(waiting),
+                "checked_ago": time.time() - getattr(self, "_dr_info_cache", (time.time(),))[0]}
+
+    def community_status(self):
+        return {"url": self._community.url, **self._community.health()}
+
+    def set_community_url(self, url):
+        """The Quantum API server for community prices; empty turns them off."""
+        url = (url or "").strip().rstrip("/")
+        if url and not url.startswith(("https://", "http://")):
+            url = "https://" + url
+        self._settings["community_url"] = url
+        self._save_settings()
+        self._community.prices(fresh=True)
+        return self.community_status()
+
+    RANKS = [(0, "Unranked"), (1, "Trainee"), (11, "Runner"), (26, "Field Analyst"),
+             (51, "Trade Analyst"), (101, "Quantum Analyst")]     # same table as the server
+
+    def _dr_rank(self, n):
+        name, nxt = self.RANKS[0][1], None
+        for i, (at, nm) in enumerate(self.RANKS):
+            if n >= at:
+                name, nxt = nm, (self.RANKS[i + 1] if i + 1 < len(self.RANKS) else None)
+        return {"name": name, "count": n, "next": {"name": nxt[1], "at": nxt[0]} if nxt else None}
+
+    def _dr_rating(self, states):
+        """Star rating from what UEX decided: each approved row counts 5 stars, each declined one 1,
+        averaged. Nothing decided yet: no rating (0 stars). Same formula as the server; this local
+        one is only used when the server can't be reached."""
+        good = sum(1 for s in states if s in ("approved", "consolidated"))
+        bad = sum(1 for s in states if s == "declined")
+        return {"stars": round((5 * good + bad) / (good + bad), 2) if good + bad else 0, "rated": good + bad > 0,
+                "approved": good, "declined": bad}
+
+    def _dr_uex_user(self, refresh=False):
+        """The datarunner's UEX username and avatar, from UEX's /user (needs the secret key).
+        Cached for 6 hours."""
+        cfg = self._dr_cfg()
+        cached = cfg.get("uex_user")
+        if cached and not refresh and time.time() - cached.get("at", 0) < (6 * 3600 if cached.get("avatar") else 600):
+            return cached
+        if not (cfg.get("secret") and self._uex.token):
+            return cached
+        try:
+            rows = self._uex._fetch("user", {}, headers={"secret-key": cfg["secret"]}, timeout=10)
+            u = rows[0] if rows else {}
+        except uex.UexError:
+            return cached
+        if u.get("username"):
+            cached = {"username": u["username"], "name": u.get("name"), "avatar": u.get("avatar"), "at": int(time.time()),
+                      "is_datarunner": u.get("is_datarunner"), "is_datarunner_banned": u.get("is_datarunner_banned")}
+            cfg["uex_user"], cfg["username"] = cached, u["username"]
+            self._save_settings()
+        return cached
+
+    @staticmethod
+    def _dr_avatar_urls(raw):
+        raw = str(raw).strip()
+        if raw.startswith("//"):
+            return ["https:" + raw]
+        if raw.startswith(("http://", "https://", "data:")):
+            return [raw]
+        path = raw.lstrip("/")
+        return [f"https://{host}/{path}" for host in ("edge.uexcorp.space", "assets.uexcorp.space", "uexcorp.space")]
+
+    def _dr_avatar(self, raw):
+        """The UEX avatar as a data: URL. Downloaded here rather than linked from the page: UEX may
+        hand back a path rather than a full address, and its image servers may not serve pictures
+        to other sites. Kept on disk, so it's fetched once per avatar."""
+        if not raw:
+            return None
+        import base64
+        import hashlib
+        raw = str(raw).strip()
+        if raw.startswith("data:"):
+            return raw
+        tries = self._dr_avatar_urls(raw)
+        cache = HERE / "uex_cache" / f"avatar_{hashlib.sha1(raw.encode()).hexdigest()[:12]}"
+        if raw in getattr(self, "_avatar_direct", set()):
+            return None                        # the page loads this one straight from UEX (see below)
+        try:
+            kind, data = cache.read_text(encoding="utf-8").split("\n", 1)
+            return f"data:{kind};base64,{data}"
+        except Exception:
+            pass
+        for url in tries:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Quantum", "Referer": "https://uexcorp.space/",
+                                                           "Accept": "image/*"})
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    kind = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+                    body = r.read(3_000_000)
+                if not kind.startswith("image/") or not body:
+                    continue
+                data = base64.b64encode(body).decode("ascii")
+                try:
+                    cache.parent.mkdir(parents=True, exist_ok=True)
+                    cache.write_text(f"{kind}\n{data}", encoding="utf-8")
+                except OSError:
+                    pass
+                return f"data:{kind};base64,{data}"
+            except Exception:
+                continue
+        # UEX's image CDN only serves browsers, which is normal; the page then loads it directly.
+        # Remember that so it isn't tried (and reported) on every visit.
+        if not hasattr(self, "_avatar_direct"):
+            self._avatar_direct = set()
+        self._avatar_direct.add(raw)
+        return None
+
+    def dr_profile(self, refresh=False):
+        try:
+            return self._dr_profile(refresh)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    FOLLOW_FOR = 14 * 86400                # stop asking UEX about a report after this long
+    DECIDED = ("approved", "consolidated", "declined", "expired")
+
+    def _dr_no_decision(self, e, states, now):
+        """Sent more than 14 days ago and UEX never decided: shown as such, left out of the counts."""
+        return (not e.get("test") and bool(e.get("ids")) and now - e.get("at", 0) > self.FOLLOW_FOR
+                and not all(s in self.DECIDED for s in states or ["?"]))
+
+    def _dr_save_states(self, log):
+        """Keep UEX's latest answer for each report in the log, so decided reports aren't asked about
+        again and a report keeps its last known status once Quantum stops following it."""
+        full = self._dr_report_log()
+        by = {(tuple(e.get("ids") or []), e.get("at")): e for e in log}
+        for e in full:
+            got = by.get((tuple(e.get("ids") or []), e.get("at")))
+            if got:
+                for k in ("states", "row_states", "final"):
+                    if k in got:
+                        e[k] = got[k]
+        try:
+            (HERE / "datarunner_reports.json").write_text(json.dumps(full[:300], indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+    def _dr_backfill(self, log, prof):
+        """Send the community server any recent live report it doesn't have yet (a send that failed,
+        or one from before it existed). The server checks each against UEX as usual."""
+        if not self._community.url:
+            return
+        have = {i for h in (prof or {}).get("history", []) for i in h.get("ids", [])}
+        for e in log:
+            if e.get("test") or not e.get("ids") or e.get("shared") or set(e["ids"]) & have:
+                continue
+            if time.time() - e.get("at", 0) > 6 * 86400:
+                continue
+            body = {"id_terminal": e.get("id_terminal"), "prices": []}
+            for r in e.get("rows", []):
+                p = {"id_commodity": r["id_commodity"]}
+                if r.get("missing"):
+                    p["is_missing"] = 1
+                else:
+                    p.update({f"price_{r['side']}": r.get("price"), f"scu_{r['side']}": r.get("scu"),
+                              f"status_{r['side']}": r.get("status")})
+                body["prices"].append(p)
+            got = self._community.post(body, [r.get("side") for r in e.get("rows", [])], e["ids"],
+                                       e.get("username") or self._dr_cfg().get("username"), e.get("at"), test=False,
+                                       display=(self._dr_cfg().get("uex_user") or {}).get("username"),
+                                       avatar=(self._dr_cfg().get("uex_user") or {}).get("avatar"))
+            if got and got.get("ok"):
+                self._dr_mark_shared(e)
+
+    def _dr_mark_shared(self, entry):
+        full = self._dr_report_log()
+        for e in full:
+            if e.get("ids") == entry.get("ids") and e.get("at") == entry.get("at"):
+                e["shared"] = True
+        try:
+            (HERE / "datarunner_reports.json").write_text(json.dumps(full[:300], indent=1), encoding="utf-8")
+        except OSError:
+            pass
+
+    def _dr_profile(self, refresh=False):
+        """The My Reports header: who you are at UEX, your rank and star rating. The server keeps it
+        (so it survives a reinstall); without the server it's worked out from this PC's report log."""
+        user = self._dr_uex_user(refresh) or {}
+        name = user.get("username") or self._dr_cfg().get("username")
+        prof = self._community.profile(name) if name else None
+        if prof:
+            out = dict(prof, source="server")
+            local_sent = sum(1 for e in self._dr_report_log() if not e.get("test") and e.get("ids"))
+            out["reports"] = max(out.get("reports") or 0, local_sent)
+        else:
+            reps = self._dr_reports()
+            states = [s for e in reps["reports"] if not e.get("test") for s in e["states"]]
+            accepted = sum(1 for e in reps["reports"] if not e.get("test")
+                           and any(s in ("approved", "consolidated") for s in e["states"]))
+            r = self._dr_rating(states)
+            out = {"username": name, "stars": r["stars"], "rated": r["rated"], "accepted": accepted,
+                   "reports": sum(1 for e in reps["reports"] if not e.get("test")),
+                   "rows": {"approved": r["approved"], "declined": r["declined"]}, "rank": self._dr_rank(accepted),
+                   "banned": False, "source": "local"}
+        raw = user.get("avatar") or out.get("avatar")
+        out.update(ok=True, name=user.get("name"), avatar=self._dr_avatar(raw), avatar_url=self._dr_avatar_urls(raw)[0] if raw else None,
+                   avatar_raw=raw, uex_datarunner=user.get("is_datarunner"), uex_banned=user.get("is_datarunner_banned"),
+                   has_secret=bool(self._dr_cfg().get("secret")), test=not self._dr.live, ranks=self.RANKS)
+        self._dr_cfg()["rating"] = {"stars": out["stars"], "rated": out["rated"], "rank": out["rank"]["name"]}
+        self._save_settings()
+        return out
+
+    def dr_jobs(self, system=None, sort="oldest"):
+        """Datarunner jobs: commodity terminals whose prices are the most out of date, oldest first
+        (or nearest first). Uses UEX's data with newer Quantum community reports laid over it, so a
+        terminal someone just reported drops down the list for everybody."""
+        def run():
+            now = time.time()
+            terms = self._dr_terminals()
+            places = self._uex.place_map(self._db.locations)
+            rows, at = self._uex.get("commodities_prices_all")
+            rows = self._community.overlay(rows)
+            by = {}
+            for r in rows:
+                if r.get("id_terminal") not in terms:
+                    continue
+                for side in ("buy", "sell"):
+                    if r.get(f"price_{side}"):
+                        by.setdefault(r["id_terminal"], []).append(
+                            max(0.0, (now - (r.get("date_modified") or 0)) / 86400) if r.get("date_modified") else 365.0)
+            mine = {}
+            for e in self._dr_report_log():
+                if not e.get("test") or not self._dr.live:
+                    mine[e.get("id_terminal")] = max(mine.get(e.get("id_terminal"), 0), e.get("at", 0))
+            spot = None
+            if self._game_on():
+                spot = self._log_spot(self._tracker.cur or {})[0]
+            jobs = []
+            for tid, ages in by.items():
+                t = terms[tid]
+                if system and t.get("star_system_name") != system:
+                    continue
+                ages.sort()
+                place = places.get(tid)
+                jobs.append({"id": tid, "name": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
+                             "place": place, "here": bool(spot and place == spot), "dist": self._dist_from_you(place),
+                             "rows": len(ages), "stale": sum(1 for a in ages if a >= 3),
+                             "oldest": round(ages[-1], 1), "median": round(ages[len(ages) // 2], 1),
+                             "days": round(sum(min(a, 60) for a in ages), 1),
+                             "mine": mine.get(tid) if mine.get(tid, 0) > now - 86400 else None})
+            if sort == "nearest":
+                jobs.sort(key=lambda j: (j["dist"] is None, j["dist"] or 0, -j["median"]))
+            else:
+                jobs.sort(key=lambda j: (-j["median"], -j["oldest"]))
+            systems = sorted({t.get("star_system_name") for t in terms.values() if t.get("star_system_name")})
+            return {"ok": True, "jobs": jobs[:80], "total": len(jobs), "systems": systems, "you_in": self._player_sys,
+                    "at": at}
+        return self._uex_call(run)
+
+    # ------------------------------------------------------------ updates
+    def _check_update(self, delay=6):
+        time.sleep(delay)                          # after start-up, so the window isn't kept waiting
+        self._update = self._updater.check()
+
+    def update_status(self, recheck=False):
+        if recheck:
+            self._update = self._updater.check()
+        return {"current": updater.VERSION, "latest": self._update, "progress": self._updater.progress(),
+                "skipped": self._settings.get("skip_update"), "just_updated": "--updated" in sys.argv}
+
+    def update_download(self):
+        return self._updater.download()
+
+    def update_install(self):
+        """Swap in the downloaded, verified version and restart into it."""
+        r = self._updater.install_and_restart()
+        if r.get("ok"):
+            def close():
+                time.sleep(0.4)
+                try:
+                    self.shutdown()
+                finally:
+                    os._exit(0)
+            threading.Thread(target=close, daemon=True).start()
+        return r
+
+    def update_skip(self, version):
+        self._settings["skip_update"] = version
+        self._save_settings()
+        return {"ok": True}
+
+    def dr_ack(self):
+        """The user has read the warning that reports are tied to their UEX account."""
+        self._dr_cfg()["ack"] = int(time.time())
+        self._save_settings()
+        return {"ok": True}
+
+    def dr_open_folder(self):
+        self._dr.test_dir.mkdir(parents=True, exist_ok=True)
+        if os.name == "nt":
+            os.startfile(self._dr.test_dir)
+        return {"ok": True, "folder": str(self._dr.test_dir)}
+
     def uex_commodities(self):
         def run():
             rows, at = self._uex.get("commodities")
@@ -1228,6 +2196,7 @@ class Api:
             terms = self._uex.terminals()
             places = self._uex.place_map(self._db.locations)
             rows, at = self._uex.get("commodities_prices_all")
+            rows = self._community.overlay(rows)              # newer datarunner reports from Quantum users
             buy, sell = [], []
             for r in rows:
                 t = terms.get(r["id_terminal"])
@@ -1239,10 +2208,10 @@ class Api:
                         "max_box": t.get("max_container_size"), "containers": r.get("container_sizes")}
                 if r.get("price_buy"):
                     buy.append(dict(base, price=r["price_buy"], avg=r.get("price_buy_avg"), scu=r.get("scu_buy"),
-                                    status=r.get("status_buy")))
+                                    status=r.get("status_buy"), community=r.get("community_buy")))
                 if r.get("price_sell"):
                     sell.append(dict(base, price=r["price_sell"], avg=r.get("price_sell_avg"),
-                                     scu=r.get("scu_sell_stock"), status=r.get("status_sell")))
+                                     scu=r.get("scu_sell_stock"), status=r.get("status_sell"), community=r.get("community_sell")))
             buy.sort(key=lambda x: x["price"])
             sell.sort(key=lambda x: -x["price"])
             return {"ok": True, "buy": buy, "sell": sell, "at": at}
@@ -1292,6 +2261,10 @@ class Api:
         return self._uex_call(run)
 
     def wiki_image(self, ref):
+        """The wiki's picture, or else one a Quantum user sent in and you approved."""
+        return self._wiki_image(ref) or self._community.photos().get(self._pic_key(ref))
+
+    def _wiki_image(self, ref):
         """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
         wiki URL UEX gives, or a page title."""
         title = urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
@@ -1395,6 +2368,25 @@ class Api:
             return {"ok": True, "items": out, "at": at}
         return self._uex_call(run)
 
+    def _vehicle_desc(self, d, name):
+        """The ship's description: the wiki API's (it comes per language), else the wiki page's intro."""
+        desc = d.get("description") if d else None
+        if isinstance(desc, dict):
+            desc = desc.get("en_EN") or desc.get("en") or next((v for v in desc.values() if isinstance(v, str) and v), None)
+        if isinstance(desc, str) and desc.strip():
+            return desc.strip()
+        try:
+            return self._wikiapi.summary(name)
+        except Exception:
+            return None
+
+    def wiki_text(self, ref):
+        """A commodity's (or anything's) description from its Star Citizen Wiki page."""
+        try:
+            return self._wikiapi.summary(ref)
+        except Exception:
+            return None
+
     def vehicle_detail(self, vehicle_id):
         """A ship's own page: crew and seats, beds and medical, cargo and storage, size, speed, quantum,
         defences and weapons, from the Star Citizen Wiki, with UEX's roles."""
@@ -1412,7 +2404,7 @@ class Api:
             "ok": True, "id": v["id"], "name": v.get("name_full") or name, "maker": v.get("company_name") or "",
             "photo": v.get("url_photo"), "store": v.get("url_store"), "wiki": bool(d),
             "roles": [label for flag, label in VEHICLE_ROLES if v.get(flag)],
-            "career": d.get("career") or d.get("role"), "description": d.get("description") if isinstance(d.get("description"), str) else None,
+            "career": d.get("career") or d.get("role"), "description": self._vehicle_desc(d, name),
             "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
             "seats": seat.get("crew_stations"), "beds": seat.get("beds"), "medical_beds": seat.get("medical_beds"),
             "medical_tier": d.get("max_medical_tier"), "ejection": seat.get("ejection_seats"), "escape_pods": seat.get("escape_pods"),
@@ -1438,8 +2430,60 @@ class Api:
         return out
 
     def wiki_images(self, refs):
-        """{ref: picture url} for many wiki pages at once (commodity and component grids)."""
-        return self._wikiapi.pictures(list(refs or []))
+        """{ref: picture url} for many wiki pages at once (commodity and component grids). Pictures
+        Quantum users sent in (and you approved) fill the gaps."""
+        refs = list(refs or [])
+        got = self._wikiapi.pictures(refs)
+        mine = self._community.photos()
+        for ref in refs:
+            if not got.get(ref):
+                p = mine.get(self._pic_key(ref))
+                if p:
+                    got[ref] = p
+        return got
+
+    @staticmethod
+    def _pic_key(ref):
+        return urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip().lower()
+
+    def photo_submit(self, kind, name, data_url):
+        """A picture for something with none, sent to the Quantum server for review."""
+        if not self._uex.token:
+            return {"ok": False, "error": "Add your UEX Bearer Token in Settings to send pictures"}
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not user:
+            return {"ok": False, "error": "Add your UEX Secret Key in Settings, so the picture is credited to your UEX name"}
+        title = urllib.parse.unquote(str(name or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
+        return self._community.submit_photo(kind, title, data_url, user)
+
+    # ---- trade routes Quantum users share
+    def shared_routes(self, origin=None):
+        """Routes from other Quantum users' Planned Routes, with profit per SCU. origin: the Find Routes
+        "From" place; a route is kept if it starts there (its planet, or the place itself)."""
+        out = []
+        for r in self._community.routes():
+            loc = self._db.locations.get(r["from_place"])
+            planet = getattr(loc, "body", None) or getattr(loc, "parent", None)
+            if origin and origin not in (r["from_place"], planet, getattr(loc, "system", None)):
+                continue
+            out.append(dict(r, per_scu=round(r["sell"] - r["buy"], 2),
+                            profit=round((r["sell"] - r["buy"]) * r["units"]) if r.get("units") else None))
+        return {"ok": True, "routes": out}
+
+    def share_route(self, rid):
+        """Share one of your Planned Routes with Quantum users."""
+        x = next((r for r in self._runs() if r["id"] == rid), None)
+        if not x:
+            return {"ok": False, "error": "Route not found"}
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not user:
+            return {"ok": False, "error": "Add your UEX Secret Key in Settings, so the route is credited to your UEX name"}
+        buy, sell = x.get("buy_price") or x.get("plan_buy"), x.get("sell_price") or x.get("plan_sell")
+        if not (x.get("commodity") and x.get("from_place") and x.get("to_place") and buy and sell):
+            return {"ok": False, "error": "A route needs a commodity, both places, and buy and sell prices to share"}
+        return self._community.share_route({"commodity": x["commodity"], "from_place": x["from_place"], "to_place": x["to_place"],
+                                            "from_terminal": x.get("from_terminal"), "to_terminal": x.get("to_terminal"),
+                                            "buy": buy, "sell": sell, "units": x.get("units"), "notes": x.get("notes")}, user)
 
     # ------------------------------------------------------------ My Fleet
     def _fleet(self):
@@ -1690,7 +2734,7 @@ class Api:
         run = dict(run or {})
         if not (run.get("commodity") or "").strip():
             return {"ok": False, "error": "Enter the commodity"}
-        for k in ("units", "buy_price", "sell_price", "plan_buy", "plan_sell", "handling"):
+        for k in ("units", "buy_price", "sell_price", "plan_buy", "plan_sell", "handling", "load_fee", "unload_fee"):
             v = run.get(k)
             run[k] = float(v) if v not in (None, "") else None
         runs = self._runs()
@@ -1709,9 +2753,9 @@ class Api:
         self._save_settings()
         return {"ok": True, "id": (old or run)["id"]}
 
-    def trade_run_stage(self, rid, stage, price=None):
+    def trade_run_stage(self, rid, stage, price=None, fee=None):
         """Move a run along: planned > bought > in transit > sold. Buying or selling can record the
-        price you actually got (per SCU)."""
+        price you actually got (per SCU) and what auto loading / unloading cost."""
         r = next((x for x in self._runs() if x["id"] == rid), None)
         if not r or stage not in self.TRADE_STAGES:
             return {"ok": False, "error": "Run not found"}
@@ -1721,6 +2765,8 @@ class Api:
             r["times"].pop(later, None)             # stepping back clears what came after
         if price not in (None, ""):
             r["buy_price" if stage == "bought" else "sell_price"] = float(price)
+        if fee not in (None, "") and stage in ("bought", "sold"):
+            r["load_fee" if stage == "bought" else "unload_fee"] = float(fee)
         self._save_settings()
         return {"ok": True}
 
@@ -1800,6 +2846,7 @@ class Api:
                     "from_ground": bool(r.get("is_on_ground_origin")), "to_ground": bool(r.get("is_on_ground_destination")),
                     "from_monitored": r.get("is_monitored_origin"), "to_monitored": r.get("is_monitored_destination"),
                     "refuel_to": bool(r.get("has_refuel_destination")), "dock_from": bool(r.get("has_docking_port_origin")),
+                    "refuel_from": bool(r.get("has_refuel_origin")), "dock_to": bool(r.get("has_docking_port_destination")),
                     "elevator_from": bool(r.get("has_freight_elevator_origin") or r.get("has_loading_dock_origin")),
                     "faction_from": r.get("origin_faction_name"), "faction_to": r.get("destination_faction_name")})
             out.sort(key=lambda x: -x["profit"])

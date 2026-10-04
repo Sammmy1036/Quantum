@@ -90,6 +90,45 @@ class Wiki:
             (self.dir / "wiki_images.json").write_text(json.dumps(cache), encoding="utf-8")
         return {ref: (cache.get(t) or None) for ref, t in titles.items()}
 
+    # ------------------------------------------------------------ descriptions
+    def summary(self, ref):
+        """The opening paragraph(s) of a Star Citizen Wiki page, as plain text (cached a week).
+        Uses the TextExtracts API; if the wiki doesn't offer it, the page's first section with
+        the markup stripped."""
+        title = title_of(ref)
+        if not title:
+            return None
+        f = self.dir / "wiki_text.json"
+        try:
+            cache = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            cache = {}
+        hit = cache.get(title)
+        if hit and time.time() - hit.get("at", 0) < 7 * 86400:
+            return hit.get("text") or None
+        text = None
+        try:
+            q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "extracts", "exintro": 1,
+                                        "explaintext": 1, "redirects": 1, "titles": title})
+            pages = _get(f"{PAGES_API}?{q}").get("query", {}).get("pages", {})
+            text = next((p.get("extract") for p in pages.values() if p.get("extract")), None)
+            if not text:
+                q = urllib.parse.urlencode({"action": "parse", "format": "json", "prop": "text", "section": 0,
+                                            "redirects": 1, "disabletoc": 1, "page": title})
+                html = _get(f"{PAGES_API}?{q}").get("parse", {}).get("text", {}).get("*", "")
+                paras = re.findall(r"<p>(.*?)</p>", html, re.S)
+                text = "\n\n".join(t for t in (re.sub(r"\s+", " ", re.sub(r"<[^>]+>|\[\d+\]", "", p)).strip()
+                                                 for p in paras) if len(t) > 40)
+        except Exception:
+            return hit.get("text") if hit else None             # offline: whatever we had
+        import html as _h
+        text = _h.unescape(text or "").strip()
+        text = re.sub(r"\n{3,}", "\n\n", text)[:1500] or None
+        cache[title] = {"text": text, "at": int(time.time())}
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(cache), encoding="utf-8")
+        return text
+
     # ------------------------------------------------------------ items
     def item(self, uuid=None, name=None):
         """One component's full record (stats), by Star Citizen uuid, else by name. Cached for a week."""
@@ -358,11 +397,16 @@ def allocate(parts, gen, mode, overrides, fitted=True, pool=0):
         elif t not in ("Missile", "PowerPlant", "WeaponGun"):
             info[sl["port"]] = {"t": t, "max": part_max_pips(sl, fitted), "min": part_min_pips(sl, fitted), "sl": sl}
     alloc, free = {}, gen
+    # Pips you set are kept, except on systems the flight mode switches off, as in the game: in SCM the
+    # quantum drive takes no power; in NAV the weapons and shields take none.
+    off = {p for p, i in info.items() if i["t"] != "Cooler" and not _wanted(i["t"], mode)}
     for port, i in info.items():
-        if port in overrides:
+        if port in overrides and port not in off:
             alloc[port] = max(0, min(i["max"], int(overrides[port])))
             free -= alloc[port]
-    auto = {p: i for p, i in info.items() if p not in overrides}
+    for port in off:
+        alloc[port] = 0
+    auto = {p: i for p, i in info.items() if p not in overrides and p not in off}
     users = [p for p, i in auto.items() if i["t"] != "Cooler" and _wanted(i["t"], mode)]
     for p in users:                                             # minimums
         alloc[p] = min(auto[p]["min"], max(0, free))

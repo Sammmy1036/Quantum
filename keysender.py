@@ -133,6 +133,8 @@ class ShowLocationSender:
     def __init__(self):
         self.hotkey = ""            # show/hide Quantum: "F9", or "" for off
         self.loc_hotkey = ""        # type /showlocation: "F10", or "" for off
+        self.shot_hotkey = ""       # datarunner screenshot of the terminal: "F8", or "" for off
+        self.on_shot = None         # set by the app: takes the screenshot, returns a short result
         self.interval = 0           # seconds, 0 = off
         self.open_chat = "enter"    # "enter" = press Enter to open chat first, "none" = chat already open
         self.action = "overlay"     # hotkey: "overlay" = show/hide Quantum over the game, "showlocation" = type it
@@ -153,7 +155,7 @@ class ShowLocationSender:
 
     # ------------------------------------------------------------ settings
     def configure(self, hotkey=None, interval=None, open_chat=None, action=None, qt_only=None,
-                  loc_hotkey=None, on_arrival=None):
+                  loc_hotkey=None, on_arrival=None, shot_hotkey=None):
         """hotkey = show/hide Quantum, loc_hotkey = type /showlocation ("F1".."F12" or "" for off).
         interval = seconds between automatic /showlocations during quantum travel (0 = off)."""
         if qt_only is not None:
@@ -172,10 +174,13 @@ class ShowLocationSender:
         new_loc = loc_hotkey if loc_hotkey is not None else self.loc_hotkey
         new_hk = new_hk if new_hk in FKEYS else ""
         new_loc = new_loc if new_loc in FKEYS and new_loc != new_hk else ""
-        if (new_hk, new_loc) != (self.hotkey, self.loc_hotkey) or (AVAILABLE and not self._hk_thread and (new_hk or new_loc)):
+        new_shot = shot_hotkey if shot_hotkey is not None else self.shot_hotkey
+        new_shot = new_shot if new_shot in FKEYS and new_shot not in (new_hk, new_loc) else ""
+        keys = (new_hk, new_loc, new_shot)
+        if keys != (self.hotkey, self.loc_hotkey, self.shot_hotkey) or (AVAILABLE and not self._hk_thread and any(keys)):
             self._stop_hotkey()
-            self.hotkey, self.loc_hotkey = new_hk, new_loc
-            if (self.hotkey or self.loc_hotkey) and AVAILABLE:
+            self.hotkey, self.loc_hotkey, self.shot_hotkey = keys
+            if any(keys) and AVAILABLE:
                 self._hk_stop = threading.Event()
                 self._hk_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
                 self._hk_thread.start()
@@ -187,6 +192,7 @@ class ShowLocationSender:
 
     def status(self):
         return {"available": AVAILABLE, "hotkey": self.hotkey, "loc_hotkey": self.loc_hotkey,
+                "shot_hotkey": self.shot_hotkey,
                 "interval": self.interval, "qt_only": True, "on_arrival": self.on_arrival,
                 "open_chat": self.open_chat, "last_sent": self.last_sent, "last_result": self.last_result,
                 "events": self.events, "admin": we_are_admin() if AVAILABLE else False}
@@ -230,10 +236,11 @@ class ShowLocationSender:
         """Watch both keys' physical state. Star Citizen reads the keyboard through raw input with system
         hotkeys switched off while it has focus, so RegisterHotKey never fires in game; polling the key
         state (as game overlays do) works whether or not the game is focused."""
-        keys = {k: act for k, act in ((self.hotkey, "overlay"), (self.loc_hotkey, "showlocation")) if k}
+        keys = {k: act for k, act in ((self.hotkey, "overlay"), (self.loc_hotkey, "showlocation"),
+                                      (self.shot_hotkey, "screenshot")) if k}
         stop = self._hk_stop
-        self._event(" · ".join(f"{k}: {'show/hide Quantum' if a == 'overlay' else '/showlocation'}"
-                               for k, a in keys.items()) + " ready (works in game)")
+        label = {"overlay": "show/hide Quantum", "showlocation": "/showlocation", "screenshot": "terminal screenshot"}
+        self._event(" · ".join(f"{k}: {label[a]}" for k, a in keys.items()) + " ready (works in game)")
         state = {k: [False, 0.0] for k in keys}
         while not stop.wait(0.015):
             for key, act in keys.items():
@@ -246,6 +253,13 @@ class ShowLocationSender:
                             self._event(f"{key}: Quantum {self.on_overlay()}")
                         except Exception as e:
                             self._event(f"{key}: couldn't toggle the overlay ({e})")
+                    elif act == "screenshot" and self.on_shot:
+                        def shoot(key=key):
+                            try:
+                                self._event(f"{key}: {self.on_shot()}")
+                            except Exception as e:
+                                self._event(f"{key}: screenshot failed ({e})")
+                        threading.Thread(target=shoot, daemon=True).start()
                     elif act == "showlocation":
                         self._event(f"{key} pressed")
                         threading.Thread(target=self.send, args=(key,), daemon=True).start()

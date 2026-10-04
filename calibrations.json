@@ -1,0 +1,171 @@
+{
+ "format": "stanton-nav-calibration",
+ "version": 1,
+ "history": [
+  {
+   "kind": "auto-place",
+   "body": "Hurston",
+   "place": "HDMS Pinewood",
+   "residual_deg": 0.2595,
+   "reading_utc": 1791016752.3,
+   "build": "12660092",
+   "session": "be2eda6265"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Hurston",
+   "place": "HDMS Pinewood",
+   "residual_deg": 0.0018,
+   "reading_utc": 1791017664.1,
+   "build": "12660092",
+   "session": "be2eda6265"
+  }
+ ],
+ "updated": "2026-10-03 01:54:24",
+ "bodies": {
+  "Aberdeen": {
+   "system": "Stanton",
+   "rotation_offset_deg": 288.872155,
+   "rotation_period_h": 2.5999999,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790630321.4696562,
+   "place": "HDMS Anderson",
+   "quality": "place"
+  },
+  "ArcCorp": {
+   "system": "Stanton",
+   "rotation_offset_deg": 178.715472,
+   "rotation_period_h": 3.1099999,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790617005.753655,
+   "place": "Riker Memorial Spaceport",
+   "quality": "hangar"
+  },
+  "Arial": {
+   "system": "Stanton",
+   "rotation_offset_deg": 23.697949,
+   "rotation_period_h": 5.51000023,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790630624.2270029,
+   "place": "HDMS Bezdek",
+   "quality": "place"
+  },
+  "Calliope": {
+   "system": "Stanton",
+   "rotation_offset_deg": 204.326329,
+   "rotation_period_h": 4.59000015,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790628473.1805604,
+   "place": "Rayari Anvik Research Outpost",
+   "quality": "place"
+  },
+  "Cellin": {
+   "system": "Stanton",
+   "rotation_offset_deg": 30.576096,
+   "rotation_period_h": 4.44999981,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790632863.206481,
+   "place": "Tram & Myers Mining",
+   "quality": "place"
+  },
+  "Clio": {
+   "system": "Stanton",
+   "rotation_offset_deg": 15.397929,
+   "rotation_period_h": 3.25,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790628936.8776467,
+   "place": "Rayari Cantwell Research Outpost",
+   "quality": "place"
+  },
+  "Crusader": {
+   "system": "Stanton",
+   "rotation_offset_deg": 242.373689,
+   "rotation_period_h": 5.0999999,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790622959.7792327,
+   "place": "August Dunlow Spaceport",
+   "quality": "hangar"
+  },
+  "Daymar": {
+   "system": "Stanton",
+   "rotation_offset_deg": 117.480667,
+   "rotation_period_h": 2.48000002,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790632431.998602,
+   "place": "Shubin Mining Facility SCD-1",
+   "quality": "place"
+  },
+  "Euterpe": {
+   "system": "Stanton",
+   "rotation_offset_deg": 162.525473,
+   "rotation_period_h": 4.28000021,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790629369.8863544,
+   "place": "Devlin Scrap & Salvage (Euterpe)",
+   "quality": "place"
+  },
+  "Hurston": {
+   "system": "Stanton",
+   "rotation_offset_deg": 117.458604,
+   "rotation_period_h": 2.48000002,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1791017664.0962946,
+   "place": "HDMS Pinewood",
+   "quality": "place"
+  },
+  "Ita": {
+   "system": "Stanton",
+   "rotation_offset_deg": 233.838116,
+   "rotation_period_h": 4.8499999,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790630036.3476074,
+   "place": "HDMS Woodruff",
+   "quality": "place"
+  },
+  "Lyria": {
+   "system": "Stanton",
+   "rotation_offset_deg": 175.349573,
+   "rotation_period_h": 6.42999983,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790631777.511082,
+   "place": "Shubin Mining Facility SAL-2",
+   "quality": "place"
+  },
+  "Magda": {
+   "system": "Stanton",
+   "rotation_offset_deg": 207.31672,
+   "rotation_period_h": 1.94000006,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790631411.2157161,
+   "place": "HDMS Perlman",
+   "quality": "place"
+  },
+  "microTech": {
+   "system": "Stanton",
+   "rotation_offset_deg": 221.57215,
+   "rotation_period_h": 4.11999989,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790626483.277532,
+   "place": "New Babbage Interstellar Spaceport",
+   "quality": "hangar"
+  },
+  "Wala": {
+   "system": "Stanton",
+   "rotation_offset_deg": 24.877063,
+   "rotation_period_h": 6.32000017,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790631980.4247699,
+   "place": "ArcCorp Mining Area 045",
+   "quality": "place"
+  },
+  "Yela": {
+   "system": "Stanton",
+   "rotation_offset_deg": 2.100544,
+   "rotation_period_h": 1.8200005,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1790632622.8622546,
+   "place": "ArcCorp Mining Area 157",
+   "quality": "place"
+  }
+ }
+}

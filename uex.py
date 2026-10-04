@@ -23,7 +23,8 @@ from services import _key
 BASE = "https://api.uexcorp.uk/2.0/"
 TTL = {"terminals": 86400, "outposts": 86400, "categories": 86400, "items": 86400, "items_prices_all": 3600, "space_stations": 86400, "vehicles": 86400, "vehicles_purchases_prices_all": 3600,
        "vehicles_rentals_prices_all": 3600, "commodities": 86400, "planets": 86400,
-       "commodities_prices_all": 1800, "fuel_prices_all": 1800, "commodities_routes": 1800}
+       "commodities_prices_all": 1800, "fuel_prices_all": 1800, "commodities_routes": 1800,
+       "game_versions": 3600, "data_parameters": 3600}
 SYSTEMS = ("Stanton", "Pyro", "Nyx")           # what Quantum maps
 
 
@@ -80,7 +81,8 @@ class Uex:
             self._places = None
         return rows, entry["at"]
 
-    def _fetch(self, resource, params):
+    def _fetch(self, resource, params, headers=None, timeout=40):
+        """One GET. headers: extra ones, e.g. the datarunner's secret-key for their own reports."""
         with self._lock:
             wait = 0.6 - (time.time() - self._last)
             if wait > 0:
@@ -88,9 +90,10 @@ class Uex:
             self._last = time.time()
         url = BASE + resource + "/" + ("?" + urllib.parse.urlencode(params) if params else "")
         req = urllib.request.Request(url, headers={"Authorization": f"Bearer {self.token}",
-                                                   "Accept": "application/json", "User-Agent": "Quantum"})
+                                                   "Accept": "application/json", "User-Agent": "Quantum",
+                                                   **(headers or {})})
         try:
-            with urllib.request.urlopen(req, timeout=40) as r:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
                 body = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             raise UexError("UEX rejected the token" if e.code in (401, 403) else f"UEX error {e.code}")

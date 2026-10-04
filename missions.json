@@ -1,40 +1,55 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
- "offset": 0,
+ "log_sig": "be2eda62656ba2c4611b4ad021cbef69a4027c0c",
+ "offset": 2575002,
  "where": {
-  "code": "RR_MIC_LEO",
+  "code": "RR_MIC_L3",
   "system": "Stanton",
-  "body": "microTech",
-  "at": 1790751419.792
+  "body": null,
+  "at": 1791018078.654
  },
  "zone_bodies": {},
  "build": "12660092",
  "loc_ids": {
-  "2147648880": "Port Tressler"
+  "2147648880": "Port Tressler",
+  "3170699229": "New Babbage",
+  "2065796676": "New Babbage",
+  "4147097116": "HDMS Pinewood",
+  "626814401": "R&R MIC-L3 Endless Odyssey Station"
  },
  "cur": {
-  "id": 3839298489,
-  "landing": 2147648880,
-  "at": 1790751601.193,
-  "place": null,
+  "id": 626814401,
+  "landing": 626814401,
+  "at": 1791018078.652,
+  "place": "R&R MIC-L3 Endless Odyssey Station",
   "left": null,
   "spawned": false,
   "died_near": null
  },
- "dest_ids": {},
+ "dest_ids": {
+  "hurdyn_cluster_002_sand_red_{B733BFD0-413E-45D5-890C-9C9683DBFF7F}.socpak": {
+   "place": "HDMS Pinewood",
+   "n": 1,
+   "ambiguous": false,
+   "how": "reading"
+  }
+ },
  "qt": {
-  "dest": "ObjectContainer_RestStop",
+  "dest": "LOC_RR_S4_L3",
   "ship": "850634805167",
-  "selected": 1790751284.548,
-  "arrived": 1790751398.099,
-  "start": "Stanton",
-  "start_body": "Stanton",
+  "selected": 1791017681.633,
+  "arrived": 1791017990.336,
+  "start": "Hurston",
+  "start_body": "Hurston",
   "place": null,
   "learned": true
  },
  "zone_places": {},
- "atc": {},
+ "atc": {
+  "833869876346": "ATC_DataManager_Port_SemiLawful-Dock1",
+  "833869878256": "ATC_DataManager_Port_Lawful-001",
+  "833869879749": "ATC_DataManager_Port_Lawful-001"
+ },
  "contracts": [
   {
    "id": "1bd65bf5-74e8-4dad-a2d5-21b77c078cc9",
