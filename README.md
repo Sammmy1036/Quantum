@@ -34,7 +34,6 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 - Your position from `/showlocation`, and from the game log between readings (landed at, talking to traffic control, just took off from).
 - Plan routes with as many stops as you like, optimise their order, and follow a live guide to the next stop.
 - An in-game overlay you toggle with a hotkey, and a hotkey that types `/showlocation` for you.
-- Places no dataset has a position for (Pyro and Nyx gateways, Wikelo emporiums, UEX-only stations) are listed under **Not on the map yet**. One `/showlocation` there puts them on your map, and once they're confirmed they appear on every Quantum user's map within about 10 minutes, without a restart.
 
 **Contracts**
 - Hauling contracts are picked up from `Game.log` automatically, with their pickups and drop-offs pinned on the map.
@@ -45,7 +44,7 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 - **Commodities:** where each commodity is cheapest to buy and sells best, with stock, prices and a map view.
 - **Trade Routes:** ranked routes from where you are, for your ship's cargo and your budget, with a full route page and preview. Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
 - **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it.
-- **Components:** a landing page of every component category (systems, avionics, weapons, mining). Each category has search and filters for size, grade, maker, where to get it (shops, or loot, crafting and ship stock) and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its game-file stats, where to buy it, whether it fits your main ship, and **Fit here** buttons for every matching slot in your fleet.
+- **Components:** (systems, avionics, weapons, mining). Each category has search and filters for size, grade, maker, where to get it and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its game-file stats, where to buy it, whether it fits your ship.
 - **My Fleet:** your ships with their stock loadouts. Swap components, see the stats change, and get an EM/IR estimate with Combat (SCM) and Travel (NAV) modes.
 
 **Datarunner** (with a UEX datarunner account)
