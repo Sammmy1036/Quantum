@@ -599,6 +599,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .faq-ranks div{border-top:3px solid var(--panel-3);padding-top:5px}.faq-ranks div.on{border-top-color:#f2c14e}
 .faq-ranks b{display:block;font-size:13px}.faq-ranks span{font-size:11.5px;color:var(--dim)}
 .dr-rep.live{border-color:rgba(127,231,255,.4)}
+.trust-badge{font:600 11px var(--text);color:#7fe7ff;border:1px solid rgba(127,231,255,.5);background:rgba(127,231,255,.08);border-radius:999px;padding:3px 10px}
+.trust-checks{list-style:none;padding:0!important;margin:8px 0!important}.trust-checks li{display:flex;gap:8px;padding:3px 0;color:var(--ink-2)}
+.trust-checks li span{width:1.1em;color:var(--dim)}.trust-checks li.ok span{color:#57e39b}.trust-checks li.ok b{color:#9fe0b4}
 .dr-rep .cb-pic{width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line-2);flex:none}
 .dr-job.map{border-style:dashed}
 /* ---------- datarunner: top 10 ---------- */
@@ -1455,15 +1458,7 @@ function renderDetail(){
         <div class="muted" style="font-size:12px;margin-top:12px">${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); return "Community prices: checking…"; }
           if(!c||!c.url) return "Community prices: off.";
           return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div>
-        <label class="k" for="s-trust" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">Trusted contributor key <span class="muted" style="font-weight:400">(optional)</span></label>
-        <div class="row" style="gap:6px"><input class="field" id="s-trust" type="password" placeholder="${S.trust?.has_key?"Trusted key saved.":"Only if the server owner gave you one"}" style="flex:1" autocomplete="off">
-          <button class="btn small" data-a="trustsave">Save</button>${S.trust?.has_key?`<button class="btn small ghost" data-a="trustclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">${(()=>{ const t=S.trust; if(t===undefined){ S.trust=null; api().trust_status().then(x=>{ S.trust=x; renderDetail(); }); return "Checking…"; }
-          if(!t||!t.has_key) return "Trusted contributors' pictures and station positions go live straight away, without review. It stays on this PC.";
-          if(!t.user) return `<span style="color:#ffd38a">Add your UEX Secret Key above, so the server knows whose key this is.</span>`;
-          return t.trusted?`<span style="color:#9fe0b4">Trusted as ${esc(t.user)}</span>: your pictures and station positions go live straight away.`
-            :t.trusted===null?`<span style="color:#ffd38a">Couldn't check it with the server just now.</span>`
-            :`<span style="color:#ffb4b4">The server doesn't accept this key for ${esc(t.user)}.</span> Pictures and stations are reviewed as usual.`; })()}</div></div>
+</div>
       <div class="sub">Hotkeys</div>
       ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
@@ -1560,9 +1555,6 @@ function renderDetail(){
     if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
       const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; }
       S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
-    if(a==="trustsave"){ const v=$("s-trust").value.trim(); if(!v) return toast("Paste the key first"); S.trust=await api().set_trust_key(v);
-      toast(S.trust.trusted?"Trusted: your pictures and stations go live straight away":"Saved, but the server didn't accept it"); renderDetail(); return; }
-    if(a==="trustclear"){ S.trust=await api().set_trust_key(""); toast("Trusted key removed"); renderDetail(); return; }
     if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
       toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
     if(a==="updcheck"){ const st=await api().update_status(true); S.qVersion=st.current;
@@ -3012,6 +3004,7 @@ const DR_RANKS=[[0,"Unranked"],[1,"Trainee"],[11,"Runner"],[26,"Field Analyst"],
 async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-faq")) P.innerHTML=`${drViews()}${qLoader("Loading your rating…")}`;
   let p=S.drProf; if(!p){ try{ p=await api().dr_profile(false); if(p?.ok) S.drProf=p; }catch(e){ p=null; } }
+  if(!S.drTrust){ try{ S.drTrust=await api().trust_status(); }catch(e){ S.drTrust=null; } }
   if(d.view!=="faq") return;
   const ranks=p?.ranks||DR_RANKS, dec=p?.ok?drDecided(p):null, nx=p?.rank?.next;
   const you=p?.ok&&p.username?`<div class="faq-you">${drStarBar(p.rated?p.stars:0,22)}<div><b>${p.rated?p.stars.toFixed(1):"Unrated"}</b> <span class="muted">${esc(p.rank.name)}</span>
@@ -3028,6 +3021,7 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
     ["What are Jobs, and how do they help my rating?",`<p>Jobs are things worth doing for every trader: terminals whose prices are the most out of date, and stations that aren't on the map yet. A job doesn't give stars by itself; the report you send for it does, once it's approved.</p>
       <ul><li><b>Report a terminal:</b> go there, screenshot the kiosk and send what it shows. Older data replaced means more help to everyone.</li>
       <li><b>Map a station:</b> fly there, type /showlocation in game chat and press <b>I'm here: map it</b>. It goes live on Quantum once a second datarunner's reading agrees, and then counts as approved.</li></ul>`],
+    ["How do I become a trusted contributor?",drTrustHtml(S.drTrust)],
     ["What do Live on UEX and Live on Quantum mean?",`<p><b>Live on UEX:</b> UEX has merged your prices into its own data. <b>Live on Quantum:</b> every Quantum user sees it now: your picture is the one shown for that item, or your station is on everyone's map. Price reports also show for Quantum users within seconds of UEX listing them, for up to 72 hours or until UEX's own data is newer.</p>`],
     ["Why would a report get rejected?",`<ul><li>A price, SCU or inventory level that doesn't match the kiosk.</li><li>A screenshot that doesn't show every item you reported.</li>
       <li>A typo: prices more than 25% from UEX's average are held for a person to check.</li><li>Guessed or copied data.</li></ul><p>Repeated rejections can get your UEX datarunner access suspended, and Quantum can stop sharing your reports.</p>`],
@@ -3035,6 +3029,23 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
     ["Where is my profile kept?",`<p>On the Quantum server, under your UEX username, so it survives reinstalling Quantum. A report only counts after UEX's own record shows your username sent it, so nobody can add to or take from your profile.</p>`]];
   P.innerHTML=`${drViews()}<div class="dr-list dr-faq"><div class="dr-top" style="margin-top:4px"><div><h2>FAQ</h2><div class="where">How star ratings, ranks and jobs work.</div></div></div>${you}
     ${qa.map(([q,a],i)=>`<details ${i<2?"open":""}><summary>${q}</summary><div class="a">${a}</div></details>`).join("")}</div>`; }
+// Trusted contributors: what it gives, the criteria (the server's), and this datarunner's progress.
+function drTrustHtml(t){ const i=t?.info, c=i?.checks;
+  const line=(ok,txt)=>`<li class="${ok?"ok":""}"><span>${ok?"✓":"○"}</span> ${txt}</li>`;
+  const prog=c?`<ul class="trust-checks">
+      ${line(c.reports.ok,`<b>${c.reports.need} approved price reports</b> (you have ${c.reports.have})`)}
+      ${line(c.days.ok,`<b>${c.days.need} days</b> since your first approved report (${c.days.have} so far)`)}
+      ${line(c.clean.ok,`<b>No rejections</b> in the last ${c.clean.days} days${c.clean.have?` (you have ${c.clean.have})`:""}`)}
+      ${line(c.approval.ok,`<b>${c.approval.need}% approval</b> or better on price rows${c.approval.have!=null?` (yours: ${c.approval.have}%)`:""}`)}</ul>`:"";
+  const state=!t?"":!t.ok?`<p class="muted">Couldn't check your progress with the Quantum server just now.</p>`
+    :i?.revoked?`<p><b>Trust was turned off for your account</b> by the server owner.</p>`
+    :t.trusted?`<p style="color:#9fe0b4"><b>✓ You're a trusted contributor</b>${i?.owner?" (server owner)":""}.</p>`
+    :i?.trusted&&!t.device?`<p style="color:#ffd38a"><b>Your account is trusted, but this PC isn't recognised yet.</b> Send one price report from it; once UEX confirms it, this PC counts as yours.</p>`
+    :`<p>You're not a trusted contributor yet. Your progress:</p>`;
+  return `<p>Trusted contributors' pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map go on everyone's map from their reading alone, without waiting for a second datarunner.</p>
+    ${state}${t?.trusted?"":prog}
+    <p>It's automatic: meet all of these and you're trusted, and it's checked continuously, so a rejection takes it away until you're clean again. Replacing a picture that's already live always goes to review.</p>
+    <p class="muted" style="font-size:.95em">Only your own PCs count as you: Quantum sends a random key from each PC, and the server ties it to your UEX name once a report sent from that PC is confirmed by UEX. Nothing to set up.</p>`; }
 // The step-by-step guide fits the panel instead of scrolling: its text is scaled down until it fits.
 // Fitted again whenever the panel or anything in the guide changes size, so the app's fonts loading
 // after the first fit (they're bigger than the fallback) can't push it into a scroll bar.
@@ -3138,7 +3149,7 @@ function drProfileCard(p){ if(!p?.ok) return "";
   return `<div class="dr-prof">
     <div class="av" title="${esc(p.avatar_raw?"UEX avatar: "+p.avatar_raw:"No avatar set at UEX")}">${av}</div>
     <div class="who"><b>${esc(p.username)}</b>${p.name&&p.name!==p.username?`<span class="muted"> · ${esc(p.name)}</span>`:""}
-      <div class="rk"><span class="rank-badge r${p.ranks.findIndex(x=>x[1]===p.rank.name)}">${esc(p.rank.name)}</span>
+      <div class="rk"><span class="rank-badge r${p.ranks.findIndex(x=>x[1]===p.rank.name)}">${esc(p.rank.name)}</span>${p.trust?.trusted?`<span class="trust-badge" title="Your pictures and station positions go live without waiting for review">✓ Trusted contributor</span>`:""}
         ${drStarBar(p.rated?p.stars:0,20)} <b>${p.rated?p.stars.toFixed(1):"0.0"}</b><span class="muted" title="What your star rating is worked out from: every price row, picture and station position that's been decided">${p.rated?` · ${dec.approved} Approved, ${dec.rejected} Rejected`:" · your first approved report sets 5 stars"}</span></div>
       <div class="nx">${nx?`<div class="bar"><i style="width:${pct}%"></i></div><span>${left} more approved report${left===1?"":"s"} to <b>${esc(nx.name)}</b></span>`:`<span>Highest rank reached. Thank you, datarunner.</span>`}</div></div>
     <div class="nums"><div><b>${p.accepted}</b><span>Approved</span></div><div><b>${p.reports}</b><span>Sent</span></div></div>

@@ -164,7 +164,7 @@ class Api:
         self._dr_job = {"state": "idle", "n": 0}
         self._dr_terminal = None
         self._community = community.Community(lambda: self._settings.get("community_url"),
-                                              lambda: not self._dr.live, lambda: self._settings.get("trust_key"))
+                                              lambda: not self._dr.live, self._device_key)
         threading.Thread(target=self._sync_places, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
@@ -1898,21 +1898,24 @@ class Api:
     def community_status(self):
         return {"url": self._community.url, **self._community.health()}
 
-    def trust_status(self):
-        """Settings: whether a trusted contributor key is saved and whether the server accepts it."""
-        key = self._settings.get("trust_key")
-        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
-        return {"has_key": bool(key), "user": user,
-                "trusted": self._community.trusted(user) if key and user else False}
+    def _device_key(self):
+        """This PC's random key for the Quantum server, made once and kept in settings.json. It's not
+        a password and isn't shown anywhere: it lets the server tell your own PCs from someone typing
+        your UEX name, once a report you send with it is confirmed by UEX."""
+        key = self._settings.get("device_key")
+        if not key:
+            import secrets
+            key = self._settings["device_key"] = secrets.token_urlsafe(32)
+            self._settings.pop("trust_key", None)                 # the old hand-entered key isn't used any more
+            self._save_settings()
+        return key
 
-    def set_trust_key(self, key):
-        key = (key or "").strip()
-        if key:
-            self._settings["trust_key"] = key
-        else:
-            self._settings.pop("trust_key", None)
-        self._save_settings()
-        return self.trust_status()
+    def trust_status(self):
+        """Trusted contributor status and progress, for the FAQ."""
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        r = self._community.trust(user) if user else None
+        return {"ok": bool(r), "user": user, "trusted": bool(r and r.get("trusted")),
+                "device": bool(r and r.get("device")), "info": (r or {}).get("info")}
 
     def set_community_url(self, url):
         """The Quantum API server for community prices; empty turns them off."""

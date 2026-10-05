@@ -18,9 +18,11 @@ DEFAULT_URL = "https://quantumsc.ddnsgeek.com"
 
 
 class Community:
-    def __init__(self, url_getter, test_getter, key_getter=None):
+    def __init__(self, url_getter, test_getter, device_getter=None):
         self._url, self._test = url_getter, test_getter
-        self._key = key_getter or (lambda: None)        # trusted contributor key, if the server owner gave one
+        # This PC's random device key. The server ties it to your UEX name once a report sent with it
+        # is confirmed by UEX, so only your own PCs count as you for trusted-contributor features.
+        self._device = device_getter or (lambda: None)
         self._cache, self._at, self._lock = {}, 0, threading.Lock()
         self.last_error = None
 
@@ -34,7 +36,7 @@ class Community:
         req = urllib.request.Request(self.url + path, data=json.dumps(body).encode("utf-8") if body is not None else None,
                                      method="POST" if body is not None else "GET",
                                      headers={"Content-Type": "application/json", "Accept": "application/json",
-                                              "User-Agent": "Quantum", **({"X-Quantum-Key": k} if (k := (self._key() or "").strip()) else {})})
+                                              "User-Agent": "Quantum", **({"X-Quantum-Device": k} if (k := (self._device() or "").strip()) else {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 return json.loads(r.read().decode("utf-8"))
@@ -137,14 +139,14 @@ class Community:
             self._photos_at = 0                                 # live now: fetch the list again next time
         return {"ok": True, "approved": bool(r.get("approved")), "url": self.url + r["url"] if r.get("url") else None}
 
-    def trusted(self, username):
-        """Does the server accept this PC's key as that user's? None if it can't be reached."""
+    def trust(self, username):
+        """{trusted, device, info} from the server, or None if it can't be reached."""
         if not self.url or not username:
             return None
         import urllib.parse
         try:
             r = self._req("/v1/trust?" + urllib.parse.urlencode({"username": username}), timeout=6)
-            return bool(r.get("trusted")) if r.get("status") == "ok" else None
+            return r if r.get("status") == "ok" else None
         except Exception:
             return None
 
