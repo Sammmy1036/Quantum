@@ -27,12 +27,11 @@ import time
 import urllib.request
 from pathlib import Path
 
-VERSION = "0.0.0.1"                     # bump this for every release; the tag is this (a leading "v" is fine)
+VERSION = "0.0.0.1"                    
 REPO = "Sammmy1036/Quantum"
-ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   # the Inno Setup installer
-# The public half of your signing key (sign_release.py --keygen prints it). Updates are refused
-# until it's set.
-PUBLIC_KEY = ""
+ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   
+
+PUBLIC_KEY = "8ac7d1e1fd1d97ff564433a26c5f5a108460f077954606965ab20ea76279759b"
 
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 UA = {"User-Agent": f"Quantum/{VERSION}", "Accept": "application/vnd.github+json"}
