@@ -50,7 +50,7 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 
 **Datarunner** (with a UEX datarunner account)
 - Report a terminal's prices to UEX from Quantum: the terminal is picked from the game log, every row starts from UEX's current numbers, and most rows need one key press.
-- **Jobs:** terminals with the most out-of-date prices, and stations that still need mapping. *Start job* on a station walks you through it: go there, `/showlocation`, submit, and see whether it's live or waiting for a second datarunner.
+- **Jobs:** terminals with the most out-of-date prices, and stations that still need mapping. *Accept job* holds one for you for 30 minutes and shows other datarunners it's in progress; *I've arrived* opens the terminal in Report Prices, and sending the report finishes the job. *Start job* on a station walks you through it: go there, press *I've arrived*, `/showlocation`, submit, and see whether it's live or waiting for a second datarunner. If a place UEX lists isn't in the game, *Doesn't exist* hides it; once a second datarunner agrees, it's hidden for everyone.
 - **My Reports:** what UEX did with each report, your star rating and your rank.
 - **Top 10:** the best Quantum datarunners, with a title card for #1.
 - **FAQ:** how ratings, ranks and jobs work.
@@ -88,7 +88,7 @@ Reports go to UEX under your own account, so you need a UEX account with datarun
 
 1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's only used to send your reports and stays on your PC.
 2. Go to a commodity kiosk. Land or dock and Quantum picks the terminal from the game log, or type it in the **Terminal** box.
-3. Open the kiosk's list in game and take a screenshot: press your screenshot key (set it in **Settings**) or **Take screenshot** in Quantum. UEX checks every report against it, so data entry stays locked until there is one. For a long list, scroll and take another; they're joined into one picture.
+3. Open the kiosk's list in game and take a screenshot (UEX needs one during a new datarunner's first 90 days; after that, Quantum offers to send without one, and UEX's answer settles it): press your screenshot key (set it in **Settings**) or **Take screenshot** in Quantum. UEX checks every report against it, so data entry stays locked until there is one. For a long list, scroll and take another; they're joined into one picture.
 4. Check each row. Matches the kiosk: **No Changes** (or Space). Different: type the stock and price and set the inventory bar. Gone from the kiosk: **Not Sold Here**. Keys: ↑ ↓ move, Space no changes, Enter edit, 1–7 inventory, G not sold here.
 5. **Submit Report**, then follow it in **My Reports**.
 
@@ -137,6 +137,7 @@ Quantum users share a few things through the Quantum community server (`quantums
 - **Prices:** reports sent through Quantum are checked against UEX's own record and then shown to every Quantum user within seconds, marked ⚡. A report is shown for up to 72 hours, or until UEX's own data is newer, and is dropped as soon as UEX rejects it.
 - **Station positions:** a station goes live on everyone's map once two datarunners' `/showlocation` readings agree. Quantum fetches new ones every 10 minutes.
 - **Pictures:** anything with no picture (a commodity, component or vehicle) has a **Send a picture** button. Pictures are reviewed before they appear for everyone; **My Reports** shows each one as *Submitted*, *In Review*, *Approved*, *Live on Quantum* or *Rejected*.
+- **Landing pad sizes:** pick a place's largest pad on its card. It's yours straight away and shows for everyone once a second datarunner agrees.
 - **Shared trade routes:** routes you share from *Planned Routes* appear in other users' *Find Routes* for a week.
 - **Encrypted backups:** your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up within a minute of any change. They're encrypted on your PC with a key made from your UEX Bearer Token (datarunner or not), so the server can't read them. On a new install, enter the same Bearer Token and they come back automatically. Restoring only adds what's missing; it never removes or overwrites anything. **Settings → Backup** shows when the last backup happened, and lets you delete your backup and turn backups off.
 - **Datarunner profiles and the Top 10:** your rank, star rating and report counts, kept under your UEX username so they survive reinstalling Quantum.
