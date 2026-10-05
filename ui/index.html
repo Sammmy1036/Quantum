@@ -32,6 +32,7 @@ button{cursor:pointer}
 .brand .by{margin-top:5px;font:500 10.5px/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
 .brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:12px}
 .tabs{display:flex;flex-wrap:wrap;column-gap:6px;padding:0 8px;border-bottom:1px solid var(--line)}
+.tab-break{flex-basis:100%;height:0}
 .tab{background:none;border:0;padding:12px 5px 11px;color:var(--dim);font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
 .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--route);text-shadow:0 0 12px rgba(75,141,255,.5)}
 .tab[hidden]{display:none}
@@ -397,6 +398,8 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-mode{border:1px dashed rgba(242,193,78,.55);background:rgba(242,193,78,.07);color:#f3d68c;border-radius:8px;padding:9px 10px;font-size:12.5px;line-height:1.45}
 .dr-mode.live{border:1px solid rgba(60,207,110,.5);background:rgba(60,207,110,.07);color:#a8ecbe}
 .dr-mode .row{margin-top:6px}
+.dr-mode:empty,.dr-stats:empty{display:none}
+.dr-ver:empty::before{content:"Checking…";color:var(--dim)}
 .dr-shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:4px 0 8px}
 .dr-shot{position:relative;border:1px solid var(--line-2);border-radius:6px;overflow:hidden;background:var(--panel-2)}
 .dr-shot img{display:block;width:100%;cursor:zoom-in}
@@ -479,7 +482,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-views{margin:0 0 12px 2px;align-self:flex-start}
 #dr-panel > *{flex:none}
 #dr-panel > .dr-list,#dr-panel > .dr-guide{flex:1 1 auto;min-height:0;overflow:auto}
-#dr-panel > .dr-guide{overflow:hidden}#dr-panel > .dr-guide.tight{overflow:auto}
+#dr-panel > .dr-guide,#dr-panel > .dr-faq{overflow:hidden}#dr-panel > .dr-guide.tight,#dr-panel > .dr-faq.tight{overflow:auto}
+#dr-panel > .dr-faq{font-size:15px}
+.dr-faq .dr-top h2{font-size:1.3em}.dr-faq .dr-top .where{font-size:.9em}
 .cm-pill{color:#7fe7ff;white-space:nowrap}
 #update-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;width:min(560px,92%);background:var(--panel);border:1px solid rgba(75,141,255,.6);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
 #update-bar .row{gap:8px;align-items:center}
@@ -589,21 +594,35 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .run-acts .btn.small{padding:4px 5px;font-size:11.5px;flex:none}.run-acts .spacer{flex:1;min-width:0}
 .run-acts .btn.icon{padding:4px 7px;font-size:13px}
 /* ---------- datarunner: FAQ, live contributions, map jobs ---------- */
-.dr-faq details{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:8px;max-width:900px}
-.dr-faq summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style-position:inside}
+.dr-faq details{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:.55em}
+.dr-faq summary{cursor:pointer;padding:.75em 1em;font-weight:600;list-style-position:inside}
 .dr-faq details[open] summary{border-bottom:1px solid var(--line)}
-.dr-faq .a{padding:4px 16px 12px;color:var(--ink-2);line-height:1.6;max-width:75ch}.dr-faq .a b{color:var(--ink)}.dr-faq .a ul{margin:6px 0;padding-left:20px}
-.faq-you{display:flex;align-items:center;gap:14px;max-width:900px;border:1px solid rgba(242,193,78,.4);background:rgba(242,193,78,.06);border-radius:10px;padding:10px 14px;margin:0 0 12px}
+.dr-faq .a{padding:.3em 1.15em .85em;color:var(--ink-2);line-height:1.6}.dr-faq .a b{color:var(--ink)}.dr-faq .a ul{margin:6px 0;padding-left:20px}
+.faq-you{display:flex;align-items:center;gap:14px;border:1px solid rgba(242,193,78,.4);background:rgba(242,193,78,.06);border-radius:10px;padding:10px 14px;margin:0 0 12px}
 .faq-you .stars{position:relative;letter-spacing:2px;color:var(--panel-3);line-height:1}.faq-you .stars i{position:absolute;left:0;top:0;overflow:hidden;white-space:nowrap;color:#f2c14e;font-style:normal}
 .faq-ranks{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin:8px 0 4px}
 .faq-ranks div{border-top:3px solid var(--panel-3);padding-top:5px}.faq-ranks div.on{border-top-color:#f2c14e}
-.faq-ranks b{display:block;font-size:13px}.faq-ranks span{font-size:11.5px;color:var(--dim)}
+.faq-ranks b{display:block;font-size:.93em}.faq-ranks span{font-size:.82em;color:var(--dim)}
 .dr-rep.live{border-color:rgba(127,231,255,.4)}
+.fl-confirm{border-top:1px solid rgba(255,107,107,.35);background:rgba(255,107,107,.06);padding:10px 12px;display:grid;gap:8px;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.fl-confirm b{color:var(--ink);font-size:13px}.btn.danger{background:rgba(255,107,107,.16);border-color:rgba(255,107,107,.6);color:#ffb4b4}
 .trust-badge{font:600 11px var(--text);color:#7fe7ff;border:1px solid rgba(127,231,255,.5);background:rgba(127,231,255,.08);border-radius:999px;padding:3px 10px}
 .trust-checks{list-style:none;padding:0!important;margin:8px 0!important}.trust-checks li{display:flex;gap:8px;padding:3px 0;color:var(--ink-2)}
 .trust-checks li span{width:1.1em;color:var(--dim)}.trust-checks li.ok span{color:#57e39b}.trust-checks li.ok b{color:#9fe0b4}
 .dr-rep .cb-pic{width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line-2);flex:none}
 .dr-job.map{border-style:dashed}
+.mapjob{border:1px solid rgba(127,231,255,.5);border-radius:12px;background:linear-gradient(180deg,rgba(47,134,255,.10),var(--panel-2));padding:14px 16px;margin:0 2px 14px}
+.mapjob .hd{display:flex;gap:12px;align-items:flex-start}.mapjob .hd .acts{margin-left:auto;display:flex;gap:6px;flex:none}
+.mapjob .lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#7fe7ff}.mapjob h3{font:600 19px var(--display);margin:2px 0}
+.mj-steps{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.mj-steps li{display:flex;gap:10px;color:var(--dim)}.mj-steps li .mjn{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:600 12px var(--display);border:1px solid var(--line-2)}
+.mj-steps li.now{color:var(--ink)}.mj-steps li.now .mjn{border-color:#7fe7ff;color:#7fe7ff;box-shadow:0 0 0 3px rgba(127,231,255,.12)}
+.mj-steps li.done{color:var(--ink-2)}.mj-steps li.done .mjn{background:rgba(87,227,155,.15);border-color:rgba(87,227,155,.6);color:#57e39b}
+.mj-steps .d{font-size:13px;color:var(--ink-2);margin-top:3px;line-height:1.5;max-width:80ch}
+.upd-btn{display:inline-flex;align-items:center;gap:6px}
+.spin-sm{width:11px;height:11px;border-radius:50%;border:2px solid rgba(140,196,255,.3);border-top-color:#8cc4ff;animation:spin .9s linear infinite;display:inline-block}
+.mj-steps .warn{margin-top:6px;color:#ffd38a}.mj-steps .wait{margin-top:6px;display:flex;align-items:center;gap:8px;color:var(--ink-2)}
+.mj-steps .spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(127,231,255,.25);border-top-color:#7fe7ff;animation:spin 0.9s linear infinite}
 /* ---------- datarunner: top 10 ---------- */
 .top-hero{display:grid;grid-template-columns:auto auto 1fr;grid-template-areas:"crown av who" "big big big";gap:14px 18px;align-items:center;max-width:1100px;
   border:1px solid rgba(242,193,78,.55);border-radius:14px;padding:18px 22px;margin:0 2px 14px;
@@ -682,15 +701,18 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
   <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1 aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</h1><div class="by">by <b>microTech</b></div></div></div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
-      <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
       <button class="tab" role="tab" data-tab="places" aria-selected="false">POI</button>
+      <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
+      <!-- three rows: getting around · trading · your ships -->
+      <span class="tab-break" aria-hidden="true"></span>
       <button class="tab uex-tab" role="tab" data-tab="market" aria-selected="false" hidden>Commodities</button>
       <button class="tab uex-tab" role="tab" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
       <button class="tab uex-tab" role="tab" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
-      <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
-      <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
+      <span class="tab-break" aria-hidden="true"></span>
       <button class="tab uex-tab" role="tab" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
+      <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
+      <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
     </div>
 
     <section class="pane active" id="pane-route">
@@ -754,20 +776,20 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
     </section>
 
     <section class="pane" id="pane-datarunner">
-      <div class="dr-mode" id="dr-mode"></div>
+      <div class="dr-mode" id="dr-mode" hidden></div>
       <div class="mk-h">Terminal</div>
       <div class="dr-combo"><input class="field" id="dr-term-q" placeholder="Type a place or terminal, e.g. New Babbage" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="dr-term-list"><div class="dr-combo-list" id="dr-term-list" role="listbox"></div></div>
       <div class="muted" id="dr-here" style="font-size:12px;margin:5px 2px 0"></div>
       <div class="mk-h">Screenshot of the terminal</div>
       <div class="dr-shots" id="dr-shots"></div>
-      <div class="row" style="gap:6px"><button class="btn" id="dr-shoot" style="flex:1">Take screenshot</button><button class="btn ghost" id="dr-shots-clear">Clear</button></div>
+      <div class="row" style="gap:6px"><button class="btn" id="dr-shoot" style="flex:1" disabled>Take screenshot</button><button class="btn ghost" id="dr-shots-clear" hidden>Clear</button></div>
       <div class="muted" id="dr-shot-hint" style="font-size:12px;margin:6px 2px 0"></div>
       <div class="mk-h">More details <span class="muted" style="text-transform:none;letter-spacing:0">optional</span></div>
       <div class="setgrid" style="grid-template-columns:110px 1fr;margin-top:4px">
         <span class="k">Game version</span><div class="dr-ver" id="dr-ver" title="Read from Game.log"></div>
-        <span class="k">Note</span><input class="field" id="dr-note" maxlength="500" placeholder="Like “terminal not working”">
+        <span class="k">Note</span><input class="field" id="dr-note" maxlength="500" placeholder="Like “terminal not working”" disabled>
       </div>
-      <div class="dr-stats" id="dr-stats"></div>
+      <div class="dr-stats" id="dr-stats" hidden></div>
     </section>
 
     <section class="pane" id="pane-vehicles">
@@ -1435,7 +1457,7 @@ function renderDetail(){
     const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
     const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
-      <div class="row" style="gap:8px;margin:-4px 0 12px;font-size:12.5px"><span class="muted">Quantum ${esc(S.qVersion||"")}</span><button class="btn small ghost" data-a="updcheck">Check for updates</button></div>
+      <div class="row" style="gap:8px;margin:-4px 0 12px;font-size:12.5px"><span class="muted">Quantum ${esc(S.qVersion||"")}</span><button class="btn small ghost upd-btn" data-a="updcheck" ${S.updChecking?"disabled":""}>${S.updChecking?`<span class="spin-sm"></span>Checking…`:"Check for updates"}</button>${S.updNote?`<span class="muted" style="font-size:12px">${esc(S.updNote)}</span>`:""}</div>
       <div class="sub" style="margin-top:6px">Game.log</div>
       <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
@@ -1459,6 +1481,23 @@ function renderDetail(){
           if(!c||!c.url) return "Community prices: off.";
           return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div>
 </div>
+      <div class="sub">Backup</div>
+      <div class="note">${(()=>{ const b=S.bk; if(b===undefined){ S.bk=null; api().backup_status().then(x=>{ S.bk=x; renderDetail(); }); return "Checking…"; }
+        if(!b) return "";
+        const ago=b.at?fmtAgo(b.at):null;
+        const state=!b.on?"Off: community features are turned off."
+          :!b.has_key?`<span style="color:#ffd38a">Add your UEX Bearer Token above to turn on backups.</span>`
+          :b.off?`Backups are off for this PC.`
+          :b.status==="too_large"?`<span style="color:#ffd38a">Your data is larger than a backup can hold.</span>`
+          :b.status==="requests_limit_reached"?`<span style="color:#ffd38a">The server is busy with this connection; it'll try again.</span>`
+          :b.status==="unreachable"?`<span style="color:#ffd38a">Couldn't reach the Quantum server; it'll try again.</span>`
+          :ago?`<span style="color:#9fe0b4">Backed up ${ago}.</span>`:"Not backed up yet; it'll happen within a minute.";
+        return `Your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up automatically, encrypted on this PC with a key made from your UEX Bearer Token. The Quantum server can't read them, and your token is never sent to it. On a new install, enter the same Bearer Token and they come back.
+          <div style="margin-top:8px">${state}</div>
+          ${b.on&&b.has_key?(b.off?`<div class="row" style="gap:6px;margin-top:8px"><button class="btn small" data-a="bkon">Turn backups back on</button></div>`
+            :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
+            <button class="btn small ghost" data-a="bkrestore" ${S.bkBusy?"disabled":""} title="Adds back anything missing here. Never removes or overwrites anything">${S.bkBusy==="restore"?"Restoring…":"Restore missing items"}</button>
+            <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
       <div class="sub">Hotkeys</div>
       ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
@@ -1553,17 +1592,30 @@ function renderDetail(){
     if(a==="logchange"){ const r=await api().browse_log(); if(r.ok){ toast("Now reading the selected Game.log"); await poll(); renderDetail(); } return; }
     if(a==="relaunch"){ const r=await api().relaunch_admin(); if(!r.ok) toast(r.error); return; }
     if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
-      const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; }
+      const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; } S.bk=undefined;
       S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
     if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
       toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
-    if(a==="updcheck"){ const st=await api().update_status(true); S.qVersion=st.current;
-      if(st.latest?.available){ await api().update_skip(""); renderUpdateBar(true); toast(`Quantum ${st.latest.version} is available`); }
-      else toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); return; }
+    if(a==="updcheck"){ if(S.updChecking) return; S.updChecking=true; S.updNote=""; renderDetail();
+      const [st]=await Promise.all([api().update_status(true), new Promise(r=>setTimeout(r,700))]);   // long enough to see
+      S.updChecking=false; S.qVersion=st.current;
+      if(st.latest?.available){ S.updNote=`Quantum ${st.latest.version} is available`; await api().update_skip(""); renderUpdateBar(true); toast(S.updNote); }
+      else { S.updNote=st.latest?.error?"Couldn't reach GitHub just now":`Up to date · checked ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+        toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); }
+      renderDetail(); return; }
     if(a==="drsecret"){ const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
-      const r=await api().dr_set_secret(v); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key saved"); renderDetail(); return; }
-    if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); return; }
-    if(a==="uexclear"){ await api().set_uex_token(""); S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
+      const r=await api().dr_set_secret(v); S.drHasSecret=r.has_secret; S.drSecretDraft=""; S.bk=undefined; toast("Datarunner secret key saved"); renderDetail(); drRefreshAfterKey(); return; }
+    if(a==="bkdel"){ if(!S.bkDelAsk){ S.bkDelAsk=true; renderDetail(); setTimeout(()=>{ S.bkDelAsk=false; renderDetail(); },4000); return; }
+      S.bkDelAsk=false; S.bkBusy="del"; renderDetail(); const r=await api().backup_delete(); S.bkBusy=null;
+      toast(r.ok?"Backup deleted from the server. Backups are off for this PC":r.error); S.bk=await api().backup_status(); renderDetail(); return; }
+    if(a==="bkon"){ S.bk=await api().backup_enable(); toast("Backups are on again"); renderDetail(); return; }
+    if(a==="bknow"||a==="bkrestore"){ S.bkBusy=a==="bknow"?"save":"restore"; renderDetail();
+      const r=a==="bknow"?await api().backup_now(true):await api().backup_restore(); S.bkBusy=null;
+      if(a==="bknow") toast(r.ok?"Backed up":"Backup failed: "+(r.error||r.status));
+      else { toast(r.ok?(r.added?`Restored ${r.summary}`:"Nothing was missing: you're up to date"):r.error); if(r.ok&&r.added){ await loadStatic(); await poll(); } }
+      S.bk=await api().backup_status(); renderDetail(); return; }
+    if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
+    if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
     if(a==="jump") jumpThrough(sel.name);
     if(a==="resetcal"){ const n=e.target.dataset.body; const r=await api().reset_calibration(n); if(!r.ok) return toast(r.error);
@@ -2259,13 +2311,21 @@ $("vh-out").onclick=async e=>{ if(await tradeClick(e)) return;
 // part for its numbers and shops, and fit it to a ship in My Fleet.
 const CP_KEY={WeaponGun:["dps","DPS"],Missile:["missile","Damage"],Shield:["shield_hp","Shield HP"],QuantumDrive:["qt_speed","Quantum speed"],
   Cooler:["coolant_make","Cooling"],PowerPlant:["power","Power output"]};
-const CP_ICONS=[[/cooler/i,'<path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/><path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>'],
+const CP_ICONS=[   // first match wins, so the specific ones ("Missile Racks") come before the general ("Missiles")
+  [/bomb\s*rack/i,'<path d="M3 5h18M7 5v2.5M17 5v2.5"/><path d="M7 7.5c1.6 0 2.3 1.7 2.3 4s-1.2 3.9-2.3 4.6c-1.1-.7-2.3-2.3-2.3-4.6S5.4 7.5 7 7.5zM17 7.5c1.6 0 2.3 1.7 2.3 4s-1.2 3.9-2.3 4.6c-1.1-.7-2.3-2.3-2.3-4.6s.7-4 2.3-4z"/><path d="M5.8 16.1L5 19h4l-.8-2.9M15.8 16.1L15 19h4l-.8-2.9"/>'],
+  [/missile\s*rack|rack/i,'<rect x="3" y="3.5" width="18" height="17" rx="2"/><path d="M8.5 17V9.5L10 6.5l1.5 3V17M12.5 17V9.5L14 6.5l1.5 3V17"/><path d="M3 17h18"/>'],
+  [/torpedo\s*tube|tube/i,'<rect x="2.5" y="5" width="19" height="6" rx="3"/><rect x="2.5" y="13" width="19" height="6" rx="3"/><path d="M7 8h8l2 0M7 16h8"/>'],
+  [/point\s*defen|pdc/i,'<path d="M5 20h14M7 20v-3a5 5 0 0110 0v3"/><path d="M12 11V8M12 5.5V3M15.8 12.2l2-2M8.2 12.2l-2-2M18 14.5h2.5M3.5 14.5H6"/>'],
+  [/turret/i,'<path d="M4 20h16M6 20v-3.5a6 6 0 0112 0V20"/><path d="M13.5 12l7-5.5M14.6 13.4l7-5.5"/><circle cx="12" cy="16" r="1.4"/>'],
+  [/bomb/i,'<path d="M12 2.5c3 0 4.2 3.2 4.2 7.3S14.1 16.9 12 18c-2.1-1.1-4.2-4.1-4.2-8.2S9 2.5 12 2.5z"/><path d="M9.6 16.7L8 21.5h8l-1.6-4.8M12 18v3.5"/>'],
+  [/torpedo/i,'<path d="M2.5 12c0-1.8 1.4-2.8 3.6-2.8H17l4.5 2.8L17 14.8H6.1c-2.2 0-3.6-1-3.6-2.8z"/><path d="M5.5 9.2L4 6M5.5 14.8L4 18M17 9.2v5.6"/>'],
+  [/missile/i,'<path d="M5 19l1.8-4.6 9.4-9.4c1.6-1.6 4-1.6 4-1.6s0 2.4-1.6 4l-9.4 9.4z"/><path d="M6.8 14.4L3.5 13.5l2.7-2.7M9.6 17.2l.9 3.3 2.7-2.7M14 7l3 3"/>'],
+  [/cooler/i,'<path d="M12 2v20M4.5 6.5l15 11M19.5 6.5l-15 11"/><path d="M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/>'],
   [/power/i,'<path d="M13 2L5 13.5h6L10 22l9-12h-6z"/>'],[/shield/i,'<path d="M12 2.5l8 3v6c0 5-3.5 8.8-8 10-4.5-1.2-8-5-8-10v-6z"/>'],
   [/quantum|jump/i,'<circle cx="12" cy="12" r="8"/><path d="M15.5 15.5L20 20"/><circle cx="12" cy="12" r="3"/>'],
   [/radar|scanner/i,'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/>'],
-  [/missile|torpedo|bomb/i,'<path d="M5 19l3-6 9-9 3 0 0 3-9 9-6 3z"/><path d="M8 13l3 3"/>'],
-  [/mining|laser|salvage|tractor/i,'<path d="M3 21l7-7"/><path d="M10 14l4-10 6 6-10 4z"/>'],
-  [/gun|weapon|turret/i,'<path d="M3 10h13l2-2h3v5h-5l-1 2H9l-1 4H5l1-4H3z"/>']];
+  [/mining|salvage|tractor/i,'<path d="M3 21l7-7"/><path d="M10 14l4-10 6 6-10 4z"/>'],
+  [/gun|cannon|repeater|weapon/i,'<rect x="2.5" y="9.5" width="8.5" height="6.5" rx="1.2"/><path d="M11 11.3h9.5M11 14.2h9.5M20.5 10v5.5"/><path d="M5 16v3.5h4"/><path d="M5 9.5V7.5h3"/>']];
 const cpIcon=c=>`<svg viewBox="0 0 24 24" aria-hidden="true">${(CP_ICONS.find(([re])=>re.test(`${c.name} ${c.section}`))||[0,'<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>'])[1]}</svg>`;
 const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
 const cpGrade=i=>String(i.game?.grade||i.grade||"");
@@ -2442,7 +2502,10 @@ async function renderFleet(){
   $("fl-out").innerHTML=fl.ships.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${fl.ships.length} ship${fl.ships.length===1?"":"s"} · ★ is your main ship (used for trade runs and components)</div>`
     +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}"><div class="hd" data-fl="${x.uid}"><div><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
       <div class="mk">${esc(x.maker)}${x.scu?` · ${x.scu} SCU`:""}${x.swaps?` · ${x.swaps} upgrade${x.swaps===1?"":"s"}`:" · stock"}</div></div>
-      <div class="row" style="gap:4px">${x.main?"":`<button class="btn small ghost" data-flmain="${x.uid}" title="Make this your main ship">★</button>`}<button class="btn small ghost" data-fldel="${x.uid}" title="Remove from your fleet">✕</button></div></div></div>`).join("")
+      <div class="row" style="gap:4px">${x.main?"":`<button class="btn small ghost" data-flmain="${x.uid}" title="Make this your main ship">★</button>`}<button class="btn small ghost" data-fldel="${x.uid}" title="Remove from your fleet">✕</button></div></div>
+      ${S.flDel===x.uid?`<div class="fl-confirm"><div><b>Remove ${esc(x.full)} from your fleet?</b>
+        <div>${x.swaps?`Its ${x.swaps} component swap${x.swaps===1?"":"s"} will be deleted too. `:"It has no component swaps saved. "}${x.main?"It's your main ship, so trade runs and the Components tab will use another ship. ":""}This can't be undone.</div></div>
+        <div class="row" style="gap:6px;justify-content:flex-end"><button class="btn small" data-fldelno="1">Cancel</button><button class="btn small danger" data-fldelyes="${x.uid}">Remove ship</button></div></div>`:""}</div>`).join("")
     :`<div class="empty"><strong>No ships yet</strong>Add the ships you own. Your main ship fills in cargo space for trade runs, and each ship gets slots for its components.</div>`;
   if(S.flSel) renderShip(S.flSel); else $("fl-panel").innerHTML=`<div class="empty" style="margin-top:60px"><strong>My Fleet</strong>Add a ship on the left to see its components here.</div>`; }
 // Stat labels: [key, label, format, lower-is-better]
@@ -2545,7 +2608,11 @@ $("fl-add-btn").onclick=async()=>{ const v=(S.veh||[]).find(x=>x.full.toLowerCas
 $("fl-add").addEventListener("keydown",e=>{ if(e.key==="Enter") $("fl-add-btn").click(); });
 $("fl-out").onclick=async e=>{
   const m=e.target.closest("[data-flmain]"); if(m){ await api().fleet_set_main(m.dataset.flmain); S.cpGalKey=null; return renderFleet(); }
-  const d=e.target.closest("[data-fldel]"); if(d){ await api().fleet_remove(d.dataset.fldel); return renderFleet(); }
+  // Removing a ship asks first: its component swaps go with it.
+  const d=e.target.closest("[data-fldel]"); if(d){ S.flDel=S.flDel===d.dataset.fldel?null:d.dataset.fldel; return renderFleet(); }
+  if(e.target.closest("[data-fldelno]")){ S.flDel=null; return renderFleet(); }
+  const y=e.target.closest("[data-fldelyes]"); if(y){ const nm=S.fleet?.find(x=>x.uid===y.dataset.fldelyes)?.full;
+    S.flDel=null; await api().fleet_remove(y.dataset.fldelyes); S.cpFit=null; toast(`${nm||"Ship"} removed from your fleet`); return renderFleet(); }
   const h=e.target.closest("[data-fl]"); if(h){ S.flSel=h.dataset.fl; S.flSlot=null; renderFleet(); } };
 $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; return renderShip(S.flSel); }
@@ -2759,12 +2826,13 @@ const drNum=v=>{ if(v==null||v==="") return null; const m=String(v).trim().toLow
   return m?Math.round(parseFloat(m[1])*({k:1e3,m:1e6}[m[2]]||1)*100)/100:NaN; };
 const drFmt=v=>v==null||isNaN(v)?"":Number(v).toLocaleString();
 async function openDatarunner(id){
-  if(!S.dr) $("dr-panel").innerHTML=qLoader("Loading the terminal…");
+  if(!S.dr){ $("dr-panel").innerHTML=qLoader("Loading the terminal…"); drSyncInputs(); }
   const r=await api().dr_prefill(id||null);
   if(!r.ok){ $("dr-panel").innerHTML=`<div class="empty"><strong>Couldn't load UEX data</strong>${esc(r.error)}</div>`; return; }
   S.drHasSecret=r.has_secret;
-  const keepSizes=S.dr?.pf?.id_terminal===r.id_terminal?[...S.dr.sizes]:[];
-  S.dr={pf:r, view:S.dr?.view||"enter", tab:S.dr?.pf?.id_terminal===r.id_terminal?S.dr.tab:(r.rows.some(x=>x.side==="buy")||!r.rows.length?"buy":"sell"),
+  const same=!!S.dr&&S.dr.pf?.id_terminal===r.id_terminal;
+  const keepSizes=same?[...S.dr.sizes]:[];
+  S.dr={pf:r, view:S.dr?.view||"enter", tab:same?S.dr.tab:(r.rows.some(x=>x.side==="buy")||!r.rows.length?"buy":"sell"),
         rows:r.rows.map(x=>({...x, state:"", orig:{price:x.price,scu:x.scu,status:x.status}})), sizes:new Set(keepSizes), focus:0};
   $("dr-mode").className="dr-mode"+(r.live?" live":""); $("dr-mode").hidden=r.live&&r.has_secret;
   $("dr-mode").innerHTML=r.live?`Add your UEX Secret Key in Settings to send reports.`
@@ -2871,6 +2939,8 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
     await openDatarunner(id); S.dr.view=v; return renderDrPanel(); }
   const mj=e.target.closest("[data-mapjob],[data-cbmap]"); if(mj){ const nm=mj.dataset.mapjob||mj.dataset.cbmap;
     document.querySelector('.tab[data-tab="places"]').click(); select({kind:"loc",name:nm}); focusLoc(nm,false); return; }
+  if(await drMapJobClick(e)) return;
+  const ms=e.target.closest("[data-mjstart]"); if(ms){ drMapJobStart(ms.dataset.mjstart); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
   const mh=e.target.closest("[data-maphere]"); if(mh){ mh.disabled=true; mh.textContent="Mapping…"; const r=await api().set_place_here(mh.dataset.maphere);
     if(!r.ok){ mh.disabled=false; mh.textContent="I'm here: map it"; return toast(r.error); }
     await loadStatic(); await poll(); toast(`${mh.dataset.maphere} is on your map. It goes live for everyone once a second datarunner agrees`); return renderDrJobs(); }
@@ -2966,6 +3036,55 @@ function drOverall(e){ if(e.test) return ["Test: not sent","#c3a6ff"]; const s=e
   if(e.no_decision) return ["No decision from UEX","#6f82a0"];
   if(!s.length) return ["Sent, waiting for UEX","#8cc4ff"];
   for(const k of ["declined","under_review","pending","queued","expired","approved","consolidated"]) if(s.includes(k)) return DR_ST[k]; return ["Sent","#a8bbd4"]; }
+// ---- A "map a station" job, step by step. The app ties your /showlocation to the job you started:
+// only a reading taken after you start it, in the right system (and on the right moon or planet, or
+// out in space for a gateway), can be submitted, and only for that station.
+function drMapJobStart(name){ S.drMapJob={name, at:Date.now(), state:"go"}; }
+function drMapReading(L){ const pl=S.live?.player; if(!pl||pl.approx||!L) return {ok:false, why:"none"};
+  const takenAt=Date.now()-pl.age*1000;
+  if(takenAt<S.drMapJob.at-2000) return {ok:false, why:"old"};
+  if(pl.age>900) return {ok:false, why:"old"};
+  if(pl.system!==L.system) return {ok:false, why:`That reading is in ${pl.system}, not ${L.system}.`};
+  if(L.kind==="surface"&&pl.body!==L.body) return {ok:false, why:`That reading isn't on ${L.body}. Take it while you're at ${L.name}.`};
+  if(L.type==="jump"&&pl.body) return {ok:false, why:`That reading is near ${pl.body}, not at the gateway. Take it while docked at the station.`};
+  return {ok:true, age:pl.age, body:pl.body}; }
+function drMapJobHtml(){ const j=S.drMapJob; if(!j) return ""; const L=S.locMap?.[j.name];
+  const key=S.live?.autoloc?.loc_hotkey, game=!S.live?.game_off;
+  if(j.state!=="sent"&&L?.pos) j.state="already";
+  const rd=drMapReading(L), stepN=j.state==="sent"||j.state==="already"?4:rd.ok?3:2;
+  const st=(n,title,body)=>`<li class="${stepN>n?"done":stepN===n?"now":""}"><div class="mjn">${stepN>n?"✓":n}</div><div><b>${title}</b>${stepN>=n&&body?`<div class="d">${body}</div>`:""}</div></li>`;
+  const res=j.result, live=res?.shared;
+  const sent=j.state==="already"?`<b style="color:#9fe0b4">${esc(j.name)} is on the map now.</b> Nothing more to do.`
+    :!res||res.state==="sending"?`Sending it to the Quantum server…`
+    :res.state==="error"?`<span style="color:#ffd38a">It's on your map, but the Quantum server couldn't be reached (${esc(res.error||"no answer")}).</span> Other users won't get it until you set it again later.`
+    :live?`<b style="color:#7fe7ff">⚡ Live on Quantum.</b> ${esc(j.name)} is on every Quantum user's map${res.reporters>1?`: your reading agreed with ${res.reporters-1} other datarunner${res.reporters>2?"s":""}`:": you're a trusted contributor, so one reading is enough"}.`
+    :`<b style="color:#9fe0b4">Submitted.</b> It's on your map now. It goes live for everyone once a second datarunner's reading agrees with yours (a trusted contributor's reading counts on its own). Follow it in My Reports.`;
+  return `<div class="mapjob" id="dr-mapjob"><div class="hd"><div><div class="lbl">Job started · Map a station</div><h3>${esc(j.name)}</h3>
+      <div class="muted" style="font-size:12.5px">${esc(TYPES[L?.type]?.one||"Station")}${L?.body?` on ${esc(L.body)}`:""} · ${esc(L?.system||"")}${L?.near?` · near ${esc(L.near)}`:""}</div></div>
+      <div class="acts">${j.state==="sent"||j.state==="already"?`<button class="btn small" data-mj="done">Done</button>`:`<button class="btn small ghost" data-mapjob="${esc(j.name)}">Show its card</button><button class="btn small ghost" data-mj="cancel">Cancel job</button>`}</div></div>
+    <ol class="mj-steps">
+      ${st(1,"Job accepted","")}
+      ${st(2,`Go to ${esc(j.name)} and ${L?.kind==="surface"?"land there":"dock there"}`,`Then press <b>${esc(key||"your /showlocation key")}</b>${key?"":" (set one in Settings)"} or type <b>/showlocation</b> in game chat.
+        ${!game?`<div class="warn">Start Star Citizen first: Quantum reads the reading from the game.</div>`
+          :rd.ok?""
+          :rd.why==="none"||rd.why==="old"?`<div class="wait"><span class="spin"></span>Waiting for a /showlocation taken after you started this job…</div>`
+          :`<div class="warn">${esc(rd.why)}</div>`}`)}
+      ${st(3,"Submit the position",stepN===3?`Got your reading${rd.body?` near ${esc(rd.body)}`:""}, ${Math.round(rd.age)} s ago. Only press this while you're at ${esc(j.name)}: it becomes the station's position.
+        <div style="margin-top:8px"><button class="btn small primary" data-mj="submit">Submit position for ${esc(j.name)}</button></div>`:"")}
+      ${st(4,"Submitted",stepN===4?sent:"")}
+    </ol></div>`; }
+function drMapJobPaint(){ const b=$("dr-mapjob"); if(b) b.outerHTML=drMapJobHtml(); }
+async function drMapJobClick(e){ const a=e.target.closest("[data-mj]"); if(!a) return false; const j=S.drMapJob, w=a.dataset.mj;
+  if(w==="cancel"||w==="done"){ S.drMapJob=null; renderDrJobs(); return true; }
+  if(w==="submit"&&j){ a.disabled=true; a.textContent="Submitting…";
+    const r=await api().set_place_here(j.name);
+    if(!r.ok){ toast(r.error); a.disabled=false; a.textContent=`Submit position for ${j.name}`; return true; }
+    j.state="sent"; j.result={state:"sending"}; drMapJobPaint();
+    for(let k=0;k<20&&S.drMapJob===j;k++){ await new Promise(r=>setTimeout(r,750)); const pr=await api().place_result(j.name);
+      if(pr.state==="done"||pr.state==="error"){ j.result=pr; break; } }
+    if(S.drMapJob===j&&j.result?.state==="sending") j.result={state:"error",error:"no answer"};
+    await loadStatic(); if(S.drMapJob===j) drMapJobPaint(); return true; }
+  return false; }
 // ---- Top 10: the best Quantum datarunners, from the community server. Ranked like the ranks are:
 // most approved reports, then star rating.
 function drAv(x,cls){ const ini=esc((x.username||"?")[0].toUpperCase()), pic=x.avatar||x.avatar_url;
@@ -2999,6 +3118,14 @@ async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
         :!me&&r.you?`<div class="top-note">You're not on the board yet: your first approved report puts you on it. <a data-drview="jobs">Find a job</a></div>`:""}`
       :`<div class="dr-empty">No approved reports yet. The first datarunner with one takes #1. <a data-drview="jobs" style="cursor:pointer;text-decoration:underline">Find a job</a></div>`}
     <div class="uex-credit">From the Quantum server: reports sent through Quantum that UEX approved, plus approved pictures and station positions. Updated every couple of minutes.</div></div>`; }
+// A new or removed secret key changes the Datarunner tab (test mode, your profile): reload it now
+// rather than on the next visit.
+async function drRefreshAfterKey(){ S.drProf=null; S.drTop=null; S.drTrust=null;
+  if(!S.dr) return;                                   // not opened yet: it loads fresh when you visit
+  try{ await api().dr_profile(true); }catch(e){}      // read your UEX profile again with the new key
+  openDatarunner(S.dr?.pf?.id_terminal||null); }
+function fmtAgo(ts){ const m=Math.round((Date.now()/1000-ts)/60);
+  return m<1?"just now":m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:new Date(ts*1000).toLocaleDateString([], {month:"short",day:"numeric"}); }
 // ---- FAQ: how stars, ranks and jobs work (the same rules the Quantum server uses)
 const DR_RANKS=[[0,"Unranked"],[1,"Trainee"],[11,"Runner"],[26,"Field Analyst"],[51,"Trade Analyst"],[101,"Quantum Analyst"]];
 async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
@@ -3008,7 +3135,7 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
   if(d.view!=="faq") return;
   const ranks=p?.ranks||DR_RANKS, dec=p?.ok?drDecided(p):null, nx=p?.rank?.next;
   const you=p?.ok&&p.username?`<div class="faq-you">${drStarBar(p.rated?p.stars:0,22)}<div><b>${p.rated?p.stars.toFixed(1):"Unrated"}</b> <span class="muted">${esc(p.rank.name)}</span>
-      <div class="muted" style="font-size:12.5px">${p.rated?`${dec.approved} Approved, ${dec.rejected} Rejected`:"No approved reports yet"} · ${p.accepted} approved report${p.accepted===1?"":"s"}${nx?` · ${nx.at-p.rank.count} more to ${esc(nx.name)}`:""}</div></div></div>`:"";
+      <div class="muted" style="font-size:.9em">${p.rated?`${dec.approved} Approved, ${dec.rejected} Rejected`:"No approved reports yet"} · ${p.accepted} approved report${p.accepted===1?"":"s"}${nx?` · ${nx.at-p.rank.count} more to ${esc(nx.name)}`:""}</div></div></div>`:"";
   const qa=[
     ["How is my star rating worked out?",`<p>Every price row, picture and station position you send counts once it's decided:</p>
       <ul><li><b>Approved</b> (or Live on UEX, or Live on Quantum) counts as <b>5 stars</b>.</li><li><b>Rejected</b> counts as <b>1 star</b>.</li></ul>
@@ -3028,7 +3155,8 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
     ["Can I report the same thing again?",`<p>Yes, once the kiosk changes. The same item at the same terminal can be reported once every 5 minutes.</p>`],
     ["Where is my profile kept?",`<p>On the Quantum server, under your UEX username, so it survives reinstalling Quantum. A report only counts after UEX's own record shows your username sent it, so nobody can add to or take from your profile.</p>`]];
   P.innerHTML=`${drViews()}<div class="dr-list dr-faq"><div class="dr-top" style="margin-top:4px"><div><h2>FAQ</h2><div class="where">How star ratings, ranks and jobs work.</div></div></div>${you}
-    ${qa.map(([q,a],i)=>`<details ${i<2?"open":""}><summary>${q}</summary><div class="a">${a}</div></details>`).join("")}</div>`; }
+    ${qa.map(([q,a])=>`<details><summary>${q}</summary><div class="a">${a}</div></details>`).join("")}</div>`;
+  fitDrGuide(); }
 // Trusted contributors: what it gives, the criteria (the server's), and this datarunner's progress.
 function drTrustHtml(t){ const i=t?.info, c=i?.checks;
   const line=(ok,txt)=>`<li class="${ok?"ok":""}"><span>${ok?"✓":"○"}</span> ${txt}</li>`;
@@ -3049,7 +3177,8 @@ function drTrustHtml(t){ const i=t?.info, c=i?.checks;
 // The step-by-step guide fits the panel instead of scrolling: its text is scaled down until it fits.
 // Fitted again whenever the panel or anything in the guide changes size, so the app's fonts loading
 // after the first fit (they're bigger than the fallback) can't push it into a scroll bar.
-function fitDrGuide(){ const g=$("dr-panel").querySelector(".dr-guide"); if(!g) return;
+function fitDrGuide(){ fitDrPanel(".dr-guide"); fitDrPanel(".dr-faq"); }
+function fitDrPanel(sel){ const g=$("dr-panel").querySelector(sel); if(!g) return;
   if(!g._fitObs&&window.ResizeObserver){ g._fitObs=new ResizeObserver(()=>{ cancelAnimationFrame(S.drFitRaf); S.drFitRaf=requestAnimationFrame(fitDrGuide); });
     g._fitObs.observe(g); for(const c of g.children) g._fitObs.observe(c); }
   if(!g.clientHeight) return;
@@ -3109,14 +3238,14 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   const mapCard=L=>`<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="No position for this station yet">?</div>
       <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Dock there, type <b>/showlocation</b> in game chat, then map it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
-      <div class="go">${reading(L)?`<button class="btn small primary" data-maphere="${esc(L.name)}" title="Use your last /showlocation as this station's position">I'm here: map it</button>`
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Start the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
+      <div class="go">${S.drMapJob?.name===L.name?`<span class="chip y">In progress</span>`:L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Start this job: Quantum walks you through it">Start job</button>`
         :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}</div></div>`;
   P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Stations missing from the map and terminals with the oldest prices. Each one you do helps every trader on UEX and Quantum.</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
+    <div class="dr-list dr-jobs">${drMapJobHtml()}${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
       <div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
       ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}${uexCredit(r.at)}</div>`; }
 
@@ -3192,7 +3321,7 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
 function drStarBar(stars,size){ return `<span class="stars" style="${size?`font-size:${size}px`:""}">★★★★★<i style="width:${(stars||0)/5*100}%">★★★★★</i></span>`; }
 function drStars(r){ if(!r) return "";
   return `<div class="dr-rating" title="Your first approved report sets 5 stars. Approved ones keep it up, rejected ones bring it down. See FAQ on the Datarunner page.">${drStarBar(r.rated?r.stars:0)}<b>${r.rated?r.stars.toFixed(1):"–"}</b><span class="muted" style="font-size:12px">${r.rated?esc(r.rank||"datarunner rating"):"Unrated: no reports approved yet"}</span></div>`; }
-function renderDrStats(st){ if(!st) return; const s=st.session, a=st.all;
+function renderDrStats(st){ if(!st) return; const s=st.session, a=st.all; $("dr-stats").hidden=false;
   $("dr-stats").innerHTML=`${drStars(st.rating)}<b style="font-size:13px">This session</b>
     <div class="big"><div><b>${s.reports}</b><span>reports</span></div><div><b>${s.prices}</b><span>prices</span></div><div><b>${Math.round(s.days)}</b><span>days of old data replaced</span></div></div>
     <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} reports · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% Approval</b>`:""}</div>`; }
@@ -3277,6 +3406,9 @@ async function poll(){
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
+  if(!S.bkNext||Date.now()>S.bkNext){ S.bkNext=Date.now()+15000;      // a background restore finished?
+    api().backup_status().then(b=>{ if(b?.note){ toast(b.note); loadStatic().then(()=>{ if(S.tab==="fleet") renderFleet(); }); } if(S.bk) S.bk=b; }); }
+  if(S.drMapJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&S.drMapJob.state==="go") drMapJobPaint();
   if(S.tab==="datarunner"&&S.dr&&(!!live.game_off)!==S.drGameOff){ S.drGameOff=!!live.game_off; drSyncInputs(); }
   const dq=live.datarunner?.seq; if(dq!==undefined&&dq!==S.drSeq){ const grew=S.drSeq!==undefined&&live.datarunner.shots>(S.drShotN||0);
     S.drSeq=dq; S.drShotN=live.datarunner.shots; if(grew) toast(`Terminal screenshot ${live.datarunner.shots} saved for your UEX report`); if(S.tab==="datarunner") renderDrShots(); }

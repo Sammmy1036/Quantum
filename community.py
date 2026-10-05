@@ -20,6 +20,7 @@ DEFAULT_URL = "https://quantumsc.ddnsgeek.com"
 class Community:
     def __init__(self, url_getter, test_getter, device_getter=None):
         self._url, self._test = url_getter, test_getter
+        self.place_results = {}       # name -> what the server said about the last position you sent
         # This PC's random device key. The server ties it to your UEX name once a report sent with it
         # is confirmed by UEX, so only your own PCs count as you for trusted-contributor features.
         self._device = device_getter or (lambda: None)
@@ -88,6 +89,31 @@ class Community:
         except Exception as e:
             self.last_error = str(e)
             return None
+
+    def backup_put(self, slot, auth, blob):
+        """Store your encrypted backup. {status: ok | wrong_key | requests_limit_reached | unreachable ...}"""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/backup", {"slot": slot, "auth": auth, "blob": blob}, timeout=20)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    def backup_get(self, slot, auth, delete=False):
+        """Your encrypted backup: {status: ok, blob, updated} | no_backup | wrong_key | deleted | unreachable."""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/backup/get", {"slot": slot, "auth": auth, **({"delete": True} if delete else {})}, timeout=20)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    @staticmethod
+    def _http_status(e):
+        try:
+            return json.loads(e.read().decode("utf-8"))
+        except Exception:
+            return {"status": f"http_{e.code}"}
 
     def update_user(self, username, display=None, avatar=None):
         """Tell the server your UEX avatar and name (as read from UEX), for the Top 10."""
@@ -187,11 +213,18 @@ class Community:
         msg = {"name": name, "system": entry.get("system"), "username": username,
                **({"body": entry["body"], "local": entry["local"]} if entry.get("local") else {"pos": entry.get("pos")})}
 
+        self.place_results[name] = {"state": "sending", "at": time.time()}
+
         def send():
             try:
-                self._req("/v1/places", msg, timeout=15)
+                r = self._req("/v1/places", msg, timeout=15)
+                ok = r.get("status") == "ok"
+                self.place_results[name] = {"state": "done" if ok else "error", "shared": bool(r.get("shared")),
+                                            "reporters": r.get("reporters"), "error": None if ok else r.get("status"),
+                                            "at": time.time()}
             except Exception as e:
                 self.last_error = str(e)
+                self.place_results[name] = {"state": "error", "error": str(e), "at": time.time()}
         threading.Thread(target=send, daemon=True).start()
 
     def post(self, body, sides, ids, username, date_added, test, display=None, avatar=None):

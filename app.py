@@ -22,6 +22,8 @@ import webbrowser
 
 import webview
 
+import backup
+from dataclasses import asdict
 import community
 import datarunner
 import fleet
@@ -32,7 +34,7 @@ import updater
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
-from nav_core import Location, NavDB, SYSTEMS, classify, dist
+from nav_core import Location, NavDB, SYSTEMS, _from_dict, classify, dist
 import overlay
 from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
@@ -166,6 +168,7 @@ class Api:
         self._community = community.Community(lambda: self._settings.get("community_url"),
                                               lambda: not self._dr.live, self._device_key)
         threading.Thread(target=self._sync_places, daemon=True).start()
+        threading.Thread(target=self._backup_loop, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
         self._update = None
@@ -1063,6 +1066,165 @@ class Api:
         if entry:
             self._community.post_place(name, entry, self._dr_cfg().get("username"))
 
+    # ------------------------------------------------------------ encrypted backups
+    # Fleet and swaps, waypoints, planned trade routes and mapped stations, encrypted on this PC with
+    # keys made from your UEX Bearer Token (see backup.py) and kept on the Quantum server. Uploaded
+    # within a minute of a change; brought back automatically on a fresh install once the token is
+    # entered. Restoring only adds what's missing here, it never removes or overwrites anything.
+    BACKUP_EVERY = 60
+
+    def _backup_creds(self):
+        token = (self._settings.get("uex_token") or "").strip()
+        return token if token and self._community.url else None
+
+    def _backup_payload(self):
+        with self._lock:
+            way = [asdict(l) for l in self._db.locations.values() if l.source == "user"]
+        return {"v": 1, "fleet": self._settings.get("fleet") or [], "trade_runs": self._settings.get("trade_runs") or [],
+                "waypoints": way, "places": gateways.load_learned(PLACES_PATH)}
+
+    def _backup_state(self, **kw):
+        st = self._settings.setdefault("backup", {})
+        st.update(kw)
+        self._save_settings()
+
+    def backup_now(self, force=False):
+        """Upload the backup if anything changed since the last one (or always, with force)."""
+        token = self._backup_creds()
+        if not token:
+            return {"ok": False, "status": "no_key"}
+        payload = self._backup_payload()
+        fp = backup.fingerprint(payload)
+        st = self._settings.get("backup") or {}
+        k = backup.keys(token)
+        if not force and st.get("hash") == fp and st.get("status") == "ok" and st.get("slot") == k["slot"]:
+            return {"ok": True, "status": "unchanged"}
+        try:
+            blob = backup.encrypt(token, payload)
+        except ValueError as e:
+            self._backup_state(status="too_large", tried=int(time.time()))
+            return {"ok": False, "status": "too_large", "error": str(e)}
+        r = self._community.backup_put(k["slot"], k["auth"], blob)
+        if r.get("status") == "ok":
+            self._backup_state(hash=fp, at=int(time.time()), status="ok", slot=k["slot"])
+            return {"ok": True, "status": "saved"}
+        self._backup_state(status=r.get("status"), tried=int(time.time()))
+        return {"ok": False, "status": r.get("status"), "error": r.get("detail")}
+
+    def _local_empty(self):
+        with self._lock:
+            way = any(l.source == "user" for l in self._db.locations.values())
+        return not (self._settings.get("fleet") or self._settings.get("trade_runs") or way)
+
+    def _backup_restore_if_empty(self):
+        try:
+            if self._local_empty():
+                r = self.backup_restore()
+                if r.get("ok") and r.get("added"):
+                    self._backup_note = f"Restored from your backup: {r['summary']}"
+        except Exception as e:
+            print("backup restore:", e, flush=True)
+
+    def backup_restore(self):
+        """Fetch, decrypt and merge the backup: adds missing ships, routes, waypoints and stations."""
+        token = self._backup_creds()
+        if not token:
+            return {"ok": False, "error": "Add your UEX Bearer Token first: backups are locked with it"}
+        k = backup.keys(token)
+        r = self._community.backup_get(k["slot"], k["auth"])
+        st = r.get("status")
+        if st == "no_backup":
+            return {"ok": False, "error": "There's no backup for this UEX Bearer Token yet"}
+        if st != "ok":
+            return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+        try:
+            data = backup.decrypt(token, r["blob"])
+        except Exception as e:
+            return {"ok": False, "error": f"The backup couldn't be opened: {e}"}
+        added = {"ships": 0, "routes": 0, "waypoints": 0, "stations": 0}
+        fleet = self._fleet()
+        have = {f["uid"] for f in fleet}
+        for f in data.get("fleet") or []:
+            if f.get("uid") and f["uid"] not in have:
+                fleet.append(dict(f, main=False)); added["ships"] += 1
+        if fleet and not any(f.get("main") for f in fleet):
+            fleet[0]["main"] = True
+        runs = self._settings.setdefault("trade_runs", [])
+        have = {x.get("id") for x in runs}
+        for x in data.get("trade_runs") or []:
+            if x.get("id") and x["id"] not in have:
+                runs.append(x); added["routes"] += 1
+        self._save_settings()
+        with self._lock:
+            for d in data.get("waypoints") or []:
+                if isinstance(d.get("name"), str) and d["name"] and d["name"] not in self._db.locations:
+                    try:
+                        loc = _from_dict(Location, d)
+                        if loc.kind not in ("space", "surface") or len(loc.pos) != 3 or \
+                                not all(isinstance(c, (int, float)) for c in loc.pos):
+                            continue
+                        loc.source = "user"                   # a backup only ever holds your own waypoints
+                    except (TypeError, ValueError):
+                        continue
+                    self._db.locations[d["name"]] = loc; added["waypoints"] += 1
+            places = gateways.load_learned(PLACES_PATH)
+            for name, v in (data.get("places") or {}).items():
+                if name not in places and isinstance(v.get("system"), str):
+                    places[name] = v; added["stations"] += 1
+            if added["stations"]:
+                PLACES_PATH.write_text(json.dumps({"places": places}, indent=1), encoding="utf-8")
+                _, self._unplaced = gateways.apply(self._db, self._learned_places())
+                self._apply_uex_stations(offline=True)
+            if added["waypoints"] or added["stations"]:
+                self._db.save()
+                self._db_changed()
+        n = sum(added.values())
+        words = [f"{v} {k if v != 1 else k[:-1]}" for k, v in added.items() if v]
+        return {"ok": True, "added": n, "detail": added, "updated": r.get("updated"),
+                "summary": ", ".join(words) if words else "nothing was missing"}
+
+    def backup_status(self):
+        st = self._settings.get("backup") or {}
+        note, self._backup_note = getattr(self, "_backup_note", None), None
+        return {"has_key": bool(self._settings.get("uex_token")), "on": bool(self._community.url),
+                "at": st.get("at"), "status": st.get("status"), "note": note, "off": bool(self._settings.get("backup_off"))}
+
+    def backup_delete(self):
+        """Remove your backup from the server and stop backing up until turned back on."""
+        token = self._backup_creds()
+        if not token:
+            return {"ok": False, "error": "No UEX Bearer Token saved"}
+        k = backup.keys(token)
+        r = self._community.backup_get(k["slot"], k["auth"], delete=True)
+        if r.get("status") in ("deleted", "no_backup"):
+            self._settings.pop("backup", None)
+            self._settings["backup_off"] = True
+            self._save_settings()
+            return {"ok": True}
+        return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+
+    def backup_enable(self):
+        self._settings.pop("backup_off", None)
+        self._save_settings()
+        threading.Thread(target=self.backup_now, kwargs={"force": True}, daemon=True).start()
+        return self.backup_status()
+
+    def _backup_loop(self):
+        time.sleep(20)
+        self._backup_restore_if_empty()
+        while True:
+            try:
+                if not self._settings.get("backup_off"):
+                    self.backup_now()
+            except Exception as e:
+                print("backup:", e, flush=True)
+            time.sleep(self.BACKUP_EVERY)
+
+    def place_result(self, name):
+        """What the server said about the station position you just sent: live for everyone (trusted, or a
+        second reading agreed), waiting for a second reading, still sending, or unreachable."""
+        return self._community.place_results.get(name) or {"state": "none"}
+
     PLACES_SYNC_EVERY = 10 * 60          # s: how often shared station positions are fetched again
 
     def _sync_places(self):
@@ -1286,6 +1448,7 @@ class Api:
         self._settings["uex_token"] = token
         self._save_settings()
         self._refresh_uex_places()
+        threading.Thread(target=self._backup_restore_if_empty, daemon=True).start()   # a fresh install
         return {"ok": True}
 
     def _refresh_uex_places(self):
