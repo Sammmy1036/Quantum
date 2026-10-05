@@ -19,9 +19,18 @@
    "reading_utc": 1791017664.1,
    "build": "12660092",
    "session": "be2eda6265"
+  },
+  {
+   "kind": "auto-place",
+   "body": "microTech",
+   "place": "Megaton",
+   "residual_deg": 0.0808,
+   "reading_utc": 1791182704.9,
+   "build": "12660092",
+   "session": "0e22c840c6"
   }
  ],
- "updated": "2026-10-03 01:54:24",
+ "updated": "2026-10-04 23:45:04",
  "bodies": {
   "Aberdeen": {
    "system": "Stanton",
@@ -142,12 +151,12 @@
   },
   "microTech": {
    "system": "Stanton",
-   "rotation_offset_deg": 221.57215,
+   "rotation_offset_deg": 221.491356,
    "rotation_period_h": 4.11999989,
    "epoch_utc": 1577836800.0,
-   "calibrated_at": 1790626483.277532,
-   "place": "New Babbage Interstellar Spaceport",
-   "quality": "hangar"
+   "calibrated_at": 1791182704.8852582,
+   "place": "Megaton",
+   "quality": "place"
   },
   "Wala": {
    "system": "Stanton",

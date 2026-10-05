@@ -282,17 +282,17 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 4.11999989,
-   "rotation_offset_deg": 221.57215,
+   "rotation_offset_deg": 221.49135602040374,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1439593.0,
    "system": "Stanton",
    "internal": "Stanton4",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1790626483.277532,
-   "calibrated_place": "New Babbage Interstellar Spaceport",
+   "calibrated_at": 1791182704.8852582,
+   "calibrated_place": "Megaton",
    "community_offset_deg": 248.19629679,
-   "calibration_quality": "hangar"
+   "calibration_quality": "place"
   },
   {
    "name": "Stanton",
@@ -34419,6 +34419,60 @@
    "qt": true,
    "pinned": false,
    "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Wikelo Emporium Dasi Station",
+   "kind": "space",
+   "pos": [
+    14333386928.954506,
+    2001161548.775977,
+    494.104411
+   ],
+   "body": null,
+   "pad": "none",
+   "notes": "Wikelo Emporium: asteroid base near Hurston",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Wikelo Emporium Selo Station",
+   "kind": "space",
+   "pos": [
+    -20156592263.474262,
+    -1263139183.121472,
+    494.104282
+   ],
+   "body": null,
+   "pad": "none",
+   "notes": "Wikelo Emporium: asteroid base near Yela (Crusader)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Dunboro",
+   "kind": "surface",
+   "pos": [
+    -735874.9353221456,
+    678288.8216054281,
+    10808.630254
+   ],
+   "body": "microTech",
+   "pad": "unknown",
+   "notes": "From UEX on MicroTech. Position from your /showlocation",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "outpost",
    "created": 0.0
   }
  ]

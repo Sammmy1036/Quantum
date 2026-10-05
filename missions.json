@@ -1,12 +1,12 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "be2eda62656ba2c4611b4ad021cbef69a4027c0c",
- "offset": 2575002,
+ "log_sig": "0e22c840c6c3efa819b6bef6c0613b527728cc7d",
+ "offset": 1081816,
  "where": {
-  "code": "RR_MIC_L3",
+  "code": "RR_HUR_L4",
   "system": "Stanton",
   "body": null,
-  "at": 1791018078.654
+  "at": 1791184531.464
  },
  "zone_bodies": {},
  "build": "12660092",
@@ -15,13 +15,15 @@
   "3170699229": "New Babbage",
   "2065796676": "New Babbage",
   "4147097116": "HDMS Pinewood",
-  "626814401": "R&R MIC-L3 Endless Odyssey Station"
+  "626814401": "R&R MIC-L3 Endless Odyssey Station",
+  "2011386033": "Dunboro",
+  "4243852663": "R&R HUR-L4 Melodic Fields Station"
  },
  "cur": {
-  "id": 626814401,
-  "landing": 626814401,
-  "at": 1791018078.652,
-  "place": "R&R MIC-L3 Endless Odyssey Station",
+  "id": 4243852663,
+  "landing": 4243852663,
+  "at": 1791184531.463,
+  "place": "R&R HUR-L4 Melodic Fields Station",
   "left": null,
   "spawned": false,
   "died_near": null
@@ -35,12 +37,12 @@
   }
  },
  "qt": {
-  "dest": "LOC_RR_S4_L3",
-  "ship": "850634805167",
-  "selected": 1791017681.633,
-  "arrived": 1791017990.336,
-  "start": "Hurston",
-  "start_body": "Hurston",
+  "dest": "LOC_RR_S1_L4",
+  "ship": "857832010583",
+  "selected": 1791184230.041,
+  "arrived": 1791184475.121,
+  "start": "microTech",
+  "start_body": "microTech",
   "place": null,
   "learned": true
  },
@@ -48,7 +50,8 @@
  "atc": {
   "833869876346": "ATC_DataManager_Port_SemiLawful-Dock1",
   "833869878256": "ATC_DataManager_Port_Lawful-001",
-  "833869879749": "ATC_DataManager_Port_Lawful-001"
+  "833867765220": "ATC_DataManager_Port_Lawful_Collector",
+  "833867765888": "ATC_DataManager_Port_Lawful_Collector"
  },
  "contracts": [
   {

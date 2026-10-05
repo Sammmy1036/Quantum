@@ -1,0 +1,39 @@
+{
+ "places": {
+  "Wikelo Emporium Dasi Station": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791181096,
+   "community": true,
+   "pos": [
+    14333386928.954506,
+    2001161548.775977,
+    494.104411
+   ]
+  },
+  "Wikelo Emporium Selo Station": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791182108,
+   "community": true,
+   "pos": [
+    -20156592263.474262,
+    -1263139183.121472,
+    494.104282
+   ]
+  },
+  "Dunboro": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791182707,
+   "community": true,
+   "body": "microTech",
+   "local": [
+    -735874.9353221456,
+    678288.8216054281,
+    10808.630254
+   ]
+  }
+ },
+ "missing": []
+}

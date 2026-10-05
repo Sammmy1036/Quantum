@@ -611,6 +611,8 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .trust-checks li span{width:1.1em;color:var(--dim)}.trust-checks li.ok span{color:#57e39b}.trust-checks li.ok b{color:#9fe0b4}
 .dr-rep .cb-pic{width:72px;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid var(--line-2);flex:none}
 .dr-job.map{border-style:dashed}
+.dr-job.map .go{display:flex;gap:6px;align-items:center}
+.chip.claim{margin-left:6px;color:#ffd38a;border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.08)}.nx-btn{color:var(--dim)}.nx-btn:hover{color:#ffb4b4}
 .mapjob{border:1px solid rgba(127,231,255,.5);border-radius:12px;background:linear-gradient(180deg,rgba(47,134,255,.10),var(--panel-2));padding:14px 16px;margin:0 2px 14px}
 .mapjob .hd{display:flex;gap:12px;align-items:flex-start}.mapjob .hd .acts{margin-left:auto;display:flex;gap:6px;flex:none}
 .mapjob .lbl{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:#7fe7ff}.mapjob h3{font:600 19px var(--display);margin:2px 0}
@@ -1261,7 +1263,12 @@ function drawOverlay(t){
     ctx.strokeStyle=`rgba(127,231,255,${.55*(1-ph)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q[0],q[1],7+ph*18,0,7); ctx.stroke();
     if(S.live.player?.approx){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
     ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke();
-    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label("You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true}); } }
+    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label("You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
+    // The place you're at sits under the "You" marker: name it just below "You" so both show.
+    const under=drawn.filter(d=>!d.isWp).map(d=>[d,Math.hypot(d.q[0]-q[0],d.q[1]-q[1])]).filter(x=>x[1]<24).sort((a,b)=>a[1]-b[1])[0]?.[0];
+    S.youAt=under?.L.name||null;
+    if(under) label(under.L.name,q[0]+10,q[1]+8,{color:under.L.type==="city"?"#ffffff":"#c3cee0",font:"600 12px 'Inter',sans-serif",force:true}); }
+    else S.youAt=null; } else S.youAt=null;
   // ---- selection ring
   if(selName){ const p=S.picks.find(p=>p.kind==="loc"&&p.name===selName); if(p){ ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,14,0,7); ctx.stroke();
     labelBoxes.push([p.x-14,p.y-14,p.x+14,p.y+14]); if(!stopIdx[selName]) label(selName,p.x+17,p.y+4,{color:"#7fe7ff",font:"600 13px 'Inter',sans-serif",force:true}); } }
@@ -1276,7 +1283,7 @@ function drawOverlay(t){
   bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
   for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
     label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"}); }
-  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city") continue;
+  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city") continue;
     label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined}); }
   // ---- off-screen pointers for the guide target and next stop
   if(gnode) edgeArrow(gnode.g,"#7fe7ff",`${guide.name}${guide.ground!=null?" · "+fmtDist(guide.ground):guide.distance!=null?" · "+fmtDist(guide.distance):""}`);
@@ -1365,7 +1372,7 @@ const tip=$("tooltip");
 function showTip(hit,x,y){ let t="",s="";
   if(hit.kind==="body"){ const b=S.bodyMap[hit.name]; t=b.name; s=b.kind==="star"?"Star":`${b.kind==="moon"?"Moon":"Planet"}, ${fmtDist(b.radius)} radius. Double-click to fly there`; }
   else if(hit.kind==="mission"){ const m=hit.mission; t=m.o.label; s=`${m.c.subtitle?m.c.subtitle+" · ":""}${m.c.name}`; }
-  else { const L=S.locMap[hit.name]; if(!L) return; t=L.name; s=[L.source==="user"?"Your waypoint":TYPES[L.type]?.one, L.body, padOf(L)!=="unknown"?`pad: ${padOf(L)}`:null, L.qt?"QT marker":null].filter(Boolean).join(", "); }
+  else { const L=S.locMap[hit.name]; if(!L) return; t=L.name; s=[L.source==="user"?"Your waypoint":TYPES[L.type]?.one, L.body, padOf(L)!=="unknown"?`pad: ${padLabel(padOf(L))}`:null, L.qt?"QT marker":null].filter(Boolean).join(", "); }
   tip.innerHTML=`<div class="t">${esc(t)}</div><div class="s">${esc(s)}</div>`; tip.style.display="block";
   const r=tip.getBoundingClientRect(); tip.style.left=Math.min(x+14,W-r.width-8)+"px"; tip.style.top=Math.max(y-r.height-10,8)+"px"; }
 function hideTip(){ tip.style.display="none"; }
@@ -1437,7 +1444,10 @@ S.svcCache={};
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
   const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name]); }
-function padOf(L){ return L.pad&&L.pad!=="unknown"?L.pad:(L.pad_auto||"unknown"); }
+// Your own pick, else what Quantum users agree on, else what the game data suggests.
+function padOf(L){ return L.pad&&L.pad!=="unknown"?L.pad:(L.pad_shared||L.pad_auto||"unknown"); }
+const PAD_LABEL={unknown:"Unknown",none:"None",vehicle:"Vehicle",small:"Small",medium:"Medium",large:"Large",xl:"XL",hangar:"Hangar"};
+const padLabel=p=>PAD_LABEL[String(p||"unknown").toLowerCase()]||String(p).replace(/^./,c=>c.toUpperCase());
 function wikiFor(name){ return S.wiki?.bodies?.[name]||null; }
 function wikiSystem(name){ return S.wiki?.systems?.[name]||null; }
 function wikiLink(url,label="Star Citizen Wiki"){ return url?`<a data-url="${esc(url)}">${esc(label)}</a>`:""; }
@@ -1569,7 +1579,8 @@ function renderDetail(){
           <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
       <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
         ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
-        ${L.unplaced?"":`<span class="k">Landing pad</span><select class="field" id="d-pad">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"&&L.pad_auto?`unknown (game data: ${L.pad_auto})`:p}</option>`).join("")}</select>
+        ${L.unplaced?"":`<span class="k">Landing pad</span><span><select class="field" id="d-pad" title="The largest pad here">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"?(L.pad_shared?`Unknown (Quantum users: ${padLabel(L.pad_shared)})`:L.pad_auto?`Unknown (game data: ${padLabel(L.pad_auto)})`:"Unknown"):padLabel(p)}</option>`).join("")}</select>
+          <div class="muted" style="font-size:11.5px;margin-top:4px">${L.pad_shared?`Quantum users agree: <b>${esc(padLabel(L.pad_shared))}</b>.`:""}${L.source!=="user"?" Your pick is shared; it shows for everyone once another datarunner agrees.":""}</div></span>
         <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`}</div>
       ${L.unplaced?`<div class="acts"><button class="btn primary" data-a="placehere" ${readingHere?"":`disabled title="Needs a /showlocation taken at this station in the last 15 minutes"`}>I'm here: set position</button></div>`:
       `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
@@ -1580,7 +1591,8 @@ function renderDetail(){
         ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}`;
     if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
     if(!L.unplaced){
-      $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value; toast(`Saved pad size for ${L.name}`); };
+      $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value;
+        toast(e.target.value==="unknown"?`Pad size for ${L.name} cleared`:`Pad size ${padLabel(e.target.value)} saved. It shows for everyone once another datarunner agrees`); };
       $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
   }
   d.classList.add("show");
@@ -1657,7 +1669,7 @@ function renderHud(){
   const here=live.travel?.state==="landed"&&live.travel?.place===n?.name;
   if(n){ html+=`<div class="card next"><div class="lbl">Next stop${live.route.length>1?` · 1 of ${live.route.length}`:""}${here?' <span style="color:var(--ok);font-weight:600">· You\'re here</span>':""}</div><div class="nm">${esc(n.name)}</div>
     ${n.other_system?`<div class="hint">It's in ${esc(n.system)}. Jump there first.</div>`:n.distance!=null?`<div class="nums"><div><div class="v">${fmtDist(n.distance)}</div><div class="k">straight line</div></div>
-      ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(n.pad)}</div><div class="k">pad</div></div>`:""}</div>`
+      ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(padLabel(n.pad))}</div><div class="k">pad</div></div>`:""}</div>`
       :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}</div>`; }
   // Offer to line the planet up when your reading clearly matches a place the map has elsewhere.
   const cs=live.calib_suggest;
@@ -1708,7 +1720,7 @@ function renderRoute(){
   el.innerHTML=route.map((n,i)=>{ const L=S.locMap[n]||{}; const leg=live.legs[i]; const jump=i>0&&L.system!==S.locMap[route[i-1]]?.system;
     const back=route.indexOf(n)<i?'<span class="role back">Return visit</span>':"";
     return `<li class="stop" draggable="true" data-i="${i}"><div class="num">${i+1}</div>
-      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padOf(L))}</span>`:""}</div></div>
+      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padLabel(padOf(L)))}</span>`:""}</div></div>
       <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system):leg!=null?fmtDist(leg):""}</div><button class="x" aria-label="Remove stop ${i+1}">×</button></div></li>`; }).join("");
   for(const li of el.children){ const i=+li.dataset.i, n=route[i];
     li.querySelector(".name").onclick=()=>{ select({kind:"loc",name:n}); focusLoc(n); };
@@ -2007,7 +2019,7 @@ function renderResults(){
   list.sort((a,b)=>((a.system!==S.system)-(b.system!==S.system)) || ((a.name.toLowerCase().startsWith(q)?0:1)-(b.name.toLowerCase().startsWith(q)?0:1)) || a.name.localeCompare(b.name));
   const shown=list.slice(0,250);
   $("results").innerHTML = shown.length ? shown.map(L=>`<li class="res${S.selected?.name===L.name?" sel":""}" data-name="${esc(L.name)}"><span class="ty ${L.type}"></span>
-      <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padOf(L)):""}</div></div>
+      <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padLabel(padOf(L))):""}</div></div>
       ${L.unplaced?`<span class="muted" title="Position not known yet: open it to set it">?</span>`:`<button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button>`}</li>`).join("")
       +(list.length>shown.length?`<li class="muted" style="padding:8px">${list.length-shown.length} more. Narrow your search.</li>`:"")
     : `<div class="empty"><strong>Nothing matches “${esc(S.search)}”</strong>Try part of the name, like “tressler” or “sm0”.</div>`; }
@@ -2845,7 +2857,9 @@ async function openDatarunner(id){
     :"Land or dock somewhere and the terminal there is picked for you.";
   $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
   $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env} (from Game.log)`:"Couldn't read it from Game.log";
-  renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs(); }
+  renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs();
+  if(!S.drProf||Date.now()-(S.drProfAt||0)>60000) api().dr_profile(false).then(p=>{ if(p?.ok){ S.drProf=p; S.drProfAt=Date.now();
+    if(S.dr) renderDrStats(S.dr.pf.stats); } }).catch(()=>{}); }
 
 // ---- the main panel: header with progress, kiosk-style tabs, rows, send bar
 function drRowsOf(side){ return S.dr.rows.map((x,i)=>[x,i]).filter(([x])=>x.side===side); }
@@ -2863,8 +2877,8 @@ function renderDrPanel(){ const d=S.dr, r=d.pf, P=$("dr-panel");
     <div class="dr-list" id="dr-list"></div>
     <div class="dr-send" id="dr-send"></div>`;
   renderDrList(); renderDrSend(); drAckGate(); }
-function drViews(){ const d=S.dr, n=d.pf.reports_count||0;
-  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports${n?` <span>${n}</span>`:""}</button><button data-drview="top" class="${d.view==="top"?"on":""}">Top 10</button><button data-drview="faq" class="${d.view==="faq"?"on":""}">FAQ</button></div>`; }
+function drViews(){ const d=S.dr;
+  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports</button><button data-drview="top" class="${d.view==="top"?"on":""}">Top 10</button><button data-drview="faq" class="${d.view==="faq"?"on":""}">FAQ</button></div>`; }
 // Shown once, before the first report: reports carry the user's UEX name, and bad ones cost them.
 function drAckGate(){ if(S.dr.pf.ack) return;
   const el=drSheet(`<h3>Before you report</h3>
@@ -2893,8 +2907,16 @@ function drRowHtml(x,i){ const d=S.dr, st=d.pf.status_names, age=drAge(x.updated
     <div class="inv"><div class="segs l${lvl}">${[1,2,3,4,5,6,7].map(n=>`<button data-lvl="${n}" class="${n<=lvl?"f":""}" title="${n} · ${esc(st[n])}" aria-label="${esc(st[n])}"></button>`).join("")}</div><span>${lvl?esc(st[lvl]):"Inventory?"}</span></div>
     <div class="acts"><button class="ok ${x.state==="same"?"on":""}" data-act="same" title="Price, stock and inventory all match the kiosk (Space)">${x.state==="same"?"✓ No Changes":"No Changes"}</button><button class="gn ${x.state==="gone"?"on":""}" data-act="gone" title="The kiosk doesn't list this commodity any more (G). For no stock, set the inventory bar to Out of stock instead.">Not Sold Here</button></div></div>`; }
 // Data can only be entered once there's a screenshot: UEX checks every report against it.
-function drLocked(){ return !(S.drShotCount>0); }
-function drLockHtml(){ const k=S.drShotKey; return drLocked()?`<div class="dr-lock" id="dr-lock">📷 <span><b>Screenshot required before entering data.</b> Open the kiosk in game and ${k?`press <b>${esc(k)}</b>`:"use <b>Take screenshot</b> on the left"}. UEX checks every report against it.</span></div>`:""; }
+// Locked until there's a screenshot, unless UEX no longer needs one from you (or you've chosen to try
+// without one after the 90-day evaluation; UEX's answer then settles it).
+function drLocked(){ return !(S.drShotCount>0) && !S.drShotPol?.optional && !S.drNoShot; }
+function drLockHtml(){ const k=S.drShotKey, pol=S.drShotPol||{};
+  if(!drLocked()) return S.drNoShot&&!(S.drShotCount>0)&&!pol.optional?`<div class="dr-lock" style="border-style:solid">📷 <span>Sending <b>without a screenshot</b>. If UEX still needs one from you, it'll say so and nothing is sent. <a data-drnoshot="0" style="cursor:pointer;text-decoration:underline">Take one instead</a></span></div>`:"";
+  return `<div class="dr-lock" id="dr-lock">📷 <span><b>Screenshot required before entering data.</b> Open the kiosk in game and ${k?`press <b>${esc(k)}</b>`:"use <b>Take screenshot</b> on the left"}. UEX checks every report against it.
+    ${pol.can_try?`<br><span class="muted">UEX only needs screenshots during a new datarunner's first 90 days, and it's been that long since your first report.</span>
+      <button class="btn small" data-drnoshot="1" style="margin-top:6px">Send without a screenshot</button>`
+      :pol.refused_at?`<br><span class="muted">UEX still needed one when you last tried without. Quantum will offer to skip it again in a week.</span>`
+      :pol.days_left!=null?`<br><span class="muted">New datarunners need one for their first 90 days; about ${pol.days_left} day${pol.days_left===1?"":"s"} to go.</span>`:""}</span></div>`; }
 function drNeedShot(){ const el=$("dr-lock"); toast(`Take a screenshot of the kiosk first${S.drShotKey?` (press ${S.drShotKey} in game)`:""}`);
   if(el){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); el.scrollIntoView({block:"nearest"}); } }
 function renderDrList(){ const d=S.dr, L=drRowsOf(d.tab), el=$("dr-list"); if(!el) return;
@@ -2930,8 +2952,15 @@ function drToggleSame(i){ if(drLocked()) return drNeedShot(); if(drCooling(i)) r
 function drMove(i,dir){ const rows=[...$("dr-list").querySelectorAll(".dr-row")], at=rows.findIndex(r=>+r.dataset.i===i);
   const nx=rows[Math.max(0,Math.min(rows.length-1,at+dir))]; nx?.focus(); nx?.scrollIntoView({block:"nearest"}); }
 $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
+  const ns=e.target.closest("[data-drnoshot]"); if(ns){ S.drNoShot=ns.dataset.drnoshot==="1"; return renderDrPanel(); }
   const tab=e.target.closest("[data-drtab]"); if(tab){ d.tab=tab.dataset.drtab; return renderDrPanel(); }
   const vw=e.target.closest("[data-drview]"); if(vw){ d.view=vw.dataset.drview; return renderDrPanel(); }
+  // Withdraw a station position sent by mistake (second click confirms)
+  const wd=e.target.closest("[data-cbwd]"); if(wd){ const nm=wd.dataset.cbwd;
+    if(S.drWd!==nm){ S.drWd=nm; renderDrPanel(); clearTimeout(S.drWdT); S.drWdT=setTimeout(()=>{ S.drWd=null; if(S.dr?.view==="mine") renderDrPanel(); },4000); return; }
+    S.drWd=null; wd.disabled=true; wd.textContent="Withdrawing…"; const r=await api().withdraw_place(nm);
+    if(!r.ok){ toast(r.error); return renderDrPanel(); }
+    toast(`Your ${nm} reading was withdrawn and taken off your map`); S.drProf=null; S.drProfAt=0; await loadStatic(); return renderDrPanel(); }
   const tr=e.target.closest("[data-top=refresh]"); if(tr){ tr.disabled=true; tr.textContent="Refreshing…"; return renderDrTop(true); }
   const rf=e.target.closest("[data-mine=refresh]"); if(rf){ rf.disabled=true; rf.textContent="Refreshing…"; return renderDrMine(true,true); }
   const js=e.target.closest("[data-jobsort]"); if(js){ S.drJobSort=js.dataset.jobsort; return renderDrJobs(); }
@@ -2940,7 +2969,21 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
   const mj=e.target.closest("[data-mapjob],[data-cbmap]"); if(mj){ const nm=mj.dataset.mapjob||mj.dataset.cbmap;
     document.querySelector('.tab[data-tab="places"]').click(); select({kind:"loc",name:nm}); focusLoc(nm,false); return; }
   if(await drMapJobClick(e)) return;
-  const ms=e.target.closest("[data-mjstart]"); if(ms){ drMapJobStart(ms.dataset.mjstart); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
+  // "Doesn't exist": a second click confirms. Hidden here now; hidden for everyone once a second
+  // datarunner agrees (or a trusted contributor says so).
+  const nx=e.target.closest("[data-nx]"); if(nx){ const nm=nx.dataset.nx;
+    if(S.drNx!==nm){ S.drNx=nm; renderDrJobs(); clearTimeout(S.drNxT); S.drNxT=setTimeout(()=>{ S.drNx=null; if(S.dr?.view==="jobs") renderDrJobs(); },4000); return; }
+    S.drNx=null; if(S.drMapJob?.name===nm) S.drMapJob=null;
+    await api().report_missing(nm); await loadStatic(); toast(`${nm} hidden. It's hidden for everyone once another datarunner agrees`); return renderDrJobs(); }
+  if(e.target.closest("[data-unhide]")){ await api().unhide_places(); await loadStatic(); toast("Places you hid are listed again"); return renderDrJobs(); }
+  if(await drPriceJobClick(e)) return;
+  const pa=e.target.closest("[data-pjaccept]"); if(pa){ pa.disabled=true; pa.textContent="Accepting…";
+    const jb=(S.drJobsList||[]).find(x=>String(x.id)===pa.dataset.pjaccept); const u=await drAccept(`t:${pa.dataset.pjaccept}`);
+    if(u&&jb){ if(S.drMapJob){ drRelease(`p:${S.drMapJob.name}`); S.drMapJob=null; }
+      S.drPriceJob={id:jb.id, name:jb.name, where:jb.where, system:jb.system, place:jb.place, until:u}; toast(`Job accepted: ${jb.name} is yours for ${CLAIM_MIN} minutes`); }
+    await drLoadClaims(); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
+  const ms=e.target.closest("[data-mjstart]"); if(ms){ const u=await drAccept(`p:${ms.dataset.mjstart}`); if(!u){ renderDrJobs(); return; }
+    if(S.drPriceJob){ S.drPriceJob=null; } drMapJobStart(ms.dataset.mjstart); await drLoadClaims(); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
   const mh=e.target.closest("[data-maphere]"); if(mh){ mh.disabled=true; mh.textContent="Mapping…"; const r=await api().set_place_here(mh.dataset.maphere);
     if(!r.ok){ mh.disabled=false; mh.textContent="I'm here: map it"; return toast(r.error); }
     await loadStatic(); await poll(); toast(`${mh.dataset.maphere} is on your map. It goes live for everyone once a second datarunner agrees`); return renderDrJobs(); }
@@ -2985,7 +3028,7 @@ $("dr-panel").addEventListener("focusin",e=>{ if(e.target.dataset?.k&&!drLocked(
 
 // ---- review and send (step 6 of the UEX guide: look it over once more)
 function drForm(){ const d=S.dr;
-  return {id_terminal:d.pf.id_terminal, details:$("dr-note").value, container_sizes:[...d.sizes],
+  return {id_terminal:d.pf.id_terminal, details:$("dr-note").value, container_sizes:[...d.sizes], no_screenshot:!(S.drShotCount>0),
     rows:drReady().map(x=>({id_commodity:x.id_commodity, side:x.side, price:x.state==="gone"?null:drNum(x.price), scu:x.state==="gone"?null:drNum(x.scu), status:x.status, missing:x.state==="gone", include:true}))}; }
 const drName=id=>S.dr?.pf.commodities.find(c=>c.id===id)?.name||"#"+id;
 function drSheet(html){ $("dr-panel").querySelector(".dr-sheet")?.remove(); if(!html) return; const el=document.createElement("div"); el.className="dr-sheet"; el.innerHTML=html; $("dr-panel").appendChild(el); return el; }
@@ -3022,9 +3065,11 @@ async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true; b.te
     $("dr-back").onclick=()=>drSheet(null); if($("dr-folder2")) $("dr-folder2").onclick=()=>api().dr_open_folder();
     const now=Date.now()/1000; for(const x of d.rows) if(x.state){ if(x.state!=="gone"){ x.orig={price:drNum(x.price),scu:drNum(x.scu),status:+x.status}; x.updated=now; } x.state=""; }
     d.pf.cooldown=(await api().dr_prefill(d.pf.id_terminal)).cooldown||{};
-    d.pf.reports_count=(d.pf.reports_count||0)+1; const vb=$("dr-panel").querySelector('[data-drview="mine"]'); if(vb) vb.innerHTML=`My Reports <span>${d.pf.reports_count}</span>`;
+    d.pf.reports_count=(d.pf.reports_count||0)+1;
+    if(S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!r.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`); S.drPriceJob=null; }
     renderDrStats(r.stats); renderDrList(); renderDrSend(); renderDrShots(); }
   else { b.disabled=false; b.textContent="Try again";
+    if(r.status==="screenshot_required"){ S.drNoShot=false; renderDrShots().then(()=>renderDrList()); }   // UEX still wants one
     drSheet(`<h3>${r.test?"Saved for inspection, but UEX would refuse it":r.already_sent?"Already at UEX":"Not sent"}</h3><ul>${(r.errors||[{text:r.error||r.status}]).map(e=>`<li>${esc(e.text)}</li>`).join("")}</ul>
       <div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost" id="dr-back">Back to editing</button></div>`); $("dr-back").onclick=()=>drSheet(null); } }
 
@@ -3036,54 +3081,94 @@ function drOverall(e){ if(e.test) return ["Test: not sent","#c3a6ff"]; const s=e
   if(e.no_decision) return ["No decision from UEX","#6f82a0"];
   if(!s.length) return ["Sent, waiting for UEX","#8cc4ff"];
   for(const k of ["declined","under_review","pending","queued","expired","approved","consolidated"]) if(s.includes(k)) return DR_ST[k]; return ["Sent","#a8bbd4"]; }
-// ---- A "map a station" job, step by step. The app ties your /showlocation to the job you started:
-// only a reading taken after you start it, in the right system (and on the right moon or planet, or
-// out in space for a gateway), can be submitted, and only for that station.
+// ---- A "map a station" job, step by step. The app ties your /showlocation to the job: only a reading
+// taken after you press "I've arrived", in the right system (and on the right moon or planet, or out
+// in space for a gateway), can be submitted, and only for that station. A /showlocation typed on the
+// way there is ignored.
 function drMapJobStart(name){ S.drMapJob={name, at:Date.now(), state:"go"}; }
 function drMapReading(L){ const pl=S.live?.player; if(!pl||pl.approx||!L) return {ok:false, why:"none"};
   const takenAt=Date.now()-pl.age*1000;
-  if(takenAt<S.drMapJob.at-2000) return {ok:false, why:"old"};
+  if(!S.drMapJob.arrived||takenAt<S.drMapJob.arrived-2000) return {ok:false, why:"old"};
   if(pl.age>900) return {ok:false, why:"old"};
   if(pl.system!==L.system) return {ok:false, why:`That reading is in ${pl.system}, not ${L.system}.`};
   if(L.kind==="surface"&&pl.body!==L.body) return {ok:false, why:`That reading isn't on ${L.body}. Take it while you're at ${L.name}.`};
   if(L.type==="jump"&&pl.body) return {ok:false, why:`That reading is near ${pl.body}, not at the gateway. Take it while docked at the station.`};
   return {ok:true, age:pl.age, body:pl.body}; }
 function drMapJobHtml(){ const j=S.drMapJob; if(!j) return ""; const L=S.locMap?.[j.name];
-  const key=S.live?.autoloc?.loc_hotkey, game=!S.live?.game_off;
+  const key=S.live?.autoloc?.loc_hotkey, game=!S.live?.game_off, dock=L?.kind==="surface"?"land":"dock";
   if(j.state!=="sent"&&L?.pos) j.state="already";
-  const rd=drMapReading(L), stepN=j.state==="sent"||j.state==="already"?4:rd.ok?3:2;
+  const rd=drMapReading(L), fin=j.state==="sent"||j.state==="already";
+  const stepN=fin?5:!j.arrived?2:rd.ok?4:3;
   const st=(n,title,body)=>`<li class="${stepN>n?"done":stepN===n?"now":""}"><div class="mjn">${stepN>n?"✓":n}</div><div><b>${title}</b>${stepN>=n&&body?`<div class="d">${body}</div>`:""}</div></li>`;
   const res=j.result, live=res?.shared;
   const sent=j.state==="already"?`<b style="color:#9fe0b4">${esc(j.name)} is on the map now.</b> Nothing more to do.`
-    :!res||res.state==="sending"?`Sending it to the Quantum server…`
-    :res.state==="error"?`<span style="color:#ffd38a">It's on your map, but the Quantum server couldn't be reached (${esc(res.error||"no answer")}).</span> Other users won't get it until you set it again later.`
+    :!res||res.state==="sending"?`<span class="wait" style="display:inline-flex"><span class="spin"></span>Sending it to the Quantum server${res?.retry?` (the server is slow; try ${res.retry+1} of 3)`:""}…</span>`
+    :res.state==="queued"?`<b style="color:#9fe0b4">It's on your map.</b> <span style="color:#ffd38a">The Quantum server couldn't be reached just now, so Quantum keeps it and sends it again automatically (every 10 minutes, and when Quantum starts) until it gets through.</span> No need to do it again.`
+    :res.state==="error"?`<span style="color:#ffd38a">It's on your map, but the server didn't accept it (${esc(res.error||"no reason given")}).</span>`
     :live?`<b style="color:#7fe7ff">⚡ Live on Quantum.</b> ${esc(j.name)} is on every Quantum user's map${res.reporters>1?`: your reading agreed with ${res.reporters-1} other datarunner${res.reporters>2?"s":""}`:": you're a trusted contributor, so one reading is enough"}.`
     :`<b style="color:#9fe0b4">Submitted.</b> It's on your map now. It goes live for everyone once a second datarunner's reading agrees with yours (a trusted contributor's reading counts on its own). Follow it in My Reports.`;
   return `<div class="mapjob" id="dr-mapjob"><div class="hd"><div><div class="lbl">Job started · Map a station</div><h3>${esc(j.name)}</h3>
       <div class="muted" style="font-size:12.5px">${esc(TYPES[L?.type]?.one||"Station")}${L?.body?` on ${esc(L.body)}`:""} · ${esc(L?.system||"")}${L?.near?` · near ${esc(L.near)}`:""}</div></div>
-      <div class="acts">${j.state==="sent"||j.state==="already"?`<button class="btn small" data-mj="done">Done</button>`:`<button class="btn small ghost" data-mapjob="${esc(j.name)}">Show its card</button><button class="btn small ghost" data-mj="cancel">Cancel job</button>`}</div></div>
+      <div class="acts">${fin?`<button class="btn small" data-mj="done">Done</button>`:`<button class="btn small ghost" data-mapjob="${esc(j.name)}">Show its card</button><button class="btn small ghost nx-btn" data-nx="${esc(j.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===j.name?"Sure? Click again":"Doesn't exist"}</button><button class="btn small ghost" data-mj="cancel">Cancel job</button>`}</div></div>
     <ol class="mj-steps">
       ${st(1,"Job accepted","")}
-      ${st(2,`Go to ${esc(j.name)} and ${L?.kind==="surface"?"land there":"dock there"}`,`Then press <b>${esc(key||"your /showlocation key")}</b>${key?"":" (set one in Settings)"} or type <b>/showlocation</b> in game chat.
-        ${!game?`<div class="warn">Start Star Citizen first: Quantum reads the reading from the game.</div>`
-          :rd.ok?""
-          :rd.why==="none"||rd.why==="old"?`<div class="wait"><span class="spin"></span>Waiting for a /showlocation taken after you started this job…</div>`
-          :`<div class="warn">${esc(rd.why)}</div>`}`)}
-      ${st(3,"Submit the position",stepN===3?`Got your reading${rd.body?` near ${esc(rd.body)}`:""}, ${Math.round(rd.age)} s ago. Only press this while you're at ${esc(j.name)}: it becomes the station's position.
+      ${st(2,`Go to ${esc(j.name)} and ${dock} there`,stepN===2?`Press <b>I've arrived</b> once you've ${dock==="land"?"landed":"docked"}. Any /showlocation before that is ignored, so one typed on the way can't be used by mistake.
+        <div style="margin-top:8px"><button class="btn small primary" data-mj="arrived">I've arrived</button></div>`:"")}
+      ${st(3,"Type /showlocation",stepN===3?`Press <b>${esc(key||"your /showlocation key")}</b>${key?"":" (set one in Settings)"} or type <b>/showlocation</b> in game chat. Quantum is listening.
+        ${!game?`<div class="warn">Star Citizen isn't running: Quantum reads the position from the game.</div>`
+          :rd.ok?"":rd.why==="none"||rd.why==="old"?`<div class="wait"><span class="spin"></span>Waiting for your /showlocation…</div>`
+          :`<div class="warn">${esc(rd.why)}</div>`}
+        <div style="margin-top:8px"><button class="btn small ghost" data-mj="notyet">I'm not there yet</button></div>`:"")}
+      ${st(4,"Submit the position",stepN===4?`Got your reading${rd.body?` near ${esc(rd.body)}`:""}, ${Math.round(rd.age)} s ago. It becomes ${esc(j.name)}'s position.
         <div style="margin-top:8px"><button class="btn small primary" data-mj="submit">Submit position for ${esc(j.name)}</button></div>`:"")}
-      ${st(4,"Submitted",stepN===4?sent:"")}
+      ${st(5,"Submitted",stepN===5?sent:"")}
     </ol></div>`; }
 function drMapJobPaint(){ const b=$("dr-mapjob"); if(b) b.outerHTML=drMapJobHtml(); }
 async function drMapJobClick(e){ const a=e.target.closest("[data-mj]"); if(!a) return false; const j=S.drMapJob, w=a.dataset.mj;
-  if(w==="cancel"||w==="done"){ S.drMapJob=null; renderDrJobs(); return true; }
+  if(w==="cancel"||w==="done"){ if(w==="cancel"&&j) drRelease(`p:${j.name}`); S.drMapJob=null; renderDrJobs(); return true; }
+  if(w==="arrived"&&j){ j.arrived=Date.now(); drMapJobPaint(); return true; }
+  if(w==="notyet"&&j){ j.arrived=null; drMapJobPaint(); return true; }
   if(w==="submit"&&j){ a.disabled=true; a.textContent="Submitting…";
     const r=await api().set_place_here(j.name);
     if(!r.ok){ toast(r.error); a.disabled=false; a.textContent=`Submit position for ${j.name}`; return true; }
-    j.state="sent"; j.result={state:"sending"}; drMapJobPaint();
-    for(let k=0;k<20&&S.drMapJob===j;k++){ await new Promise(r=>setTimeout(r,750)); const pr=await api().place_result(j.name);
-      if(pr.state==="done"||pr.state==="error"){ j.result=pr; break; } }
-    if(S.drMapJob===j&&j.result?.state==="sending") j.result={state:"error",error:"no answer"};
-    await loadStatic(); if(S.drMapJob===j) drMapJobPaint(); return true; }
+    j.state="sent"; j.result={state:"sending"}; drMapJobPaint(); S.drProfAt=0;
+    // Up to ~90 s: the app tries the server 3 times before queueing it for later.
+    for(let k=0;k<120&&S.drMapJob===j;k++){ await new Promise(r=>setTimeout(r,750)); const pr=await api().place_result(j.name);
+      j.result=pr.state==="none"?j.result:pr; drMapJobPaint(); if(pr.state!=="sending"&&pr.state!=="none") break; }
+    await loadStatic(); if(S.drMapJob===j) drMapJobPaint();
+    api().dr_profile(false).then(p=>{ if(p?.ok){ S.drProf=p; S.drProfAt=Date.now(); if(S.dr) renderDrStats(S.dr.pf.stats); } }).catch(()=>{});
+    return true; }
+  return false; }
+// ---- Accepting a price job: it's held for you for 30 minutes and other datarunners see it's in progress.
+// Steps: accepted (held until…) → go there (+ Route) → "I've arrived" loads the terminal into Report
+// Prices → sending the report finishes the job (the server frees it). Map-a-station jobs are held the same way.
+const CLAIM_MIN=30;
+function drClaimOf(job){ const c=S.drClaims?.[job]; return c&&c.until*1000>Date.now()?c:null; }
+function drClaimChip(job){ const c=drClaimOf(job); if(!c||c.mine) return "";
+  return `<span class="chip claim" title="Another datarunner accepted this job. It's free again if they don't finish within ${CLAIM_MIN} minutes">⏳ In progress · ${esc(c.by)} · ${Math.max(1,Math.round((c.until*1000-Date.now())/60000))} min left</span>`; }
+async function drLoadClaims(){ try{ const r=await api().dr_claims(); S.drClaims=r.ok?r.claims:{}; }catch(e){ S.drClaims={}; } }
+async function drAccept(job){ const r=await api().dr_claim(job); if(!r.ok){ toast(r.error); await drLoadClaims(); return null; }
+  return r.until?r.until*1000:Date.now()+CLAIM_MIN*60000; }
+function drRelease(job){ api().dr_claim(job,true).catch(()=>{}); }
+function drPriceJobHtml(){ const j=S.drPriceJob; if(!j) return "";
+  const left=Math.round((j.until-Date.now())/60000), over=left<=0;
+  const stepN=j.arrived?3:2;
+  const st=(n,title,body)=>`<li class="${stepN>n?"done":stepN===n?"now":""}"><div class="mjn">${stepN>n?"✓":n}</div><div><b>${title}</b>${stepN>=n&&body?`<div class="d">${body}</div>`:""}</div></li>`;
+  return `<div class="mapjob" id="dr-pricejob"><div class="hd"><div><div class="lbl">Job accepted · Update prices</div><h3>${esc(j.name)}</h3>
+      <div class="muted" style="font-size:12.5px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}</div></div>
+      <div class="acts"><button class="btn small ghost" data-pj="cancel">Cancel job</button></div></div>
+    <ol class="mj-steps">
+      ${st(1,"Job accepted",over?`<span style="color:#ffd38a">Your ${CLAIM_MIN} minutes ran out, so others can take it now.</span> <button class="btn small" data-pj="renew">Take it again</button>`
+        :`Held for you until ${new Date(j.until).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} (${left} min). Other datarunners see it's in progress. <button class="btn small ghost" data-pj="renew">Need more time</button>`)}
+      ${st(2,`Go to ${esc(j.name)}`,`${j.place?`<button class="btn small" data-jobroute="${esc(j.place)}">+ Route</button> `:""}When you're at the kiosk, press <b>I've arrived</b> and Quantum opens it in Report Prices.
+        <div style="margin-top:8px"><button class="btn small primary" data-pj="arrived">I've arrived</button></div>`)}
+      ${st(3,"Report its prices",`Take a screenshot, check each row and submit in <b>Report Prices</b>. Sending the report finishes the job. <button class="btn small" data-pj="open">Open Report Prices</button>`)}
+    </ol></div>`; }
+function drPriceJobPaint(){ const b=$("dr-pricejob"); if(b) b.outerHTML=drPriceJobHtml(); }
+async function drPriceJobClick(e){ const a=e.target.closest("[data-pj]"); if(!a) return false; const j=S.drPriceJob, w=a.dataset.pj; if(!j) return true;
+  if(w==="cancel"){ drRelease(`t:${j.id}`); S.drPriceJob=null; await drLoadClaims(); renderDrJobs(); return true; }
+  if(w==="renew"){ const u=await drAccept(`t:${j.id}`); if(u){ j.until=u; toast(`Held for you for another ${CLAIM_MIN} minutes`); } drPriceJobPaint(); return true; }
+  if(w==="arrived"||w==="open"){ j.arrived=true; S.dr.view="enter"; await openDatarunner(j.id); return true; }
   return false; }
 // ---- Top 10: the best Quantum datarunners, from the community server. Ranked like the ranks are:
 // most approved reports, then star rating.
@@ -3219,35 +3304,41 @@ function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?
 async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-jobs")) P.innerHTML=`${drViews()}${qLoader("Finding the stalest terminals…")}`;
   const sort=S.drJobSort||"oldest";
-  const r=await api().dr_jobs(S.drJobSys===undefined?null:S.drJobSys||null, sort); if(d.view!=="jobs") return;
+  const [r]=await Promise.all([api().dr_jobs(S.drJobSys===undefined?null:S.drJobSys||null, sort), drLoadClaims()]); if(d.view!=="jobs") return;
   if(!r.ok){ P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div>`; return; }
   if(S.drJobSys===undefined&&r.you_in){ S.drJobSys=r.you_in; return renderDrJobs(); }      // start with the system you're in
+  S.drJobsList=r.jobs;
   const card=(j,i)=>{ const a=drAge(Date.now()/1000-j.median*86400);
     return `<div class="dr-job ${j.here?"here":""}">
       <div class="n">${i+1}</div>
       <div class="age ${a.c}" title="Half this terminal's prices are older than this">${a.t}</div>
-      <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
+      <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`t:${j.id}`)}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}${j.dist!=null?` · ${fmtDist(j.dist)} away`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":Math.round(j.oldest)+" d"} · <span style="color:#9fe0b4">replaces ~${Math.round(j.days)} days of old data</span></div></div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":Math.round(j.oldest)+" d"}${j.avg!=null?` · <span style="color:#9fe0b4" title="The average age of this terminal's prices on UEX">average ${Math.round(j.avg)} d old</span>`:""}${j.never?` · <span style="color:#ffd38a">${j.never} never reported</span>`:""}</div></div>
       <div class="go">${j.place&&S.locMap[j.place]?.unplaced?`<button class="btn small ghost" data-mapjob="${esc(j.place)}" title="${esc(j.place)} isn't on the map yet: map it while you're there">Map it too</button>`
-        :j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}<button class="btn small primary" data-jobreport="${j.id}">Report it</button></div></div>`; };
+        :j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}${
+        S.drPriceJob?.id===j.id?`<span class="chip y">Your job</span>`
+        :drClaimOf(`t:${j.id}`)?`<button class="btn small ghost" data-jobreport="${j.id}" title="Someone accepted it, but you can still report it if you're there">Report anyway</button>`
+        :`<button class="btn small ghost" data-jobreport="${j.id}" title="Already there? Report it straight away">Report it</button><button class="btn small primary" data-pjaccept="${j.id}" title="Hold it for ${CLAIM_MIN} minutes so others know you're on it">Accept job</button>`}</div></div>`; };
   // Stations Quantum can't place yet: go there, /showlocation, and they go on everyone's map.
   const pl=S.live?.player, mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
     .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
   const reading=L=>L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body));
   const mapCard=L=>`<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="No position for this station yet">?</div>
-      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}
+      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}${drClaimChip(`p:${L.name}`)}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
         <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Start the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
-      <div class="go">${S.drMapJob?.name===L.name?`<span class="chip y">In progress</span>`:L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Start this job: Quantum walks you through it">Start job</button>`
-        :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}</div></div>`;
+      <div class="go">${S.drMapJob?.name===L.name?`<span class="chip y">Your job</span>`:drClaimOf(`p:${L.name}`)?"":L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Start this job: Quantum walks you through it">Start job</button>`
+        :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}
+        <button class="btn small ghost nx-btn" data-nx="${esc(L.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===L.name?"Sure? Click again":"Doesn't exist"}</button></div></div>`;
   P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Stations missing from the map and terminals with the oldest prices. Each one you do helps every trader on UEX and Quantum.</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${drMapJobHtml()}${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
+    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
       <div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
-      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}${uexCredit(r.at)}</div>`; }
+      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}${uexCredit(r.at)}
+      <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`; }
 
 // Pictures and station positions sent through Quantum, reviewed on the Quantum server rather than UEX.
 // "Live on Quantum": every Quantum user sees it now (the picture shown for that item, or the station on the map).
@@ -3256,11 +3347,13 @@ const CB_ST={submitted:["Submitted","#8cc4ff"],in_review:["In Review","#f2c14e"]
 function drContribCard(c){ const [label,col]=CB_ST[c.status]||[c.status,"#a8bbd4"], live=c.status==="live"||c.status==="shared";
   const what=c.type==="photo"?`Picture · ${esc(c.name)}`:`Station position · ${esc(c.name)}`;
   const sub=c.type==="photo"?(live?`${esc(c.kind||"item")} picture, shown to every Quantum user`:c.status==="approved"?`${esc(c.kind||"item")} picture, approved; a newer one is shown now`:`${esc(c.kind||"item")} picture, reviewed by Quantum`)
-    :(live?`${esc(c.system||"")} · on every Quantum user's map`:`${esc(c.system||"")} · goes live once a second datarunner's reading agrees`);
+    :(live?`${esc(c.system||"")} · on every Quantum user's map`:`${esc(c.system||"")} · waiting for a second datarunner's reading to agree (a trusted contributor's counts on its own)`);
+  // Withdraw only while it's still waiting: once it's live (or rejected) it's been decided.
+  const wd=c.type==="place"&&(c.status==="submitted"||!c.status)?`<button class="btn small ghost nx-btn" data-cbwd="${esc(c.name)}" title="Sent it by mistake? Takes your reading back. It doesn't count as a rejection">${S.drWd===c.name?"Sure? Click again":"Withdraw"}</button>`:"";
   const view=live?(c.type==="photo"&&c.url?`<img class="cb-pic" src="${esc(c.url)}" alt="${esc(c.name)}" referrerpolicy="no-referrer" onerror="this.remove()">`
     :c.type==="place"&&S.locMap?.[c.name]?.pos?`<button class="btn small ghost" data-cbmap="${esc(c.name)}">Show on map</button>`:""):"";
   return `<div class="dr-rep contrib ${live?"live":""}"><div class="hd">${view&&c.type==="photo"?view:""}<div><b>${what}</b><div class="muted" style="font-size:12px">${sub} · ${new Date(c.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div></div>
-    ${view&&c.type==="place"?`<span style="margin-left:auto">${view}</span>`:""}<span class="badge" style="${view&&c.type==="place"?"margin-left:0;":""}color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div></div>`; }
+    <span style="margin-left:auto;display:flex;gap:6px;align-items:center">${view&&c.type==="place"?view:""}${wd}</span><span class="badge" style="margin-left:0;color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div></div>`; }
 
 // Approved and rejected: what the stars are worked out from (price rows, pictures, station positions).
 // From the server when it sends them; worked out here for an older server.
@@ -3321,12 +3414,28 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
 function drStarBar(stars,size){ return `<span class="stars" style="${size?`font-size:${size}px`:""}">★★★★★<i style="width:${(stars||0)/5*100}%">★★★★★</i></span>`; }
 function drStars(r){ if(!r) return "";
   return `<div class="dr-rating" title="Your first approved report sets 5 stars. Approved ones keep it up, rejected ones bring it down. See FAQ on the Datarunner page.">${drStarBar(r.rated?r.stars:0)}<b>${r.rated?r.stars.toFixed(1):"–"}</b><span class="muted" style="font-size:12px">${r.rated?esc(r.rank||"datarunner rating"):"Unrated: no reports approved yet"}</span></div>`; }
-function renderDrStats(st){ if(!st) return; const s=st.session, a=st.all; $("dr-stats").hidden=false;
+// The card's "All time" and rating come from your profile on the Quantum server (every PC you've used),
+// fetched when the Datarunner tab opens; this PC's own log is the fallback when the server's away.
+// Station positions and pictures you sent count as reports too, like they do for your rank: all time from
+// the server, and "this session" for the ones sent since Quantum started.
+const APP_START=Date.now();
+function drMergeProfile(st,p){ if(!st||!p?.ok) return st;
+  st.rating={stars:p.stars, rated:p.rated, rank:p.rank?.name};
+  if(st.test) return st;
+  st._base=st._base||{all:{...st.all}, session:{...st.session}};          // this PC's own numbers, kept once
+  const c=(p.contrib||[]).filter(x=>x.status!=="rejected");
+  const stations=c.filter(x=>x.type==="place").length, pictures=c.filter(x=>x.type==="photo").length;
+  const now=c.filter(x=>x.at*1000>=APP_START).length;
+  const t=p.totals||{reports:st._base.all.reports, prices:st._base.all.prices, terminals:st._base.all.terminals};
+  st.all={...st._base.all, reports:t.reports+stations+pictures, prices:t.prices, terminals:t.terminals, stations, pictures};
+  st.session={...st._base.session, reports:st._base.session.reports+now};
+  return st; }
+function renderDrStats(st){ if(!st) return; drMergeProfile(st,S.drProf); const s=st.session, a=st.all; $("dr-stats").hidden=false;
   $("dr-stats").innerHTML=`${drStars(st.rating)}<b style="font-size:13px">This session</b>
     <div class="big"><div><b>${s.reports}</b><span>reports</span></div><div><b>${s.prices}</b><span>prices</span></div><div><b>${Math.round(s.days)}</b><span>days of old data replaced</span></div></div>
-    <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} reports · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% Approval</b>`:""}</div>`; }
+    <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} report${a.reports===1?"":"s"} · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${a.stations?` · ${a.stations} station${a.stations===1?"":"s"} mapped`:""}${a.pictures?` · ${a.pictures} picture${a.pictures===1?"":"s"}`:""}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% Approval</b>`:""}</div>`; }
 async function renderDrShots(){ const r=await api().dr_shots(), st=await api().dr_status(); const was=drLocked();
-  S.drShotCount=r.shots.length; S.drShotKey=st.shot_hotkey||"";
+  S.drShotCount=r.shots.length; S.drShotKey=st.shot_hotkey||""; S.drShotPol=st.shot_policy||null; if(S.drShotPol?.optional||!S.drShotPol?.can_try) S.drNoShot=false;
   if(S.dr&&S.dr.view!=="mine"&&was!==drLocked()) renderDrList();
   else if($("dr-lock")) $("dr-lock").outerHTML=drLockHtml();
   $("dr-shots").innerHTML=r.shots.map((s,i)=>`<div class="dr-shot"><img src="${s.thumb}" alt="Screenshot ${i+1}"><span>${i+1} · ${s.w}×${s.h}</span><button data-drx="${i}" aria-label="Remove screenshot ${i+1}">×</button></div>`).join("");
@@ -3408,7 +3517,8 @@ async function poll(){
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
   if(!S.bkNext||Date.now()>S.bkNext){ S.bkNext=Date.now()+15000;      // a background restore finished?
     api().backup_status().then(b=>{ if(b?.note){ toast(b.note); loadStatic().then(()=>{ if(S.tab==="fleet") renderFleet(); }); } if(S.bk) S.bk=b; }); }
-  if(S.drMapJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&S.drMapJob.state==="go") drMapJobPaint();
+  if(S.drMapJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&S.drMapJob.state==="go"&&S.drMapJob.arrived) drMapJobPaint();
+  if(S.drPriceJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&Date.now()-(S.drPjPaint||0)>20000){ S.drPjPaint=Date.now(); drPriceJobPaint(); }
   if(S.tab==="datarunner"&&S.dr&&(!!live.game_off)!==S.drGameOff){ S.drGameOff=!!live.game_off; drSyncInputs(); }
   const dq=live.datarunner?.seq; if(dq!==undefined&&dq!==S.drSeq){ const grew=S.drSeq!==undefined&&live.datarunner.shots>(S.drShotN||0);
     S.drSeq=dq; S.drShotN=live.datarunner.shots; if(grew) toast(`Terminal screenshot ${live.datarunner.shots} saved for your UEX report`); if(S.tab==="datarunner") renderDrShots(); }

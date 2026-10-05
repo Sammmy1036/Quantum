@@ -119,6 +119,11 @@ class Api:
             except Exception:
                 pass
         self._settings = self._load_settings()
+        try:                                   # what datarunners agree on, from the last sync
+            _cp = json.loads(COMMUNITY_PLACES_PATH.read_text(encoding="utf-8"))
+            self._community_missing, self._community_pads = set(_cp.get("missing") or []), dict(_cp.get("pads") or {})
+        except (OSError, ValueError, AttributeError):
+            self._community_missing, self._community_pads = set(), {}
         # Stations Quantum's data lacks, from UEX's station list.
         self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
         self._uex_amen = {}
@@ -519,13 +524,20 @@ class Api:
         learned = self._learned_places()
         bodies = {n for n in self._db.bodies}
         self._uex_pending = getattr(self, "_uex_pending", {})
+        hidden = self._hidden_places()
         for tid, t in terms.items():
             if places.get(tid):
+                continue
+            # UEX lists some terminals that aren't in the live game (retired, unreleased, hidden)
+            if not t.get("is_available_live", 1) or not t.get("is_visible", 1) or t.get("is_decommissioned"):
                 continue
             station = t.get("space_station_name")
             name = (station or t.get("outpost_name") or t.get("city_name") or t.get("displayname")
                     or t.get("name") or "").strip()
             sysn = t.get("star_system_name")
+            if name in hidden:
+                self._unplaced.pop(name, None)
+                continue
             if not name or name in self._db.locations or gateways.system_of(name) or \
                     any(services._key(name) == services._key(n) for n in self._unplaced if n not in self._uex_pending):
                 continue
@@ -551,6 +563,83 @@ class Api:
                                                 category="station" if station else "outpost",
                                                 notes=f"From UEX{where}. Position not known yet")
             self._uex_pending[name] = sysn
+        for name in hidden:                          # gateways or Wikelo places reported missing, too
+            self._unplaced.pop(name, None)
+
+    def _hidden_places(self):
+        """Places not to list as "not on the map yet": ones you said don't exist, and ones datarunners
+        agree don't exist."""
+        return set(self._settings.get("places_hidden") or []) | set(getattr(self, "_community_missing", ()))
+
+    def report_missing(self, name):
+        """This place doesn't exist in the game: hide it here now, and tell the Quantum server."""
+        with self._lock:
+            hidden = self._settings.setdefault("places_hidden", [])
+            if name not in hidden:
+                hidden.append(name)
+            self._unplaced.pop(name, None)
+            self._db_changed()
+        self._community.post_missing(name, self._dr_cfg().get("username"))
+        return {"ok": True}
+
+    def dr_claims(self):
+        """Jobs other datarunners are on, and the one you're on: {ok, claims: {job: {by, until, mine}}}."""
+        c = self._community.claims()
+        me = (self._dr_cfg().get("username") or "").lower()
+        if c is None:
+            return {"ok": False, "claims": {}}
+        return {"ok": True, "now": time.time(), "claims": {k: dict(v, mine=v["by"] == me) for k, v in c.items()}}
+
+    def dr_claim(self, job, release=False):
+        """Accept a job (held for 30 minutes, renewable) or let it go."""
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not user:
+            return {"ok": False, "error": "Add your UEX Secret Key first: jobs are held under your UEX name"}
+        r = self._community.claim(job, user.lower(), release)
+        if r.get("status") == "ok":
+            return {"ok": True, "until": r.get("until")}
+        if r.get("status") == "taken":
+            return {"ok": False, "taken": True, "by": r.get("by"), "until": r.get("until"),
+                    "error": f"{r.get('by')} accepted this job already"}
+        if r.get("status") == "off":
+            return {"ok": True, "until": None, "offline": True}
+        return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+
+    def withdraw_place(self, name):
+        """You set a station's position by mistake: take your reading back from the Quantum server and
+        off your map. (A position other datarunners agreed on stays on the map from their readings.)"""
+        r = self._community.withdraw_place(name, self._dr_cfg().get("username"))
+        if r.get("status") not in ("ok", "off"):
+            return {"ok": False, "error": "That reading was sent from another connection, so it can't be withdrawn from here"
+                    if r.get("status") == "not_yours" else "The Quantum server couldn't be reached. Try again in a minute"}
+        with self._lock:
+            places = gateways.load_learned(PLACES_PATH)
+            if places.pop(name, None) is not None:
+                PLACES_PATH.write_text(json.dumps({"places": places}, indent=1), encoding="utf-8")
+            unsent = self._settings.get("places_unsent") or []
+            if name in unsent:
+                unsent.remove(name)
+            self._community.place_results.pop(name, None)
+            placeable = gateways.system_of(name) or name in getattr(self, "_uex_pending", {})
+            if placeable and name in self._db.locations and self._db.locations[name].source == "db":
+                self._db.locations.pop(name)            # put back on "Not on the map yet" by the re-apply below
+            ren, self._unplaced = gateways.apply(self._db, self._learned_places())
+            self._renamed.update(ren)
+            self._apply_uex_stations(offline=True)
+            self._db.save()
+            self._db_changed()
+        return {"ok": True}
+
+    def unhide_places(self):
+        """Show every place you hid again (ones datarunners agree don't exist stay hidden)."""
+        self._settings.pop("places_hidden", None)
+        self._save_settings()
+        with self._lock:
+            ren, self._unplaced = gateways.apply(self._db, self._learned_places())
+            self._renamed.update(ren)
+            self._apply_uex_stations(offline=True)
+            self._db_changed()
+        return {"ok": True}
 
     def _db_changed(self):
         self._uex.forget_places()
@@ -601,6 +690,7 @@ class Api:
                      "to": gateways.leads_to(l.name), "unplaced": l.pos is None,
                      "placeable": gateways.system_of(l.name) is not None or l.name in getattr(self, "_uex_pending", {}),
                      "near": gateways.near_body(l.name),
+                     "pad_shared": (getattr(self, "_community_pads", None) or {}).get(l.name),
                      **({"amen": self._services[l.name]["amenities"],
                          "pad_auto": services.pad_from(self._services[l.name]["amenities"])}
                         if l.name in self._services else {})}
@@ -679,7 +769,7 @@ class Api:
             live["total"] = sum(d for d in live["legs"] if d)
             if names:
                 loc = self._db.locations[names[0]]
-                pad = loc.pad if loc.pad != "unknown" else (
+                pad = loc.pad if loc.pad != "unknown" else (getattr(self, "_community_pads", {}) or {}).get(loc.name) or (
                     services.pad_from(self._services[loc.name]["amenities"]) if loc.name in self._services else "unknown")
                 nxt = {"name": loc.name, "pad": pad or "unknown", "body": loc.body, "system": loc.system}
                 if p:
@@ -1062,9 +1152,26 @@ class Api:
         return merged
 
     def _share_place(self, name):
+        """Send a position you set to the server. Kept in settings until the server has it, and re-sent
+        at start-up and with every map sync, so a server that's down or slow doesn't lose it."""
         entry = gateways.load_learned(PLACES_PATH).get(name)
-        if entry:
-            self._community.post_place(name, entry, self._dr_cfg().get("username"))
+        if not entry:
+            return
+        unsent = self._settings.setdefault("places_unsent", [])
+        if name not in unsent:
+            unsent.append(name)
+            self._save_settings()
+
+        def done(answered):
+            if answered and name in (self._settings.get("places_unsent") or []):
+                self._settings["places_unsent"].remove(name)
+                self._save_settings()
+        self._community.post_place(name, entry, self._dr_cfg().get("username"), on_done=done)
+
+    def _resend_places(self):
+        for name in list(self._settings.get("places_unsent") or []):
+            if self._community.place_results.get(name, {}).get("state") != "sending":
+                self._share_place(name)
 
     # ------------------------------------------------------------ encrypted backups
     # Fleet and swaps, waypoints, planned trade routes and mapped stations, encrypted on this PC with
@@ -1234,19 +1341,43 @@ class Api:
         time.sleep(3)                                          # let start-up finish first
         while True:
             try:
+                self._resend_places()                          # positions the server didn't get yet
+            except Exception as e:
+                print("place resend:", e, flush=True)
+            try:
                 self._sync_places_once()
             except Exception as e:
                 print("place sync:", e, flush=True)
             time.sleep(self.PLACES_SYNC_EVERY)
 
     def _sync_places_once(self):
-        got = self._community.places()
-        if got is None:
+        r = self._community.places()
+        if r is None:
             return
-        if got == gateways.load_learned(COMMUNITY_PLACES_PATH):
+        got, missing = r["places"], sorted(r["missing"])
+        if r.get("pads", {}) != getattr(self, "_community_pads", None):          # pad sizes datarunners agree on
+            self._community_pads = r.get("pads", {})
+            with self._lock:
+                self._static_version += 1
+            try:
+                saved = json.loads(COMMUNITY_PLACES_PATH.read_text(encoding="utf-8"))
+                saved["pads"] = self._community_pads
+                COMMUNITY_PLACES_PATH.write_text(json.dumps(saved, indent=1), encoding="utf-8")
+            except (OSError, ValueError):
+                pass
+        # Once per start: re-send positions you set that the server doesn't list yet, in case an earlier
+        # send never arrived (it's harmless if it did: the server keeps one reading per person).
+        if not getattr(self, "_resent_mine", False):
+            self._resent_mine = True
+            for name in gateways.load_learned(PLACES_PATH):
+                if name not in got and name not in (self._settings.get("places_unsent") or []):
+                    self._share_place(name)
+        if got == gateways.load_learned(COMMUNITY_PLACES_PATH) and missing == sorted(getattr(self, "_community_missing", ())):
             return
+        self._community_missing = set(missing)
         try:
-            COMMUNITY_PLACES_PATH.write_text(json.dumps({"places": got}, indent=1), encoding="utf-8")
+            COMMUNITY_PLACES_PATH.write_text(json.dumps({"places": got, "missing": missing, "pads": r.get("pads", {})},
+                                                        indent=1), encoding="utf-8")
         except OSError:
             return
         with self._lock:
@@ -1312,8 +1443,12 @@ class Api:
             loc = self._db.locations.get(name)
             if not loc:
                 return {"ok": False}
-            if pad is not None:
+            if pad is not None and pad != loc.pad:
                 loc.pad = pad
+                # Shared: shows for everyone once a second datarunner agrees (or a trusted one says so).
+                # "unknown" takes your report back.
+                if pad in ("unknown", "none", "vehicle", "small", "medium", "large", "xl", "hangar") and loc.source != "user":
+                    self._community.post_pad(name, pad, self._dr_cfg().get("username"))
             if notes is not None:
                 loc.notes = notes
             self._db.save()
@@ -1598,7 +1733,33 @@ class Api:
     def dr_status(self):
         c = self._dr_cfg()
         return {"live": self._dr.live, "has_secret": bool(c.get("secret")), "shot_hotkey": self._sender.shot_hotkey,
-                "folder": str(self._dr.test_dir), "shots": len(self._dr_shots)}
+                "folder": str(self._dr.test_dir), "shots": len(self._dr_shots), "shot_policy": self._dr_shot_policy()}
+
+    # UEX wants a screenshot with every report during a new datarunner's 90-day evaluation. Its API has
+    # no field saying whether that's over, but a report sent without one during evaluation is refused
+    # with "screenshot_required" (and nothing is stored), so UEX's own answer is the test.
+    EVAL_DAYS, RECHECK_DAYS = 90, 7
+
+    def _dr_shot_policy(self):
+        """{optional: UEX has accepted a report from you without a screenshot, can_try: it's been 90
+        days since your first report and UEX hasn't said no in the last week}."""
+        st = self._dr_cfg().get("shot") or {}
+        first = self._dr_first_report()
+        now = time.time()
+        if st.get("optional"):
+            return {"optional": True, "can_try": True, "first": first}
+        old_enough = bool(first) and now - first >= self.EVAL_DAYS * 86400
+        recent_no = st.get("required_at") and now - st["required_at"] < self.RECHECK_DAYS * 86400
+        return {"optional": False, "can_try": old_enough and not recent_no, "first": first,
+                "days_left": max(0, int(self.EVAL_DAYS - (now - first) / 86400)) if first else None,
+                "refused_at": st.get("required_at")}
+
+    def _dr_first_report(self):
+        """When you first reported: the earliest of this PC's log and what the Quantum server knows."""
+        times = [e.get("at") for e in self._dr_report_log() if not e.get("test") and e.get("at")]
+        if self._dr_cfg().get("first_seen"):
+            times.append(self._dr_cfg()["first_seen"])
+        return min(times) if times else None
 
     def dr_set_secret(self, secret):
         secret = (secret or "").strip()
@@ -1740,7 +1901,9 @@ class Api:
         coms = {c["id"] for c in self._uex.get("commodities")[0]}
         shot = datarunner.screenshot_b64(self._dr_shots)
         body = datarunner.build_payload(form, shot, production=self._dr.live)
-        errs = datarunner.validate(body, terms, coms, need_screenshot=True, history=self._dr.history())
+        pol = self._dr_shot_policy()
+        no_shot = bool(form.get("no_screenshot")) and not body.get("screenshot") and (pol["optional"] or pol["can_try"])
+        errs = datarunner.validate(body, terms, coms, need_screenshot=not no_shot, history=self._dr.history())
         if not running:
             errs.insert(0, "game_not_running")
         elif not version:
@@ -1863,6 +2026,17 @@ class Api:
                                   sides=[r.get("side") for r in form.get("rows") or [] if r.get("include")])
             res["warnings"] = warns
             res["rows"] = len(body.get("prices") or [])
+            if not body.get("screenshot") and not res.get("test"):     # tried without a screenshot: UEX's answer
+                shot = self._dr_cfg().setdefault("shot", {})
+                if res.get("ok"):
+                    shot.update(optional=True, confirmed_at=int(time.time()))
+                    shot.pop("required_at", None)
+                elif res.get("status") == "screenshot_required":
+                    shot.update(optional=False, required_at=int(time.time()))
+                    res["error"] = ("UEX still needs a screenshot from you (you're in its evaluation period). "
+                                    "Take one and send again; Quantum will offer to skip it again in a week.")
+                self._save_settings()
+                res["shot_policy"] = self._dr_shot_policy()
             if res.get("ok"):
                 self._dr_after_send(body, form, t, res)
             elif res.get("status") == "duplicated_report" and not res.get("test"):
@@ -1995,7 +2169,8 @@ class Api:
         # Only reports still waiting on UEX are looked up: ones UEX has decided are kept as they are,
         # and after 14 days without a decision Quantum stops asking (see FOLLOW_FOR).
         now = time.time()
-        waiting = [e for e in log if not e.get("test") and e.get("ids") and not e.get("final")
+        done = lambda e: e.get("final") and all(s in self.FINAL for s in e.get("states") or ["?"])
+        waiting = [e for e in log if not e.get("test") and e.get("ids") and not done(e)
                    and now - e.get("at", 0) <= self.FOLLOW_FOR]
         found, error, asked = {}, None, False
         if waiting and secret and self._uex.token:
@@ -2042,7 +2217,7 @@ class Api:
             elif states and states != e.get("states"):
                 e["states"], changed = states, True
                 e["row_states"] = {str(r["id_commodity"]): r.get("uex") for r in rows if r.get("uex")}
-                if all(st in self.DECIDED for st in states):
+                if all(st in self.FINAL for st in states):
                     e["final"] = True                          # UEX is done with it: never asked about again
             out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
         if changed:
@@ -2238,6 +2413,9 @@ class Api:
 
     FOLLOW_FOR = 14 * 86400                # stop asking UEX about a report after this long
     DECIDED = ("approved", "consolidated", "declined", "expired")
+    # Nothing more will happen to these. "approved" isn't one: UEX approves a row first and merges it
+    # into its data (consolidated, "Live on UEX") a little later, so approved reports are still followed.
+    FINAL = ("consolidated", "declined", "expired")
 
     def _dr_no_decision(self, e, states, now):
         """Sent more than 14 days ago and UEX never decided: shown as such, left out of the counts."""
@@ -2306,6 +2484,9 @@ class Api:
         prof = self._community.profile(name) if name else None
         if prof:
             out = dict(prof, source="server")
+            if prof.get("first_seen") and prof["first_seen"] != self._dr_cfg().get("first_seen"):
+                self._dr_cfg()["first_seen"] = prof["first_seen"]       # for the 90-day screenshot rule
+                self._save_settings()
             for c in out.get("contrib") or []:                 # pictures: a full link to the server's copy
                 if isinstance(c.get("url"), str) and c["url"].startswith("/"):
                     c["url"] = self._community.url + c["url"]
@@ -2367,6 +2548,9 @@ class Api:
                              "rows": len(ages), "stale": sum(1 for a in ages if a >= 3),
                              "oldest": round(ages[-1], 1), "median": round(ages[len(ages) // 2], 1),
                              "days": round(sum(min(a, 60) for a in ages), 1),
+                             # the average age of prices that have been reported, and how many never were
+                             "avg": round(sum(r) / len(r), 1) if (r := [a for a in ages if a < 365]) else None,
+                             "never": sum(1 for a in ages if a >= 365),
                              "mine": mine.get(tid) if mine.get(tid, 0) > now - 86400 else None})
             if sort == "nearest":
                 jobs.sort(key=lambda j: (j["dist"] is None, j["dist"] or 0, -j["median"]))

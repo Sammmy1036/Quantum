@@ -196,18 +196,80 @@ class Community:
         return {"ok": True} if r.get("status") == "ok" else {"ok": False, "error": r.get("detail") or r.get("status")}
 
     def places(self):
-        """Station positions other Quantum users found, for places the map is missing."""
+        """{places: positions other Quantum users found, missing: places UEX lists that datarunners
+        agree don't exist}, or None."""
         if not self.url:
             return None
         try:
             r = self._req("/v1/places", timeout=8)
-            return r.get("places") if r.get("status") == "ok" else None
+            return {"places": r.get("places") or {}, "missing": r.get("missing") or [], "pads": r.get("pads") or {}} \
+                if r.get("status") == "ok" else None
         except Exception as e:
             self.last_error = str(e)
             return None
 
-    def post_place(self, name, entry, username=None):
-        """Share a position this user set with /showlocation. In the background; best effort."""
+    def post_missing(self, name, username=None, on_done=None):
+        """Report that a place doesn't exist in the game. In the background; on_done(True) once answered."""
+        if not self.url:
+            return
+
+        def send():
+            try:
+                r = self._req("/v1/places/missing", {"name": name, "username": username}, timeout=15)
+                on_done and on_done(True)
+            except Exception as e:
+                self.last_error = str(e)
+                on_done and on_done(False)
+        threading.Thread(target=send, daemon=True).start()
+
+    def post_pad(self, name, pad, username=None):
+        """Report a place's landing pad size, in the background."""
+        if not self.url:
+            return
+
+        def send():
+            try:
+                self._req("/v1/places/pad", {"name": name, "pad": pad, "username": username}, timeout=15)
+            except Exception as e:
+                self.last_error = str(e)
+        threading.Thread(target=send, daemon=True).start()
+
+    def claims(self):
+        """Jobs other datarunners have accepted: {job: {by, until}}, or None if the server's away."""
+        if not self.url:
+            return None
+        try:
+            r = self._req("/v1/jobs/claims", timeout=8)
+            return r.get("claims") or {} if r.get("status") == "ok" else None
+        except Exception as e:
+            self.last_error = str(e)
+            return None
+
+    def claim(self, job, username, release=False):
+        """Accept a job ("t:<terminal id>" or "p:<place>"), or let it go. {status: ok, until} | taken (by, until)."""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/jobs/claim", {"job": job, "username": username, **({"release": True} if release else {})},
+                             timeout=10)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    def withdraw_place(self, name, username=None):
+        """Take back a station position you sent. {status: ok, withdrawn} | not_yours | unreachable."""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/places/withdraw", {"name": name, "username": username}, timeout=15)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    RETRY_WAITS = (10, 30)              # s between the 3 tries; after that it's re-sent later
+
+    def post_place(self, name, entry, username=None, on_done=None):
+        """Share a position this user set with /showlocation, in the background. A server that can't
+        be reached is tried 3 times over about a minute; on_done(True) once the server has answered
+        (accepted, or refused for good), on_done(False) if it never could be reached."""
         if not self.url:
             return
         msg = {"name": name, "system": entry.get("system"), "username": username,
@@ -216,15 +278,24 @@ class Community:
         self.place_results[name] = {"state": "sending", "at": time.time()}
 
         def send():
-            try:
-                r = self._req("/v1/places", msg, timeout=15)
+            for attempt in range(len(self.RETRY_WAITS) + 1):
+                try:
+                    r = self._req("/v1/places", msg, timeout=15)
+                except Exception as e:
+                    self.last_error = str(e)
+                    if attempt < len(self.RETRY_WAITS):
+                        self.place_results[name] = {"state": "sending", "retry": attempt + 1, "error": str(e), "at": time.time()}
+                        time.sleep(self.RETRY_WAITS[attempt])
+                        continue
+                    self.place_results[name] = {"state": "queued", "error": str(e), "at": time.time()}
+                    on_done and on_done(False)
+                    return
                 ok = r.get("status") == "ok"
                 self.place_results[name] = {"state": "done" if ok else "error", "shared": bool(r.get("shared")),
                                             "reporters": r.get("reporters"), "error": None if ok else r.get("status"),
                                             "at": time.time()}
-            except Exception as e:
-                self.last_error = str(e)
-                self.place_results[name] = {"state": "error", "error": str(e), "at": time.time()}
+                on_done and on_done(True)
+                return
         threading.Thread(target=send, daemon=True).start()
 
     def post(self, body, sides, ids, username, date_added, test, display=None, avatar=None):
