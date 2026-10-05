@@ -62,6 +62,23 @@ is provided as is, like the rest of the Software, and may be inaccurate or out
 of date.
 
 -------------------------------------------------------------------------------
+Backups
+
+Quantum can back up a user's fleet, component swaps, waypoints, planned trade
+routes and mapped stations to the Quantum community server. Backups are
+encrypted on the user's own computer with a key made from their UEX Bearer
+Token; the server stores them without being able to read them, and the token is
+never sent to it. Anyone who has the token can open the backup, so users should
+keep their token private.
+
+Backups are a convenience, provided as is with no guarantee that they will be
+available or complete. A backup cannot be opened with a different token, so it
+is lost if the user replaces their UEX token. Backups not updated for a year
+may be removed, and the server owner may remove backups or end the service at
+any time. Users can delete their own backup from Settings > Backup. Keep your
+own copy of anything you can't afford to lose.
+
+-------------------------------------------------------------------------------
 Unofficial fan project
 
 Quantum is an unofficial fan project and is not affiliated with or endorsed by
