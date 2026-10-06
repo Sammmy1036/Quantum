@@ -23,9 +23,9 @@ from nav_core import Location
 # name in Quantum -> (system, leads to, position or None, note)
 GATEWAYS = {
     "Pyro Gateway": ("Stanton", "Pyro", (3310484799.0, -27979313941.0, -2676300515.0), ""),
-    "Nyx Gateway": ("Stanton", "Nyx", (-62284273860.7205, 23467618051.3957, 20198396608.0),
-                    "Temporary link to Nyx through the old Magnus gate. Position is the jump point's; "
-                    "the station is close by"),
+    "Nyx Gateway": ("Stanton", "Nyx", (-62284229191.638901, 23467598946.457104, 20198395415.087944),
+                    "Gateway station for the temporary link to Nyx (the old Magnus gate). The jump point "
+                    "itself is Nyx Jump Point, about 50 km away. Position from a /showlocation at the station"),
     "Terra Gateway": ("Stanton", "Terra", (51118221616.9033, -5269981303.11381, -4339551619.0),
                       "The jump point to Terra isn't open yet. Position is the jump point's; the station "
                       "is close by"),
@@ -45,8 +45,38 @@ WIKELO = [n for n in STATIONS if n.startswith("Wikelo Emporium")]
 # Measured positions that ship with Quantum (from /showlocation at the station): name -> (x, y, z)
 KNOWN_POS = {
     "Wikelo Emporium Kinga Station": (23761435998.552826, 39225376833.414856, 492.206296),   # Sam, 4.10.1
+    # From the game files (Star Citizen Wiki's starmap_positions.json, Sept 2026). The station's map
+    # marker: a /showlocation docked at Stanton Gateway (Nyx) came out 2.6 km from it.
+    "Stanton Gateway (Nyx)": (-13499931610.0, -23382701964.0, -36662.0),
+    "Pyro Gateway (Nyx)": (-12000044530.0, 20784580529.0, -38674.0),
+    "Nyx Gateway (Pyro)": (32993982419.0, -38151730073.0, 6728.0),
+    "Stanton Gateway (Pyro)": (-37609223453.0, 37435743642.0, 6728.0),
 }
+FROM_GAME_FILES = {"Stanton Gateway (Nyx)", "Pyro Gateway (Nyx)", "Nyx Gateway (Pyro)", "Stanton Gateway (Pyro)"}
 RENAMED = {"Magnus Gateway": "Nyx Gateway"}   # older Quantum names -> current ones
+
+# Jump points drawn apart from their gateway station, where the two positions are both known
+# (the station is tens of km from the wormhole): name -> (system, leads to, position, note).
+JUMP_POINTS = {
+    "Nyx Jump Point": ("Stanton", "Nyx", (-62284273860.7205, 23467618051.3957, 20198396608.0),
+                       "The wormhole to Nyx (temporary link through the old Magnus gate). "
+                       "Nyx Gateway station is about 50 km away"),
+    # The rest from the game files (Star Citizen Wiki data); each is tens of km from its gateway.
+    "Pyro Jump Point": ("Stanton", "Pyro", (3310491640.0, -27979408221.0, -2676285679.0),
+                        "The wormhole to Pyro. Pyro Gateway station is close by"),
+    "Stanton Jump Point (Pyro)": ("Pyro", "Stanton", (-37609204291.0, 37435781484.0, 0.0),
+                                  "The wormhole to Stanton. Stanton Gateway station is close by"),
+    "Nyx Jump Point (Pyro)": ("Pyro", "Nyx", (32994001581.0, -38151692231.0, 0.0),
+                              "The wormhole to Nyx. Nyx Gateway station is close by"),
+    "Pyro Jump Point (Nyx)": ("Nyx", "Pyro", (-12000043845.0, 20784584131.0, 0.0),
+                              "The wormhole to Pyro. Pyro Gateway station is close by"),
+    "Stanton Jump Point (Nyx)": ("Nyx", "Stanton", (-13499935650.0, -23382715138.0, 0.0),
+                                 "The wormhole to Stanton (the game files call it the Castra jump point; "
+                                 "it's the temporary Stanton link). Stanton Gateway station is close by"),
+}
+# Gateways that have their own jump point marker are drawn (and routed to) as stations.
+STATION_GATEWAYS = {"Nyx Gateway", "Pyro Gateway", "Stanton Gateway (Pyro)", "Nyx Gateway (Pyro)",
+                    "Pyro Gateway (Nyx)", "Stanton Gateway (Nyx)"}
 
 
 def system_of(name):
@@ -60,7 +90,7 @@ def near_body(name):
 
 
 def leads_to(name):
-    g = GATEWAYS.get(name)
+    g = GATEWAYS.get(name) or JUMP_POINTS.get(name)
     return g[1] if g else None
 
 
@@ -78,7 +108,7 @@ def save_learned(path, name, system, pos):
 
 
 def _auto_note(text):
-    return not text or text.startswith(("Gateway", "Temporary link", "The jump point"))
+    return not text or text.startswith(("Gateway", "Temporary link", "The jump point", "The wormhole"))
 
 
 def apply(db, learned=None):
@@ -99,8 +129,10 @@ def apply(db, learned=None):
         if l and l.get("system") == system and l.get("pos"):
             pos, how = tuple(l["pos"]), "your /showlocation"
         elif pos is None and name in KNOWN_POS:
-            pos, how = KNOWN_POS[name], "a /showlocation at the station"
+            pos, how = KNOWN_POS[name], ("the game files (Star Citizen Wiki data)" if name in FROM_GAME_FILES
+                                         else "a /showlocation at the station")
         notes = note or f"Gateway station: jump point to {to}"
+        cat = "station" if name in STATION_GATEWAYS else "jump"
         if pos is not None and how != "community data":
             notes += f". Position from {how}"
         existing = db.locations.get(name)
@@ -116,9 +148,21 @@ def apply(db, learned=None):
             if _auto_note(existing.notes):          # keep notes you wrote yourself
                 existing.notes = notes
             existing.pos, existing.system = tuple(pos), system
-            existing.qt, existing.category, existing.kind, existing.body = True, "jump", "space", None
+            existing.qt, existing.category, existing.kind, existing.body = True, cat, "space", None
         else:
             db.locations[name] = Location(name, "space", tuple(pos), None, notes=notes, source="db",
+                                          system=system, qt=True, category=cat)
+    for name, (system, to, pos, note) in JUMP_POINTS.items():
+        existing = db.locations.get(name)
+        if existing and existing.source != "db":
+            continue
+        if existing:
+            existing.pos, existing.system, existing.kind, existing.body = tuple(pos), system, "space", None
+            existing.qt, existing.category = True, "jump"
+            if _auto_note(existing.notes):
+                existing.notes = note
+        else:
+            db.locations[name] = Location(name, "space", tuple(pos), None, notes=note, source="db",
                                           system=system, qt=True, category="jump")
     for name, (system, near, note) in STATIONS.items():
         l = learned.get(name)

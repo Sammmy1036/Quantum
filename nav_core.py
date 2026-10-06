@@ -94,6 +94,43 @@ CATEGORY_MAP = {  # community poi_type -> map category
 }
 
 
+RAW_POI = re.compile(r"^(RastarLocationEntity|Rastar-location|RL_)", re.I)
+_TERRAIN = {"rock": "Rocky", "sand": "Sandy", "acidic": "Acidic", "ice": "Icy", "snow": "Snowy"}
+_SIZE = {"s": "Small", "m": "Medium", "l": "Large"}
+
+
+def is_test_poi(name: str) -> bool:
+    """Developer test entities the community data picked up (RL_zzz_pu_update_06_06, ..._Test)."""
+    return bool(re.match(r"^RL_zzz", name or "", re.I) or re.search(r"_test$", name or "", re.I))
+
+
+def friendly_poi_name(name: str, poi_type: str = "", body: str = "") -> str:
+    """Readable name for places the game files only know by their internal entity name. The game shows
+    these as plain markers (a cave, a derelict outpost), so the community data has nothing better:
+      RastarLocationEntity-012 (Bloom)          -> Derelict Outpost 012 (Bloom)
+      RL_Pyro4_rock01_unoc_001_size04_003_001   -> Rocky Cave 003-001, size 4 (Pyro4)
+      RL_col_m_drlct_otpst_occ_002              -> Medium Derelict Outpost 002, occupied (Bloom)
+    Names that aren't internal ones come back unchanged."""
+    if not name or not RAW_POI.match(name):
+        return name
+    m = re.match(r"^(.*?)\s*\(([^)]*)\)$", name)              # keep an existing "(Body)" suffix
+    base, body = (m.group(1), m.group(2)) if m else (name, body)
+    tail = f" ({body})" if body else ""
+    kind = {"Cave": "Cave", "DerelictOutpost": "Derelict Outpost"}.get(poi_type or "", "")
+    c = re.match(r"^RL_[A-Za-z]+\d*[a-z]?_([a-z]+)\d*_(occ|unoc)_\d+_size(\d+)_(\d+)_(\d+)$", base, re.I)
+    if c:                                                        # procedural cave
+        terrain = _TERRAIN.get(c.group(1).lower(), c.group(1).title())
+        return f"{terrain} Cave {c.group(4)}-{c.group(5)}, size {int(c.group(3))}{tail}"
+    d = re.match(r"^RL_(?:[A-Za-z]+\d*_)?col_([sml])_drlct_otpst_(occ|unoc)_(\d+)$", base, re.I)
+    if d:                                                        # colonial derelict outpost
+        occ = ", occupied" if d.group(2).lower() == "occ" else ""
+        return f"{_SIZE[d.group(1).lower()]} Derelict Outpost {d.group(3)}{occ}{tail}"
+    n = re.match(r"^Rastar(?:LocationEntity|-location)-?(\d*)$", base, re.I)
+    if n:
+        return f"{kind or 'Derelict Outpost'}{' ' + n.group(1) if n.group(1) else ''}{tail}"
+    return f"{kind or 'Unmarked Site'} {base[3:].replace('_', ' ')}{tail}" if base[:3].upper() == "RL_" else name
+
+
 def classify(name: str, category: str = "") -> str:
     """Map category used for icons and filters."""
     if category:
@@ -259,12 +296,14 @@ class NavDB:
     def guess_system(self, pos: Vec, hint: str | None = None) -> str:
         """Which system a /showlocation position is in: the hint (from Game.log) if we have one,
         else the system whose planet zone contains the point."""
-        if hint in SYSTEMS:
+        inside = [s for s in SYSTEMS if self.body_near(pos, s)]
+        if hint in SYSTEMS and (hint in inside or not inside):
             return hint
-        for s in SYSTEMS:
-            if self.body_near(pos, s):
-                return s
-        return hint or "Stanton"
+        # Inside a planet's zone in one system only, and not the hinted one: the hint is stale
+        # (the log doesn't always say when you go through a wormhole).
+        if len(inside) == 1:
+            return inside[0]
+        return hint if hint in SYSTEMS else (inside[0] if inside else "Stanton")
 
     def capture(self, name: str, pos: Vec, t: float, system: str, pad="unknown", notes="",
                 pinned=False) -> Location:

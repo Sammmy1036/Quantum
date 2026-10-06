@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 import gateways
-from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist
+from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi
 
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 DB_PATH = HERE / "locations.json"
@@ -135,7 +135,7 @@ def main():
     body_ci = {b.lower(): b for b in db.bodies}
     added = updated = 0
     for p in pois:
-        if "(example)" in p["name"].lower() or not p["name"].strip():
+        if "(example)" in p["name"].lower() or not p["name"].strip() or is_test_poi(p["name"]):
             continue
         bname = body_ci.get((p.get("obj_container") or "").lower())
         if not bname:
@@ -151,7 +151,10 @@ def main():
             dup.category = dup.category or cat
             updated += 1
             continue
-        add_loc(Location(p["name"], "surface", local, bname, source="db", system=body.system,
+        # Caves and derelict outposts the game files only know by an entity name get a readable one,
+        # with the moon or planet on the end so "Derelict Outpost 012" on Bloom and on Monox differ.
+        name = friendly_poi_name(p["name"], p.get("poi_type"), bname)
+        add_loc(Location(name, "surface", local, bname, source="db", system=body.system,
                          qt=bool(p.get("has_qt_marker")), category=cat))
         added += 1
 

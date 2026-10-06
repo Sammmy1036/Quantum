@@ -27,7 +27,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-VERSION = "0.0.0.2"                     
+VERSION = "0.0.0.4"                     
 REPO = "Sammmy1036/Quantum"
 ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   
 
@@ -35,6 +35,84 @@ PUBLIC_KEY = "8ac7d1e1fd1d97ff564433a26c5f5a108460f077954606965ab20ea76279759b"
 
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 UA = {"User-Agent": f"Quantum/{VERSION}", "Accept": "application/vnd.github+json"}
+# Same request, but GitHub also sends the release notes rendered to HTML (body_html), exactly as the
+# release page shows them: headings, bold, lists, links, images.
+UA_FULL = {**UA, "Accept": "application/vnd.github.full+json"}
+IMG_MAX = 2_000_000                       # bytes per picture in the notes
+IMG_TYPES = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+             ".gif": "image/gif", ".webp": "image/webp"}
+
+
+def _inline_image(src, tag, timeout=8):
+    """A picture from the release notes as a data: URL, so it shows inside Quantum. Relative paths
+    ("images/quantum-banner.svg") are files in the repo at that release's tag. None if it can't be had."""
+    import base64
+    import urllib.parse
+    if src.startswith("data:"):
+        return src
+    if src.startswith("//"):
+        src = "https:" + src
+    elif src.startswith("/"):                             # "/Sammmy1036/Quantum/raw/v1/images/x.svg"
+        src = "https://github.com" + src
+    if not re.match(r"https?://", src):                  # relative to the repo, as on the release page
+        path = src.lstrip("./")
+        return (_inline_image(f"https://raw.githubusercontent.com/{REPO}/{tag}/{path}", tag, timeout) if tag else None) \
+            or _inline_image(f"https://raw.githubusercontent.com/{REPO}/HEAD/{path}", tag, timeout)
+    m = re.match(r"https://github\.com/([^/]+/[^/]+)/(?:blob|raw)/(.+)$", src)
+    if m:
+        src = f"https://raw.githubusercontent.com/{m.group(1)}/{m.group(2)}"
+    host = urllib.parse.urlparse(src).hostname or ""
+    if not (host.endswith("githubusercontent.com") or host.endswith("github.com")):
+        return None                                      # only GitHub's own hosts
+    try:
+        with urllib.request.urlopen(urllib.request.Request(src, headers={"User-Agent": UA["User-Agent"]}),
+                                    timeout=timeout) as r:
+            data = r.read(IMG_MAX + 1)
+            ctype = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+    except Exception:
+        return None
+    if len(data) > IMG_MAX:
+        return None
+    ext = os.path.splitext(urllib.parse.urlparse(src).path)[1].lower()
+    # raw.githubusercontent.com sends every file as text/plain: go by the file name there
+    mime = IMG_TYPES.get(ext) or (ctype if ctype.startswith("image/") else None)
+    if not mime:
+        return None
+    return f"data:{mime};base64," + base64.b64encode(data).decode("ascii")
+
+
+def notes_html(html, tag):
+    """GitHub's rendered release notes, made safe and self-contained for the update box: no scripts
+    or event handlers, links open in your browser, pictures inlined."""
+    if not html:
+        return ""
+    html = re.sub(r"(?is)<(script|style|iframe|object|embed|form)\b.*?(</\1>|$)", "", html)
+    html = re.sub(r"(?i)\s+on[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", "", html)
+
+    def link(m):
+        attrs = m.group(1)
+        h = re.search(r'href\s*=\s*"([^"]*)"', attrs)
+        url = h.group(1) if h else ""
+        if url.startswith("/"):
+            url = "https://github.com" + url
+        if not url.startswith("https://"):
+            return "<a>"
+        return f'<a data-ext="{url}" title="{url}">'
+    html = re.sub(r"(?i)<a\b([^>]*)>", link, html)
+
+    def img(m):
+        tagtxt = m.group(0)
+        s = re.search(r'\bsrc\s*=\s*"([^"]*)"', tagtxt)
+        orig = re.search(r'\bdata-canonical-src\s*=\s*"([^"]*)"', tagtxt)
+        data = (_inline_image(orig.group(1), tag) if orig else None) or (_inline_image(s.group(1), tag) if s else None)
+        if not data:
+            alt = re.search(r'\balt\s*=\s*"([^"]*)"', tagtxt)
+            return f'<span class="muted">{alt.group(1) if alt else ""}</span>'
+        alt = re.search(r'\balt\s*=\s*"([^"]*)"', tagtxt)
+        width = re.search(r'\bwidth\s*=\s*"([^"]*)"', tagtxt)
+        return (f'<img src="{data}" alt="{alt.group(1) if alt else ""}"'
+                + (f' width="{width.group(1)}"' if width else "") + ">")
+    return re.sub(r"(?i)<img\b[^>]*>", img, html)
 
 
 # ---------------------------------------------------------------- Ed25519 (RFC 8032, verify + sign)
@@ -180,7 +258,7 @@ class Updater:
     def check(self, timeout=8):
         """The latest release, if it's newer than this one: {version, notes, url, exe, sig, can_install}."""
         try:
-            with urllib.request.urlopen(urllib.request.Request(API, headers=UA), timeout=timeout) as r:
+            with urllib.request.urlopen(urllib.request.Request(API, headers=UA_FULL), timeout=timeout) as r:
                 rel = json.loads(r.read().decode("utf-8"))
         except Exception as e:
             return {"available": False, "current": VERSION, "error": str(e)}
@@ -189,7 +267,12 @@ class Updater:
             return {"available": False, "current": VERSION}
         assets = {a.get("name"): a.get("browser_download_url") for a in rel.get("assets") or []}
         setup = next((n for n in assets if n and ASSET.match(n)), None)
+        try:
+            rendered = notes_html(rel.get("body_html") or "", tag)
+        except Exception:
+            rendered = ""                                 # fall back to the plain text
         self.latest = {"available": True, "current": VERSION, "version": tag.lstrip("v"), "notes": rel.get("body") or "",
+                       "notes_html": rendered,
                        "url": rel.get("html_url"), "exe": assets.get(setup) if setup else None,
                        "sig": assets.get(setup + ".sig") if setup else None, "file": setup,
                        "published": rel.get("published_at")}

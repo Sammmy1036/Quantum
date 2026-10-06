@@ -35,9 +35,13 @@ import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
 from nav_core import Location, NavDB, SYSTEMS, _from_dict, classify, dist
+import nav_core
+import missions_wiki
+import starmap_import
 import overlay
 from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
+import watcher as watcher_mod
 
 FROZEN = getattr(sys, "frozen", False)
 
@@ -106,8 +110,20 @@ class Api:
         self._db = NavDB.load(DB_PATH)
         self._db.path = DB_PATH
         self._renamed = rename_gateways(self._db)
+        self._renamed.update(rename_raw_pois(self._db))
         ren, self._unplaced = gateways.apply(self._db, self._learned_places())
         self._renamed.update(ren)
+        # Nyx (and anything else the community map data lacks) from the game files, via the Star
+        # Citizen Wiki: the shipped snapshot or a newer download. Measured positions win.
+        self._starmap_cache = HERE / "uex_cache" / "starmap_snapshot.json"
+        try:
+            starmap_import.apply(self._db, starmap_import.load_snapshot(HERE / "nyx_starmap.json", self._starmap_cache),
+                                 keep=self._learned_places())
+            for name in [n for n, L in self._unplaced.items() if n in self._db.locations]:
+                self._unplaced.pop(name, None)               # placed from the game files now
+        except Exception:
+            watcher_mod.log_error("starmap import")
+        threading.Thread(target=starmap_import.refresh, args=(self._starmap_cache,), daemon=True).start()
         self._db.save()
         for path in (BUILTIN_CAL_PATH, CAL_PATH):
             if not path.exists():
@@ -128,6 +144,7 @@ class Api:
         self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
         self._uex_amen = {}
         self._wikiapi = fleet.Wiki(HERE / "uex_cache")
+        self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
         self._renamed.update(self._apply_uex_stations(offline=True))
@@ -205,11 +222,26 @@ class Api:
 
     def _on_position(self, pos, t):
         if not self._game_on():
-            return                 
+            # A /showlocation copied while Quantum can't see the game is treated as an old clipboard.
+            # Say so in quantum_errors.log, so "it ignored my reading" can be traced.
+            try:
+                with watcher_mod.ERROR_LOG.open("a", encoding="utf-8") as f:
+                    f.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')} /showlocation ignored: Star Citizen "
+                            f"not detected (log status {self._tracker.status})\n")
+            except OSError:
+                pass
+            return
         with self._lock:
-            hint = self._tracker.where.get("system")
+            try:
+                hint = self._system_hint(pos, t)
+            except Exception:                              # a bad guess must never cost the reading
+                watcher_mod.log_error("system hint")
+                hint = (self._tracker.where or {}).get("system")
             self._player, self._player_t = pos, t
             self._player_sys = self._db.guess_system(pos, hint)
+            if self._player_sys != hint:
+                self._sys_how = ("planet", "", t)
+            self._last_fix = (pos, t, self._player_sys)
             self._learn_jump_from_reading()
             self._try_autocal()
 
@@ -244,6 +276,60 @@ class Api:
             return {**base, "state": "landed" if cur.get("landing") else "flying", "place": cur.get("place"),
                     "left": cur.get("left"), "at": cur.get("at")}
         return {**base, "state": None}
+
+    def _system_hint(self, pos, t):
+        """Which system Game.log says you're in, corrected for what it misses:
+          - you told Quantum which system you're in (set_my_system), and the log hasn't named a place since;
+          - you went through a gateway: the reading before was at a jump point, no quantum jump was
+            started since, and now you're nowhere near it. That's the other side of the wormhole.
+        Going through a wormhole doesn't write anything Quantum recognises to Game.log, so without
+        this the last system stays in place (readings in Nyx came out as Stanton)."""
+        w = self._tracker.where or {}
+        hint = w.get("system")
+        self._sys_how = ("log", w.get("code") or "", w.get("at"))
+        ov = getattr(self, "_sys_override", None)
+        if ov:
+            # Held while the log keeps naming the system it named when it was set (stale lines after a
+            # wormhole keep saying "Stanton"). Dropped when the log reports a different system.
+            named = False                                  # the log named a real place since: believe it
+            if (w.get("at") or 0) > ov.get("at", 0) and w.get("code"):
+                try:
+                    named = bool(self._tracker.place_for_code(w["code"]))
+                except Exception:
+                    named = False
+            if hint == ov.get("log_sys") and hint != ov["system"] and not named:
+                self._sys_how = (ov.get("how", "you"), w.get("code") or "", w.get("at"))
+                return ov["system"]
+            self._sys_override = None
+        last = getattr(self, "_last_fix", None)
+        if last and 0 < t - last[1] < 3600:
+            ppos, pt, psys = last
+            q = self._tracker.qt or {}
+            if (q.get("selected") or 0) < pt:              # no quantum jump since that reading
+                for loc in self._db.locations.values():
+                    to = gateways.leads_to(loc.name)
+                    if not to or to not in nav_core.SYSTEMS or loc.system != psys or not loc.pos:
+                        continue
+                    if dist(loc.pos, ppos) < 150_000 and dist(loc.pos, pos) > 2_000_000:
+                        self._sys_override = {"system": to, "log_sys": hint, "how": "wormhole", "at": t}
+                        self._sys_how = ("wormhole", loc.name, pt)
+                        return to
+        return hint
+
+    def set_my_system(self, system):
+        """You're in this system: Game.log hasn't said so (it doesn't after a wormhole). Holds until the
+        log names a new place; your latest /showlocation is re-read for it right away."""
+        if system not in nav_core.SYSTEMS:
+            return {"ok": False, "error": f"Unknown system {system}"}
+        with self._lock:
+            w = self._tracker.where or {}
+            self._sys_override = {"system": system, "log_sys": w.get("system"), "how": "you",
+                                  "at": time.time()}
+            self._sys_how = ("you", w.get("code") or "", w.get("at"))
+            if self._player:
+                self._player_sys = system
+                self._last_fix = (self._player, self._player_t, system)
+        return {"ok": True}
 
     def _learn_jump_from_reading(self):
         q = self._tracker.qt or {}
@@ -468,6 +554,7 @@ class Api:
         try:
             rows, _ = self._uex.get("space_stations", offline=offline)
         except uex.UexError:
+            self._drop_hidden()
             return {}
         locs = self._db.locations
         keys = {(services._key(n), l.system): n for n, l in locs.items()
@@ -515,6 +602,7 @@ class Api:
             places = self._uex.place_map(self._db.locations, offline=offline)
             terms = self._uex.terminals(offline=offline)
         except uex.UexError:
+            self._drop_hidden()
             return
         try:
             outposts = {o["name"]: o for o in self._uex.get("outposts", offline=offline)[0]}
@@ -524,7 +612,7 @@ class Api:
         learned = self._learned_places()
         bodies = {n for n in self._db.bodies}
         self._uex_pending = getattr(self, "_uex_pending", {})
-        hidden = self._hidden_places()
+        hidden = self._hidden_keys()
         for tid, t in terms.items():
             if places.get(tid):
                 continue
@@ -535,7 +623,7 @@ class Api:
             name = (station or t.get("outpost_name") or t.get("city_name") or t.get("displayname")
                     or t.get("name") or "").strip()
             sysn = t.get("star_system_name")
-            if name in hidden:
+            if _place_key(name) in hidden:          # case/spacing-proof: UEX re-cases names now and then
                 self._unplaced.pop(name, None)
                 continue
             if not name or name in self._db.locations or gateways.system_of(name) or \
@@ -563,13 +651,23 @@ class Api:
                                                 category="station" if station else "outpost",
                                                 notes=f"From UEX{where}. Position not known yet")
             self._uex_pending[name] = sysn
-        for name in hidden:                          # gateways or Wikelo places reported missing, too
-            self._unplaced.pop(name, None)
+        self._drop_hidden()                          # gateways or Wikelo places reported missing, too
 
     def _hidden_places(self):
         """Places not to list as "not on the map yet": ones you said don't exist, and ones datarunners
         agree don't exist."""
         return set(self._settings.get("places_hidden") or []) | set(getattr(self, "_community_missing", ()))
+
+    def _hidden_keys(self):
+        """The hidden places as name keys, so "NovaworX Industries" and "Novaworx Industries" match."""
+        return {_place_key(n) for n in self._hidden_places()}
+
+    def _drop_hidden(self):
+        """Take hidden places off "Not on the map yet". Run after every rebuild of the list, including
+        the ones where UEX's cached data couldn't be read (they used to skip this)."""
+        hk = self._hidden_keys()
+        for n in [n for n in self._unplaced if _place_key(n) in hk]:
+            self._unplaced.pop(n, None)
 
     def report_missing(self, name):
         """This place doesn't exist in the game: hide it here now, and tell the Quantum server."""
@@ -684,6 +782,7 @@ class Api:
                               "kind": b.kind, "period": b.rotation_period_h, "offset": b.rotation_offset_deg,
                               "epoch": b.epoch_utc, "om": b.om_radius_m, "calibrated": b.calibrated,
                               "parent": parent.name if parent and b.kind != "star" else None})
+            hidden_keys = self._hidden_keys()
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
                      "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
@@ -694,7 +793,8 @@ class Api:
                      **({"amen": self._services[l.name]["amenities"],
                          "pad_auto": services.pad_from(self._services[l.name]["amenities"])}
                         if l.name in self._services else {})}
-                    for l in [*self._db.locations.values(), *self._unplaced.values()]]
+                    for l in [*self._db.locations.values(), *self._unplaced.values()]
+                    if l.pos is not None or _place_key(l.name) not in hidden_keys]
             info = {b["name"]: wiki.for_game_body(self._wiki, b["name"], b["kind"], b["system"]) for b in out_b}
             return {"version": self._static_version, "bodies": out_b, "locations": locs, "systems": SYSTEMS,
                     "wiki": {"bodies": info, "systems": (self._wiki or {}).get("systems", {})}}
@@ -730,6 +830,7 @@ class Api:
             if not game_on and self._player:
                 # The game closed that reading is from the last session and you'll spawn somewhere else.
                 self._player = self._player_t = self._player_sys = None
+                self._last_fix = self._sys_override = None
             p, psys = self._player, self._player_sys
             ptime, approx = self._player_t, None
             cur = self._tracker.cur or {}
@@ -757,7 +858,9 @@ class Api:
                     "arrived": self._arrived_note if game_on else None, "game_off": not game_on}
             if p:
                 body = self._db.body_near(p, psys)
+                how = getattr(self, "_sys_how", None) or ("log", "", None)
                 info = {"pos": p, "t": ptime, "age": t - (spot_at if approx else ptime), "system": psys, "body": None,
+                        "sys_how": how[0], "sys_from": how[1], "sys_at": how[2],
                         "approx": approx, "approx_how": how if approx else None}
                 if body:
                     local = body.to_local(p, ptime)
@@ -960,6 +1063,18 @@ class Api:
             if ok:
                 self._prune_finished_tasks()
             return {"ok": ok} if ok else {"ok": False, "error": "That item isn't open any more"}
+
+    def contract_wiki(self, cid):
+        """The Star Citizen Wiki's details for one of your contracts: payout range, reputation, cargo and
+        the places the mission can use. {ok, found, info} (found False when the wiki doesn't have it)."""
+        c = next((x for x in self._tracker.snapshot() if x["id"] == cid), None)
+        if not c:
+            return {"ok": False, "error": "That contract isn't in the log any more"}
+        try:
+            info = self._missions.lookup(c.get("code"), c.get("name"), c.get("system"))
+        except Exception:
+            return {"ok": False, "error": "The Star Citizen Wiki couldn't be reached. Try again in a minute"}
+        return {"ok": True, "found": bool(info), "info": info}
 
     def _contracts_view(self, p, psys, tc):
         view = self._tracker.snapshot()
@@ -3059,7 +3174,8 @@ class Api:
             if g:
                 st["stats"] = g
         opts = {"pips": None, "mode": mode, "cooling": pw.get("cooling"),
-                "parts": (pw.get("parts") or {}).get(mode) or {}, "fixed": lo.get("fixed") or []}
+                "parts": (pw.get("parts") or {}).get(mode) or {}, "fixed": lo.get("fixed") or [],
+                "armor": lo.get("armor")}
         now, stock = fleet.signatures(lo["slots"], True, **opts), fleet.signatures(lo["slots"], False, **opts)
         if now["em"] or now["ir"]:
             for k in ("em", "ir"):
@@ -3553,13 +3669,45 @@ class Api:
         return self.set_log_path(res[0]) if res else {"ok": False, "error": "cancelled"}
 
 
+def _place_key(name):
+    """Name key for hidden places: case, spaces and punctuation don't matter, but a "(Pyro)" or "(Nyx)"
+    suffix does (Nyx Gateway (Pyro) and Nyx Gateway (Stanton) are different stations)."""
+    return re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+
+def rename_raw_pois(db):
+    """Older location data named some caves and derelict outposts by their game entity name
+    ("RastarLocationEntity-012 (Bloom)"). Give them readable names and drop developer test entities,
+    so saved routes keep working. Returns {old name: new name}."""
+    out = {}
+    for name in list(db.locations):
+        loc = db.locations[name]
+        if loc.source != "db" or not nav_core.RAW_POI.match(name):
+            continue
+        if nav_core.is_test_poi(name.split(" (")[0]):
+            db.locations.pop(name)
+            continue
+        kind = {"cave": "Cave", "outpost": "DerelictOutpost"}.get(loc.category, "")
+        new = base = nav_core.friendly_poi_name(name, kind, loc.body or "")
+        n = 2
+        while new in db.locations and new != name:           # two unnumbered ones on the same moon
+            new = re.sub(r"(\s*\([^)]*\))?$", lambda m: f" {n}{m.group(0)}", base, count=1)
+            n += 1
+        if new == name:
+            continue
+        loc.name = new
+        db.locations[new] = db.locations.pop(name)
+        out[name] = new
+    return out
+
+
 def rename_gateways(db):
     """In game the jump points between systems are called Gateways ("Pyro Gateway"). Rename older
     "Pyro Jump Point" entries so saved data keeps working. Returns {old name: new name}."""
     out = {}
     for name in list(db.locations):
         loc = db.locations[name]
-        if loc.category == "jump" and name.endswith(" Jump Point"):
+        if loc.category == "jump" and name.endswith(" Jump Point") and name not in gateways.JUMP_POINTS:
             new = name[: -len(" Jump Point")] + " Gateway"
             if new in db.locations:
                 continue

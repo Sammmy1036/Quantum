@@ -89,6 +89,10 @@ def atc_label(name):
         return None
     return spaced(code)
 SYSTEM_RE = re.compile(r"^(Stanton|Pyro|Nyx)", re.I)
+# Hangar elevators and landing areas streamed in around you carry the system's name, e.g.
+# "LoadingPlatformManager_ShipElevator_HangarMediumFront_Nyx", "LandingArea_ShipElevator_HangarMediumFront_Nyx".
+# After a wormhole jump these are the first lines in the log that say which system you're in.
+RE_HANGAR_SYS = re.compile(r"\b(?:LoadingPlatformManager|LandingArea)_[A-Za-z0-9_]*?_(Stanton|Pyro|Nyx)\b")
 
 
 def log_time(line: str) -> float | None:
@@ -706,6 +710,8 @@ class ContractTracker(threading.Thread):
         if (code or "").startswith("PLACE:"):
             name = code[6:]
             return name if name in self.nav.locations else None
+        if (code or "").startswith(("ACTIVITY:", "HANGAR:")):  # only the system is known from these
+            return None
         m = re.fullmatch(r"RR_([A-Z]{3})_(LEO|L\d)", code or "")
         if m:
             if m.group(2) == "LEO":
@@ -836,6 +842,8 @@ class ContractTracker(threading.Thread):
                 self.build = m.group(1)
         if "objective marker" in line:
             return self._marker(line)
+        if ("LoadingPlatformManager_" in line or "LandingArea_" in line) and (m := RE_HANGAR_SYS.search(line)):
+            return self._system_seen(m.group(1).capitalize(), log_time(line) or time.time(), "HANGAR:" + m.group(0))
         if "STATE_CURRENT" in line and (m := RE_CHARACTER.search(line)):
             self.player_geid, self.player_name = m.group(1), m.group(2)
             return False
@@ -848,7 +856,8 @@ class ContractTracker(threading.Thread):
             return False
         if "SetVehicleSpawnedInformations" in line and (m := RE_VEH_READY.search(line)):
             label = atc_label(self.atc.get(int(m.group(1)), "")) if m.group(1) != "0" else None
-            return self._activity(f"Vehicle delivered to {m.group(2)}" + (f", {label}" if label else ""), line)
+            return self._activity(f"Vehicle delivered to {m.group(2)}" + (f", {label}" if label else ""), line,
+                                  place=m.group(2))
         if "ClearDriver: Local client" in line and (m := RE_CLEAR_DRIVER.search(line)):
             if not self.player_geid or m.group(1) == self.player_geid:
                 self.vehicle = {"name": vehicle_name(m.group(2)), "aboard": True, "seat": False, "at": log_time(line) or time.time()}
@@ -858,7 +867,7 @@ class ContractTracker(threading.Thread):
                 shop, where, item = spaced(m.group(2)), spaced(m.group(3)), m.group(4)
                 verb = "Rented" if "Rental" in line else "Bought" if "Buy" in line or "Purchase" in line else None
                 text = f"{verb} a {vehicle_name(item)} at {shop}, {where}" if verb and item else f"At {shop}, {where}"
-                return self._activity(text, line)
+                return self._activity(text, line, place=where)
         if "ATC_DataManager_Port_" in line:
             for name, eid in RE_ATC.findall(line):
                 self.atc[int(eid)] = name
@@ -1051,9 +1060,41 @@ class ContractTracker(threading.Thread):
             if o.status == "active":
                 self._set_status(c, o, "done" if state == "complete" else "withdrawn", ts)
 
-    def _activity(self, text, line):
-        self.activity = {"text": text, "at": log_time(line) or time.time()}
+    def _activity(self, text, line, place=None):
+        ts = log_time(line) or time.time()
+        self.activity = {"text": text, "at": ts}
+        # A shop or landing area you used names the place you're at, so it says which system you're in.
+        # This is often the only sign of a wormhole jump in the log (nothing is written for the jump),
+        # e.g. "SCShop_AdminOffice_NyxSocialStation" right after arriving in Nyx.
+        sysname = self.system_of_name(place) if place else None
+        if sysname:
+            self._system_seen(sysname, ts, f"ACTIVITY:{place}")
         return True
+
+    def _system_seen(self, sysname, ts, code):
+        """The log shows you're in this system (a hangar or shop that only exists there). Updates the
+        system only: which place you're at still comes from the location lines."""
+        if sysname == self.where.get("system") or ts < (self.where.get("at") or 0) - 5:
+            return False
+        self.where = {**self.where, "system": sysname, "at": ts, "code": code, "body": None}
+        return True
+
+    def system_of_name(self, name):
+        """System of a place named in the log ("Nyx Social Station", "Levski"), or None if unsure.
+        Gateways are named after the system they lead to, so the name alone isn't trusted for them."""
+        if not name:
+            return None
+        key = re.sub(r"[^a-z0-9]", "", name.lower())
+        if "gateway" in key:
+            return None                                   # every system has gateways named after others
+        hits = {L.system for n, L in self.nav.locations.items()
+                if L.system and re.sub(r"[^a-z0-9]", "", re.sub(r"\s*\([^)]*\)$", "", n).lower()) == key}
+        if len(hits) == 1:
+            return hits.pop()
+        if hits:
+            return None                                   # same name in two systems
+        m = re.search(r"\b(Stanton|Pyro|Nyx)\b", name, re.I)
+        return m.group(1).capitalize() if m else None
 
     def _notification(self, full: str) -> bool:
         ts0 = log_time(full) or time.time()

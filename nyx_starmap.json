@@ -1,0 +1,163 @@
+{
+ "source": "https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/HEAD/starmap_positions.json",
+ "generated": 1791243738.9820812,
+ "systems": {
+  "Nyx": {
+   "bodies": [
+    {
+     "name": "Nyx",
+     "kind": "star",
+     "center": [
+      0.0,
+      0.0,
+      0.0
+     ]
+    },
+    {
+     "name": "Nyx II",
+     "kind": "planet",
+     "center": [
+      -3591210930.539283,
+      9866771446.595106,
+      0.0
+     ]
+    },
+    {
+     "name": "Nyx I",
+     "kind": "planet",
+     "center": [
+      6495194198.506323,
+      -3749995462.198742,
+      0.0
+     ]
+    },
+    {
+     "name": "Nyx III",
+     "kind": "planet",
+     "center": [
+      -29109694335.707394,
+      -24425930756.452217,
+      0.0
+     ]
+    }
+   ],
+   "places": [
+    {
+     "name": "Transit Point Glaciem Charlie",
+     "pos": [
+      9640231386.130783,
+      11488779851.097883,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "Transit Point Glaciem Bravo",
+     "pos": [
+      9640228783.884779,
+      -11488779774.4561,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "Transit Point Glaciem Alpha",
+     "pos": [
+      -13592383232.412529,
+      6338233621.203082,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "QV Breaker Station BRK-425",
+     "pos": [
+      27531031539.450443,
+      -39318355602.301125,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "QV Breaker Station BRK-546",
+     "pos": [
+      16416937213.807709,
+      45105181258.5862,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "People's Service Station Theta",
+     "pos": [
+      40472690248.72818,
+      -25806259375.74863,
+      40589.752193
+     ],
+     "qt": true
+    },
+    {
+     "name": "QV Breaker Station BRK-127",
+     "pos": [
+      47270353272.7565,
+      -8335028392.475994,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "QV Breaker Station BRK-320",
+     "pos": [
+      -27531183169.18559,
+      39318601164.18832,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "QV Breaker Station BRK-204",
+     "pos": [
+      -45105001774.9967,
+      16416857971.29508,
+      0.0
+     ],
+     "qt": true
+    },
+    {
+     "name": "People's Service Station Alpha",
+     "pos": [
+      -45804312834.019424,
+      -14351346423.869164,
+      29570.487233
+     ],
+     "qt": true
+    },
+    {
+     "name": "People's Service Station Delta",
+     "pos": [
+      -6432467676.28978,
+      -47567033533.165306,
+      13905.36802
+     ],
+     "qt": true
+    },
+    {
+     "name": "People's Service Station Lambda",
+     "pos": [
+      43327758023.56412,
+      20656812086.281746,
+      25671.460589000002
+     ],
+     "qt": true
+    }
+   ],
+   "anchors": {
+    "Levski": [
+     -9641669472.432566,
+     -11490738598.66563,
+     -93642.5508
+    ]
+   }
+  }
+ }
+}

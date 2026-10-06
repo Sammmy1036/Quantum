@@ -223,7 +223,27 @@ class Wiki:
                  "em": sig.get("em_shields") or (v.get("emission") or {}).get("em_idle"),
                  "cs": v.get("cross_section_max"), "cargo": v.get("cargo_capacity"),
                  "crew": (v.get("crew") or {}).get("min")}
-        return {"name": v.get("game_name") or v.get("name"), "slots": slots, "fixed": fixed, "stats": stats}
+        return {"name": v.get("game_name") or v.get("name"), "slots": slots, "fixed": fixed, "stats": stats,
+                "armor": armor_signal(v)}
+
+
+def armor_signal(v):
+    """The hull armor's signature multipliers from a wiki vehicle record: {"em": x, "ir": y}, 1.0 where
+    missing. Stealth hulls are below 1 (less EM/IR), heavy armor above. The game multiplies the ship's
+    EM and IR by these after adding up its parts, the same as ScDataDumper's EmissionAggregator."""
+    a = (v or {}).get("armor") or {}
+    sm = a.get("signal_multiplier") or a.get("signal_multipliers") or {}
+
+    def pick(new, old):
+        x = sm.get(new) if isinstance(sm, dict) else None
+        x = a.get(old) if x is None else x
+        return float(x) if isinstance(x, (int, float)) and x > 0 else 1.0
+    return {"em": pick("electromagnetic", "signal_electromagnetic"), "ir": pick("infrared", "signal_infrared")}
+
+
+# Apply the hull armor's EM/IR multipliers to the estimate. Erkul applies them too; if a ship you
+# calibrated against Erkul drifts after this, set it to False and compare.
+APPLY_ARMOR_SIGNAL = True
 
 
 def _dig(d, *path):
@@ -436,7 +456,7 @@ def allocate(parts, gen, mode, overrides, fitted=True, pool=0):
     return alloc, info
 
 
-def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=None, fixed=None):
+def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=None, fixed=None, armor=None):
     """Ship EM and IR, estimated the way Erkul's Power Management works them out:
       pips: Erkul-style Auto (allocate) or your own, from the power plants' output
       EM = power plant EM x (pips in use / pips made) + each part's EM x (its pips / its most pips);
@@ -444,6 +464,7 @@ def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=No
       IR = IR of the coolers switched on x cooling in use
       cooling in use = pips in use x COOLANT_PER_PIP / output of the coolers switched on (unless typed)
     Life support takes its pips; its EM isn't added (Erkul's readings fit better without it).
+    Both totals are then multiplied by the hull armor's signal multipliers (armor_signal), if given.
     Returns totals and each part's pips."""
     overrides = parts or {}
     every = list(slots) + list(fixed or [])
@@ -477,5 +498,8 @@ def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=No
             em += (st.get("em") or 0) * alloc.get(p, 0) / max(1, info.get(p, {}).get("max", 1))
             if t == "Cooler" and alloc.get(p):
                 ir += (st.get("ir") or 0) * max(0, min(100, cooling)) / 100
+    if APPLY_ARMOR_SIGNAL and armor:
+        em *= armor.get("em", 1.0)
+        ir *= armor.get("ir", 1.0)
     return {"em": em, "ir": ir, "pips_gen": gen, "pips_used": used, "parts": per,
             "cooling": cooling, "cooling_auto": auto_cool, "cool_make": cool_make, "pool": pool}

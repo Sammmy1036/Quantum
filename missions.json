@@ -1,12 +1,12 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "0e22c840c6c3efa819b6bef6c0613b527728cc7d",
- "offset": 1081816,
+ "log_sig": "d4434f0a37c2437443a49d33c4304082afe7cee5",
+ "offset": 567249,
  "where": {
-  "code": "RR_HUR_L4",
-  "system": "Stanton",
+  "code": "HANGAR:LoadingPlatformManager_FreightElevator_Util_HangarMedium_Nyx",
+  "system": "Nyx",
   "body": null,
-  "at": 1791184531.464
+  "at": 1791241263.153
  },
  "zone_bodies": {},
  "build": "12660092",
@@ -20,10 +20,10 @@
   "4243852663": "R&R HUR-L4 Melodic Fields Station"
  },
  "cur": {
-  "id": 4243852663,
-  "landing": 4243852663,
-  "at": 1791184531.463,
-  "place": "R&R HUR-L4 Melodic Fields Station",
+  "id": 1123010922,
+  "landing": 1123010922,
+  "at": 1791239586.165,
+  "place": null,
   "left": null,
   "spawned": false,
   "died_near": null
@@ -37,74 +37,20 @@
   }
  },
  "qt": {
-  "dest": "LOC_RR_S1_L4",
+  "dest": "rs_asmbl_keeger_02",
   "ship": "857832010583",
-  "selected": 1791184230.041,
-  "arrived": 1791184475.121,
-  "start": "microTech",
-  "start_body": "microTech",
+  "selected": 1791239445.309,
+  "arrived": 1791239583.716,
+  "start": "Stanton Gateway",
+  "start_body": null,
   "place": null,
-  "learned": true
+  "learned": false
  },
  "zone_places": {},
  "atc": {
-  "833869876346": "ATC_DataManager_Port_SemiLawful-Dock1",
-  "833869878256": "ATC_DataManager_Port_Lawful-001",
-  "833867765220": "ATC_DataManager_Port_Lawful_Collector",
-  "833867765888": "ATC_DataManager_Port_Lawful_Collector"
+  "855184222933": "ATC_DataManager_Port_SemiLawful-Dock1"
  },
  "contracts": [
-  {
-   "id": "1bd65bf5-74e8-4dad-a2d5-21b77c078cc9",
-   "name": "DEAD SAINTS -- Rookie Rank, Small Scale Cargo Run",
-   "status": "abandoned",
-   "accepted_at": 1790747756.232,
-   "updated_at": 1790747844.0,
-   "code": "HaulCargo_AToB_Interstellar_Small_Cryo",
-   "system": null,
-   "objectives": [
-    {
-     "id": "dropoff_ba08f4ac-144c-4c20-8441-c41644f5bea2_0",
-     "text": "Deliver 0/4 SCU of CryoPod to Pyro System",
-     "status": "withdrawn",
-     "kind": "dropoff",
-     "location": "Jackson's Swap",
-     "marker": {
-      "body": "Monox",
-      "system": "Pyro",
-      "pos": [
-       383195.510179,
-       -245788.250802,
-       -272391.567254
-      ]
-     },
-     "done_at": null,
-     "zone": null,
-     "found": "marker",
-     "manual": false,
-     "item_for": ""
-    },
-    {
-     "id": "pickup_ba08f4ac-144c-4c20-8441-c41644f5bea2_0",
-     "text": "Objective",
-     "status": "withdrawn",
-     "kind": "pickup",
-     "location": null,
-     "marker": null,
-     "done_at": null,
-     "zone": "833694682422",
-     "found": "",
-     "manual": false,
-     "item_for": ""
-    }
-   ],
-   "departed_at": null,
-   "closed_at": 1790747844.0,
-   "pickup_code": "",
-   "turn_in": "",
-   "turn_in_how": "",
-   "tracking_no": "1SC798198986771664"
-  },
   {
    "id": "f4a2753e-c0c0-4b01-bc35-b01436257796",
    "name": "Very Hungry",

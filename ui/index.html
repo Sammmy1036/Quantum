@@ -212,6 +212,16 @@ em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}e
 .obj-acts{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
 .turnin{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:8px 0 4px;font-size:13px}.turnin .k{color:var(--ink-2)}.turnin .unknown{grid-column:1/-1}.turnin a{color:var(--route-2);cursor:pointer;text-decoration:underline}
 /* delivery tracker */
+.cwiki-line{font-size:12px;margin:2px 0 8px}
+.cwiki{margin:4px 0 10px;border:1px solid var(--line);border-radius:8px;background:rgba(5,8,15,.25)}
+.cwiki>summary{cursor:pointer;padding:7px 10px;font-size:12.5px;color:var(--ink-2);list-style:none}
+.cwiki>summary::-webkit-details-marker{display:none}
+.cwiki>summary::before{content:"▸ ";color:var(--dim)} .cwiki[open]>summary::before{content:"▾ "}
+.cwiki .cw-sum{color:var(--ink);margin-left:6px}
+.cwiki .cw-body{padding:2px 10px 10px;font-size:12.5px}
+.cwiki .cw-row{display:grid;grid-template-columns:92px 1fr;gap:8px;padding:3px 0;border-top:1px solid rgba(255,255,255,.04)}
+.cwiki .cw-row .k{color:var(--dim)}
+.sys-pick{background:transparent;border:1px solid var(--line);border-radius:5px;color:var(--ink);font:inherit;padding:0 2px;cursor:pointer}
 .track{margin:6px 0 10px;padding:10px 12px 8px;background:rgba(5,8,15,.35);border-radius:8px}
 .track .head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .track .st{font:700 15px var(--display);color:var(--ok)}
@@ -488,6 +498,14 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cm-pill{color:#7fe7ff;white-space:nowrap}
 #update-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;width:min(560px,92%);background:var(--panel);border:1px solid rgba(75,141,255,.6);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
 #update-bar .row{gap:8px;align-items:center}
+#update-bar .notes.md{white-space:normal;line-height:1.5}
+#update-bar .notes.md h1,#update-bar .notes.md h2,#update-bar .notes.md h3{font:600 14px var(--display);color:var(--ink);margin:12px 0 4px}
+#update-bar .notes.md h1{font-size:17px} #update-bar .notes.md h2{font-size:15.5px;border-bottom:1px solid var(--line);padding-bottom:3px}
+#update-bar .notes.md p{margin:6px 0} #update-bar .notes.md ul,#update-bar .notes.md ol{margin:4px 0;padding-left:20px}
+#update-bar .notes.md img{max-width:100%;height:auto} #update-bar .notes.md strong{color:var(--ink)}
+#update-bar .notes.md a{color:var(--route-2);cursor:pointer;text-decoration:underline}
+#update-bar .notes.md code{background:rgba(255,255,255,.07);padding:1px 4px;border-radius:4px;font-size:12px}
+#update-bar .notes.md pre{background:rgba(255,255,255,.05);padding:8px;border-radius:6px;overflow:auto}
 #update-bar .notes{max-height:180px;overflow:auto;white-space:pre-wrap;color:var(--ink-2);font-size:12.5px;margin:8px 0 0;border-top:1px solid var(--line);padding-top:8px}
 #update-bar .bar{height:5px;border-radius:3px;background:var(--panel-3);overflow:hidden;margin-top:8px}#update-bar .bar i{display:block;height:100%;background:linear-gradient(90deg,#8fe3ff,#2f86ff)}
 .q-loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;pointer-events:none}
@@ -561,11 +579,12 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-guide .tips{margin-top:1.1em;border:1px solid rgba(242,193,78,.4);background:rgba(242,193,78,.06);border-radius:10px;padding:.8em 1.1em;font-size:1em}
 .dr-guide .btn{font-size:1em;padding:.55em 1.1em}
 .dr-guide .tips ul{margin:6px 0 0 18px;padding:0;line-height:1.6;color:var(--ink-2)}
-.dr-job{display:grid;grid-template-columns:28px 46px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:6px}
+.dr-job{display:grid;grid-template-columns:28px 64px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:6px}
 .dr-job.here{border-color:rgba(60,207,110,.5)}
 .dr-job .n{font:600 15px var(--display);color:var(--dim);text-align:center}
 .dr-job .age{font:700 11px var(--text);text-align:center;border-radius:6px;padding:4px 0}
 .dr-job .go{display:flex;gap:6px}
+.dr-job .go .btn{min-width:86px;justify-content:center}
 #dr-panel .chip.y{border-color:rgba(60,207,110,.5);color:#a8ecbe}
 .dr-rep{border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:8px;cursor:pointer}
 .dr-rep .hd{display:flex;align-items:center;gap:12px;padding:10px 12px}
@@ -1353,7 +1372,7 @@ ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1
 function jumpTarget(L){ if(L?.to) return L.to; const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)(?:\s*\([^)]*\))?$/i); return m?m[1]:null; }
 function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) return;
   if(S.systems.includes(to)){ S.autoSystem=false; setSystem(to);
-    const back=S.locs.find(o=>o.system===to&&o.type==="jump"&&jumpTarget(o)===L.system);
+    const back=S.locs.find(o=>o.system===to&&(o.type==="jump"||o.to)&&jumpTarget(o)===L.system);
     if(back){ select({kind:"loc",name:back.name}); if(back.pos) focusLoc(back.name,false); } else select(null);
     toast(`Jumped to ${to}`); }
   else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
@@ -1907,6 +1926,38 @@ function renderContracts(force){
       <button class="btn small" data-act="collectall" title="Marks ${openPicks>1?"every open pickup":"the pickup"} as collected, then types /showlocation in game for your position">Mark picked up</button></div>`:"";
     return `<div class="track ${cancel?"cancel":""}"><div class="head"><span class="st">${head}</span><span class="eta">${eta}</span></div>
       <div class="bar"><div class="fill" style="width:${pct}%"></div>${nodes}</div><div class="labels">${labels}</div>${cargoRow}${dropRows}${markBtn}</div>`; };
+  // Contract details from the Star Citizen Wiki (the mission's template: payout range, rep, cargo, the places it can use).
+  S.cw=S.cw||{}; S.cwOpen=S.cwOpen||new Set();
+  const n0=x=>Number(x).toLocaleString();
+  const rng=(a,b,u="")=>a!=null&&b!=null&&a!==b?`${n0(a)}–${n0(b)}${u}`:`${n0(b??a)}${u}`;
+  const cwiki=c=>{ const st=S.cw[c.id];
+    if(!st) return c.status==="active"?`<div class="cwiki-line muted">Looking up contract details…</div>`:"";
+    if(st.loading) return `<div class="cwiki-line muted">Looking up contract details…</div>`;
+    if(st.error) return `<div class="cwiki-line muted">${esc(st.error)} <a data-cwretry="${esc(c.id)}" style="cursor:pointer;text-decoration:underline">Retry</a></div>`;
+    const w=st.info; if(!w) return `<div class="cwiki-line muted">No details for this contract on the Star Citizen Wiki yet.</div>`;
+    const bits=[w.reward?`<b>${rng(w.reward[0],w.reward[1])} ${esc(w.currency)}</b>`:"",
+      ...(w.rep||[]).slice(0,1).map(r=>`+${n0(r.amount)} rep`), w.minutes?`~${w.minutes} min`:"", w.illegal?`<span style="color:#ff9b8a">Illegal</span>`:""].filter(Boolean);
+    const row=(k,v)=>v?`<div class="cw-row"><span class="k">${k}</span><span>${v}</span></div>`:"";
+    const plist=g=>g&&g.names.length?g.names.map(esc).join(", ")+(g.more?` <span class="muted">+${g.more} more</span>`:""):"";
+    const cargo=(w.cargo||[]).map(o=>`${esc(o.what)}${o.scu?` <span class="muted">${rng(o.scu[0],o.scu[1]," SCU")}${o.box?`, ≤${o.box} SCU boxes`:""}</span>`:o.amount?` <span class="muted">×${rng(o.amount[0],o.amount[1])}</span>`:""}`).join("<br>");
+    return `<details class="cwiki" data-cw="${esc(c.id)}" ${S.cwOpen.has(c.id)?"open":""}><summary>Contract details${bits.length?` <span class="cw-sum">${bits.join(" · ")}</span>`:""}</summary>
+      <div class="cw-body">
+        ${row("Payout",w.reward?`${rng(w.reward[0],w.reward[1])} ${esc(w.currency)}${w.reward[0]!==w.reward[1]?` <span class="muted">(depends on the contract you got)</span>`:""}`:"")}
+        ${row("Reputation",(w.rep||[]).map(r=>`+${n0(r.amount)}${r.faction?" "+esc(r.faction):""}`).join(", "))}
+        ${row("Given by",esc(w.giver||w.faction||""))}
+        ${row("Time",w.minutes?`About ${w.minutes} minutes`:"")}
+        ${row("Rank",w.rank!=null&&w.rank>0?`Rank ${w.rank}`:"")}
+        ${row("Combat",w.combat?(w.enemies?`Yes, ${rng(w.enemies[0],w.enemies[1])} enemies`:"Yes"):"")}
+        ${row("Players",w.max_players>1?`Up to ${w.max_players}${w.shareable?", shareable":""}`:"")}
+        ${row("Cargo",cargo)}
+        ${row("Pickups at",plist(w.pickups))}
+        ${row("Deliver to",plist(w.destinations))}
+        ${row("Rewards",(w.reward_items||[]).map(esc).join(", "))}
+        ${row("Blueprints",(w.blueprints||[]).map(esc).join(", "))}
+        <div class="muted" style="font-size:11.5px;margin-top:6px">Ranges and possible places for this kind of contract, from the game files. Your own pickup and drop-off are the objectives above.
+          ${w.url?`<a data-url="${esc(w.url)}" style="cursor:pointer;text-decoration:underline">Open on api.star-citizen.wiki</a>`:""}</div></div></details>`; };
+  const cwFetch=async id=>{ S.cw[id]={loading:true}; let r; try{ r=await api().contract_wiki(id); }catch(e){ r={ok:false,error:"Couldn't look it up"}; }
+    S.cw[id]=r.ok?{info:r.info}:{error:r.error}; renderContracts(); };
   const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
     const active=c.status==="active";
@@ -1940,11 +1991,13 @@ function renderContracts(force){
         ${tin?.unplaced?`<div class="unknown">Quantum doesn't know where ${esc(c.turn_in)} is yet, so it can't be a route stop. Fly there, type /showlocation, and press <b>I'm here: set position</b> on <a data-open="${esc(c.turn_in)}">its card</a>. Once is enough.</div>`:""}</div>` : "";
     return `<div class="contract ${active?"":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
       <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>
-      ${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${tracker(c)}${turnIn}${objs}
+      ${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
       <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
   $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
   const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
+  $("contracts").querySelectorAll("details.cwiki").forEach(d=>d.ontoggle=()=>{ d.open?S.cwOpen.add(d.dataset.cw):S.cwOpen.delete(d.dataset.cw); });
+  active.filter(c=>!S.cw[c.id]).forEach(c=>cwFetch(c.id));      // once per contract; cached on disk too
   on("btn-clear-finished",async()=>{ await api().clear_finished_contracts(); await poll(); });
   $("contracts").onchange=async e=>{ if(e.target.dataset?.act!=="turnin") return; const cardEl=e.target.closest(".contract"); const v=e.target.value; if(!v) return;
     const r=await api().set_turn_in(cardEl.dataset.id,v); await poll(); renderContracts(true); toast(r.ok?`Handing in at ${v}`:r.error); };
@@ -1952,6 +2005,8 @@ function renderContracts(force){
     const w=e.target.closest(".where"); if(w){ const c=cs.find(x=>x.id===w.dataset.cid), o=c.objectives.find(o=>o.id===w.dataset.oid);
       if(o.location){ select({kind:"loc",name:o.location}); focusLoc(o.location,true); } else if(o.marker){ if(o.marker.system!==S.system) setSystem(o.marker.system,false);
         if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); } return; }
+    const cu=e.target.closest("[data-url]"); if(cu){ api().open_url(cu.dataset.url); return; }
+    const cr=e.target.closest("[data-cwretry]"); if(cr){ cwFetch(cr.dataset.cwretry); return; }
     const tn=e.target.closest(".trackno"); if(tn){ const n=tn.querySelector("b").textContent; try{ await navigator.clipboard.writeText(n); toast(`Copied ${n}`); }catch{ toast(n); } return; }
     const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,true); return; }
     const act=e.target.dataset?.act, cardEl=e.target.closest(".contract"); if(!act||!cardEl) return; const c=cs.find(x=>x.id===cardEl.dataset.id);
@@ -2029,7 +2084,14 @@ function highlightResult(){ for(const li of $("results").children) li.classList?
 $("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
 
 // ---- status & toast
+// The system you're in, with where Quantum got it from. Click to correct it: the log says nothing
+// when you go through a wormhole, so it can keep naming the system you left.
+function sysPick(p){ const src={log:p.sys_from?`Game.log: ${p.sys_from}`:"Game.log",you:"set by you",wormhole:`went through ${p.sys_from}`,planet:"from the planet you're near"}[p.sys_how]||"Game.log";
+  return `<select class="sys-pick" title="System from ${esc(src)}. Wrong? Pick the right one">${(S.systems||["Stanton","Pyro","Nyx"]).map(s=>`<option ${s===p.system?"selected":""}>${esc(s)}</option>`).join("")}</select>`; }
 function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
+  if(!pt.dataset.sysBound){ pt.dataset.sysBound=1; pt.addEventListener("change",async e=>{ if(!e.target.classList.contains("sys-pick")) return;
+    const v=e.target.value, r=await api().set_my_system(v); if(!r.ok) return toast(r.error); await poll(); toast(`Got it: you're in ${v}`); }); }
+  if(pt.querySelector("select.sys-pick:focus")) return;     // don't redraw under an open picker
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
   if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b>`; }
   else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
@@ -2043,7 +2105,7 @@ function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"
   else
   if(!p){ pd.className="dot"; pt.innerHTML="Type <b>/showlocation</b> in game chat to share your position"; }
   else { const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`; pd.className="dot"+(p.age<120?" on":"");
-    pt.innerHTML=p.body?`At <b>${esc(p.body)}</b> <span class="muted">(/showlocation, ${age})</span>`:`<b>In space</b>, ${esc(p.system)} <span class="muted">(${age})</span>`; }
+    pt.innerHTML=p.body?`At <b>${esc(p.body)}</b> <span class="muted">(/showlocation, ${age})</span>`:`<b>In space</b>, ${sysPick(p)} <span class="muted">(${age})</span>`; }
   // What you're up to, from lines that name you: traffic control you hailed, vehicle deliveries, shops,
   // your own ship or vehicle, and the armistice zone.
   const bits=[];
@@ -2791,7 +2853,8 @@ async function renderUpdateBar(force){ const b=$("update-bar"), u=S.live?.update
     ${pr.stage==="downloading"?`<div class="bar"><i style="width:${pct??30}%"></i></div>`:""}
     ${pr.stage==="error"?`<div class="warnbox" style="margin:8px 0 0">${esc(pr.error)}</div>`:""}
     ${!L.can_install&&L.why_not?`<div class="muted" style="font-size:12px;margin-top:6px">${esc(L.why_not)}</div>`:""}
-    ${L.notes?`<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--route-2)">What's new</summary><div class="notes">${esc(L.notes)}</div></details>`:""}`;
+    ${L.notes||L.notes_html?`<details style="margin-top:6px" ${S.notesOpen?"open":""}><summary style="cursor:pointer;color:var(--route-2)">What's new</summary>${L.notes_html?`<div class="notes md">${L.notes_html}</div>`:`<div class="notes">${esc(L.notes)}</div>`}</details>`:""}`;
+  const nd=b.querySelector("details"); if(nd) nd.ontoggle=()=>{ S.notesOpen=nd.open; };
   if(pr.stage==="downloading"||pr.stage==="verifying") setTimeout(()=>renderUpdateBar(true),500); }
 $("update-bar").onclick=async e=>{ const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return; }
   const a=e.target.closest("[data-up]")?.dataset.up; if(!a) return;
@@ -2832,8 +2895,11 @@ function qLoader(text){ return `<div class="q-loader" role="status" aria-live="p
 // main action is one tap (or Space) on "Same"; only what changed gets typed. Keyboard: ↑↓ move,
 // Space same, Enter edit, 1–7 inventory, G gone. The send bar keeps the checklist in sight.
 const DR_SIZES=[1,2,4,8,16,24,32];
-const drAge=ts=>{ if(!ts) return {t:"new",c:"a1",tip:"Not on UEX yet"}; const d=(Date.now()/1000-ts)/86400;
-  return {t:d*24<1?"now":d<1?`${Math.round(d*24)}h`:`${Math.round(d)}d`, c:d<1?"a0":d<3?"a1":d<7?"a2":"a3", tip:`UEX last updated ${agoTs(ts)}`}; };
+const plural=(n,w)=>`${n} ${w}${n===1?"":"s"}`;
+const daysTxt=d=>plural(Math.round(d),"day");                      // 11 -> "11 days", 1 -> "1 day"
+// long: "11 days" / "5 hours" instead of "11d" / "5h" (the Jobs list has room for it)
+const drAge=(ts,long)=>{ if(!ts) return {t:"new",c:"a1",tip:"Not on UEX yet"}; const d=(Date.now()/1000-ts)/86400;
+  return {t:d*24<1?"now":d<1?(long?plural(Math.round(d*24),"hour"):`${Math.round(d*24)}h`):(long?daysTxt(d):`${Math.round(d)}d`), c:d<1?"a0":d<3?"a1":d<7?"a2":"a3", tip:`UEX last updated ${agoTs(ts)}`}; };
 const drNum=v=>{ if(v==null||v==="") return null; const m=String(v).trim().toLowerCase().replace(/,/g,"").match(/^(\d+(?:\.\d+)?)\s*([km])?$/);
   return m?Math.round(parseFloat(m[1])*({k:1e3,m:1e6}[m[2]]||1)*100)/100:NaN; };
 const drFmt=v=>v==null||isNaN(v)?"":Number(v).toLocaleString();
@@ -2963,6 +3029,10 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
     toast(`Your ${nm} reading was withdrawn and taken off your map`); S.drProf=null; S.drProfAt=0; await loadStatic(); return renderDrPanel(); }
   const tr=e.target.closest("[data-top=refresh]"); if(tr){ tr.disabled=true; tr.textContent="Refreshing…"; return renderDrTop(true); }
   const rf=e.target.closest("[data-mine=refresh]"); if(rf){ rf.disabled=true; rf.textContent="Refreshing…"; return renderDrMine(true,true); }
+  const ju=e.target.closest("[data-url]"); if(ju){ api().open_url(ju.dataset.url); return; }
+  const sy=e.target.closest("[data-mysys]"); if(sy){ const r=await api().set_my_system(sy.dataset.mysys); if(!r.ok) return toast(r.error);
+    await poll(); toast(`Got it: you're in ${sy.dataset.mysys}`); return renderDrJobs(); }
+  const jk=e.target.closest("[data-jobkind]"); if(jk){ S.drJobKind=jk.dataset.jobkind; return renderDrJobs(); }
   const js=e.target.closest("[data-jobsort]"); if(js){ S.drJobSort=js.dataset.jobsort; return renderDrJobs(); }
   const jr=e.target.closest("[data-jobreport]"); if(jr){ const id=+jr.dataset.jobreport; S.dr.view="enter"; const v=S.dr.view; S.dr=null;
     await openDatarunner(id); S.dr.view=v; return renderDrPanel(); }
@@ -3090,7 +3160,7 @@ function drMapReading(L){ const pl=S.live?.player; if(!pl||pl.approx||!L) return
   const takenAt=Date.now()-pl.age*1000;
   if(!S.drMapJob.arrived||takenAt<S.drMapJob.arrived-2000) return {ok:false, why:"old"};
   if(pl.age>900) return {ok:false, why:"old"};
-  if(pl.system!==L.system) return {ok:false, why:`That reading is in ${pl.system}, not ${L.system}.`};
+  if(pl.system!==L.system) return {ok:false, why:`Quantum thinks that reading is in ${pl.system}, not ${L.system}.`, sys:L.system};
   if(L.kind==="surface"&&pl.body!==L.body) return {ok:false, why:`That reading isn't on ${L.body}. Take it while you're at ${L.name}.`};
   if(L.type==="jump"&&pl.body) return {ok:false, why:`That reading is near ${pl.body}, not at the gateway. Take it while docked at the station.`};
   return {ok:true, age:pl.age, body:pl.body}; }
@@ -3117,7 +3187,7 @@ function drMapJobHtml(){ const j=S.drMapJob; if(!j) return ""; const L=S.locMap?
       ${st(3,"Type /showlocation",stepN===3?`Press <b>${esc(key||"your /showlocation key")}</b>${key?"":" (set one in Settings)"} or type <b>/showlocation</b> in game chat. Quantum is listening.
         ${!game?`<div class="warn">Star Citizen isn't running: Quantum reads the position from the game.</div>`
           :rd.ok?"":rd.why==="none"||rd.why==="old"?`<div class="wait"><span class="spin"></span>Waiting for your /showlocation…</div>`
-          :`<div class="warn">${esc(rd.why)}</div>`}
+          :`<div class="warn">${esc(rd.why)}${rd.sys?` <button class="btn small" data-mysys="${esc(rd.sys)}" title="Game.log doesn't say when you go through a wormhole. Use this if you really are in ${esc(rd.sys)}">I'm in ${esc(rd.sys)}</button>`:""}</div>`}
         <div style="margin-top:8px"><button class="btn small ghost" data-mj="notyet">I'm not there yet</button></div>`:"")}
       ${st(4,"Submit the position",stepN===4?`Got your reading${rd.body?` near ${esc(rd.body)}`:""}, ${Math.round(rd.age)} s ago. It becomes ${esc(j.name)}'s position.
         <div style="margin-top:8px"><button class="btn small primary" data-mj="submit">Submit position for ${esc(j.name)}</button></div>`:"")}
@@ -3225,7 +3295,7 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
     ["How is my star rating worked out?",`<p>Every price row, picture and station position you send counts once it's decided:</p>
       <ul><li><b>Approved</b> (or Live on UEX, or Live on Quantum) counts as <b>5 stars</b>.</li><li><b>Rejected</b> counts as <b>1 star</b>.</li></ul>
       <p>Your rating is the average of all of them. For example, 9 approved rows and 1 rejected row: (9 × 5 + 1 × 1) ÷ 10 = <b>4.6 stars</b>.</p>`],
-    ["What doesn't count toward my stars?",`<p>Anything UEX or Quantum hasn't decided yet: rows waiting for review or in review, rows that expired before anyone reviewed them, and reports with no decision after 14 days (Quantum stops asking about those). Test-mode reports never count.</p>`],
+    ["What doesn't count toward my stars?",`<p>Anything UEX or Quantum hasn't decided yet: rows waiting for review or in review, rows that expired before anyone reviewed them, and reports with no decision after 14 days (Quantum stops asking about those).</p>`],
     ["Why does it say Unrated?",`<p>You start unrated. Your first approved report sets you to 5.0 stars, and from then on approved ones keep it up and rejected ones bring it down.</p>`],
     ["How do ranks work?",`<p>Your rank goes by how many reports have been approved. A price report counts once UEX approves any of its rows. Each approved picture and each station position that goes live on Quantum counts as one too.</p>
       <div class="faq-ranks">${ranks.slice(1).map((r,i)=>`<div class="${p?.rank?.name===r[1]?"on":""}"><b>${esc(r[1])}</b><span>${r[0]}${i===ranks.length-2?"+":"–"+(ranks[i+2][0]-1)} approved</span></div>`).join("")}</div>`],
@@ -3308,36 +3378,44 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   if(!r.ok){ P.innerHTML=`${drViews()}<div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div>`; return; }
   if(S.drJobSys===undefined&&r.you_in){ S.drJobSys=r.you_in; return renderDrJobs(); }      // start with the system you're in
   S.drJobsList=r.jobs;
-  const card=(j,i)=>{ const a=drAge(Date.now()/1000-j.median*86400);
+  const card=(j,i)=>{ const a=drAge(Date.now()/1000-j.median*86400,true);
     return `<div class="dr-job ${j.here?"here":""}">
       <div class="n">${i+1}</div>
       <div class="age ${a.c}" title="Half this terminal's prices are older than this">${a.t}</div>
       <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`t:${j.id}`)}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}${j.dist!=null?` · ${fmtDist(j.dist)} away`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":Math.round(j.oldest)+" d"}${j.avg!=null?` · <span style="color:#9fe0b4" title="The average age of this terminal's prices on UEX">average ${Math.round(j.avg)} d old</span>`:""}${j.never?` · <span style="color:#ffd38a">${j.never} never reported</span>`:""}</div></div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${j.stale} of ${j.rows} prices over 3 days old · oldest ${j.oldest>=365?"never reported":daysTxt(j.oldest)+" old"}${j.avg!=null?` · <span style="color:#9fe0b4" title="The average age of this terminal's prices on UEX">average ${daysTxt(j.avg)} old</span>`:""}${j.never?` · <span style="color:#ffd38a">${j.never} never reported</span>`:""}</div></div>
       <div class="go">${j.place&&S.locMap[j.place]?.unplaced?`<button class="btn small ghost" data-mapjob="${esc(j.place)}" title="${esc(j.place)} isn't on the map yet: map it while you're there">Map it too</button>`
         :j.place?`<button class="btn small ghost" data-jobroute="${esc(j.place)}" title="Add it to your route">+ Route</button>`:""}${
         S.drPriceJob?.id===j.id?`<span class="chip y">Your job</span>`
         :drClaimOf(`t:${j.id}`)?`<button class="btn small ghost" data-jobreport="${j.id}" title="Someone accepted it, but you can still report it if you're there">Report anyway</button>`
         :`<button class="btn small ghost" data-jobreport="${j.id}" title="Already there? Report it straight away">Report it</button><button class="btn small primary" data-pjaccept="${j.id}" title="Hold it for ${CLAIM_MIN} minutes so others know you're on it">Accept job</button>`}</div></div>`; };
   // Stations Quantum can't place yet: go there, /showlocation, and they go on everyone's map.
+  // Jobs come in two kinds: mapping stations and updating prices. Once every station is mapped the
+  // selector and the "Map a station" list go away and only price jobs are left.
+  const unmapped=(S.locs||[]).filter(L=>!L.pos).length, kind=unmapped?(S.drJobKind||"all"):"prices";
   const pl=S.live?.player, mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
     .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
   const reading=L=>L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body));
   const mapCard=L=>`<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="No position for this station yet">?</div>
       <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}${drClaimChip(`p:${L.name}`)}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Start the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
-      <div class="go">${S.drMapJob?.name===L.name?`<span class="chip y">Your job</span>`:drClaimOf(`p:${L.name}`)?"":L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Start this job: Quantum walks you through it">Start job</button>`
-        :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}
-        <button class="btn small ghost nx-btn" data-nx="${esc(L.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===L.name?"Sure? Click again":"Doesn't exist"}</button></div></div>`;
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">Not on the map yet. Accept the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
+      <div class="go"><button class="btn small ghost" data-url="https://starcitizen.tools/index.php?search=${encodeURIComponent(L.name)}" title="Look it up on the Star Citizen Wiki">Info</button>
+        <button class="btn small ghost nx-btn" data-nx="${esc(L.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===L.name?"Sure? Click again":"Doesn't exist"}</button>${
+        S.drMapJob?.name===L.name?`<span class="chip y">Your job</span>`
+        :drClaimOf(`p:${L.name}`)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
+        :L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Hold it for ${CLAIM_MIN} minutes; Quantum walks you through it">Accept job</button>`
+        :`<button class="btn small" data-mapjob="${esc(L.name)}" title="Open its card on the map">Show its card</button>`}</div></div>`;
   P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Stations missing from the map and terminals with the oldest prices. Each one you do helps every trader on UEX and Quantum.</div></div>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        ${unmapped?`<div class="seg-mini" title="Which jobs to list"><button data-jobkind="all" class="${kind==="all"?"on":""}">All jobs</button><button data-jobkind="map" class="${kind==="map"?"on":""}">Map stations</button><button data-jobkind="prices" class="${kind==="prices"?"on":""}">Update prices</button></div>`:""}
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}
-      <div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
-      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}${uexCredit(r.at)}
+    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`
+        :kind==="map"?`<div class="dr-empty">Every station${S.drJobSys?` in ${esc(S.drJobSys)}`:""} is on the map.</div>`:""):""}
+      ${kind!=="map"?`${kind==="all"&&mapJobs.length?`<div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
+      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}`:""}${uexCredit(r.at)}
       <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`; }
 
 // Pictures and station positions sent through Quantum, reviewed on the Quantum server rather than UEX.
