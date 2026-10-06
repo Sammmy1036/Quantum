@@ -1,21 +1,3 @@
-"""Updates from GitHub Releases (github.com/Sammmy1036/Quantum/releases).
-
-At start-up Quantum asks GitHub for the latest release. If its tag (v1.4.0) is newer than VERSION
-below, the page offers the update with your release notes. Updating:
-  1. downloads the installer (Quantum-Setup-<version>.exe) and its .sig from the release, to the
-     temp folder;
-  2. checks the signature: an Ed25519 signature, made on your PC with sign_release.py, over
-     "Quantum <version>" and the file's SHA-256. Quantum only runs what that key signed,
-     so even someone with access to the GitHub account can't push a different file;
-  3. runs the installer silently into the folder Quantum is installed in and closes. The installer
-     replaces Quantum.exe and _internal (the UI lives there too) and starts the new version.
-The whole installer is used rather than Quantum.exe alone: a PyInstaller folder build keeps the UI,
-libraries and data in _internal, and an exe on its own would leave those at the old version.
-Settings, fleet and reports live in files beside the exe and the installer leaves them alone.
-
-Running from source (python app.py), it only tells you an update exists and links to the release.
-No dependencies: Ed25519 verification is the reference algorithm from RFC 8032.
-"""
 import hashlib
 import json
 import os
@@ -27,7 +9,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-VERSION = "0.0.0.6"                     
+VERSION = "0.0.0.7"                     
 REPO = "Sammmy1036/Quantum"
 ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   
 
@@ -35,26 +17,22 @@ PUBLIC_KEY = "8ac7d1e1fd1d97ff564433a26c5f5a108460f077954606965ab20ea76279759b"
 
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
 UA = {"User-Agent": f"Quantum/{VERSION}", "Accept": "application/vnd.github+json"}
-# Same request, but GitHub also sends the release notes rendered to HTML (body_html), exactly as the
-# release page shows them: headings, bold, lists, links, images.
 UA_FULL = {**UA, "Accept": "application/vnd.github.full+json"}
-IMG_MAX = 2_000_000                       # bytes per picture in the notes
+IMG_MAX = 2_000_000                       
 IMG_TYPES = {".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
              ".gif": "image/gif", ".webp": "image/webp"}
 
 
 def _inline_image(src, tag, timeout=8):
-    """A picture from the release notes as a data: URL, so it shows inside Quantum. Relative paths
-    ("images/quantum-banner.svg") are files in the repo at that release's tag. None if it can't be had."""
     import base64
     import urllib.parse
     if src.startswith("data:"):
         return src
     if src.startswith("//"):
         src = "https:" + src
-    elif src.startswith("/"):                             # "/Sammmy1036/Quantum/raw/v1/images/x.svg"
+    elif src.startswith("/"):                             
         src = "https://github.com" + src
-    if not re.match(r"https?://", src):                  # relative to the repo, as on the release page
+    if not re.match(r"https?://", src):                  
         path = src.lstrip("./")
         return (_inline_image(f"https://raw.githubusercontent.com/{REPO}/{tag}/{path}", tag, timeout) if tag else None) \
             or _inline_image(f"https://raw.githubusercontent.com/{REPO}/HEAD/{path}", tag, timeout)
@@ -63,7 +41,7 @@ def _inline_image(src, tag, timeout=8):
         src = f"https://raw.githubusercontent.com/{m.group(1)}/{m.group(2)}"
     host = urllib.parse.urlparse(src).hostname or ""
     if not (host.endswith("githubusercontent.com") or host.endswith("github.com")):
-        return None                                      # only GitHub's own hosts
+        return None                                      
     try:
         with urllib.request.urlopen(urllib.request.Request(src, headers={"User-Agent": UA["User-Agent"]}),
                                     timeout=timeout) as r:
@@ -74,7 +52,6 @@ def _inline_image(src, tag, timeout=8):
     if len(data) > IMG_MAX:
         return None
     ext = os.path.splitext(urllib.parse.urlparse(src).path)[1].lower()
-    # raw.githubusercontent.com sends every file as text/plain: go by the file name there
     mime = IMG_TYPES.get(ext) or (ctype if ctype.startswith("image/") else None)
     if not mime:
         return None
@@ -82,8 +59,6 @@ def _inline_image(src, tag, timeout=8):
 
 
 def notes_html(html, tag):
-    """GitHub's rendered release notes, made safe and self-contained for the update box: no scripts
-    or event handlers, links open in your browser, pictures inlined."""
     if not html:
         return ""
     html = re.sub(r"(?is)<(script|style|iframe|object|embed|form)\b.*?(</\1>|$)", "", html)

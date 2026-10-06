@@ -18,12 +18,14 @@ DEFAULT_URL = "https://quantumsc.ddnsgeek.com"
 
 
 class Community:
-    def __init__(self, url_getter, test_getter, device_getter=None):
+    def __init__(self, url_getter, test_getter, session_getter=None, on_signed_out=None):
         self._url, self._test = url_getter, test_getter
         self.place_results = {}       # name -> what the server said about the last position you sent
-        # This PC's random device key. The server ties it to your UEX name once a report sent with it
-        # is confirmed by UEX, so only your own PCs count as you for trusted-contributor features.
-        self._device = device_getter or (lambda: None)
+        # Your sign-in on the Quantum server (see login): sent with every request, so the server knows
+        # it's really you sending pictures, places and alignments under your UEX name. on_signed_out is
+        # called when the server no longer accepts it (expired, or signed out), to sign in again.
+        self._session = session_getter or (lambda: None)
+        self._on_signed_out = on_signed_out or (lambda: None)
         self._cache, self._at, self._lock = {}, 0, threading.Lock()
         self.last_error = None
 
@@ -33,19 +35,46 @@ class Community:
         u = DEFAULT_URL if u is None else u.strip()
         return "" if u.lower() == "off" else u.rstrip("/")
 
-    def _req(self, path, body=None, timeout=10):
+    def _req(self, path, body=None, timeout=10, session=True):
+        sess = (self._session() or "").strip() if session else ""
         req = urllib.request.Request(self.url + path, data=json.dumps(body).encode("utf-8") if body is not None else None,
                                      method="POST" if body is not None else "GET",
                                      headers={"Content-Type": "application/json", "Accept": "application/json",
-                                              "User-Agent": "Quantum", **({"X-Quantum-Device": k} if (k := (self._device() or "").strip()) else {})})
+                                              "User-Agent": "Quantum", **({"X-Quantum-Session": sess} if sess else {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                return json.loads(r.read().decode("utf-8"))
+                out = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             try:
-                return json.loads(e.read().decode("utf-8"))
+                out = json.loads(e.read().decode("utf-8"))
             except Exception:
                 return {"status": f"http_{e.code}"}
+        if sess and isinstance(out, dict) and out.get("status") == "sign_in_needed":
+            self._on_signed_out()                              # the server forgot this sign-in: get a new one
+        return out
+
+    def login(self, secret):
+        """Sign in with your UEX datarunner secret key. The server asks UEX whose key it is, then
+        forgets the key; you get back {status: ok, username, session} (or invalid_secret_key, banned,
+        try_later, uex_unreachable, unreachable)."""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/login", {"secret": secret}, timeout=20, session=False)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    def logout(self, session):
+        """End a sign-in on the server (when the secret key is removed or changed)."""
+        if not self.url or not session:
+            return
+        try:
+            req = urllib.request.Request(self.url + "/v1/logout", data=b"{}", method="POST",
+                                         headers={"Content-Type": "application/json", "User-Agent": "Quantum",
+                                                  "X-Quantum-Session": session})
+            urllib.request.urlopen(req, timeout=8).close()
+        except Exception:
+            pass
 
     def health(self):
         if not self.url:
@@ -166,7 +195,7 @@ class Community:
         return {"ok": True, "approved": bool(r.get("approved")), "url": self.url + r["url"] if r.get("url") else None}
 
     def trust(self, username):
-        """{trusted, device, info} from the server, or None if it can't be reached."""
+        """{trusted, signed_in, info} from the server, or None if it can't be reached."""
         if not self.url or not username:
             return None
         import urllib.parse

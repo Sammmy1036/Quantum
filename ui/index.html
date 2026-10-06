@@ -3459,12 +3459,12 @@ function drTrustHtml(t){ const i=t?.info, c=i?.checks;
   const state=!t?"":!t.ok?`<p class="muted">Couldn't check your progress with the Quantum server just now.</p>`
     :i?.revoked?`<p><b>Trust was turned off for your account</b> by the server owner.</p>`
     :t.trusted?`<p style="color:#9fe0b4"><b>✓ You're a trusted contributor</b>${i?.owner?" (server owner)":""}.</p>`
-    :i?.trusted&&!t.device?`<p style="color:#ffd38a"><b>Your account is trusted, but this PC isn't recognised yet.</b> Send one price report from it; once UEX confirms it, this PC counts as yours.</p>`
+    :i?.trusted&&!t.signed_in?`<p style="color:#ffd38a"><b>Your account is trusted, but this PC isn't signed in to the Quantum server.</b> ${t.has_secret?(t.sign_in_status==="invalid_secret_key"?"UEX didn't accept your secret key: copy it again from your UEX profile into Settings.":"Quantum signs in with your UEX secret key; check your connection and try again in a minute."):"Add your UEX secret key in Settings and Quantum signs in by itself."}</p>`
     :`<p>You're not a trusted contributor yet. Your progress:</p>`;
   return `<p>Trusted contributors' pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map go on everyone's map from their reading alone, without waiting for a second datarunner.</p>
     ${state}${t?.trusted?"":prog}
     <p>It's automatic: meet all of these and you're trusted, and it's checked continuously, so a rejection takes it away until you're clean again. Replacing a picture that's already live always goes to review.</p>
-    <p class="muted" style="font-size:.95em">Only your own PCs count as you: Quantum sends a random key from each PC, and the server ties it to your UEX name once a report sent from that PC is confirmed by UEX. Nothing to set up.</p>`; }
+    <p class="muted" style="font-size:.95em">Only you count as you: Quantum signs in to the Quantum server with your UEX secret key, and the server asks UEX whose key it is, then forgets it. Every PC with your secret key in Settings signs in by itself, so a new PC or a reinstall just works.</p>`; }
 // The step-by-step guide fits the panel instead of scrolling: its text is scaled down until it fits.
 // Fitted again whenever the panel or anything in the guide changes size, so the app's fonts loading
 // after the first fit (they're bigger than the fallback) can't push it into a scroll bar.

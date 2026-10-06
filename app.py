@@ -189,7 +189,9 @@ class Api:
         self._dr_job = {"state": "idle", "n": 0}
         self._dr_terminal = None
         self._community = community.Community(lambda: self._settings.get("community_url"),
-                                              lambda: not self._dr.live, self._device_key)
+                                              lambda: not self._dr.live, self._session_token, self._session_lost)
+        if self._dr_cfg().get("secret") and not self._session_token():
+            self._sign_in_soon()                              # signs in on first start after updating, too
         threading.Thread(target=self._sync_places, daemon=True).start()
         threading.Thread(target=self._backup_loop, daemon=True).start()
         self._updater = updater.Updater()
@@ -1972,11 +1974,21 @@ class Api:
 
     def dr_set_secret(self, secret):
         secret = (secret or "").strip()
+        cfg = self._dr_cfg()
+        changed = secret != (cfg.get("secret") or "")
         if secret:
-            self._dr_cfg()["secret"] = secret
+            cfg["secret"] = secret
         else:
-            self._dr_cfg().pop("secret", None)
+            cfg.pop("secret", None)
+        old = cfg.pop("session", None) if changed else None
         self._save_settings()
+        if changed:
+            def swap():                   # sign out of the old key's account, then in with the new key
+                if old:
+                    self._community.logout(old.get("token"))
+                if secret:
+                    self._sign_in()
+            threading.Thread(target=swap, daemon=True).start()
         return {"ok": True, "has_secret": bool(secret)}
 
     def dr_set_hotkey(self, key):
@@ -2491,24 +2503,55 @@ class Api:
     def community_status(self):
         return {"url": self._community.url, **self._community.health()}
 
-    def _device_key(self):
-        """This PC's random key for the Quantum server, made once and kept in settings.json. It's not
-        a password and isn't shown anywhere: it lets the server tell your own PCs from someone typing
-        your UEX name, once a report you send with it is confirmed by UEX."""
-        key = self._settings.get("device_key")
-        if not key:
-            import secrets
-            key = self._settings["device_key"] = secrets.token_urlsafe(32)
-            self._settings.pop("trust_key", None)                 # the old hand-entered key isn't used any more
+    # ------------------------------------------------------------ Quantum server sign-in
+    # Quantum signs in to the Quantum server with your UEX datarunner secret key: the server asks UEX
+    # whose key it is, forgets the key, and sends back a session token kept here in settings.json. Any
+    # PC with your secret key (a new one, a reinstall, a second gaming PC) signs in the same way.
+    def _session_token(self):
+        return (self._dr_cfg().get("session") or {}).get("token")
+
+    def _sign_in(self):
+        """Sign in now (blocking). Returns the server's answer, or None without a secret key or server."""
+        cfg = self._dr_cfg()
+        secret = cfg.get("secret")
+        if not secret or not self._community.url:
+            return None
+        r = self._community.login(secret)
+        if r.get("status") == "ok" and r.get("session"):
+            cfg["session"] = {"token": r["session"], "username": r.get("username"), "at": int(time.time())}
+            if r.get("username") and not cfg.get("username"):
+                cfg["username"] = r["username"]
+            self._settings.pop("device_key", None)            # the old per-PC key isn't used any more
+            self._settings.pop("trust_key", None)
             self._save_settings()
-        return key
+        else:
+            self._sender._event(f"Quantum server sign-in: {r.get('status')}")    # shows in Settings > Log
+        self._sign_in_status = r.get("status")
+        return r
+
+    def _sign_in_soon(self):
+        """Sign in in the background, at most once a minute (so a server that keeps refusing isn't hammered)."""
+        if time.time() - getattr(self, "_sign_in_at", 0) < 60:
+            return
+        self._sign_in_at = time.time()
+        threading.Thread(target=self._sign_in, daemon=True).start()
+
+    def _session_lost(self):
+        """The server no longer accepts this sign-in (it expired, or the owner ended it): sign in again."""
+        if self._dr_cfg().pop("session", None) is not None:
+            self._save_settings()
+        self._sign_in_soon()
 
     def trust_status(self):
         """Trusted contributor status and progress, for the FAQ."""
-        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        cfg = self._dr_cfg()
+        user = cfg.get("username") or (cfg.get("uex_user") or {}).get("username")
+        if cfg.get("secret") and not self._session_token():
+            self._sign_in()
         r = self._community.trust(user) if user else None
         return {"ok": bool(r), "user": user, "trusted": bool(r and r.get("trusted")),
-                "device": bool(r and r.get("device")), "info": (r or {}).get("info")}
+                "signed_in": bool(r and r.get("signed_in")), "has_secret": bool(cfg.get("secret")),
+                "sign_in_status": getattr(self, "_sign_in_status", None), "info": (r or {}).get("info")}
 
     def set_community_url(self, url):
         """The Quantum API server for community prices; empty turns them off."""
