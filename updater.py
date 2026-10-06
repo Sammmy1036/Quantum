@@ -1,13 +1,11 @@
 """Updates from GitHub Releases (github.com/Sammmy1036/Quantum/releases).
 
-At start-up Quantum asks GitHub for the latest release. If its tag (v1.4.0) is newer than VERSION
+At start-up Quantum asks GitHub for the latest release. If its tag (0.0.0.5) is newer than VERSION
 below, the page offers the update with your release notes. Updating:
   1. downloads the installer (Quantum-Setup-<version>.exe) and its .sig from the release, to the
      temp folder;
-  2. checks the signature: an Ed25519 signature, made on your PC with sign_release.py, over
-     "Quantum <version>" and the file's SHA-256. Quantum only runs what that key signed,
-     so even someone with access to the GitHub account can't push a different file;
-  3. runs the installer silently into the folder Quantum is installed in and closes. The installer
+  2. checks the signature: an Ed25519 signature, over "Quantum <version>" and the file's SHA-256.
+  3. Runs the installer silently into the folder Quantum is installed in and closes. The installer
      replaces Quantum.exe and _internal (the UI lives there too) and starts the new version.
 The whole installer is used rather than Quantum.exe alone: a PyInstaller folder build keeps the UI,
 libraries and data in _internal, and an exe on its own would leave those at the old version.
