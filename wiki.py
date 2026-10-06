@@ -12,6 +12,7 @@ URL = "https://starcitizen.tools/Module:SystemMap/systems.json?action=raw"
 PAGE_URL = "https://starcitizen.tools/"
 AFFILIATION = {"uee": "UEE", "unc": "Unclaimed", "banu": "Banu", "xian": "Xi'an", "vanduul": "Vanduul",
                "dev": "Developing"}
+ASTEROIDS = {"Delamar"}   # listed with the planets upstream, but a moon-sized asteroid in the Glaciem Ring
 ROMAN = {"1": "I", "2": "II", "3": "III", "4": "IV", "5": "V", "6": "VI", "7": "VII", "8": "VIII"}
 
 
@@ -40,7 +41,9 @@ def load(path: Path):
             continue
         name = re.sub(r"\s*\(.*\)$", "", sname)   # "Kyuk'ya (Indra)" -> "Kyuk'ya"
         star = s.get("star") or {}
-        planets = [b for b in s.get("bodies", []) if b.get("tier") not in ("belt", "moon")]
+        planets = [b for b in s.get("bodies", []) if b.get("tier") not in ("belt", "moon")
+                   and b.get("label") not in ASTEROIDS]
+        asteroids = [b for b in s.get("bodies", []) if b.get("label") in ASTEROIDS]
         belts = [b for b in s.get("bodies", []) if b.get("tier") == "belt"]
         moons = sum(len([m for m in (b.get("moons") or []) if m.get("tier") != "ring"]) for b in planets)
         systems[name] = {
@@ -49,10 +52,13 @@ def load(path: Path):
             "star_class": star.get("class"), "star_url": page_url(star.get("page")),
             "companion": (s.get("companion") or {}).get("label"),
             "planets": [p.get("label") for p in planets], "belts": [b.get("label") for b in belts],
+            "asteroids": [b.get("label") for b in asteroids],
             "moons": moons}
         for b in s.get("bodies", []):
-            info = {"label": b.get("label"), "designation": b.get("designation"), "type": b.get("subtype"),
-                    "tier": b.get("tier") or "planet", "system": name, "url": page_url(b.get("page")),
+            asteroid = b.get("label") in ASTEROIDS
+            info = {"label": b.get("label"), "designation": b.get("designation"),
+                    "type": "Asteroid" if asteroid else b.get("subtype"),
+                    "tier": "asteroid" if asteroid else (b.get("tier") or "planet"), "system": name, "url": page_url(b.get("page")),
                     "moons": [m.get("label") for m in (b.get("moons") or []) if m.get("tier") != "ring"]}
             bodies[b.get("label")] = info
             for m in b.get("moons") or []:

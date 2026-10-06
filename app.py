@@ -34,7 +34,7 @@ import updater
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
-from nav_core import Location, NavDB, SYSTEMS, _from_dict, classify, dist
+from nav_core import Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
 import nav_core
 import missions_wiki
 import starmap_import
@@ -99,7 +99,7 @@ VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", 
                  ("is_construction", "Construction"), ("is_datarunner", "Data running"), ("is_qed", "Quantum snare")]      # gateway positions you measured with /showlocation; shareable
 # Where a hangar reading in each city is anchored its spaceport (or the city if the data has no spaceport).
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
-               "Orison": "August Dunlow Spaceport", "Lorville": "Lorville", "Levski": "Levski"}
+               "Orison": "August Dunlow Spaceport", "Lorville": "Lorville"}
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
 BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum  
 
@@ -124,6 +124,7 @@ class Api:
         except Exception:
             watcher_mod.log_error("starmap import")
         threading.Thread(target=starmap_import.refresh, args=(self._starmap_cache,), daemon=True).start()
+        nav_core.normalize(self._db)          # after every import: Delamar is an asteroid, Levski a station
         self._db.save()
         for path in (BUILTIN_CAL_PATH, CAL_PATH):
             if not path.exists():
@@ -408,7 +409,7 @@ class Api:
             return
         self._last_cal_key = key
         body = self._db.body_near(self._player, self._player_sys)
-        if not body:
+        if not can_align(body):
             return
         anchor_name = self._tracker.place_for_code(w["code"])
         anchor = self._db.locations.get(anchor_name) if anchor_name else None
@@ -471,7 +472,7 @@ class Api:
             if hit["used"] or abs(self._player_t - hit["t"]) > 300:
                 continue
             body = self._db.bodies.get(hit["body"])
-            if not body or self._db.body_near(self._player, self._player_sys) is not body:
+            if not can_align(body) or self._db.body_near(self._player, self._player_sys) is not body:
                 continue
             spot = Location(hit["name"], "surface", tuple(hit["pos"]), body.name, system=body.system)
             if QUALITY["place"] < (QUALITY.get(body.calibration_quality, 0) if body.calibrated else -1):
@@ -497,7 +498,7 @@ class Api:
         if not self._player:
             return None
         body = self._db.body_near(self._player, self._player_sys)
-        if not body or body.rotation_period_h <= 0:
+        if not can_align(body) or body.rotation_period_h <= 0:
             return None
         local = body.to_local(self._player, self._player_t)
         lat_p, lon_p, alt_p = body.lat_lon_alt(local)
@@ -781,6 +782,7 @@ class Api:
                 out_b.append({"name": b.name, "center": b.center, "radius": b.radius_m, "system": b.system,
                               "kind": b.kind, "period": b.rotation_period_h, "offset": b.rotation_offset_deg,
                               "epoch": b.epoch_utc, "om": b.om_radius_m, "calibrated": b.calibrated,
+                              "alignable": can_align(b),
                               "parent": parent.name if parent and b.kind != "star" else None})
             hidden_keys = self._hidden_keys()
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
@@ -1621,6 +1623,8 @@ class Api:
                 return {"ok": False, "error": "Calibration needs a place on a planet or moon"}
             if loc.system != self._player_sys:
                 return {"ok": False, "error": f"You're in {self._player_sys}, not {loc.system}"}
+            if not can_align(self._db.bodies.get(loc.body)):
+                return {"ok": False, "error": f"{loc.body} has no landable surface to line up"}
             res = self._db.calibrate(loc.body, loc, self._player, self._player_t)
             if res["ok"]:
                 self._record_cal("manual", loc.body, loc.name, res["correction"])
@@ -1898,9 +1902,36 @@ class Api:
             return {"ok": False}
         return {"ok": True, "src": datarunner.thumbnail(sh, 1600), "w": sh.w, "h": sh.h}
 
+    def dr_shot_view(self, shot_id):
+        """The exact 1920x1080 image a shot goes to UEX as (its own report), to check before sending."""
+        with self._lock:
+            sh = next((x for x in self._dr_shots if x.id == shot_id), None)
+        if not sh:
+            return {"ok": False, "error": "That screenshot is gone"}
+        try:
+            return dict(datarunner.shot_url(sh), ok=True, id=sh.id, shot_w=sh.w, shot_h=sh.h)
+        except Exception as e:
+            watcher_mod.log_error("shot view")
+            return {"ok": False, "error": str(e)}
+
+    def _dr_shot(self, shot_id=None):
+        """The shot a report goes with: the one asked for, or the only one."""
+        if shot_id is not None:
+            return next((x for x in self._dr_shots if x.id == shot_id), None)
+        return self._dr_shots[0] if len(self._dr_shots) == 1 else None
+
     def dr_shots(self):
-        return {"shots": [{"thumb": datarunner.thumbnail(s), "w": s.w, "h": s.h, "at": s.at} for s in self._dr_shots],
+        return {"shots": [{"id": s.id, "thumb": datarunner.thumbnail(s), "w": s.w, "h": s.h, "at": s.at} for s in self._dr_shots],
                 "seq": self._dr_seq}
+
+    def _dr_drop_shot(self, shot_id):
+        """A report went out: its screenshot is done (all of them if the report didn't name one)."""
+        with self._lock:
+            if shot_id is None:
+                self._dr_shots = []
+            else:
+                self._dr_shots = [x for x in self._dr_shots if x.id != shot_id]
+            self._dr_seq += 1
 
     def dr_clear_shots(self, index=None):
         with self._lock:
@@ -2010,11 +2041,16 @@ class Api:
         return self._uex_call(run)
 
     def _dr_build(self, form):
+        """One report: the rows in the form, with the screenshot form["shot_id"] names (UEX takes one
+        screenshot per report, with only the items it shows). Checking the whole list before it's split
+        up (no shot_id, several shots), any shot stands in, so "no screenshot" isn't flagged."""
         version, env, running = self._dr_game_build()
         form = dict(form, game_version=version or "")      # from Game.log only, never typed in
         terms = self._dr_terminals()
         coms = {c["id"] for c in self._uex.get("commodities")[0]}
-        shot = datarunner.screenshot_b64(self._dr_shots)
+        with self._lock:
+            sh = self._dr_shot(form.get("shot_id")) or (self._dr_shots[0] if self._dr_shots and form.get("shot_id") is None else None)
+        shot = datarunner.shot_b64(sh)["b64"] if sh else None
         body = datarunner.build_payload(form, shot, production=self._dr.live)
         pol = self._dr_shot_policy()
         no_shot = bool(form.get("no_screenshot")) and not body.get("screenshot") and (pol["optional"] or pol["can_try"])
@@ -2047,7 +2083,7 @@ class Api:
                          data.get("username") or self._dr_cfg().get("username"), data.get("date_added"),
                          test=bool(res.get("test")), display=(self._dr_cfg().get("uex_user") or {}).get("username"),
                          avatar=(self._dr_cfg().get("uex_user") or {}).get("avatar"))),
-                     self.dr_clear_shots):
+                     lambda: self._dr_drop_shot(form.get("shot_id"))):
             try:
                 step()
             except Exception:
@@ -2128,8 +2164,14 @@ class Api:
         return self._uex_call(run)
 
     def dr_submit(self, form):
-        """Save the report (test mode) or send it (live). The page reviews it with dr_check first."""
+        """Save the report (test mode) or send it (live). The page reviews it with dr_check first.
+        With several screenshots the page sends one report per shot: form["shot_id"] and its rows."""
         def run():
+            with self._lock:
+                many = len(self._dr_shots) > 1
+            if many and not self._dr_shot(form.get("shot_id")):
+                return {"ok": False, "status": "shot_unassigned", "errors": [
+                    {"code": "shot_unassigned", "text": "Match your items to your screenshots first: UEX takes one screenshot per report"}]}
             body, errs, warns, terms = self._dr_build(form)
             if errs and self._dr.live:         # live: don't send what UEX will refuse anyway
                 dup = self._dr_dup_text(body, form) if "duplicated_report" in errs else None
@@ -2156,6 +2198,7 @@ class Api:
                 self._dr_after_send(body, form, t, res)
             elif res.get("status") == "duplicated_report" and not res.get("test"):
                 self._dr_explain_duplicate(body, form, t, res)
+            res["shot_id"] = form.get("shot_id")
             res["stats"] = self.dr_stats()
             return res
         return self._uex_call(run)
@@ -3471,7 +3514,7 @@ class Api:
                                      "rotation_period_h": b.rotation_period_h, "epoch_utc": b.epoch_utc,
                                      "calibrated_at": b.calibrated_at, "place": b.calibrated_place,
                                      "quality": b.calibration_quality}
-                            for b in self._db.bodies.values() if b.calibrated})
+                            for b in self._db.bodies.values() if b.calibrated and can_align(b)})
         return data
 
     def _record_cal(self, kind, body, place, residual):
@@ -3494,7 +3537,7 @@ class Api:
             hist = self._cal_file().get("history", [])
             out = []
             for b in sorted(self._db.bodies.values(), key=lambda b: (b.system, b.kind != "planet", b.name)):
-                if b.kind == "star":
+                if not can_align(b):              # stars, asteroids, planets you can't land on
                     continue
                 h = [e for e in hist if e["body"] == b.name]
                 checks = [e for e in h if e["kind"] == "check"]
@@ -3757,6 +3800,9 @@ def apply_calibrations(db, data):
         b = db.bodies.get(name)
         if not b:
             skipped.append(f"{name} (not in your map)")
+            continue
+        if not can_align(b):
+            skipped.append(f"{name} (nowhere to land, so nothing to line up)")
             continue
         fixes_period = b.rotation_period_h == 0 and (c.get("rotation_period_h") or 0) > 0
         if fixes_period:

@@ -7,12 +7,12 @@ datarunner_test/<time>_<terminal>/ exactly as it would be sent:
 
   request.json    the exact POST body (screenshot included as base64)
   preview.json    the same, readable: URL, headers (secrets masked), screenshot left out
-  screenshot.png  the screenshot that would be attached
+  screenshot.jpg  the screenshot that would be attached (.png without Pillow)
   response.json   what UEX would most likely answer: "ok" or the error code its docs list
 
 Screenshots: Windows only, pure ctypes. The Star Citizen window is grabbed from the desktop (works in
-borderless/windowed; exclusive fullscreen may come out black). Several shots of a long list are stacked
-into one picture, because UEX takes one screenshot per report.
+borderless/windowed; exclusive fullscreen may come out black). A long list scrolled over several shots
+goes to UEX as one report per shot (UEX's rule): each shot resized to 1920x1080 with only its items.
 """
 import base64
 import json
@@ -32,10 +32,10 @@ SUBMIT_URL = "https://api.uexcorp.uk/2.0/data_submit"
 MAX_ROWS = 500
 MAX_SHOT = 10 * 1024 * 1024                  # UEX: screenshot up to 10 MB
 SHOT_BUDGET = 9 * 1024 * 1024                # stay under it with room to spare
-MAX_SHOTS = 4
+MAX_SHOTS = 8                                # one report each: enough for a long kiosk list
 CONTAINER_SIZES = {1, 2, 4, 8, 16, 24, 32}
 DUPLICATE_WINDOW = 300                       # UEX rejects the same item at the same terminal within 5 min
-STATUS = {1: "Out of stock", 2: "Very low", 3: "Low", 4: "Medium", 5: "High", 6: "Very high", 7: "Full"}
+STATUS = {1: "Out of stock", 2: "Very low", 3: "Low", 4: "Medium", 5: "High", 6: "Very high", 7: "Max Inventory"}
 
 # Plain-language versions of UEX's response codes, for the app to show.
 MESSAGES = {
@@ -280,12 +280,13 @@ class Submitter:
         folder.mkdir(parents=True, exist_ok=True)
         (folder / "request.json").write_text(json.dumps(body, indent=1), encoding="utf-8")
         shot = body.get("screenshot")
+        name = "screenshot.jpg" if shot and shot.startswith("/9j/") else "screenshot.png"   # JPEG starts FF D8 FF
         if shot:
-            (folder / "screenshot.png").write_bytes(base64.b64decode(shot))
+            (folder / name).write_bytes(base64.b64decode(shot))
         preview = {"method": "POST", "url": SUBMIT_URL,
                    "headers": {"Authorization": f"Bearer {_mask(token)}", "secret-key": _mask(secret),
                                "Content-Type": "application/json", "User-Agent": "Quantum"},
-                   "body": dict(body, screenshot=f"<{len(shot):,} chars of base64, see screenshot.png>")
+                   "body": dict(body, screenshot=f"<{len(shot):,} chars of base64, see {name}>")
                    if shot else body,
                    "terminal": terminal_name, "saved": time.strftime("%Y-%m-%d %H:%M:%S")}
         (folder / "preview.json").write_text(json.dumps(preview, indent=1, ensure_ascii=False), encoding="utf-8")
@@ -334,8 +335,12 @@ class Submitter:
 
 # ---------------------------------------------------------------- screenshots
 class Shot:
+    _next = 0
+
     def __init__(self, w, h, bgra):
         self.w, self.h, self.bgra, self.at = w, h, bgra, time.time()
+        Shot._next += 1
+        self.id = Shot._next                     # stays the same when other shots are removed
 
 
 def shrink(w, h, bgra, n):
@@ -351,12 +356,6 @@ def shrink(w, h, bgra, n):
     return nw, (h + n - 1) // n, bytes(out)
 
 
-def stack(shots):
-    """One tall picture from several shots (a long inventory list scrolled in parts)."""
-    shots = [s for s in shots if s.w == shots[0].w]
-    return shots[0].w, sum(s.h for s in shots), b"".join(s.bgra for s in shots)
-
-
 def png(w, h, bgra, level=6):
     rgb = bytearray(w * h * 3)
     rgb[0::3], rgb[1::3], rgb[2::3] = bgra[2::4], bgra[1::4], bgra[0::4]
@@ -369,16 +368,57 @@ def png(w, h, bgra, level=6):
             + chunk(b"IDAT", zlib.compress(bytes(raw), level)) + chunk(b"IEND", b""))
 
 
-def screenshot_b64(shots):
-    """The shots as one base64 PNG under UEX's 10 MB, halving the size until it fits."""
-    if not shots:
-        return None
-    w, h, data = stack(shots)
-    for n in (1, 2, 3, 4):
-        enc = base64.b64encode(png(*shrink(w, h, data, n))).decode("ascii")
-        if len(enc) <= SHOT_BUDGET:
-            return enc
-    return enc
+UEX_SIZE = (1920, 1080)                      # UEX: every screenshot resized to this before sending
+
+
+def _have_pillow():
+    try:
+        import PIL  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def shot_image(shot):
+    """The shot as UEX wants it: 1920x1080, the whole screen. A screen of another shape (ultrawide,
+    16:10) is fitted inside and padded, never stretched."""
+    from PIL import Image
+    im = Image.frombuffer("RGB", (shot.w, shot.h), shot.bgra, "raw", "BGRX", 0, 1)
+    if (shot.w, shot.h) == UEX_SIZE:
+        return im.copy()
+    s = min(UEX_SIZE[0] / shot.w, UEX_SIZE[1] / shot.h)
+    im = im.resize((max(1, round(shot.w * s)), max(1, round(shot.h * s))), Image.LANCZOS)
+    if im.size == UEX_SIZE:
+        return im
+    canvas = Image.new("RGB", UEX_SIZE, (0, 0, 0))
+    canvas.paste(im, ((UEX_SIZE[0] - im.width) // 2, (UEX_SIZE[1] - im.height) // 2))
+    return canvas
+
+
+def shot_b64(shot):
+    """One shot as the base64 image for its own report (UEX: one screenshot per report, each sent
+    with only the items it shows). -> {"b64", "w", "h", "format", "bytes"}"""
+    if _have_pillow():
+        import io
+        img = shot_image(shot)
+        for q in (92, 88, 84, 80, 70):
+            buf = io.BytesIO()
+            img.save(buf, "JPEG", quality=q, subsampling=0 if q >= 88 else 2, optimize=True)
+            if buf.tell() * 4 // 3 <= SHOT_BUDGET:
+                break
+        enc = base64.b64encode(buf.getvalue()).decode("ascii")
+        return {"b64": enc, "w": img.width, "h": img.height, "format": "jpeg", "bytes": buf.tell()}
+    n = max(1, -(-shot.w // UEX_SIZE[0]))                # no Pillow: every n-th pixel, PNG
+    w, h, data = shrink(shot.w, shot.h, shot.bgra, n)
+    raw = png(w, h, data)
+    return {"b64": base64.b64encode(raw).decode("ascii"), "w": w, "h": h, "format": "png", "bytes": len(raw)}
+
+
+def shot_url(shot):
+    """The exact image that goes to UEX for this shot, as a data URL for the app to show."""
+    a = shot_b64(shot)
+    return dict({k: v for k, v in a.items() if k != "b64"},
+                src=f"data:image/{'jpeg' if a['format'] == 'jpeg' else 'png'};base64,{a['b64']}")
 
 
 def thumbnail(shot, width=220):

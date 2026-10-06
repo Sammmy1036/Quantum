@@ -416,6 +416,40 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-shot button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);background:rgba(3,6,12,.8);color:var(--ink);line-height:1}
 .dr-shot span{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--ink-2);text-shadow:0 1px 2px #000}
 #dr-view .dv-img{max-width:100%;border:1px solid var(--line-2);border-radius:8px;display:block}
+/* "Review screenshot": the attachment as UEX shows it, then at actual size */
+#dr-view.att{display:none;flex-direction:column;gap:10px;overflow:hidden}#dr-view.att.show{display:flex}
+#dr-view.att .gh{margin:0 2px;flex-wrap:wrap}
+.att-modes{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;overflow:hidden}
+.att-modes button{background:none;border:0;padding:6px 12px;font:600 12.5px var(--text);color:var(--ink-2);cursor:pointer}
+.att-modes button.on{background:var(--panel-3);color:var(--ink)}
+.att-items{display:flex;flex-wrap:wrap;gap:4px 6px;font-size:12px;color:var(--ink-2);max-height:58px;overflow:auto}
+.att-items span{border:1px solid var(--line-2);border-radius:999px;padding:1px 8px}
+.att-stage{flex:1;min-height:0;border:1px solid var(--line-2);border-radius:10px;background:#1b1d22;position:relative;overflow:hidden}
+.att-stage.fit{display:grid;place-items:center;padding:14px}
+.att-uex{width:100%;max-height:100%;aspect-ratio:16/9;background:#26282d;border:1px solid #3a3d44;border-radius:6px;display:grid;place-items:center;overflow:hidden;cursor:zoom-in;max-width:calc((100vh - 300px)*16/9)}
+.att-uex img{width:100%;height:100%;object-fit:contain;display:block}
+.att-stage.actual{overflow:auto;cursor:grab}.att-stage.actual.drag{cursor:grabbing}
+.att-stage.actual img{display:block;max-width:none;user-select:none;-webkit-user-drag:none}
+.att-cap{position:absolute;left:14px;bottom:8px;font-size:11.5px;color:#9aa3b2;pointer-events:none;text-shadow:0 1px 2px #000}
+.att-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line-2);padding-top:10px}
+.att-foot .dr-check{margin:0;flex:1;min-width:260px}
+.dr-attrow{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.dr-attrow .st{font-size:12.5px;color:#f3d68c}.dr-attrow .st.ok{color:#a8ecbe}
+.dr-check.off{opacity:.55;cursor:not-allowed}
+.match{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}
+.match .att-stage{min-height:0}
+.match-side{display:flex;flex-direction:column;min-height:0;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2)}
+.match-side .mh{font:600 12.5px var(--text);padding:10px 12px;border-bottom:1px solid var(--line-2)}
+.match-list{overflow:auto;padding:4px}
+.mi{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:start;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:13px}
+.mi:hover{background:var(--panel)}.mi.on{background:rgba(87,227,155,.08)}
+.mi input{margin-top:3px}.mi b{display:block}.mi small{color:var(--ink-2);font-size:11.5px}
+.mi em{font-style:normal;font-size:11px;color:#f3d68c;border:1px solid rgba(242,193,78,.45);border-radius:999px;padding:0 7px;white-space:nowrap}
+.match-dots{display:flex;gap:5px}
+.md{display:inline-flex;align-items:baseline;gap:3px;border:1px solid var(--line-2);background:none;border-radius:8px;padding:4px 9px;color:var(--ink-2);font:600 12.5px var(--text);cursor:pointer}
+.md small{font-weight:500;opacity:.75}.md.has{color:#a8ecbe;border-color:rgba(87,227,155,.45)}.md.cur{background:var(--panel-3);color:var(--ink)}
+.match-note{font-size:12.5px}.match-note.bad{color:#ffb4b4}.match-note.ok{color:#a8ecbe}
+@media (max-width:900px){ .match{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 220px} }
 .dr-sizes{display:flex;flex-wrap:wrap;gap:4px}
 .dr-sizes label{border:1px solid var(--line-2);border-radius:5px;padding:2px 7px;font-size:12px;cursor:pointer;color:var(--ink-2)}
 .dr-sizes input{display:none}.dr-sizes label:has(input:checked){border-color:var(--route);color:var(--ink);background:rgba(75,141,255,.15)}
@@ -965,6 +999,23 @@ const starfield=(()=>{ const n=2600, pos=new Float32Array(n*3), col=new Float32A
   const p=new THREE.Points(g,new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true,depthWrite:false})); scene.add(p); return p; })();
 
 function seededRand(name){ let h=2166136261; for(const c of name){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; }
+const KIND_LABEL={star:"Star",planet:"Planet",moon:"Moon",asteroid:"Asteroid"};
+function kindLabel(b){ return KIND_LABEL[b.kind]||"Planet"; }
+// Asteroids (Delamar) aren't round: a lumpy, cratered rock, the same shape every time (seeded by name).
+// Faceted on purpose. Scaled so its average radius matches the data's radius.
+function asteroidGeometry(name){
+  const rnd=seededRand(name+"#rock"), dir=()=>new THREE.Vector3(rnd()-.5,rnd()-.5,rnd()-.5).normalize();
+  const lobes=[...Array(10)].map(()=>[dir(),(rnd()-.4)*0.5]);                 // big bulges and dents
+  const craters=[...Array(22)].map(()=>[dir(),0.10+Math.pow(rnd(),2)*0.32,0.025+rnd()*0.05]); // [centre, size (rad), depth]
+  const g=new THREE.IcosahedronGeometry(1,20), p=g.attributes.position, v=new THREE.Vector3(); let sum=0;
+  for(let i=0;i<p.count;i++){ v.fromBufferAttribute(p,i).normalize(); let r=1;
+    for(const [d,a] of lobes) r+=a*Math.pow(Math.max(0,v.dot(d)),2.2);
+    for(const [d,sz,dp] of craters){ const u=Math.acos(Math.min(1,v.dot(d)))/sz;  // bowl, then a low rim
+      if(u<1) r-=dp*(1-u*u); else if(u<1.3) r+=dp*0.35*Math.sin((u-1)/0.3*Math.PI); }
+    r+=0.012*Math.sin(v.x*37)*Math.sin(v.y*41)*Math.sin(v.z*43);                 // grit (from position, so faces stay joined)
+    v.multiplyScalar(r); v.x*=1.3; v.y*=0.88; v.z*=0.74; p.setXYZ(i,v.x,v.y,v.z); sum+=v.length(); }
+  const k=p.count/sum; for(let i=0;i<p.count;i++) p.setXYZ(i,p.getX(i)*k,p.getY(i)*k,p.getZ(i)*k);
+  g.computeVertexNormals(); return g; }
 function bodyTexture(b){
   const [h,s,l]=BODY_HSL[b.name]||[(b.name.length*47)%360,18,50]; const c=document.createElement("canvas"); c.width=512; c.height=256; const x=c.getContext("2d");
   const rnd=seededRand(b.name);
@@ -994,13 +1045,14 @@ function buildSystem(){
   sysObjs=[];
   for(const b of S.bodies.filter(b=>b.system===S.system)){
     const group=new THREE.Group(); const spin=new THREE.Group(); group.add(spin);
-    const isStar=b.kind==="star";
-    const geo=new THREE.SphereGeometry(1,96,64); geo.rotateX(Math.PI/2);
+    const isStar=b.kind==="star", isRock=b.kind==="asteroid";
+    let geo; if(isRock) geo=asteroidGeometry(b.name); else { geo=new THREE.SphereGeometry(1,96,64); geo.rotateX(Math.PI/2); }
     const mat= isStar ? new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${BODY_HSL[b.name]?.[0]??45},100%,70%)`)})
-                      : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:0.95, metalness:0});
+                      : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:isRock?1:0.95, metalness:0, flatShading:isRock});
     const mesh=new THREE.Mesh(geo,mat); mesh.scale.setScalar(b.radius); spin.add(mesh);
     let grid=null, atmo=null;
-    if(!isStar){
+    if(isRock){ /* no lat/lon grid or atmosphere on a rock */ }
+    else if(!isStar){
       grid=new THREE.LineSegments(GRAT,new THREE.LineBasicMaterial({color:0xa9c3ff,transparent:true,opacity:0.16,depthWrite:false}));
       grid.scale.setScalar(b.radius*1.002); spin.add(grid);
       const [h]=BODY_HSL[b.name]||[210];
@@ -1098,7 +1150,7 @@ function updateCamera(t){
   if(Math.abs(S.shift)>0.5||Math.abs(S.vshift)>0.5) camera.setViewOffset(W,H,-S.shift,S.vshift,W,H); else camera.clearViewOffset();
   camera.near=Math.max(0.5,c.dist*1e-4); camera.far=1e14; camera.updateProjectionMatrix(); camera.lookAt(0,0,0); camera.updateMatrixWorld();
 }
-// A system with just one body we know (Nyx: Delamar) frames that body instead of empty space around it.
+// A system with just one body we know frames that body instead of empty space around it.
 function fitSystem(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star");
   const far=S.locs.some(L=>L.system===S.system&&L.pos&&L.kind==="space"&&(L.type==="lpoint"||L.type==="jump"));
   if(bs.length===1&&!far) return flyTo({kind:"body",name:bs[0].name}, bs[0].radius*5, {pitch:0.9});
@@ -1302,7 +1354,7 @@ function drawOverlay(t){
   bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
   for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
     label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"}); }
-  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city") continue;
+  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city"&&!(d.L.type==="station"&&S.bodyMap[d.L.body]?.kind==="asteroid")) continue;
     label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined}); }
   // ---- off-screen pointers for the guide target and next stop
   if(gnode) edgeArrow(gnode.g,"#7fe7ff",`${guide.name}${guide.ground!=null?" · "+fmtDist(guide.ground):guide.distance!=null?" · "+fmtDist(guide.distance):""}`);
@@ -1389,7 +1441,7 @@ function pick(x,y){ let best=null,bs=1e9; for(const p of S.picks){ const d=Math.
   const score=(p.kind==="body"?d+30:d); if(score<bs){ bs=score; best=p; } } return best; }
 const tip=$("tooltip");
 function showTip(hit,x,y){ let t="",s="";
-  if(hit.kind==="body"){ const b=S.bodyMap[hit.name]; t=b.name; s=b.kind==="star"?"Star":`${b.kind==="moon"?"Moon":"Planet"}, ${fmtDist(b.radius)} radius. Double-click to fly there`; }
+  if(hit.kind==="body"){ const b=S.bodyMap[hit.name]; t=b.name; s=b.kind==="star"?"Star":`${kindLabel(b)}, ${fmtDist(b.radius)} ${b.kind==="asteroid"?"average radius":"radius"}. Double-click to fly there`; }
   else if(hit.kind==="mission"){ const m=hit.mission; t=m.o.label; s=`${m.c.subtitle?m.c.subtitle+" · ":""}${m.c.name}`; }
   else { const L=S.locMap[hit.name]; if(!L) return; t=L.name; s=[L.source==="user"?"Your waypoint":TYPES[L.type]?.one, L.body, padOf(L)!=="unknown"?`pad: ${padLabel(padOf(L))}`:null, L.qt?"QT marker":null].filter(Boolean).join(", "); }
   tip.innerHTML=`<div class="t">${esc(t)}</div><div class="s">${esc(s)}</div>`; tip.style.display="block";
@@ -1474,7 +1526,7 @@ const CREDIT=url=>`<div class="credit">Info: ${wikiLink(url)} (CC BY-SA 4.0)</di
 function systemBlurb(sw){ if(!sw) return "";
   return `${sw.affiliation?`<span class="k">Affiliation</span><span>${esc(sw.affiliation)}</span>`:""}
     ${sw.star_type?`<span class="k">Star</span><span>${esc(sw.star||"")} · ${esc(sw.star_type)}</span>`:""}
-    <span class="k">Bodies</span><span>${sw.planets.length} planet${sw.planets.length===1?"":"s"}${sw.moons?`, ${sw.moons} moon${sw.moons===1?"":"s"}`:""}${sw.belts.length?`, ${sw.belts.length} belt${sw.belts.length===1?"":"s"}`:""}</span>`; }
+    <span class="k">Bodies</span><span>${sw.planets.length} planet${sw.planets.length===1?"":"s"}${sw.moons?`, ${sw.moons} moon${sw.moons===1?"":"s"}`:""}${sw.belts.length?`, ${sw.belts.length} belt${sw.belts.length===1?"":"s"}`:""}${sw.asteroids?.length?`, ${sw.asteroids.length} large asteroid${sw.asteroids.length===1?"":"s"} (${sw.asteroids.map(esc).join(", ")})`:""}</span>`; }
 function distFromYou(g,sys){ const p=S.live?.player; return g&&p&&p.system===sys?d3(g,playerG(now())):null; }
 function renderDetail(){
   const d=$("detail"), sel=S.selected; if(!sel){ d.classList.remove("show"); return; }
@@ -1483,7 +1535,7 @@ function renderDetail(){
     const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"];
     const when=a.last_sent?new Date(a.last_sent*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"never";
     const lg=S.live?.log||{}, cl=lg.cleared;
-    const inSys=S.bodies.filter(b=>b.system===S.system&&b.kind!=="star"), done=inSys.filter(b=>b.calibrated).length;
+    const inSys=S.bodies.filter(b=>b.system===S.system&&b.alignable), done=inSys.filter(b=>b.calibrated).length;
     const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
       <div class="row" style="gap:8px;margin:-4px 0 12px;font-size:12.5px"><span class="muted">Quantum ${esc(S.qVersion||"")}</span><button class="btn small ghost upd-btn" data-a="updcheck" ${S.updChecking?"disabled":""}>${S.updChecking?`<span class="spin-sm"></span>Checking…`:"Check for updates"}</button>${S.updNote?`<span class="muted" style="font-size:12px">${esc(S.updNote)}</span>`:""}</div>
@@ -1493,7 +1545,7 @@ function renderDetail(){
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
       <div class="sub">Planet alignment</div>
-      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
+      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span>${inSys.length?`<b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}`:`Nothing to align in ${esc(S.system)}`}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
       <div class="sub">Trade data (UEX)</div>
       <div class="note" style="margin:4px 0 12px">
         <label class="k" for="s-uex" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></label>
@@ -1562,20 +1614,22 @@ function renderDetail(){
       <div class="sub">${esc(S.system)}${st.build?` · game build ${esc(st.build)}`:""}</div>
       <div class="hint" style="font-size:13px;color:var(--ink-2)">Each planet is lined up once, from a /showlocation at a known place. Later readings at known places are logged as checks: if they stay near 0°, the alignment holds across sessions and can be shared.</div>
 
-      <div class="align-list">${rows||'<div class="muted">No planets in this system.</div>'}</div>
+      <div class="align-list">${rows||`<div class="muted">${S.system==="Nyx"?"Nothing to line up in Nyx: Nyx I, II and III can't be landed on in the game yet, and Delamar is an asteroid (Levski is a station built into it), so there's no planet surface to take a /showlocation on.":"No landable planets or moons in this system."}</div>`}</div>
       <div class="acts"><button class="btn primary" data-a="export">Export alignments</button><button class="btn" data-a="import">Import</button></div>
       <div class="muted" style="font-size:12px;margin-top:8px">Saved automatically to ${esc(st.file)}. A calibrations.json placed in the app folder is applied on start.</div>`;
   } else if(sel.kind==="body"){ const b=S.bodyMap[sel.name]; if(!b) return d.classList.remove("show");
     const n=S.locs.filter(L=>L.body===b.name).length;
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(b.name)}</h2>
-      <div class="sub">${wikiFor(b.name)?.designation?esc(wikiFor(b.name).designation)+" · ":""}${b.kind==="star"?"Star":(b.kind==="moon"?"Moon":"Planet")} in ${esc(b.system)}${b.parent&&b.kind==="moon"?", orbiting "+esc(b.parent):""}</div>
+      <div class="sub">${wikiFor(b.name)?.designation?esc(wikiFor(b.name).designation)+" · ":""}${kindLabel(b)} in ${esc(b.system)}${b.parent&&b.kind==="moon"?", orbiting "+esc(b.parent):""}</div>
       <div class="kv">${wikiFor(b.name)?.type?`<span class="k">Type</span><span>${esc(wikiFor(b.name).type)}</span>`:""}
       ${b.kind==="star"?systemBlurb(wikiSystem(b.system)):""}
       ${wikiFor(b.name)?.moons?.length?`<span class="k">Moons</span><span>${wikiFor(b.name).moons.map(esc).join(", ")}</span>`:""}
       <span class="k">Radius</span><span>${fmtDist(b.radius)}</span>
       ${b.period?`<span class="k">Day length</span><span>${b.period.toFixed(2)} h</span>`:""}
       <span class="k">POI</span><span>${n}</span>
-      ${b.kind!=="star"?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
+      ${b.alignable?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
+      ${b.kind==="asteroid"?`<span class="k">Landing</span><span>${S.locs.some(L=>L.body===b.name&&L.type==="station")?`At ${S.locs.filter(L=>L.body===b.name&&L.type==="station").map(L=>esc(L.name)).join(", ")} (station)`:"No landing zones"}</span>`:""}
+      ${b.kind==="planet"&&!b.alignable?`<span class="k">Landing</span><span>Not accessible in game yet</span>`:""}
       ${distFromYou(b.center,b.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(b.center,b.system)-b.radius)} to surface</span>`:""}</div>
       <div class="acts"><button class="btn primary" data-a="zoom">Fly to</button></div>${wikiFor(b.name)?CREDIT(wikiFor(b.name).url):""}`;
   } else if(sel.kind==="mission"){ const m=sel.m;
@@ -1586,7 +1640,7 @@ function renderDetail(){
     const g=globalPos(L,t), from=distFromYou(g,L.system), inRoute=live?.route.includes(L.name), guiding=live?.guide?.name===L.name;
     let ll=""; if(L.kind==="surface"){ const q=latLon(L.pos); ll=`${q.lat.toFixed(3)}°, ${q.lon.toFixed(3)}°`; }
     const user=L.source==="user"||L.source==="mission";
-    const canCal = L.kind==="surface" && L.source==="db" && live?.player?.body===L.body && live.player.age<600;
+    const canCal = L.kind==="surface" && L.source==="db" && S.bodyMap[L.body]?.alignable && live?.player?.body===L.body && live.player.age<600;
     const pl=live?.player, readingHere = pl && !pl.approx && pl.age<900 && pl.system===L.system && (L.kind==="surface" ? pl.body===L.body : (L.type!=="jump" || !pl.body));
     const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
@@ -1836,7 +1890,7 @@ function rsCandidates(q){
   const score=n=>{ const x=n.toLowerCase(); if(x===q) return 0; if(x.startsWith(q)) return 1;
     if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; return x.includes(q)?3:9; };
   const out=[];
-  for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${b.kind==="moon"?"Moon":"Planet"} · ${b.system}`,sc,r:-1,sys:b.system}); }
+  for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
   for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; let sc=score(L.name);
     let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q)); if(via) sc=4; }
     if(sc<9) out.push({kind:"loc",name:L.name,via,
@@ -3115,33 +3169,57 @@ async function drReview(){ const d=S.dr, form=drForm(); if(!form.rows.length) re
   const can=!r.errors.length||!r.live;
   const el=drSheet(`<h3>Does this match the kiosk and your screenshot?</h3><div class="muted" style="font-size:12.5px">${esc(r.where||"")} · ${esc(r.terminal||"")} · ${r.shots?`${r.shots} screenshot${r.shots>1?"s":""}`:"no screenshot"} · game ${esc(r.game_version||"unknown")}</div>
     <ul>${r.prices.map(line).join("")}</ul>
-    <div style="font-size:12.5px;margin-top:8px;line-height:1.5">📷 UEX verifies every report against your screenshot. It must show <b>every item you're reporting</b>, with its stock, price and inventory. If part of the list was scrolled out of view, scroll and take another screenshot; they're joined into one picture.</div>
+    <div style="font-size:12.5px;margin-top:8px;line-height:1.5">📷 UEX verifies every report against your screenshot. It must show <b>every item you're reporting</b>, with its stock, price and inventory. If part of the list was scrolled out of view, scroll and take another screenshot; each one goes to UEX as its own report with the items it shows.</div>
+    ${r.shots?`<div class="dr-attrow"><button class="btn" id="dr-match-open">📷 ${r.shots>1?"Match items to screenshots":"Review screenshot"}</button><span class="st" id="dr-match-state"></span></div>`:""}
     ${warns}${errs}
-    ${can?`<label class="dr-check" style="margin-top:12px"><input type="checkbox" class="dr-confirm"> <span>I confirm the screenshot lists all items I've reported updates on, and that this data is correct.</span></label>`:""}
+    ${can&&r.shots?`<label class="dr-check off" style="margin-top:12px" title="${r.shots>1?"Match your items to your screenshots first":"Open Review screenshot first"}"><input type="checkbox" class="dr-confirm" id="dr-att-ok" disabled> <span>${r.shots>1?`Each screenshot shows the items I matched to it, readable at 1920×1080. They go to UEX as <b>${r.shots} separate reports</b>.`:"I've reviewed the screenshot UEX will get, and it looks correct."}</span></label>`:""}
+    ${can?`<label class="dr-check" style="margin-top:8px"><input type="checkbox" class="dr-confirm"> <span>I confirm the screenshot lists all items I've reported updates on, and that this data is correct.</span></label>`:""}
     <div class="muted" style="font-size:12px;margin-top:8px">${r.live?"This goes out under your UEX account. Wrong reports get declined, and repeated ones can get your datarunner access suspended.":"Test mode: this is saved to a folder, not sent."}</div>
     <div class="row" style="gap:8px;margin-top:12px">${can?`<button class="btn primary" id="dr-send-now" style="flex:1" disabled>${r.errors.length?"Save anyway to inspect":"Submit Report"}</button>`:""}<button class="btn ghost" id="dr-back">Back to editing</button></div>`);
   el.querySelector("#dr-back").onclick=()=>drSheet(null);
   const go=el.querySelector("#dr-send-now"), boxes=[...el.querySelectorAll(".dr-confirm")];
-  boxes.forEach(b=>b.onchange=()=>{ if(go) go.disabled=!boxes.every(x=>x.checked); });
-  go?.addEventListener("click",drSave); }
-async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true; b.textContent="Submitting…"; const r=await api().dr_submit(drForm());
-  if(r.ok){ const days=r.refreshed_days||0;
-    drSheet(`<div class="done"><div class="tick">✓</div><div><h3>${r.test?"Test report saved":"Sent to UEX for review"}</h3>
-      <div>${r.rows} row${r.rows===1?"":"s"} from ${esc(d.pf.terminal||"")}${days>=1?` · replaced <b>${Math.round(days)} days</b> of old data`:""}. Thanks, datarunner.</div>
+  boxes.forEach(b=>b.addEventListener("change",()=>{ if(go) go.disabled=!boxes.every(x=>x.checked); }));
+  const att=el.querySelector("#dr-att-ok"); if(att){ att.addEventListener("change",e=>{ if(e.isTrusted) S.drMatchOk=att.checked; });
+    el.querySelector("#dr-match-open").onclick=()=>drMatchView(0); drMatchSync(); }
+  go?.addEventListener("click",()=>{ if(att&&!(drMatchState().done&&S.drMatchOk)){ toast(S.drShots?.length>1?"Match your items to your screenshots first":"Review the screenshot first"); return drMatchSync(); } drSave(); }); }
+// Send: one report per screenshot (UEX's rule), one after another. If one fails, the ones before it
+// are already at UEX: their rows are marked done and their screenshots dropped, so trying again only
+// sends what's left.
+async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true;
+  const base=drForm(), m=drMatchState();
+  const groups=m.shots.length ? m.per.map(p=>({shot_id:p.shot.id, keys:new Set(p.items.map(drKey))})) : [{shot_id:null, keys:null}];
+  const done=[]; let fail=null, rows=0; S.drSending=true;
+  try{ for(let i=0;i<groups.length;i++){ const g=groups[i];
+      b.textContent=groups.length>1?`Sending report ${i+1} of ${groups.length}…`:"Submitting…";
+      const part=g.keys?base.rows.filter(x=>g.keys.has(drKey(x))):base.rows;
+      const r=await api().dr_submit({...base, rows:part, ...(g.shot_id!=null?{shot_id:g.shot_id}:{})});
+      if(!r.ok){ fail={r, n:i+1}; break; }
+      done.push(r); rows+=r.rows||part.length; drMarkSent(part);
+      if(i<groups.length-1) await new Promise(res=>setTimeout(res,700)); }
+    if(done.length){ const last=done[done.length-1];     // still "sending": sent shots leaving isn't a change to review
+      d.pf.cooldown=(await api().dr_prefill(d.pf.id_terminal)).cooldown||{};
+      d.pf.reports_count=(d.pf.reports_count||0)+done.length;
+      if(!fail&&S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!last.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`); S.drPriceJob=null; }
+      renderDrStats(last.stats); renderDrList(); renderDrSend(); await renderDrShots(); } }
+  finally{ S.drSending=false; }
+  if(!fail){ const r=done[done.length-1], days=done.reduce((a,x)=>a+(x.refreshed_days||0),0), n=done.length;
+    drSheet(`<div class="done"><div class="tick">✓</div><div><h3>${r.test?(n>1?`${n} test reports saved`:"Test report saved"):(n>1?`${n} reports sent to UEX for review`:"Sent to UEX for review")}</h3>
+      <div>${rows} row${rows===1?"":"s"} from ${esc(d.pf.terminal||"")}${n>1?`, one report per screenshot`:""}${days>=1?` · replaced <b>${Math.round(days)} days</b> of old data`:""}. Thanks, datarunner.</div>
       ${r.community?(r.community.ok?`<div style="font-size:12.5px;margin-top:4px;color:#7fe7ff">⚡ ${r.community.states?.verified?"Shared with Quantum users now":r.community.states?.test?"Shared with Quantum users in test mode":"Sent to the community server, waiting for UEX to list it"}.</div>`
         :`<div style="font-size:12.5px;margin-top:4px;color:#ffd38a">Couldn't share it with Quantum users: ${esc(r.community.error||"")}${r.community.detail?` (${esc(r.community.detail)})`:""}</div>`):""}
       ${r.test?`<div class="row" style="margin-top:8px"><button class="btn small ghost" id="dr-folder2">Open test folder</button></div>`:""}</div>
       <button class="btn ghost" id="dr-back" style="margin-left:auto">Done</button></div>`);
-    $("dr-back").onclick=()=>drSheet(null); if($("dr-folder2")) $("dr-folder2").onclick=()=>api().dr_open_folder();
-    const now=Date.now()/1000; for(const x of d.rows) if(x.state){ if(x.state!=="gone"){ x.orig={price:drNum(x.price),scu:drNum(x.scu),status:+x.status}; x.updated=now; } x.state=""; }
-    d.pf.cooldown=(await api().dr_prefill(d.pf.id_terminal)).cooldown||{};
-    d.pf.reports_count=(d.pf.reports_count||0)+1;
-    if(S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!r.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`); S.drPriceJob=null; }
-    renderDrStats(r.stats); renderDrList(); renderDrSend(); renderDrShots(); }
-  else { b.disabled=false; b.textContent="Try again";
-    if(r.status==="screenshot_required"){ S.drNoShot=false; renderDrShots().then(()=>renderDrList()); }   // UEX still wants one
-    drSheet(`<h3>${r.test?"Saved for inspection, but UEX would refuse it":r.already_sent?"Already at UEX":"Not sent"}</h3><ul>${(r.errors||[{text:r.error||r.status}]).map(e=>`<li>${esc(e.text)}</li>`).join("")}</ul>
-      <div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost" id="dr-back">Back to editing</button></div>`); $("dr-back").onclick=()=>drSheet(null); } }
+    $("dr-back").onclick=()=>drSheet(null); if($("dr-folder2")) $("dr-folder2").onclick=()=>api().dr_open_folder(); return; }
+  const r=fail.r; b.disabled=false; b.textContent="Try again";
+  if(r.status==="screenshot_required"){ S.drNoShot=false; renderDrShots().then(()=>renderDrList()); }   // UEX still wants one
+  const head = done.length ? `Sent ${done.length} of ${groups.length} reports; report ${fail.n} wasn't sent`
+    : r.test?"Saved for inspection, but UEX would refuse it":r.already_sent?"Already at UEX":"Not sent";
+  drSheet(`<h3>${head}</h3><ul>${(r.errors||[{text:r.error||r.status}]).map(e=>`<li>${esc(e.text)}</li>`).join("")}</ul>
+    ${done.length?`<div class="muted" style="font-size:12.5px">The ${done.length} sent ${done.length>1?"are":"is"} done and off your list. Fix the problem, then review and submit again to send the rest.</div>`:""}
+    <div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost" id="dr-back">Back to editing</button></div>`); $("dr-back").onclick=()=>drSheet(null); }
+// Rows UEX has now: they become the new "UEX" values, and leave the report.
+function drMarkSent(formRows){ const d=S.dr, keys=new Set(formRows.map(drKey)), now=Date.now()/1000;
+  for(const x of d.rows) if(x.state&&keys.has(drKey(x))){ if(x.state!=="gone"){ x.orig={price:drNum(x.price),scu:drNum(x.scu),status:+x.status}; x.updated=now; } x.state=""; delete S.drAssign?.[drKey(x)]; } }
 
 // ---- "My reports": everything sent, and how UEX's review is going for each
 const DR_ST={pending:["Waiting for review","#8cc4ff"],under_review:["In Review","#f2c14e"],queued:["Waiting for the PTU build to go live","#a8bbd4"],
@@ -3513,13 +3591,16 @@ function renderDrStats(st){ if(!st) return; drMergeProfile(st,S.drProf); const s
     <div class="big"><div><b>${s.reports}</b><span>reports</span></div><div><b>${s.prices}</b><span>prices</span></div><div><b>${Math.round(s.days)}</b><span>days of old data replaced</span></div></div>
     <div class="all">All time${st.test?" (test reports)":""}: ${a.reports} report${a.reports===1?"":"s"} · ${a.prices} prices · ${a.terminals} terminal${a.terminals===1?"":"s"}${a.stations?` · ${a.stations} station${a.stations===1?"":"s"} mapped`:""}${a.pictures?` · ${a.pictures} picture${a.pictures===1?"":"s"}`:""}${S.drApproval!=null?` · <b style="color:#9fe0b4">${S.drApproval}% Approval</b>`:""}</div>`; }
 async function renderDrShots(){ const r=await api().dr_shots(), st=await api().dr_status(); const was=drLocked();
+  if(S.drShotSeq!=null&&S.drShotSeq!==r.seq&&!S.drSending){ S.drMatchOk=false;   // different screenshots now
+    if($("dr-att-ok")){ drSheet(null); toast("Your screenshots changed: review the report again"); } }
+  S.drShotSeq=r.seq; S.drShots=r.shots;
   S.drShotCount=r.shots.length; S.drShotKey=st.shot_hotkey||""; S.drShotPol=st.shot_policy||null; if(S.drShotPol?.optional||!S.drShotPol?.can_try) S.drNoShot=false;
   if(S.dr&&S.dr.view!=="mine"&&was!==drLocked()) renderDrList();
   else if($("dr-lock")) $("dr-lock").outerHTML=drLockHtml();
   $("dr-shots").innerHTML=r.shots.map((s,i)=>`<div class="dr-shot"><img src="${s.thumb}" alt="Screenshot ${i+1}"><span>${i+1} · ${s.w}×${s.h}</span><button data-drx="${i}" aria-label="Remove screenshot ${i+1}">×</button></div>`).join("");
   $("dr-shots-clear").hidden=!r.shots.length;
   $("dr-shot-hint").textContent=(st.shot_hotkey?`Press ${st.shot_hotkey} in game with the kiosk on screen. `:"Set a screenshot key in Settings to take them from the game. ")
-    +(r.shots.length?"Long list? Scroll and take another; they're joined into one picture.":"The whole kiosk must be in it, showing the prices you report.");
+    +(r.shots.length?`Long list? Scroll and take another: each screenshot goes to UEX as its own report, with the items it shows.`:"The whole kiosk must be in it, showing the prices you report.");
   renderDrSend(); drSyncInputs(); }
 // Terminal: type any part of the place or terminal name ("new bab", "tressler admin"); where you are comes first.
 { const q=$("dr-term-q"), list=$("dr-term-list"); let hi=0, shown=[];
@@ -3560,10 +3641,76 @@ async function drPreview(i){ const r=await api().dr_shot_image(i); if(!r.ok) ret
   v.innerHTML=`<div class="gh"><b>Screenshot ${i+1}</b>${r.w}×${r.h} · check the whole kiosk and the prices you report are readable
     <span class="spacer" style="flex:1"></span><button class="btn" data-dv="close">Back to the report</button><button class="btn ghost" data-dv="del">Remove it</button></div>
     <img class="dv-img" src="${r.src}" alt="Screenshot ${i+1} of the terminal">`;
-  v.dataset.i=i; v.classList.add("show"); v.scrollTop=0; }
+  v.className="pic-panel"; v.dataset.i=i; v.classList.add("show"); v.scrollTop=0; }
+// ---- One report per screenshot (UEX's rule): each shot goes to UEX resized to 1920×1080, with only
+// the items it shows. S.drAssign: item key -> shot id; S.drMatchSeen: shots looked at in the matcher.
+const drKey=x=>`${x.id_commodity}:${x.side}`;
+function drMatchState(){ S.drAssign??={}; S.drMatchSeen??=new Set();
+  const shots=S.drShots||[], items=S.dr?drReady():[], ids=new Set(shots.map(s=>s.id));
+  if(shots.length===1) for(const x of items) S.drAssign[drKey(x)]=shots[0].id;     // one shot: everything's in it
+  for(const k in S.drAssign) if(!ids.has(S.drAssign[k])) delete S.drAssign[k];
+  const per=shots.map((sh,i)=>({shot:sh, n:i+1, items:items.filter(x=>S.drAssign[drKey(x)]===sh.id)}));
+  const loose=items.filter(x=>!ids.has(S.drAssign[drKey(x)])), empty=per.filter(p=>!p.items.length), unseen=shots.filter(sh=>!S.drMatchSeen.has(sh.id));
+  return {shots, items, per, loose, empty, unseen, done:shots.length>0&&items.length>0&&!loose.length&&!empty.length&&!unseen.length}; }
+function drItemLine(x){ const st=S.dr?.pf.status_names||{};
+  return x.state==="gone"?"not sold here any more":`${x.side==="buy"?"BUY":"LMV"} · ${x.scu!==""&&x.scu!=null?drFmt(drNum(x.scu))+" SCU":"no stock"} · ${x.price!==""&&x.price!=null?money(drNum(x.price)):"no price"}${x.status?" · "+esc(st[x.status]||""):""}`; }
+// One page per screenshot: the exact 1920×1080 image UEX gets, and the items to tick that it shows.
+async function drMatchView(page=0){ let m=drMatchState(); if(!m.shots.length) return;
+  page=Math.max(0,Math.min(page,m.shots.length-1)); const sh=m.shots[page], v=$("dr-view"), many=m.shots.length>1;
+  S.drMatchSeen.add(sh.id); S.drMatchOk=false;
+  v.className="pic-panel att show"; v.dataset.i="";
+  v.innerHTML=`<div class="gh"><b>Screenshot ${page+1} of ${m.shots.length}</b><span>${many?`Report ${page+1}: goes to UEX with only the items you tick here`:"Goes to UEX with all your items"}</span>
+      <span class="spacer" style="flex:1"></span><span class="att-modes"><button data-m="fit" class="on">Fit</button><button data-m="uex" title="One image pixel per screen pixel: exactly as sharp as a reviewer sees it">1920×1080, as UEX sees it</button></span>
+      <button class="btn" data-dv="close">Back</button></div>
+    <div class="match"><div class="att-stage fit"><span class="muted"><span class="spin-sm"></span> Loading…</span></div>
+      <div class="match-side"><div class="mh">${many?"Tick the items you can see in this screenshot":"Your items: check each one is in the screenshot"}</div><div class="match-list"></div></div></div>
+    <div class="att-foot"><div class="match-dots"></div><span class="match-note"></span><span class="spacer" style="flex:1"></span>
+      <button class="btn" data-p="prev" ${page?"":"disabled"}>Previous</button><button class="btn primary" data-p="next">${page<m.shots.length-1?"Next screenshot":"Done"}</button></div>`;
+  const list=v.querySelector(".match-list"), stage=v.querySelector(".att-stage");
+  const paint=()=>{ m=drMatchState();
+    list.innerHTML=m.items.map(x=>{ const k=drKey(x), on=S.drAssign[k]===sh.id, other=!on&&m.per.find(p=>p.shot.id===S.drAssign[k]);
+      return `<label class="mi ${on?"on":""}"><input type="checkbox" data-k="${esc(k)}" ${on?"checked":""} ${many?"":"disabled"}><span><b>${esc(x.name||"#"+x.id_commodity)}</b><small>${drItemLine(x)}</small></span>${other?`<em>in shot ${other.n}</em>`:""}</label>`; }).join("");
+    v.querySelector(".match-dots").innerHTML=m.per.map(p=>`<button class="md ${p.shot.id===sh.id?"cur":""} ${p.items.length?"has":""}" data-go="${p.n-1}" title="Screenshot ${p.n}: ${p.items.length} item${p.items.length===1?"":"s"}">${p.n}<small>${p.items.length}</small></button>`).join("");
+    // Only complain about screenshots already looked at; before that, just say what's left.
+    const note=v.querySelector(".match-note"), empty=m.empty.filter(p=>S.drMatchSeen.has(p.shot.id)), probs=[];
+    if(empty.length) probs.push(`screenshot ${empty.map(p=>p.n).join(", ")} ${empty.length>1?"have":"has"} no items: tick its items, or remove it`);
+    if(m.loose.length&&!m.unseen.length) probs.push(`${m.loose.length} item${m.loose.length>1?"s":""} not in any screenshot: tick ${m.loose.length>1?"them":"it"} where ${m.loose.length>1?"they appear":"it appears"}, or take another screenshot`);
+    note.className="match-note "+(probs.length?"bad":m.done?"ok":"");
+    note.textContent=probs.length?probs.join(" · "):m.done?"✓ Every item is in a screenshot":`${m.loose.length} item${m.loose.length===1?"":"s"} left to match`; };
+  paint();
+  list.onchange=e=>{ const k=e.target.dataset.k; if(!k) return; if(e.target.checked) S.drAssign[k]=sh.id; else delete S.drAssign[k]; S.drMatchOk=false; paint(); };
+  v.querySelector(".att-foot").onclick=e=>{ const go=e.target.closest("[data-go]")?.dataset.go, p=e.target.closest("[data-p]")?.dataset.p;
+    if(go!=null) return drMatchView(+go);
+    if(p==="prev") return drMatchView(page-1);
+    if(p==="next"){ if(page<m.shots.length-1) return drMatchView(page+1); v.classList.remove("show"); v.className="pic-panel"; drMatchSync(); } };
+  const r=await api().dr_shot_view(sh.id); if(!r.ok){ stage.innerHTML=`<span class="muted">${esc(r.error||"Couldn't load it")}</span>`; return; }
+  const dpr=window.devicePixelRatio||1;
+  const mode=(md,fx,fy)=>{ v.querySelectorAll(".att-modes button").forEach(b=>b.classList.toggle("on",b.dataset.m===md));
+    if(md==="fit"){ stage.className="att-stage fit"; stage.innerHTML=`<div class="att-uex" title="Click to see it at 1920×1080 there"><img src="${r.src}" alt="Screenshot ${page+1}"></div><div class="att-cap">${r.w}×${r.h} ${r.format.toUpperCase()}, ${(r.bytes/1048576).toFixed(1)} MB · click to see it as UEX does</div>`; return; }
+    stage.className="att-stage actual"; stage.innerHTML=`<img src="${r.src}" alt="" draggable="false" style="width:${r.w/dpr}px;height:${r.h/dpr}px">`;
+    requestAnimationFrame(()=>{ stage.scrollLeft=(fx??0.5)*r.w/dpr-stage.clientWidth/2; stage.scrollTop=(fy??0.5)*r.h/dpr-stage.clientHeight/2; }); };
+  mode("fit");
+  v.querySelector(".att-modes").onclick=e=>{ const md=e.target.closest("[data-m]")?.dataset.m; if(md) mode(md); };
+  stage.onclick=e=>{ const im=e.target.closest(".att-uex img"); if(!im) return; const b=im.getBoundingClientRect();
+    const sc=Math.min(b.width/r.w,b.height/r.h), ox=(b.width-r.w*sc)/2, oy=(b.height-r.h*sc)/2;   // object-fit: contain
+    mode("uex",Math.min(1,Math.max(0,(e.clientX-b.left-ox)/(r.w*sc))),Math.min(1,Math.max(0,(e.clientY-b.top-oy)/(r.h*sc)))); };
+  let drag=null;                                       // drag to look around
+  stage.onpointerdown=e=>{ if(!stage.classList.contains("actual")) return; drag={x:e.clientX,y:e.clientY,l:stage.scrollLeft,t:stage.scrollTop}; stage.classList.add("drag"); stage.setPointerCapture(e.pointerId); };
+  stage.onpointermove=e=>{ if(!drag) return; stage.scrollLeft=drag.l-(e.clientX-drag.x); stage.scrollTop=drag.t-(e.clientY-drag.y); };
+  stage.onpointerup=stage.onpointercancel=()=>{ drag=null; stage.classList.remove("drag"); }; }
+// The review's checkbox and status follow the matching: ticking is only possible once every item is
+// in a screenshot, every screenshot has items, and each one has been looked at.
+function drMatchSync(){ const box=$("dr-att-ok"); if(!box) return; const m=drMatchState();
+  box.disabled=!m.done; box.closest(".dr-check").classList.toggle("off",!m.done);
+  box.checked=m.done&&!!S.drMatchOk; box.dispatchEvent(new Event("change"));
+  const st=$("dr-match-state"); if(!st) return;
+  st.className="st"+(m.done?" ok":"");
+  st.textContent = m.done ? (m.shots.length>1?`✓ ${m.shots.length} reports: ${m.per.map(p=>`#${p.n} ${p.items.length} item${p.items.length===1?"":"s"}`).join(" · ")}`:"✓ Reviewed")
+    : m.unseen.length===m.shots.length ? (m.shots.length>1?"Not matched yet":"Not reviewed yet: open it first")
+    : [m.loose.length?`${m.loose.length} item${m.loose.length>1?"s":""} unmatched`:"", m.empty.length?`screenshot ${m.empty.map(p=>p.n).join(", ")} empty`:"", m.unseen.length?`${m.unseen.length} screenshot${m.unseen.length>1?"s":""} not looked at`:""].filter(Boolean).join(" · "); }
 $("dr-view").onclick=async e=>{ const a=e.target.closest("[data-dv]")?.dataset.dv; if(!a) return;
   if(a==="del"){ await api().dr_clear_shots(+$("dr-view").dataset.i); renderDrShots(); }
-  $("dr-view").classList.remove("show"); };
+  $("dr-view").classList.remove("show"); $("dr-view").className="pic-panel"; };
 
 // =================================================================== data sync
 async function loadStatic(){

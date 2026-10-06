@@ -1,12 +1,12 @@
 {
  "log_path": "C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\Game.log",
- "log_sig": "d4434f0a37c2437443a49d33c4304082afe7cee5",
- "offset": 567249,
+ "log_sig": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+ "offset": 0,
  "where": {
-  "code": "HANGAR:LoadingPlatformManager_FreightElevator_Util_HangarMedium_Nyx",
+  "code": "Nyx_Levski",
   "system": "Nyx",
-  "body": null,
-  "at": 1791241263.153
+  "body": "Delamar",
+  "at": 1791270737.785
  },
  "zone_bodies": {},
  "build": "12660092",
@@ -17,13 +17,15 @@
   "4147097116": "HDMS Pinewood",
   "626814401": "R&R MIC-L3 Endless Odyssey Station",
   "2011386033": "Dunboro",
-  "4243852663": "R&R HUR-L4 Melodic Fields Station"
+  "4243852663": "R&R HUR-L4 Melodic Fields Station",
+  "3723364946": "Levski",
+  "4075597421": "Levski"
  },
  "cur": {
-  "id": 1123010922,
-  "landing": 1123010922,
-  "at": 1791239586.165,
-  "place": null,
+  "id": 4075597421,
+  "landing": 3723364946,
+  "at": 1791270736.461,
+  "place": "Levski",
   "left": null,
   "spawned": false,
   "died_near": null
@@ -37,19 +39,17 @@
   }
  },
  "qt": {
-  "dest": "rs_asmbl_keeger_02",
-  "ship": "857832010583",
-  "selected": 1791239445.309,
-  "arrived": 1791239583.716,
-  "start": "Stanton Gateway",
+  "dest": "LOC_rs_ext_stan-pyro_jp1",
+  "ship": "858878053009",
+  "selected": 1791270018.237,
+  "arrived": 1791270668.139,
+  "start": "Nyx Gateway",
   "start_body": null,
   "place": null,
-  "learned": false
+  "learned": true
  },
  "zone_places": {},
- "atc": {
-  "855184222933": "ATC_DataManager_Port_SemiLawful-Dock1"
- },
+ "atc": {},
  "contracts": [
   {
    "id": "f4a2753e-c0c0-4b01-bc35-b01436257796",
@@ -93,6 +93,118 @@
    "turn_in": "",
    "turn_in_how": "",
    "tracking_no": ""
+  },
+  {
+   "id": "8ff9d054-3306-48fb-9651-8fc0786289b1",
+   "name": "Verified Bounty: Yasahiro Leeman | Very Low-Risk Target (Single Seater Craft, Minimal Support)",
+   "status": "complete",
+   "accepted_at": 1791265309.373,
+   "updated_at": 1791265881.956,
+   "code": "BountyHuntersGuild_Bounty_Nyx_VeryEasy",
+   "system": "Nyx",
+   "objectives": [
+    {
+     "id": "5bfc0645-e04f-194a-8374-3a7461edfe9c",
+     "text": "Go to Keeger Belt Wreck Site",
+     "status": "done",
+     "kind": "goto",
+     "location": null,
+     "marker": null,
+     "done_at": 1791265691.371,
+     "zone": "855083481747",
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "cd4e434a-1574-2cb6-02a7-ae7afd223da8",
+     "text": "Prepare to Engage Targets",
+     "status": "done",
+     "kind": "goto",
+     "location": null,
+     "marker": null,
+     "done_at": 1791265701.711,
+     "zone": null,
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "a346fc23-3f2c-cda5-7d1b-8b432c3d9b98",
+     "text": "Neutralize Target",
+     "status": "done",
+     "kind": "combat",
+     "location": null,
+     "marker": null,
+     "done_at": 1791265881.956,
+     "zone": null,
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    }
+   ],
+   "departed_at": null,
+   "closed_at": 1791265881.956,
+   "pickup_code": "",
+   "turn_in": "",
+   "turn_in_how": "",
+   "tracking_no": "1SC268916043968237"
+  },
+  {
+   "id": "9c955b3b-bad7-4399-a0c2-1dadff510bdd",
+   "name": "Verified Bounty: Fredrik Takanawa",
+   "status": "complete",
+   "accepted_at": 1791266005.151,
+   "updated_at": 1791266491.382,
+   "code": "BountyHuntersGuild_Bounty_Nyx_VeryEasy_0",
+   "system": "Nyx",
+   "objectives": [
+    {
+     "id": "69189721-f137-ff47-b1c4-d904e51a82d7",
+     "text": "Go to Keeger Belt Wreck Site",
+     "status": "done",
+     "kind": "goto",
+     "location": null,
+     "marker": null,
+     "done_at": 1791266375.19,
+     "zone": "855083482453",
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "32416d71-058a-f042-b079-2c3f71fe21b8",
+     "text": "Prepare to Engage Targets",
+     "status": "done",
+     "kind": "goto",
+     "location": null,
+     "marker": null,
+     "done_at": 1791266382.109,
+     "zone": null,
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    },
+    {
+     "id": "134ddc3c-1bf3-de66-7f30-65dd6cffde99",
+     "text": "Neutralize Target",
+     "status": "done",
+     "kind": "combat",
+     "location": null,
+     "marker": null,
+     "done_at": 1791266491.382,
+     "zone": null,
+     "found": "",
+     "manual": false,
+     "item_for": ""
+    }
+   ],
+   "departed_at": null,
+   "closed_at": 1791266491.382,
+   "pickup_code": "",
+   "turn_in": "",
+   "turn_in_how": "",
+   "tracking_no": "1SC108745980562810"
   }
  ]
 }

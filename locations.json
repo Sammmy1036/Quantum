@@ -633,9 +633,9 @@
   {
    "name": "Delamar",
    "center": [
-    -10531703.478,
-    18241438.664,
-    0
+    -9641713738.350145,
+    -11490682474.774256,
+    -116898.6942004934
    ],
    "radius_m": 75000,
    "rotation_period_h": 0,
@@ -644,11 +644,95 @@
    "om_radius_m": 118890,
    "system": "Nyx",
    "internal": "nyx1",
-   "kind": "planet",
+   "kind": "asteroid",
    "calibrated": false,
    "calibrated_at": 0.0,
    "calibrated_place": "",
    "community_offset_deg": 0,
+   "calibration_quality": ""
+  },
+  {
+   "name": "Nyx",
+   "center": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "radius_m": 696000000.0,
+   "rotation_period_h": 0.0,
+   "rotation_offset_deg": 0.0,
+   "epoch_utc": 1577836800.0,
+   "om_radius_m": 0.0,
+   "system": "Nyx",
+   "internal": "",
+   "kind": "star",
+   "calibrated": false,
+   "calibrated_at": 0.0,
+   "calibrated_place": "",
+   "community_offset_deg": null,
+   "calibration_quality": ""
+  },
+  {
+   "name": "Nyx II",
+   "center": [
+    -3591210930.539283,
+    9866771446.595106,
+    0.0
+   ],
+   "radius_m": 1000000.0,
+   "rotation_period_h": 0.0,
+   "rotation_offset_deg": 0.0,
+   "epoch_utc": 1577836800.0,
+   "om_radius_m": 1500000.0,
+   "system": "Nyx",
+   "internal": "",
+   "kind": "planet",
+   "calibrated": false,
+   "calibrated_at": 0.0,
+   "calibrated_place": "",
+   "community_offset_deg": null,
+   "calibration_quality": ""
+  },
+  {
+   "name": "Nyx I",
+   "center": [
+    6495194198.506323,
+    -3749995462.198742,
+    0.0
+   ],
+   "radius_m": 1000000.0,
+   "rotation_period_h": 0.0,
+   "rotation_offset_deg": 0.0,
+   "epoch_utc": 1577836800.0,
+   "om_radius_m": 1500000.0,
+   "system": "Nyx",
+   "internal": "",
+   "kind": "planet",
+   "calibrated": false,
+   "calibrated_at": 0.0,
+   "calibrated_place": "",
+   "community_offset_deg": null,
+   "calibration_quality": ""
+  },
+  {
+   "name": "Nyx III",
+   "center": [
+    -29109694335.707394,
+    -24425930756.452217,
+    0.0
+   ],
+   "radius_m": 1000000.0,
+   "rotation_period_h": 0.0,
+   "rotation_offset_deg": 0.0,
+   "epoch_utc": 1577836800.0,
+   "om_radius_m": 1500000.0,
+   "system": "Nyx",
+   "internal": "",
+   "kind": "planet",
+   "calibrated": false,
+   "calibrated_at": 0.0,
+   "calibrated_place": "",
+   "community_offset_deg": null,
    "calibration_quality": ""
   }
  ],
@@ -14456,7 +14540,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "jump",
+   "category": "station",
    "created": 0.0
   },
   {
@@ -20198,7 +20282,7 @@
    "system": "Nyx",
    "qt": true,
    "pinned": false,
-   "category": "city",
+   "category": "station",
    "created": 0.0
   },
   {
@@ -34420,6 +34504,420 @@
    "pinned": false,
    "category": "jump",
    "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway (Pyro)",
+   "kind": "space",
+   "pos": [
+    -37609223453.0,
+    37435743642.0,
+    6728.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station: jump point to Stanton. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway (Pyro)",
+   "kind": "space",
+   "pos": [
+    32993982419.0,
+    -38151730073.0,
+    6728.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station: jump point to Nyx. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway (Nyx)",
+   "kind": "space",
+   "pos": [
+    -12000044530.0,
+    20784580529.0,
+    -38674.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station: jump point to Pyro. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway (Nyx)",
+   "kind": "space",
+   "pos": [
+    -13499931610.0,
+    -23382701964.0,
+    -36662.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station: jump point to Stanton. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Jump Point",
+   "kind": "space",
+   "pos": [
+    3310491640.0,
+    -27979408221.0,
+    -2676285679.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The wormhole to Pyro. Pyro Gateway station is close by",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Jump Point (Pyro)",
+   "kind": "space",
+   "pos": [
+    -37609204291.0,
+    37435781484.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The wormhole to Stanton. Stanton Gateway station is close by",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Jump Point (Pyro)",
+   "kind": "space",
+   "pos": [
+    32994001581.0,
+    -38151692231.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The wormhole to Nyx. Nyx Gateway station is close by",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Jump Point (Nyx)",
+   "kind": "space",
+   "pos": [
+    -12000043845.0,
+    20784584131.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The wormhole to Pyro. Pyro Gateway station is close by",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Jump Point (Nyx)",
+   "kind": "space",
+   "pos": [
+    -13499935650.0,
+    -23382715138.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The wormhole to Stanton (the game files call it the Castra jump point; it's the temporary Stanton link). Stanton Gateway station is close by",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Wikelo Emporium Dasi Station",
+   "kind": "space",
+   "pos": [
+    14333386928.954506,
+    2001161548.775977,
+    494.104411
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Wikelo Emporium: asteroid base near Hurston",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Wikelo Emporium Selo Station",
+   "kind": "space",
+   "pos": [
+    -20156592263.474262,
+    -1263139183.121472,
+    494.104282
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Wikelo Emporium: asteroid base near Yela (Crusader)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Transit Point Glaciem Charlie",
+   "kind": "space",
+   "pos": [
+    9640231386.130783,
+    11488779851.097883,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502277
+  },
+  {
+   "name": "Transit Point Glaciem Bravo",
+   "kind": "space",
+   "pos": [
+    9640228783.884779,
+    -11488779774.4561,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.250231
+  },
+  {
+   "name": "Transit Point Glaciem Alpha",
+   "kind": "space",
+   "pos": [
+    -13592383232.412529,
+    6338233621.203082,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.250233
+  },
+  {
+   "name": "QV Breaker Station BRK-425",
+   "kind": "space",
+   "pos": [
+    27531031539.450443,
+    -39318355602.301125,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.250234
+  },
+  {
+   "name": "QV Breaker Station BRK-546",
+   "kind": "space",
+   "pos": [
+    16416937213.807709,
+    45105181258.5862,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502346
+  },
+  {
+   "name": "People's Service Station Theta",
+   "kind": "space",
+   "pos": [
+    40472690248.72818,
+    -25806259375.74863,
+    40589.752193
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.250235
+  },
+  {
+   "name": "QV Breaker Station BRK-127",
+   "kind": "space",
+   "pos": [
+    47270353272.7565,
+    -8335028392.475994,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502358
+  },
+  {
+   "name": "QV Breaker Station BRK-320",
+   "kind": "space",
+   "pos": [
+    -27531183169.18559,
+    39318601164.18832,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502365
+  },
+  {
+   "name": "QV Breaker Station BRK-204",
+   "kind": "space",
+   "pos": [
+    -45105001774.9967,
+    16416857971.29508,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502372
+  },
+  {
+   "name": "People's Service Station Alpha",
+   "kind": "space",
+   "pos": [
+    -45804312834.019424,
+    -14351346423.869164,
+    29570.487233
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502382
+  },
+  {
+   "name": "People's Service Station Delta",
+   "kind": "space",
+   "pos": [
+    -6432456969.600244,
+    -47567013296.55517,
+    13317.482965
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from Quantum datarunners' /showlocation",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502398
+  },
+  {
+   "name": "People's Service Station Lambda",
+   "kind": "space",
+   "pos": [
+    43327758023.56412,
+    20656812086.281746,
+    25671.460589000002
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 1791272347.2502406
   }
  ]
-}
+}

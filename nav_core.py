@@ -83,7 +83,39 @@ def great_circle(lat1, lon1, lat2, lon2, radius) -> tuple[float, float]:
 
 
 # ------------------------------------------------------------ categories ---
-CITIES = {"lorville", "area 18", "area18", "new babbage", "orison", "grimhex", "grim hex", "levski"}
+CITIES = {"lorville", "area 18", "area18", "new babbage", "orison", "grimhex", "grim hex"}
+
+# The game data lists Delamar as a planet, but it's a moon-sized asteroid in Nyx's Glaciem Ring.
+BODY_KIND = {"Delamar": "asteroid"}
+# Planets with no surface you can reach in the game yet (all three of Nyx's). With nowhere to land,
+# there's no /showlocation to line them up from, so they get no alignment.
+NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
+# Places the data files as cities that are really stations (Levski is built into Delamar).
+STATION_NAMES = {"levski"}
+
+
+def can_align(body) -> bool:
+    """A planet or moon you can land on, so a /showlocation there can line up its rotation."""
+    return body is not None and body.kind in ("planet", "moon") and body.name not in NO_LANDING
+
+
+def normalize(db) -> bool:
+    """Fix what the community and game data get wrong about Nyx (see BODY_KIND, NO_LANDING,
+    STATION_NAMES). Safe to run any number of times; True if anything changed."""
+    changed = False
+    for b in db.bodies.values():
+        kind = BODY_KIND.get(b.name)
+        if kind and b.kind != kind:
+            b.kind, changed = kind, True
+        if not can_align(b) and b.kind != "star" and (b.calibrated or b.calibration_quality):
+            if b.community_offset_deg is not None:
+                b.rotation_offset_deg = b.community_offset_deg
+            b.calibrated, b.calibrated_at, b.calibrated_place, b.calibration_quality = False, 0.0, "", ""
+            changed = True
+    for loc in db.locations.values():
+        if loc.name.split(" (")[0].lower() in STATION_NAMES and loc.category != "station":
+            loc.category, changed = "station", True
+    return changed
 CATEGORY_MAP = {  # community poi_type -> map category
     "Cave": "cave", "Wreck": "wreck", "LandingZone": "city", "Spaceport": "city",
     "OrbitalStation": "station", "CommArray": "comm", "AsteroidBelt": "field", "JumpPoint": "jump",
@@ -145,7 +177,7 @@ def classify(name: str, category: str = "") -> str:
         return "lpoint"
     if "jump point" in n or "jumppoint" in n or n.endswith(" gateway"):
         return "jump"
-    if any(k in n for k in ("station", "r&r", "port ", "everus harbor", "baijini point", "seraphim",
+    if base in STATION_NAMES or any(k in n for k in ("station", "r&r", "port ", "everus harbor", "baijini point", "seraphim",
                             "port olisar", "port tressler")):
         return "station"
     if "cave" in n:
@@ -166,7 +198,7 @@ def classify(name: str, category: str = "") -> str:
 # ------------------------------------------------------------ data model ---
 @dataclass
 class Body:
-    """A star, planet or moon."""
+    """A star, planet, moon or asteroid."""
     name: str
     center: Vec
     radius_m: float
@@ -176,7 +208,7 @@ class Body:
     om_radius_m: float = 0.0           # orbital-marker radius; body zone = 3x this
     system: str = "Stanton"
     internal: str = ""                 # game code, e.g. "Stanton4" for microTech
-    kind: str = "planet"               # star | planet | moon
+    kind: str = "planet"               # star | planet | moon | asteroid
     calibrated: bool = False
     calibrated_at: float = 0.0         # unix time of the reading used
     calibrated_place: str = ""
@@ -256,6 +288,7 @@ class NavDB:
                 l["source"] = "db"
             loc = _from_dict(Location, l)
             db.locations[loc.name] = loc
+        normalize(db)
         return db
 
     def save(self) -> None:

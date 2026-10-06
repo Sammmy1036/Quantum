@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 import gateways
-from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi
+from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi, normalize
 
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 DB_PATH = HERE / "locations.json"
@@ -173,6 +173,7 @@ def main():
             applied, _ = apply_calibrations(db, json.loads(cal.read_text(encoding="utf-8")))
             if applied:
                 print(f"Applied planet alignments from {cal.name}: {', '.join(applied)}")
+    normalize(db)                              # Delamar is an asteroid, Levski a station, Nyx I-III unlandable
     db.save()
     # Descriptive system/planet info from the Star Citizen Wiki (CC BY-SA 4.0) for the info cards.
     if not offline:
