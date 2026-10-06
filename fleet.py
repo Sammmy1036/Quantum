@@ -157,6 +157,58 @@ class Wiki:
         return None
 
     # ------------------------------------------------------------ ship loadouts
+    def vehicle_summary(self, wait=False):
+        """{key: {medical_beds, medical_tier, cargo}} for every ship on the wiki, keyed by uuid, name and slug
+        (lowercase), from the wiki's vehicle list. Cached a week; when it's missing or old it's fetched in the
+        background, and the cached copy is returned meanwhile (wait=True: fetched right away the first time,
+        when there's no copy at all)."""
+        f = self.dir / "wiki_vehicle_summary.json"
+        try:
+            cached = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            cached = None
+        stale = cached is None or time.time() - f.stat().st_mtime > 7 * 86400
+
+        def fetch():
+            out, page = {}, 1
+            while page <= 30:
+                try:
+                    # both paging styles: the API's own (page, limit) and JSON:API's (page[number], page[size])
+                    rows = _get(VEHICLE_API.rstrip("/") + f"?page={page}&limit=100&page%5Bsize%5D=100&page%5Bnumber%5D={page}",
+                                timeout=60).get("data") or []
+                except Exception:
+                    return                                   # offline: keep what's cached
+                before = len(out)
+                for d in rows:
+                    beds = (d.get("seating") or {}).get("medical_beds")
+                    n = sum(v for v in beds.values() if isinstance(v, (int, float))) if isinstance(beds, dict) \
+                        else beds if isinstance(beds, (int, float)) else 0
+                    rec = {"medical_beds": n, "medical_tier": d.get("max_medical_tier"), "cargo": d.get("cargo_capacity") or 0}
+                    for k in (d.get("uuid"), d.get("name"), d.get("slug"), d.get("shipmatrix_name")):
+                        if k:
+                            out[str(k).lower()] = rec
+                if not rows or len(out) == before:          # paging ignored (same page again) or done
+                    break
+                page += 1
+            if out:
+                self.dir.mkdir(exist_ok=True)
+                f.write_text(json.dumps(out), encoding="utf-8")
+                self._summary = out
+        if stale and not getattr(self, "_summary_busy", False):
+            if wait and cached is None:                       # nothing at all yet: worth the one-time wait
+                fetch()
+            else:
+                self._summary_busy = True
+                import threading
+
+                def bg():
+                    try:
+                        fetch()
+                    finally:
+                        self._summary_busy = False
+                threading.Thread(target=bg, daemon=True).start()
+        return getattr(self, "_summary", None) or cached or {}
+
     def vehicle(self, keys):
         """The wiki's record for a ship, trying each identifier (uuid, name, slug) in turn."""
         for key in [k for k in keys if k]:

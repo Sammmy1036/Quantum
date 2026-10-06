@@ -92,9 +92,9 @@ COMMUNITY_PLACES_PATH = HERE / "community_places.json"
 SYSTEM_ORDER = {"Stanton": 0, "Pyro": 1, "Nyx": 2}
 VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"), ("is_military", "Combat"),
                  ("is_bomber", "Bomber"), ("is_exploration", "Exploration"), ("is_medical", "Medical"),
-                 ("is_refuel", "Refuel"), ("is_repair", "Repair"), ("is_passenger", "Passenger"),
+                 ("is_refuel", "Refuel"), ("is_passenger", "Passenger"),
                  ("is_racing", "Racing"), ("is_starter", "Starter"), ("is_ground_vehicle", "Ground"),
-                 ("is_industrial", "Industrial"), ("is_science", "Science"), ("is_stealth", "Stealth"),
+                 ("is_industrial", "Industrial"), ("is_science", "Exploration"), ("is_stealth", "Stealth"),
                  ("is_carrier", "Carrier"), ("is_interdiction", "Interdiction"), ("is_emp", "EMP"),
                  ("is_construction", "Construction"), ("is_datarunner", "Data running"), ("is_qed", "Quantum snare")]      # gateway positions you measured with /showlocation; shareable
 # Where a hangar reading in each city is anchored its spaceport (or the city if the data has no spaceport).
@@ -169,7 +169,7 @@ class Api:
         self._service_records = services.load(SERVICES_PATH)
         self._services = self._match_services()
         self._log_cleared = None
-        if self._settings.get("clear_log_on_start"):
+        if self._settings.get("clear_log_on_start", True):      # on unless the user turned it off
             self._log_cleared = clear_game_log(self._settings.get("log_path"))
         self._tracker = ContractTracker(MISSIONS_PATH, self._db, self._settings.get("log_path"))
         self._tracker.start()
@@ -618,11 +618,10 @@ class Api:
             if places.get(tid):
                 continue
             # UEX lists some terminals that aren't in the live game (retired, unreleased, hidden)
-            if not t.get("is_available_live", 1) or not t.get("is_visible", 1) or t.get("is_decommissioned"):
+            if not uex.is_live(t):
                 continue
             station = t.get("space_station_name")
-            name = (station or t.get("outpost_name") or t.get("city_name") or t.get("displayname")
-                    or t.get("name") or "").strip()
+            name = uex.place_name(t)            # the same name Settings and the Jobs use for it
             sysn = t.get("star_system_name")
             if _place_key(name) in hidden:          # case/spacing-proof: UEX re-cases names now and then
                 self._unplaced.pop(name, None)
@@ -851,7 +850,7 @@ class Api:
                     "player": None, "next": None, "legs": [], "total": 0.0, "guide": None,
                     "contracts": [], "contracts_version": self._tracker.version,
                     "log": {"path": self._tracker.log_path, "status": self._tracker.status,
-                            "clear_on_start": bool(self._settings.get("clear_log_on_start")),
+                            "clear_on_start": bool(self._settings.get("clear_log_on_start", True)),
                             "uex_token": bool(self._uex.token),
                             "game_running": self._tracker.game_running, "note": self._tracker.log_note,
                             "cleared": self._log_cleared},
@@ -1349,9 +1348,10 @@ class Api:
         except Exception as e:
             print("backup restore:", e, flush=True)
 
-    def backup_restore(self):
-        """Fetch, decrypt and merge the backup: adds missing ships, routes, waypoints and stations."""
-        token = self._backup_creds()
+    def backup_restore(self, token=None):
+        """Fetch, decrypt and merge the backup: adds missing ships, routes, waypoints and stations.
+        token: an older UEX Bearer Token's backup to bring in (see _backup_move); default the current one."""
+        token = token or self._backup_creds()
         if not token:
             return {"ok": False, "error": "Add your UEX Bearer Token first: backups are locked with it"}
         k = backup.keys(token)
@@ -1467,7 +1467,45 @@ class Api:
                 print("place sync:", e, flush=True)
             time.sleep(self.PLACES_SYNC_EVERY)
 
+    def _game_build(self):
+        """The game build (from Game.log), or the last one seen when the game isn't running."""
+        b = str(self._tracker.build or "")
+        if b and b != self._settings.get("last_build"):
+            self._settings["last_build"] = b
+            self._save_settings()
+        return b or self._settings.get("last_build")
+
+    def _apply_community_alignments(self):
+        """Planet alignments datarunners agree on for this game build go live here: used for every planet
+        or moon you haven't lined up yourself in this build (your own always wins)."""
+        build = self._game_build()
+        r = self._community.alignments(build) if build else None
+        if not r:
+            return
+        self._align_server = dict(r, build=build, at=time.time())
+        mine = self._settings.get("cal_build") or {}
+        changed = False
+        with self._lock:
+            for name, a in r["agreed"].items():
+                b = self._db.bodies.get(name)
+                if not b or not can_align(b) or mine.get(name) == build:
+                    continue
+                if abs((a.get("period") or 0) - b.rotation_period_h) > 1e-4:
+                    continue                                     # different day length in this map data
+                if b.calibration_quality == "community" and abs(b.rotation_offset_deg - a["offset"]) < 1e-6:
+                    continue
+                b.rotation_offset_deg, b.epoch_utc = float(a["offset"]), float(a.get("epoch") or b.epoch_utc)
+                b.calibrated, b.calibrated_at = True, float(a.get("at") or time.time())
+                b.calibrated_place, b.calibration_quality = "Quantum datarunners", "community"
+                changed = True
+            if changed:
+                self._static_version += 1
+
     def _sync_places_once(self):
+        try:
+            self._apply_community_alignments()
+        except Exception as e:
+            print("alignment sync:", e, flush=True)
         r = self._community.places()
         if r is None:
             return
@@ -1641,6 +1679,28 @@ class Api:
         self._save_settings()
         return st
 
+    def send_bug_report(self, message, contact=""):
+        """Settings > Report a bug: sent to the Quantum server with your UEX name (if you've added your
+        Secret Key), the Quantum and game versions, and how to reach you if you chose to say."""
+        message, contact = str(message or "").strip(), str(contact or "").strip()
+        if len(message) < 5:
+            return {"ok": False, "error": "Describe the bug first"}
+        try:
+            game = " ".join(x for x in self._dr_game_build()[:2] if x) or None
+        except Exception:
+            game = None
+        if self._tracker.build:
+            game = f"{game or '?'} (build {self._tracker.build})"
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        r = self._community.post_bug({"message": message[:5000], "contact": contact[:200] or None, "username": user,
+                                      "app_version": updater.VERSION, "game_version": game})
+        if r.get("status") == "ok":
+            return {"ok": True}
+        return {"ok": False, "error": {"off": "Community features are turned off, so there's nowhere to send it",
+                                       "requests_limit_reached": "Too many bug reports from this connection. Try again in an hour",
+                                       "banned": "This UEX account can't send reports to Quantum"}.get(
+            r.get("status"), "The Quantum server couldn't be reached. Try again in a minute")}
+
     def set_option(self, key, value):
         """Simple on/off settings shown in the Settings panel."""
         if key not in ("clear_log_on_start",):
@@ -1698,12 +1758,34 @@ class Api:
             self._uex.test(token)               # a wrong token is reported and dropped, never kept
         except uex.UexError as e:
             return {"ok": False, "error": str(e) + (". Your saved token is still in use" if self._uex.token else "")}
+        old = (self._settings.get("uex_token") or "").strip()
         self._uex.token = token
         self._settings["uex_token"] = token
         self._save_settings()
         self._refresh_uex_places()
-        threading.Thread(target=self._backup_restore_if_empty, daemon=True).start()   # a fresh install
+        if old and old != token and self._community.url:
+            threading.Thread(target=self._backup_move, args=(old,), daemon=True).start()   # a new token
+        else:
+            threading.Thread(target=self._backup_restore_if_empty, daemon=True).start()   # a fresh install
         return {"ok": True}
+
+    def _backup_move(self, old):
+        """You replaced your UEX Bearer Token (a new UEX app, or the old one regenerated). Backups are
+        locked with the token, so bring in what the old token's backup has, save it all again under the
+        new token, and remove the old one: the backup follows you to the new token instead of being lost."""
+        try:
+            r = self.backup_restore(token=old)
+            if r.get("ok") and r.get("added"):
+                self._backup_note = f"Brought in from your previous backup: {r['summary']}"
+            if self._settings.get("backup_off"):
+                return
+            if self.backup_now(force=True).get("ok") and (r.get("ok") or "no backup" in (r.get("error") or "")):
+                k = backup.keys(old)
+                self._community.backup_get(k["slot"], k["auth"], delete=True)
+            elif not r.get("ok"):
+                self._backup_restore_if_empty()
+        except Exception as e:
+            print("backup move:", e, flush=True)
 
     def _refresh_uex_places(self):
         """Fetch UEX's station list and add the stations Quantum lacks (renames carry into the route)."""
@@ -1726,7 +1808,15 @@ class Api:
             except Exception:
                 pass
         st = dict(self._uex.status(self._db.locations), token=True)
-        if st.get("ok"):          # ones Quantum knows but can't place yet (gateways, Wikelo): say so
+        if st.get("ok"):
+            # Places reported as not existing in the game (by you, or agreed by datarunners) aren't
+            # "not on the map": they're left out, and only counted.
+            hk = self._hidden_keys()
+            gone = [n for n in st["unmatched"] if _place_key(n) in hk]
+            st["terminals"] -= sum(st.get("unmatched_terms", {}).get(n, 1) for n in gone)   # not in the game: not counted
+            st["unmatched"] = [n for n in st["unmatched"] if _place_key(n) not in hk]
+            st.pop("unmatched_terms", None)
+            # Ones Quantum knows but can't place yet: they're "Map a station" jobs, waiting for a /showlocation
             pending = {services._key(n): n for n in self._unplaced}
             st["needs_position"] = sorted(pending[services._key(n)] for n in st["unmatched"] if services._key(n) in pending)
             st["unmatched"] = [n for n in st["unmatched"] if services._key(n) not in pending]
@@ -2355,6 +2445,9 @@ class Api:
             if e.get("final") or (not e.get("test") and now - e.get("at", 0) > self.FOLLOW_FOR):
                 # decided earlier, or no longer followed: show what UEX last said
                 states = list(e.get("states") or [])
+                for row in rows:
+                    row.setdefault("uex", (e.get("row_states") or {}).get(str(row["id_commodity"])))
+                    row.setdefault("reason", (e.get("row_reasons") or {}).get(str(row["id_commodity"])))
                 out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
                 continue
             if not e.get("test"):
@@ -2367,14 +2460,18 @@ class Api:
                             if row["id_commodity"] == r.get("id_commodity") and "uex" not in row:
                                 row["uex"] = r.get("status")
                                 row["checked"] = r.get("date_checked")
+                                if r.get("status") in ("declined", "expired") or r.get("is_contested"):
+                                    row["reason"] = uex.decline_reason(r)
                                 break
             if not states and e.get("states"):
                 states = list(e["states"])                 # nothing new from UEX this time: keep what it said
                 for row in rows:
                     row.setdefault("uex", (e.get("row_states") or {}).get(str(row["id_commodity"])))
+                    row.setdefault("reason", (e.get("row_reasons") or {}).get(str(row["id_commodity"])))
             elif states and states != e.get("states"):
                 e["states"], changed = states, True
                 e["row_states"] = {str(r["id_commodity"]): r.get("uex") for r in rows if r.get("uex")}
+                e["row_reasons"] = {str(r["id_commodity"]): r["reason"] for r in rows if r.get("reason")}
                 if all(st in self.FINAL for st in states):
                     e["final"] = True                          # UEX is done with it: never asked about again
             out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
@@ -2423,8 +2520,10 @@ class Api:
         self._community.prices(fresh=True)
         return self.community_status()
 
-    RANKS = [(0, "Unranked"), (1, "Trainee"), (11, "Runner"), (26, "Field Analyst"),
-             (51, "Trade Analyst"), (101, "Quantum Analyst")]     # same table as the server
+    # By approved reports, one per item (each price row, picture, station position, planet alignment):
+    # the same table as the server, whose own copy wins when it can be reached.
+    RANKS = [(0, "Unranked"), (1, "Trainee"), (50, "Runner"), (250, "Field Analyst"),
+             (750, "Trade Analyst"), (2000, "Quantum Analyst")]
 
     def _dr_rank(self, n):
         name, nxt = self.RANKS[0][1], None
@@ -2588,7 +2687,7 @@ class Api:
         for e in full:
             got = by.get((tuple(e.get("ids") or []), e.get("at")))
             if got:
-                for k in ("states", "row_states", "final"):
+                for k in ("states", "row_states", "row_reasons", "final"):
                     if k in got:
                         e[k] = got[k]
         try:
@@ -2653,21 +2752,104 @@ class Api:
         else:
             reps = self._dr_reports()
             states = [s for e in reps["reports"] if not e.get("test") for s in e["states"]]
-            accepted = sum(1 for e in reps["reports"] if not e.get("test")
-                           and any(s in ("approved", "consolidated") for s in e["states"]))
             r = self._dr_rating(states)
+            accepted = r["approved"]                       # one per approved price row, like the server
             out = {"username": name, "stars": r["stars"], "rated": r["rated"], "accepted": accepted,
-                   "reports": sum(1 for e in reps["reports"] if not e.get("test")),
+                   "reports": sum(len(e.get("rows") or []) for e in reps["reports"] if not e.get("test")),
                    "rows": {"approved": r["approved"], "declined": r["declined"]}, "rank": self._dr_rank(accepted),
                    "decided": {"approved": r["approved"], "rejected": r["declined"]},
                    "banned": False, "source": "local"}
         raw = user.get("avatar") or out.get("avatar")
         out.update(ok=True, name=user.get("name"), avatar=self._dr_avatar(raw), avatar_url=self._dr_avatar_urls(raw)[0] if raw else None,
                    avatar_raw=raw, uex_datarunner=user.get("is_datarunner"), uex_banned=user.get("is_datarunner_banned"),
-                   has_secret=bool(self._dr_cfg().get("secret")), test=not self._dr.live, ranks=self.RANKS)
+                   has_secret=bool(self._dr_cfg().get("secret")), test=not self._dr.live,
+                   ranks=[tuple(x) for x in out.get("ranks") or self.RANKS])
         self._dr_cfg()["rating"] = {"stars": out["stars"], "rated": out["rated"], "rank": out["rank"]["name"]}
         self._save_settings()
         return out
+
+    def dr_align_jobs(self):
+        """Planet alignment jobs: every planet and moon you can land on, for this game build: agreed (live for
+        everyone), waiting for a second alignment, aligned by you, or still to do."""
+        build = self._game_build()
+        if not build:
+            return {"ok": False, "error": "Start Star Citizen once so Quantum can read the game version from Game.log"}
+        r = self._community.alignments(build)
+        if r is None:
+            r = {"agreed": {}, "waiting": {}}
+            offline = True
+        else:
+            offline = False
+            self._align_server = dict(r, build=build, at=time.time())
+        hist = [e for e in self._cal_file().get("history", []) if str(e.get("build")) == build
+                and (str(e.get("kind", "")).startswith("auto-") or e.get("kind") == "manual")]
+        mine = {e["body"]: e for e in hist}
+        places = {}
+        for L in self._db.locations.values():
+            if L.kind == "surface" and L.source == "db" and L.body:
+                places.setdefault(L.body, []).append(L.name)
+        jobs = []
+        for b in sorted(self._db.bodies.values(), key=lambda b: (b.system, b.kind != "planet", b.name)):
+            if not can_align(b):
+                continue
+            a = r["agreed"].get(b.name)
+            st = "live" if a else "mine" if b.name in mine else "waiting" if r["waiting"].get(b.name) else "open"
+            pl = sorted(places.get(b.name, []))
+            jobs.append({"body": b.name, "system": b.system, "kind": b.kind, "status": st,
+                         "others": r["waiting"].get(b.name, 0) - (1 if b.name in mine else 0),
+                         "reporters": a["reporters"] if a else None, "mine_at": mine[b.name]["reading_utc"] if b.name in mine else None,
+                         "places": pl[:4], "place_count": len(pl), "you_here": self._player_sys == b.system and bool(
+                             self._player and self._db.body_near(self._player, b.system) is b)})
+        return {"ok": True, "build": build, "jobs": jobs, "offline": offline, "you_in": self._player_sys,
+                "systems": sorted({j["system"] for j in jobs})}
+
+    def dr_photo_jobs(self, refresh=False):
+        """Picture jobs: ships and vehicles, components and commodities that have no picture yet (none on
+        the Star Citizen Wiki, none approved on Quantum). Worked out at most every 10 minutes."""
+        c = getattr(self, "_photo_jobs", None)
+        if c and not refresh and time.time() - c[0] < 600:
+            return c[1]
+
+        def run():
+            mine = self._community.photos() or {}
+            jobs = []
+            vehicles, _ = self._uex.get("vehicles")
+            for v in vehicles:
+                if v.get("is_concept") or v.get("is_addon") or v.get("url_photo"):
+                    continue
+                name = v.get("name_full") or v.get("name")
+                if name and self._pic_key(name) not in mine:
+                    jobs.append({"kind": "vehicle", "name": name, "label": name, "title": name,
+                                 "group": "Ship" if not v.get("is_ground_vehicle") else "Ground vehicle"})
+            refs = []
+            rows, _ = self._uex.get("commodities")
+            for co in rows:
+                if co.get("is_available_live", 1) and (co.get("is_buyable") or co.get("is_sellable")):
+                    refs.append(("commodity", co.get("wiki") or co.get("name"), co.get("name"), co.get("kind") or "Commodity"))
+            cats = self.uex_component_categories()
+            for cat in (cats.get("items") or []) if cats.get("ok") else []:
+                try:
+                    items, _ = self._uex.get("items", {"id_category": int(cat["id"])})
+                except uex.UexError:
+                    continue
+                for i in items:
+                    if not i.get("is_commodity") and i.get("name"):
+                        refs.append(("component", i.get("wiki") or i.get("name"), i.get("name"), cat.get("name") or "Component"))
+            pics = self._wikiapi.pictures([r[1] for r in refs])
+            seen = set()
+            for kind, ref, label, group in refs:
+                key = (kind, self._pic_key(ref))
+                if key in seen or pics.get(ref) or self._pic_key(ref) in mine:
+                    continue
+                seen.add(key)
+                # title: the name the server keeps the picture under (and the job's claim is held under)
+                jobs.append({"kind": kind, "name": ref, "label": label, "group": group,
+                             "title": urllib.parse.unquote(str(ref).rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()})
+            jobs.sort(key=lambda j: ({"vehicle": 0, "component": 1, "commodity": 2}[j["kind"]], j["group"], j["label"]))
+            out = {"ok": True, "jobs": jobs, "counts": {k: sum(1 for j in jobs if j["kind"] == k) for k in ("vehicle", "component", "commodity")}}
+            self._photo_jobs = (time.time(), out)
+            return out
+        return self._uex_call(run)
 
     def dr_jobs(self, system=None, sort="oldest"):
         """Datarunner jobs: commodity terminals whose prices are the most out of date, oldest first
@@ -2685,8 +2867,10 @@ class Api:
                     continue
                 for side in ("buy", "sell"):
                     if r.get(f"price_{side}"):
+                        # None: UEX has never had a report for this price (kept apart from real ages,
+                        # so a price that's 400 days old isn't called "never reported")
                         by.setdefault(r["id_terminal"], []).append(
-                            max(0.0, (now - (r.get("date_modified") or 0)) / 86400) if r.get("date_modified") else 365.0)
+                            max(0.0, (now - r["date_modified"]) / 86400) if r.get("date_modified") else None)
             mine = {}
             for e in self._dr_report_log():
                 if not e.get("test") or not self._dr.live:
@@ -2695,25 +2879,39 @@ class Api:
             if self._game_on():
                 spot = self._log_spot(self._tracker.cur or {})[0]
             jobs = []
-            for tid, ages in by.items():
+            hk = self._hidden_keys()
+            unplaced = {services._key(n): n for n in self._unplaced}
+            NEVER = 100000.0                                     # sorts after every real age
+            for tid, raw in by.items():
                 t = terms[tid]
                 if system and t.get("star_system_name") != system:
                     continue
-                ages.sort()
-                place = places.get(tid)
+                if not uex.is_live(t) or _place_key(uex.place_name(t)) in hk:
+                    continue                                 # not in the game: no job to do there
+                known = sorted(a for a in raw if a is not None)
+                never = len(raw) - len(known)
+                ages = known + [NEVER] * never
+                # a place with no position yet (a new outpost or depot) is still named, so its job can
+                # offer "Map it too" instead of nothing
+                place = places.get(tid) or unplaced.get(services._key(uex.place_name(t)))
                 jobs.append({"id": tid, "name": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
                              "place": place, "here": bool(spot and place == spot), "dist": self._dist_from_you(place),
                              "rows": len(ages), "stale": sum(1 for a in ages if a >= 3),
-                             "oldest": round(ages[-1], 1), "median": round(ages[len(ages) // 2], 1),
+                             # oldest / median: real ages in days; None when no price there was ever reported
+                             "oldest": round(known[-1], 1) if known else None,
+                             "median": round(ages[len(ages) // 2], 1) if ages[len(ages) // 2] < NEVER else None,
+                             "sort": ages[len(ages) // 2], "sort_oldest": ages[-1],
                              "days": round(sum(min(a, 60) for a in ages), 1),
                              # the average age of prices that have been reported, and how many never were
-                             "avg": round(sum(r) / len(r), 1) if (r := [a for a in ages if a < 365]) else None,
-                             "never": sum(1 for a in ages if a >= 365),
+                             "avg": round(sum(known) / len(known), 1) if known else None,
+                             "never": never,
                              "mine": mine.get(tid) if mine.get(tid, 0) > now - 86400 else None})
             if sort == "nearest":
-                jobs.sort(key=lambda j: (j["dist"] is None, j["dist"] or 0, -j["median"]))
+                jobs.sort(key=lambda j: (j["dist"] is None, j["dist"] or 0, -j["sort"]))
             else:
-                jobs.sort(key=lambda j: (-j["median"], -j["oldest"]))
+                jobs.sort(key=lambda j: (-j["sort"], -j["sort_oldest"]))
+            for j in jobs:
+                j.pop("sort"), j.pop("sort_oldest")
             systems = sorted({t.get("star_system_name") for t in terms.values() if t.get("star_system_name")})
             return {"ok": True, "jobs": jobs[:80], "total": len(jobs), "systems": systems, "you_in": self._player_sys,
                     "at": at}
@@ -2821,11 +3019,8 @@ class Api:
                         "price": price, "dist": self._dist_from_you(place), "updated": r.get("date_modified")})
             add("buy", self._uex.get("vehicles_purchases_prices_all")[0], ("price_buy",))
             add("rent", self._uex.get("vehicles_rentals_prices_all")[0], ("price_rent", "price", "price_buy"))
-            roles = VEHICLE_ROLES or [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"),
-                     ("is_military", "Combat"), ("is_bomber", "Bomber"), ("is_exploration", "Exploration"),
-                     ("is_medical", "Medical"), ("is_refuel", "Refuel"), ("is_repair", "Repair"),
-                     ("is_passenger", "Passenger"), ("is_racing", "Racing"), ("is_starter", "Starter"),
-                     ("is_ground_vehicle", "Ground"), ("is_industrial", "Industrial"), ("is_science", "Science")]
+            roles = VEHICLE_ROLES
+            wiki = self._wikiapi.vehicle_summary(wait=True)    # medical beds and cargo grid, from the wiki
             out = []
             for v in vehicles:
                 if v.get("is_concept") or v.get("is_addon"):
@@ -2837,12 +3032,31 @@ class Api:
                     "id": v["id"], "name": v.get("name"), "full": v.get("name_full") or v.get("name"),
                     "maker": v.get("company_name") or "", "scu": v.get("scu") or 0, "crew": v.get("crew") or "",
                     "pad": v.get("pad_type"), "ground": bool(v.get("is_ground_vehicle")),
-                    "roles": [label for flag, label in roles if v.get(flag)],
+                    "roles": self._vehicle_roles(v, wiki),
                     "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
                     "store": v.get("url_store"), "photo": v.get("url_photo"), "buy": sp["buy"], "rent": sp["rent"]})
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
         return self._uex_call(run)
+
+    CARGO_MIN = 40          # SCU of cargo grid that makes a ship a cargo hauler too (Cutlass Black 46, Carrack 456)
+
+    def _vehicle_roles(self, v, wiki):
+        """UEX's roles, plus what the ship can actually do: Medical when it has a medical bed, Cargo when it
+        has a real cargo grid (from the wiki's numbers when it has them, else UEX's SCU)."""
+        out = []
+        for _, label in VEHICLE_ROLES:
+            if label not in out and any(v.get(f) for f, l in VEHICLE_ROLES if l == label):
+                out.append(label)
+        w = next((wiki[str(k).lower()] for k in (v.get("uuid"), v.get("name"), v.get("slug"), v.get("name_full"))
+                  if k and str(k).lower() in wiki), None) or {}
+        if not v.get("is_ground_vehicle"):
+            if w.get("medical_beds") and "Medical" not in out:
+                out.append("Medical")
+            cargo = w.get("cargo") if w else v.get("scu")
+            if (cargo or 0) >= self.CARGO_MIN and "Cargo" not in out:
+                out.insert(0, "Cargo")
+        return out
 
     def wiki_image(self, ref):
         """The wiki's picture, or else one a Quantum user sent in and you approved."""
@@ -3043,11 +3257,11 @@ class Api:
         out = {
             "ok": True, "id": v["id"], "name": v.get("name_full") or name, "maker": v.get("company_name") or "",
             "photo": v.get("url_photo"), "store": v.get("url_store"), "wiki": bool(d),
-            "roles": [label for flag, label in VEHICLE_ROLES if v.get(flag)],
+            "roles": self._vehicle_roles(v, self._wikiapi.vehicle_summary()),
             "career": d.get("career") or d.get("role"), "description": self._vehicle_desc(d, name),
             "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
-            "seats": seat.get("crew_stations"), "beds": seat.get("beds"), "medical_beds": seat.get("medical_beds"),
-            "medical_tier": d.get("max_medical_tier"), "ejection": seat.get("ejection_seats"), "escape_pods": seat.get("escape_pods"),
+            "seats": seat.get("crew_stations"), "beds": seat.get("beds"), "medical_beds": _bed_count(seat.get("medical_beds")),
+            "medical_tier": _tier(d.get("max_medical_tier")), "ejection": seat.get("ejection_seats"), "escape_pods": seat.get("escape_pods"),
             "jump_seats": seat.get("jump_seats"),
             "scu": v.get("scu") or d.get("cargo_capacity") or 0, "ore": d.get("ore_capacity"),
             "storage_scu": round(inv / 1e6, 2) if isinstance(inv, (int, float)) and inv else None,
@@ -3514,7 +3728,8 @@ class Api:
                                      "rotation_period_h": b.rotation_period_h, "epoch_utc": b.epoch_utc,
                                      "calibrated_at": b.calibrated_at, "place": b.calibrated_place,
                                      "quality": b.calibration_quality}
-                            for b in self._db.bodies.values() if b.calibrated and can_align(b)})
+                            for b in self._db.bodies.values() if b.calibrated and can_align(b)
+                            and b.calibration_quality != "community"})       # datarunners' agreed ones aren't yours
         return data
 
     def _record_cal(self, kind, body, place, residual):
@@ -3530,6 +3745,24 @@ class Api:
             CAL_PATH.write_text(json.dumps(self._cal_payload(data), indent=1), encoding="utf-8")
         except OSError:
             pass
+        if kind.startswith("auto-") or kind == "manual":         # a new alignment (not a check or a reset)
+            if self._tracker.build:          # aligned by you in this game build: datarunners' agreed one doesn't replace it
+                self._settings.setdefault("cal_build", {})[body] = str(self._tracker.build)
+                self._save_settings()
+            self._share_alignment(body, place, kind)
+
+    def _share_alignment(self, body_name, place, kind):
+        """Send a new alignment to the Quantum server for this game build. Once another datarunner's
+        alignment of the same body in the same build agrees, it earns points toward your rank (the first
+        alignments after a game update are the useful ones)."""
+        b = self._db.bodies.get(body_name)
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not b or not user or not self._tracker.build:
+            return
+        self._community.post_alignment({
+            "username": user.lower(), "body": b.name, "system": b.system, "build": str(self._tracker.build),
+            "offset": round(b.rotation_offset_deg, 6), "period": b.rotation_period_h, "epoch": b.epoch_utc,
+            "place": place, "quality": b.calibration_quality or kind})
 
     def calibration_status(self):
         """Per body: aligned or community values, and what the checks say about drift."""
@@ -3791,6 +4024,19 @@ def clear_game_log(path=None):
         return {"ok": True, "bytes": size, "path": path}
     except OSError as e:
         return {"ok": False, "reason": str(e)}
+
+
+def _bed_count(beds):
+    """The wiki gives medical beds per tier ({"T2": 1}) or as a number: the total."""
+    if isinstance(beds, dict):
+        return sum(v for v in beds.values() if isinstance(v, (int, float))) or None
+    return beds if isinstance(beds, (int, float)) else None
+
+
+def _tier(t):
+    """ "T2" / 2 -> 2 (shown as "Tier 2")."""
+    m = re.search(r"\d+", str(t or ""))
+    return int(m.group()) if m else None
 
 
 def apply_calibrations(db, data):

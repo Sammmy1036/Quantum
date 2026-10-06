@@ -157,11 +157,43 @@ class Uex:
         except UexError as e:
             return {"ok": False, "error": str(e)}
         terms = self.terminals()
-        missing = sorted({(terms[i].get("space_station_name") or terms[i].get("city_name")
-                           or terms[i].get("outpost_name") or terms[i].get("displayname") or "?")
-                          for i, p in places.items() if not p})
-        return {"ok": True, "terminals": len(places), "matched": sum(1 for p in places.values() if p),
-                "unmatched": missing[:80]}
+        missing, retired = {}, 0
+        for i, p in places.items():
+            if p:
+                continue
+            # UEX keeps some terminals that aren't in the live game (retired, unreleased): not counted
+            if not is_live(terms[i]):
+                retired += 1
+                continue
+            n = place_name(terms[i]) or "?"
+            missing[n] = missing.get(n, 0) + 1
+        return {"ok": True, "terminals": len(places) - retired, "matched": sum(1 for p in places.values() if p),
+                "unmatched": sorted(missing)[:80], "unmatched_terms": missing}
+
+
+REASON_FIELDS = ("decline_reason", "declined_reason", "reason", "status_reason", "review_comment",
+                 "moderator_comment", "comment", "comments")
+
+
+def decline_reason(row):
+    """Why UEX declined a report, when its /data_info row says (UEX doesn't always give one)."""
+    for k in REASON_FIELDS:
+        v = row.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()[:300]
+    return None
+
+
+def is_live(t):
+    """Is this terminal in the live game, as far as UEX knows?"""
+    return bool(t.get("is_available_live", 1)) and bool(t.get("is_visible", 1)) and not t.get("is_decommissioned")
+
+
+def place_name(t):
+    """The place a terminal is at, by the name Quantum uses for it everywhere (the map's "not placed
+    yet" list, the Jobs, Settings): station, else outpost, else city, else its own name."""
+    return (t.get("space_station_name") or t.get("outpost_name") or t.get("city_name") or t.get("displayname")
+            or t.get("name") or "").strip()
 
 
 def where(t):

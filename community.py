@@ -222,6 +222,42 @@ class Community:
                 on_done and on_done(False)
         threading.Thread(target=send, daemon=True).start()
 
+    def post_bug(self, report):
+        """Send a bug report from Settings. {status: ok, id} | requests_limit_reached | unreachable ..."""
+        if not self.url:
+            return {"status": "off"}
+        try:
+            return self._req("/v1/bugs", report, timeout=15)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    def post_alignment(self, entry):
+        """Share a planet or moon alignment you made, for this game build, in the background. It counts
+        toward your rank once another datarunner's alignment of that body agrees."""
+        if not self.url or not entry.get("username") or not entry.get("build"):
+            return
+
+        def send():
+            try:
+                self._req("/v1/alignments", entry, timeout=15)
+            except Exception as e:
+                self.last_error = str(e)
+        threading.Thread(target=send, daemon=True).start()
+
+    def alignments(self, build):
+        """{agreed: {body: entry}, waiting: {body: people}} for one game build, or None if unreachable."""
+        if not self.url or not build:
+            return None
+        import urllib.parse
+        try:
+            r = self._req("/v1/alignments?" + urllib.parse.urlencode({"build": build}), timeout=8)
+            if r.get("status") != "ok":
+                return None
+            return {"agreed": {a["body"]: a for a in r.get("alignments") or []}, "waiting": r.get("waiting") or {}}
+        except Exception as e:
+            self.last_error = str(e)
+            return None
+
     def post_pad(self, name, pad, username=None):
         """Report a place's landing pad size, in the background."""
         if not self.url:
