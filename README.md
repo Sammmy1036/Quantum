@@ -144,7 +144,7 @@ Quantum users share a few things through the Quantum community server (`quantums
 
 Nobody can add to or take from someone else's profile: a report only counts once UEX's own record shows that username sent it.
 
-**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day) and the stations they map go live from their reading alone. It's checked continuously, so a rejection takes it away until they're clean again. The Datarunner tab's FAQ shows your progress. Only your own PCs count as you: Quantum sends a random device key, and the server ties it to your UEX name once a report sent from that PC is confirmed by UEX.
+**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day) and the stations they map go live from their reading alone. It's checked continuously, so a rejection takes it away until they're clean again. The Datarunner tab's FAQ shows your progress. Only you count as you: Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
 
 ## Updates
 
@@ -163,7 +163,7 @@ Positions come from community datasets, and component stats come from the game f
 
 ## Your data and privacy
 
-Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json` and are only ever sent to UEX. Quantum also makes a random **device key** for the community server, so it can tell your own PCs from someone typing your UEX name; it says nothing about you and isn't used anywhere else.
+Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json`. The token is only ever sent to UEX. The secret key is sent to UEX, and once to the community server when Quantum signs in to it: the server passes it to UEX to learn which UEX account it belongs to, then forgets it. It's never stored or logged there. In return the server gives Quantum a **session token**, kept in `settings.json`, so it knows the pictures, places and alignments you send are really from you.
 
 Quantum talks to these services:
 
@@ -179,14 +179,14 @@ What the community server receives from you:
 - **Contributions:** station positions you set and pictures you send.
 - **Shared routes:** routes you choose to share.
 - **Your UEX profile:** your username and avatar link, for your profile and the Top 10. Your username and stats are visible to other Quantum users on the Top 10.
-- **Your device key:** stored only as a one-way hash, next to the reports you send.
+- **Your sign-in:** your UEX secret key once, over HTTPS, to confirm your UEX username with UEX (not kept). The session token it gives Quantum is stored on the server only as a one-way hash, with when and from where it was last used. Removing or changing your secret key in Settings signs that PC out.
 - **Your backup:** encrypted on your PC before it's sent. The server stores it but can't read it, and your UEX Bearer Token is never sent to it. Only plain data from known fields is included, never files. If you make a new UEX token, the old backup can't be opened, and Quantum starts a new one locked to the new token.
 
-It never receives your UEX token or secret key. To turn the community features off, set `"community_url": "off"` in `settings.json`; Quantum then uses UEX's data alone.
+It never receives your UEX Bearer Token, and never keeps your secret key. To turn the community features off, set `"community_url": "off"` in `settings.json`; Quantum then uses UEX's data alone.
 
 | File | Holds |
 |---|---|
-| `settings.json` | Your UEX token and secret key, device key, hotkeys, route, fleet and planned trade routes |
+| `settings.json` | Your UEX token and secret key, Quantum server sign-in, hotkeys, route, fleet and planned trade routes |
 | `places.json` | Station positions you set with `/showlocation` |
 | `community_places.json` | Station positions from other Quantum users |
 | `datarunner_reports.json` | The reports you've sent and what UEX did with them |

@@ -62,14 +62,42 @@ is provided as is, like the rest of the Software, and may be inaccurate or out
 of date.
 
 -------------------------------------------------------------------------------
+Community server sign-in
+
+To keep the community server's data trustworthy, so that nobody can send
+pictures, station positions, planet alignments, shared routes or job claims
+under someone else's name, Quantum signs in to the Quantum community server
+with the user's UEX datarunner secret key. Using these community features
+requires this sign-in; price reports and everything that works with UEX's data
+alone do not.
+
+When Quantum signs in, it sends the secret key to the community server once,
+over HTTPS. The server reads it only to ask UEX which UEX account it belongs
+to, then discards it. The key is never stored or logged in the server, and it
+is not used for anything else. The server returns a session token, which
+Quantum keeps in settings.json and sends with later requests. The server keeps
+only a one-way hash of that token, with the UEX username it belongs to and
+when and from where it was last used. Sign-ins not used for 180 days end on
+their own. Removing or changing the secret key in Settings signs that computer
+out, and the server owner can end a user's sign-ins at any time, for example
+when banning an account. The UEX Bearer Token is never sent to the community
+server.
+
+Anyone running their own community server receives users' secret keys in the
+same way and should handle them with the same care. Users who don't want their
+secret key to reach the community server can set "community_url" to "off" in
+settings.json; Quantum then uses UEX's data alone.
+
+-------------------------------------------------------------------------------
 Backups
 
 Quantum can back up a user's fleet, component swaps, waypoints, planned trade
 routes and mapped stations to the Quantum community server. Backups are
 encrypted on the user's own computer with a key made from their UEX Bearer
 Token; the server stores them without being able to read them, and the token is
-never sent to it. Anyone who has the token can open the backup, so users should
-keep their token private.
+never sent to it (signing in uses the separate secret key, as described above). 
+Anyone who has the token can open the backup, so users should keep their token 
+private.
 
 Backups are a convenience, provided as is with no guarantee that they will be
 available or complete. A backup cannot be opened with a different token, so it
