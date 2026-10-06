@@ -169,9 +169,9 @@ Quantum talks to these services:
 
 | Service | Why |
 |---|---|
-| **UEX** | Prices, terminals, vehicles and items, and the price reports you send |
-| **Quantum community server** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10 |
-| **Star Citizen Wiki** | Ship data, loadouts and pictures |
+| **UEX API** | Prices, terminals, vehicles and items, and the price reports you send |
+| **Quantum API** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10 |
+| **Star Citizen Wiki API** | Ship data, loadouts and pictures |
 | **GitHub** | Checking for updates |
 
 What the community server receives from you:
