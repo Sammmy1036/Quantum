@@ -6,7 +6,7 @@
 
 ---
 <p align="center">
-  <img src="images/preview.gif" width="1000" alt="Project Demo">
+  <img src="https://i.imgur.com/BXOtO8s.gif" width="1000" alt="Quantum demo">
 </p>
 
 
