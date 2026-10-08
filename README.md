@@ -138,7 +138,7 @@ Quantum users share a few things through the Quantum community server (`quantums
 
 Nobody can add to or take from someone else's profile: a report only counts once UEX's own record shows that username sent it.
 
-**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map and planets they line up go live from their reading alone. It's checked continuously, so a rejection takes it away until they're clean again. The Datarunner tab's FAQ shows your progress. Only you count as you: Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
+**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map and planets they line up go live from their reading alone. The Datarunner tab's FAQ shows your progress. Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
 
 ## Updates
 
