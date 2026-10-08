@@ -33,6 +33,11 @@ Quantum includes or loads code from other projects, each under its own license:
     the persons identified as the document authors.
   - Fonts Michroma, Exo 2 and Inter, loaded from Google Fonts at run time:
     SIL Open Font License 1.1.
+  - QR code encoder (quantum_api.py, the community server's admin page):
+    written for Quantum, following the approach of Project Nayuki's QR Code
+    generator library (https://www.nayuki.io/page/qr-code-generator-library),
+    MIT License, Copyright (c) Project Nayuki. The QR code standard is ISO/IEC
+    18004; "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 
 -------------------------------------------------------------------------------
 Third-party data and trademarks
@@ -53,13 +58,13 @@ ships keeps its own terms:
 -------------------------------------------------------------------------------
 Community contributions
 
-Prices, station positions, pictures and trade routes that Quantum users share
-through the Quantum community server are contributed by those users. By
-sending a picture, a user confirms they took it or otherwise have the right to
-share it, and agrees that it may be shown to other Quantum users. Pictures can
-be reviewed, rejected or removed by the server owner at any time. Shared data
-is provided as is, like the rest of the Software, and may be inaccurate or out
-of date.
+Prices, station positions, landing pad sizes, planet alignments, pictures and
+trade routes that Quantum users share through the Quantum community server are
+contributed by those users. By sending a picture, a user confirms they took it
+or otherwise have the right to share it, and agrees that it may be shown to
+other Quantum users. Pictures can be reviewed, rejected, replaced or removed by
+the server owner and their moderators at any time. Shared data is provided as
+is, like the rest of the Software, and may be inaccurate or out of date.
 
 -------------------------------------------------------------------------------
 Community server sign-in
@@ -87,6 +92,50 @@ Anyone running their own community server receives users' secret keys in the
 same way and should handle them with the same care. Users who don't want their
 secret key to reach the community server can set "community_url" to "off" in
 settings.json; Quantum then uses UEX's data alone.
+
+-------------------------------------------------------------------------------
+Moderation
+
+The community server is run by its owner, who may appoint moderators and
+admins to help. To keep shared data accurate and fair, they can review and
+reject contributions, and suspend (for a set time), ban, or end the sign-ins of
+an account that misuses the service, with a reason the user can see in
+Quantum. Every action taken on the server's admin page is recorded with who
+took it. A user who is suspended or banned can still use everything that works
+with UEX's data alone.
+
+-------------------------------------------------------------------------------
+What the community server keeps, and deleting it
+
+For each datarunner, the community server keeps their UEX username and avatar
+link, the UEX report IDs and values of the price reports they send through
+Quantum and what UEX decided about them, the pictures, station positions, pad
+sizes, planet alignments, job claims, shared routes and bug reports they send,
+and their sign-ins as described above. To protect the service it also keeps,
+for a short time, the IP address and time of requests: rate-limit counters for
+an hour, and a list of recent requests in memory until the server restarts.
+
+A user can ask the server owner to delete everything the server holds about
+them. The owner can erase it all from the admin page in one step; prices served
+from their reports stop being shown, and their pictures are removed. UEX keeps
+its own copy of the reports it received, under UEX's own terms. Encrypted
+backups are not tied to a username, so users delete theirs themselves from
+Settings > Backup. The record that an erasure was carried out (who did it and
+when) is kept in the admin activity log for up to a year.
+
+On the user's own computer, Quantum keeps a copy of the screenshot each price
+report was sent with for 14 days, then deletes it. It is never sent to the
+community server.
+
+-------------------------------------------------------------------------------
+Admin page accounts
+
+People who run or moderate a community server sign in to its admin page with
+their own account: a password, kept on the server only as a salted scrypt
+hash, and a code from an authenticator app, whose secret is kept on the server.
+Sign-ins are kept as one-way hashes of their tokens. The admin activity log
+records each sign-in and change with the account, time and IP address. Anyone
+running their own community server holds this data and is responsible for it.
 
 -------------------------------------------------------------------------------
 Backups
