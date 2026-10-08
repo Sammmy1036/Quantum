@@ -10,33 +10,6 @@
    <video src="https://github.com/user-attachments/assets/84ff2499-2c98-42d7-a253-663d606b0a85" width="1000" controls muted></video>
  </p>
 
-
-<p align="center">
-  <picture>
-    <img src="images/Vehicles.png" width="800" alt="Vehicles">
-  </picture>
-</p>
-
-<table>
-  <tr>
-    <td>
-      <picture>
-        <img src="images/Routing.png" width="600" alt="Routing">
-      </picture>
-    </td>
-    <td>
-      <picture>
-        <img src="images/FleetManagement.png" width="600" alt="Fleet Management">
-      </picture>
-    </td>
-    <td>
-      <picture>
-        <img src="images/TradeRoutes.png" width="600" alt="Trade Routes">
-      </picture>
-    </td>
-  </tr>
-</table>
-
 Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coordinates and the game's own log to show where you are on a live 3D map of the system, plans and guides multi-stop routes, and tracks your hauling contracts from pickup to delivery. With a free UEX token it also finds profitable trade routes, compares ships and fits components. With a UEX datarunner account you can report terminal prices from inside Quantum, climb the ranks and keep trade data fresh for everyone.
 
 > **Fan project.** Quantum is an unofficial Star Citizen fan tool. It isn't affiliated with or endorsed by Cloud Imperium Games. It never changes game files or memory: it only reads `Game.log` and your clipboard, and (if you ask it to) types `/showlocation` into chat and takes screenshots of the game window for price reports.
