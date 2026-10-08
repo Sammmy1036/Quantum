@@ -68,8 +68,6 @@ The **Commodities**, **Trade Routes**, **Datarunner**, **Vehicles**, **Component
 3. In Quantum, click **Settings** (bottom left) and find **Trade data (UEX)**.
 4. Paste it into **UEX Bearer Token** and press **Save**. Quantum checks it with UEX first and only keeps it if it works.
 
-The new tabs appear straight away, and Settings shows *Connected*.
-
 Things to know:
 - The token is stored only in your local `settings.json`.
 - UEX allows 120 requests a minute. Quantum caches its data (places for a day, prices and routes for 30 minutes) and should stay well under the limit.
@@ -145,7 +143,6 @@ Nobody can add to or take from someone else's profile: a report only counts once
 Quantum checks GitHub Releases at start-up and when you press **Check for updates** in Settings. Settings shows the version you're running.
 
 - **The Windows build** downloads the new `Quantum.exe`, checks its signature, and installs it after a restart. It only installs releases signed with Quantum's release key.
-- **Running from source** (`python app.py`), Quantum tells you an update exists and links to the release; update with `git pull`.
 
 Settings, fleet, reports and places live in files next to Quantum and aren't touched by updates. [CHANGELOG.md](CHANGELOG.md) lists what's new in each version.
 
