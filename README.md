@@ -40,15 +40,15 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 
 **Trade and ships** (with a free [UEX](https://uexcorp.space) token)
 - **Commodities:** where each commodity is cheapest to buy and sells best, with stock, prices and a map view.
-- **Trade Routes:** ranked routes from where you are, for your ship's cargo and your budget, with a full route page and preview. Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
-- **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it.
+- **Trade Routes:** ranked routes from a planet, or from one place on it like Baijini Point, for your ship's cargo and your budget, with a full route page and preview. Type any ship with cargo space (your fleet's ships are listed first). Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
+- **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it (including the Drake Command Module, which comes with the Caterpillar and Ironclad).
 - **Components:** a landing page of every component category (systems, avionics, weapons, mining). Each category has search and filters for size, grade, maker, where to get it (shops, or loot, crafting and ship stock) and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its game-file stats, where to buy it, whether it fits your main ship, and **Fit here** buttons for every matching slot in your fleet.
 - **My Fleet:** your ships with their stock loadouts. Swap components, see the stats change, and get an EM/IR estimate with Combat (SCM) and Travel (NAV) modes.
 
 **Datarunner** (with a UEX datarunner account)
 - Report a terminal's prices to UEX from Quantum: the terminal is picked from the game log, every row starts from UEX's current numbers, and most rows need one key press.
-- **Jobs:** terminals with the most out-of-date prices, and stations that still need mapping. *Accept job* holds one for you for 30 minutes and shows other datarunners it's in progress; *I've arrived* opens the terminal in Report Prices, and sending the report finishes the job. *Start job* on a station walks you through it: go there, press *I've arrived*, `/showlocation`, submit, and see whether it's live or waiting for a second datarunner. If a place UEX lists isn't in the game, *Doesn't exist* hides it; once a second datarunner agrees, it's hidden for everyone.
-- **My Reports:** what UEX did with each report, your star rating and your rank.
+- **Jobs:** terminals with the most out-of-date prices, stations that still need mapping, planets and moons to line up for the current game version, and things with no picture yet. *All jobs* shows every kind; a tab with no jobs hides itself until there are some. *Accept job* holds one for you for 30 minutes and shows other datarunners it's in progress; *I've arrived* opens the terminal in Report Prices, and sending the report finishes the job. *Start job* on a station walks you through it: go there, press *I've arrived*, `/showlocation`, submit, and see whether it's live or waiting for a second datarunner. If a place UEX lists isn't in the game, *Doesn't exist* hides it; once a second datarunner agrees, it's hidden for everyone. *Accept job* on a picture job shows exactly what's needed and checks your screenshot before you send it.
+- **My Reports:** what UEX did with each item you reported, grouped by terminal visit, with your star rating and rank. Click an item's status to open its report on UEX, and 📷 to see the screenshot it was sent with (kept on your PC for 14 days). Rejected items show the reason when UEX or the reviewer gives one.
 - **Top 10:** the best Quantum datarunners, with a title card for #1.
 - **FAQ:** how ratings, ranks and jobs work.
 - Approved reports show up for every Quantum user within seconds, rather than waiting for UEX to merge them.
@@ -72,7 +72,7 @@ The **Commodities**, **Trade Routes**, **Datarunner**, **Vehicles**, **Component
 3. In Quantum, click **Settings** (bottom left) and find **Trade data (UEX)**.
 4. Paste it into **UEX Bearer Token** and press **Save**. Quantum checks it with UEX first and only keeps it if it works.
 
-The new tabs appear straight away, and Settings shows how many UEX trade terminals were matched to places on the map.
+The new tabs appear straight away, and Settings shows *Connected*.
 
 Things to know:
 - The token is stored only in your local `settings.json`.
@@ -83,7 +83,7 @@ Things to know:
 
 Reports go to UEX under your own account, so you need a UEX account with datarunner access turned on in your [UEX profile](https://uexcorp.space/account).
 
-1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's only used to send your reports and stays on your PC.
+1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's used to send your reports and to sign in to the Quantum community server (see [Your data and privacy](#your-data-and-privacy)), and stays on your PC.
 2. Go to a commodity kiosk. Land or dock and Quantum picks the terminal from the game log, or type it in the **Terminal** box.
 3. Open the kiosk's list in game and take a screenshot (UEX needs one during a new datarunner's first 90 days; after that, Quantum offers to send without one, and UEX's answer settles it): press your screenshot key (set it in **Settings**) or **Take screenshot** in Quantum. UEX checks every report against it, so data entry stays locked until there is one. For a long list, scroll and take another; they're joined into one picture.
 4. Check each row. Matches the kiosk: **No Changes** (or Space). Different: type the stock and price and set the inventory bar. Gone from the kiosk: **Not Sold Here**. Keys: ↑ ↓ move, Space no changes, Enter edit, 1–7 inventory, G not sold here.
@@ -93,7 +93,7 @@ Take screenshot only works while Star Citizen is running and a terminal is picke
 
 **Ratings and ranks**
 - Every decided price row, picture and station position counts: approved is 5 stars, rejected is 1 star, and your rating is the average. Your first approved report sets you to 5.0.
-- Ranks go by approved reports: Trainee (1), Runner (11), Field Analyst (26), Trade Analyst (51), Quantum Analyst (101).
+- Ranks go by approved reports: Trainee (1), Runner (50), Field Analyst (250), Trade Analyst (750), Quantum Analyst (2000). Each approved price row, picture, station position and planet alignment counts as one.
 - Rows still waiting for review, expired rows and test reports don't count. The **FAQ** view in the Datarunner tab has the details.
 
 **Keep your reports approved:** only report what the kiosk shows right now, double-check prices more than 25% from UEX's average (they're held for manual review), and remember the same item at the same terminal can be reported once every 5 minutes. Repeated wrong reports can get your UEX datarunner access suspended.
@@ -121,7 +121,7 @@ You can change all of them in **Settings**. The `/showlocation` key starts unset
 | **POI** | Browse every place on the map |
 | **Contracts** | Your hauling contracts from the game log, with trackers and map pins |
 | **Commodities** | Buy and sell prices for any commodity, as a picture grid with a detail page and map view |
-| **Trade Routes** | *Find Routes* ranks profitable runs, including ones other users shared. *Planned Routes* tracks the ones you're doing, or ones you enter yourself |
+| **Trade Routes** | *Find Routes* ranks profitable runs from a planet or one place on it, including ones other users shared. *Planned Routes* tracks the ones you're doing, or ones you enter yourself |
 | **Datarunner** | *Report Prices*, *Jobs*, *My Reports*, *Top 10* and *FAQ* |
 | **My Fleet** | Your ships, their loadouts, component swaps, and EM/IR with power settings |
 | **Components** | Every component category, with filters, game-file stats, shops and fitting to your fleet |
@@ -133,7 +133,8 @@ Quantum users share a few things through the Quantum community server (`quantums
 
 - **Prices:** reports sent through Quantum are checked against UEX's own record and then shown to every Quantum user within seconds, marked ⚡. A report is shown for up to 72 hours, or until UEX's own data is newer, and is dropped as soon as UEX rejects it.
 - **Station positions:** a station goes live on everyone's map once two datarunners' `/showlocation` readings agree. Quantum fetches new ones every 10 minutes.
-- **Pictures:** anything with no picture (a commodity, component or vehicle) has a **Send a picture** button. Pictures are reviewed before they appear for everyone; **My Reports** shows each one as *Submitted*, *In Review*, *Approved*, *Live on Quantum* or *Rejected*.
+- **Pictures:** anything with no picture (a commodity, component or vehicle) has a **Send a picture** button, and each one is a job under *Datarunner → Jobs → Pictures*. A picture must be a clear in-game screenshot of just that item, 16:9 and at least 1920 × 1080; Quantum checks this and shows you the screenshot before it's sent. Pictures are reviewed before they appear for everyone; **My Reports** shows each one as *Submitted*, *In Review*, *Approved*, *Live on Quantum* or *Rejected*, with the reason if it's rejected. Approved pictures appear within a couple of minutes, without a restart.
+- **Planet alignments:** after a game update, landing at a known place and typing `/showlocation` lines that planet or moon up for the new version. It goes live for everyone once a second datarunner's alignment agrees.
 - **Landing pad sizes:** pick a place's largest pad on its card. It's yours straight away and shows for everyone once a second datarunner agrees.
 - **Shared trade routes:** routes you share from *Planned Routes* appear in other users' *Find Routes* for a week.
 - **Encrypted backups:** your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up within a minute of any change. They're encrypted on your PC with a key made from your UEX Bearer Token (datarunner or not), so the server can't read them. On a new install, enter the same Bearer Token and they come back automatically. Restoring only adds what's missing; it never removes or overwrites anything. **Settings → Backup** shows when the last backup happened, and lets you delete your backup and turn backups off.
@@ -141,7 +142,7 @@ Quantum users share a few things through the Quantum community server (`quantums
 
 Nobody can add to or take from someone else's profile: a report only counts once UEX's own record shows that username sent it.
 
-**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day) and the stations they map go live from their reading alone. It's checked continuously, so a rejection takes it away until they're clean again. The Datarunner tab's FAQ shows your progress. Only you count as you: Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
+**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map and planets they line up go live from their reading alone. It's checked continuously, so a rejection takes it away until they're clean again. The Datarunner tab's FAQ shows your progress. Only you count as you: Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
 
 ## Updates
 
@@ -150,7 +151,7 @@ Quantum checks GitHub Releases at start-up and when you press **Check for update
 - **The Windows build** downloads the new `Quantum.exe`, checks its signature, and installs it after a restart. It only installs releases signed with Quantum's release key.
 - **Running from source** (`python app.py`), Quantum tells you an update exists and links to the release; update with `git pull`.
 
-Settings, fleet, reports and places live in files next to Quantum and aren't touched by updates.
+Settings, fleet, reports and places live in files next to Quantum and aren't touched by updates. [CHANGELOG.md](CHANGELOG.md) lists what's new in each version.
 
 ## Keeping the data up to date
 
@@ -173,13 +174,15 @@ Quantum talks to these services:
 
 What the community server receives from you:
 - **Datarunner reports:** the UEX report IDs and values of reports you send, under your UEX username.
-- **Contributions:** station positions you set and pictures you send.
+- **Contributions:** station positions, landing pad sizes and planet alignments you set, and pictures you send.
 - **Shared routes:** routes you choose to share.
 - **Your UEX profile:** your username and avatar link, for your profile and the Top 10. Your username and stats are visible to other Quantum users on the Top 10.
 - **Your sign-in:** your UEX secret key once, over HTTPS, to confirm your UEX username with UEX (not kept). The session token it gives Quantum is stored on the server only as a one-way hash, with when and from where it was last used. Removing or changing your secret key in Settings signs that PC out.
 - **Your backup:** encrypted on your PC before it's sent. The server stores it but can't read it, and your UEX Bearer Token is never sent to it. Only plain data from known fields is included, never files. If you make a new UEX token, the old backup can't be opened, and Quantum starts a new one locked to the new token.
 
-It never receives your UEX Bearer Token, and never keeps your secret key. To turn the community features off, set `"community_url": "off"` in `settings.json`; Quantum then uses UEX's data alone.
+It never receives your UEX Bearer Token, never keeps your secret key, and never receives your report screenshots (those go to UEX with the report, and Quantum's own copy stays on your PC).
+
+The community server is looked after by its owner and a small team of moderators, who review contributions and can suspend or ban accounts that misuse it. To have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, set `"community_url": "off"` in `settings.json`; Quantum then uses UEX's data alone.
 
 | File | Holds |
 |---|---|
@@ -187,6 +190,7 @@ It never receives your UEX Bearer Token, and never keeps your secret key. To tur
 | `places.json` | Station positions you set with `/showlocation` |
 | `community_places.json` | Station positions from other Quantum users |
 | `datarunner_reports.json` | The reports you've sent and what UEX did with them |
+| `report_screenshots/` | The screenshot each report was sent with, deleted after 14 days |
 | `datarunner_test/` | Test-mode reports, saved instead of sent |
 | `uex_cache/` | Cached UEX and wiki data, and datarunner avatars |
 
