@@ -12,9 +12,7 @@
   <tr>
     <td><img src="images/Routing.png" width="600"></td>
     <td><img src="images/FleetManagement.png" width="600"></td>
-    <td><img src="images/Commodities.png" width="600"></td>
     <td><img src="images/TradeRoutes.png" width="600"></td>
-    <td><img src="images/Datarunner.png" width="600"></td>
   </tr>
 </table>
 
