@@ -6,13 +6,15 @@
 
 ---
 
-<p align="center"><img src="images/Vehicles.png" width="800"></p>
+<p align="center">
+  <img src="images/Vehicles.png" width="800" alt="Vehicles">
+</p>
 
 <table>
   <tr>
-    <td><img src="images/Routing.png" width="600"></td>
-    <td><img src="images/FleetManagement.png" width="600"></td>
-    <td><img src="images/TradeRoutes.png" width="600"></td>
+    <td><img src="images/Routing.png" width="600" alt="Routing"></td>
+    <td><img src="images/FleetManagement.png" width="600" alt="Fleet Management"></td>
+    <td><img src="images/TradeRoutes.png" width="600" alt="Trade Routes"></td>
   </tr>
 </table>
 
