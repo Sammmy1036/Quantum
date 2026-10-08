@@ -199,6 +199,10 @@ em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}e
 .vh .nm{font-weight:600}.vh .mk{font-size:12px;color:var(--ink-2)}.vh .pr{text-align:right;font:600 14px var(--text)}.vh .pr small{display:block;font:500 11.5px var(--text);color:var(--ink-2)}
 .vh .tags{grid-column:1/3;display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}.vh .tags span{font-size:11px;background:var(--panel-3);border-radius:8px;padding:1px 7px;color:var(--ink-2)}
 .vh .bd{padding:0 12px 10px}.vh .bd .mk-row{background:var(--panel)}
+.tr-ship{position:relative;min-width:0}.tr-ship .field{width:100%}
+.tr-ship-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:50;max-height:300px;overflow:auto;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;padding:4px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+.tr-ship-list .h{font:600 10.5px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:7px 8px 3px}
+.tr-ship-list .opt{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}.tr-ship-list .opt:hover,.tr-ship-list .opt.act{background:var(--panel-3)}
 .tr-form{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:13px}.tr-form .k{color:var(--ink-2)}
 .mk-h{display:flex;align-items:baseline;gap:8px;margin:14px 2px 6px;font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
 .mk-row{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel-2)}
@@ -629,7 +633,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-rep .bd{display:none;border-top:1px solid var(--line);padding:6px 12px 10px}
 .dr-rep.open .bd{display:block}
 .dr-rep .ln{display:grid;grid-template-columns:minmax(160px,1.2fr) 1fr minmax(140px,.8fr);gap:10px;font-size:12.5px;padding:4px 0}
-.dr-rep .ln span:last-child{text-align:right}
+.dr-rep .ln span:last-child{text-align:right}.dr-rep .ln .dr-shotbtn{padding:1px 7px;font-size:12px;min-width:0}
 .credit a{color:var(--route-2);cursor:pointer;text-decoration:none}
 .svc{margin:2px 0 12px}
 .svc .jur{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2);margin:0 0 8px}
@@ -745,6 +749,15 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cp-slot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
 .cp-slot small{display:block;color:var(--ink-2);font-size:12px}.cp-on{color:var(--ok);font-weight:600;font-size:12.5px;white-space:nowrap}
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+/* sending a picture: what's needed, a look at the screenshot, then "I accept" */
+.pf{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.pf-rules{margin:0;padding-left:18px;line-height:1.6;font-size:13px;color:var(--ink-2)}.pf-rules b{color:var(--ink)}
+.pf-shot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px}.pf-msg.bad{color:var(--danger)}.pf-msg.good{color:var(--ok)}
+.pf-prev img{display:block;width:100%;max-height:260px;object-fit:contain;background:#000;border:1px solid var(--line-2);border-radius:8px}
+.pf-ok{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer}.pf-ok input{margin-top:3px}.pf-ok.off{opacity:.5;cursor:default}
+.pf-modal{position:fixed;inset:0;z-index:9000;background:rgba(3,6,12,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.pf-box{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.pf-head{display:flex;align-items:center;gap:10px}.pf-head .btn{margin-left:auto}
 </style>
 </head>
 <body>
@@ -822,7 +835,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
       <div id="tr-find">
       <div class="tr-form">
         <span class="k">From</span><select class="field" id="tr-from"></select>
-        <span class="k">Ship</span><select class="field" id="tr-ship"><option value="">None Selected</option></select>
+        <span class="k">Location</span><select class="field" id="tr-at" title="Start from one place there, like a station or city, or anywhere on it"><option value="">Anywhere there</option></select>
+        <span class="k">Ship</span><div class="tr-ship"><input class="field" id="tr-ship" placeholder="None Selected: type any ship" autocomplete="off" spellcheck="false"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tr-ship-list"><div class="tr-ship-list" id="tr-ship-list" role="listbox" hidden></div></div>
         <span class="k">Systems</span><select class="field" id="tr-sys"><option value="">Any</option><option value="one">Don't cross systems</option>
           <option value="stay:Stanton">Stay in Stanton</option><option value="stay:Pyro">Stay in Pyro</option><option value="stay:Nyx">Stay in Nyx</option>
           <option value="avoid:Pyro">Avoid Pyro</option><option value="avoid:Nyx">Avoid Nyx</option><option value="avoid:Stanton">Avoid Stanton</option></select>
@@ -1557,10 +1572,10 @@ function renderDetail(){
         <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
           Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. It stays on this PC.</div>
         <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
-        <label class="k" for="s-drsecret" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key, for price reports)</span></label>
+        <label class="k" for="s-drsecret" style="display:block;font-weight:600;font-size:12.5px;margin:14px 2px 5px">UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></label>
         <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":""}" style="flex:1" autocomplete="off">
           <button class="btn small" data-a="drsecret">Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">Only needed to report prices from the Datarunner tab. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>. It stays on this PC.</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
         <div class="muted" style="font-size:12px;margin-top:12px">${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); return "Community prices: checking…"; }
           if(!c||!c.url) return "Community prices: off.";
           return c.ok?`Community prices: <span style="color:#9fe0b4">connected</span>. Prices other Quantum datarunners report show up within minutes, marked ⚡ until UEX reviews them.`:`Community prices: <span style="color:#ffb4b4">can't reach the server</span> (${esc(c.error||"")}). UEX data is used alone.`; })()}</div>
@@ -2207,7 +2222,7 @@ async function fillUexStatus(refresh){ const el=$("uex-status"); if(!el) return;
   if(refresh||!S.uexStat){ if(S.uexBusy) return; S.uexBusy=true;
     try{ S.uexStat=await api().uex_status(); } finally{ S.uexBusy=false; } }
   const r=S.uexStat; if(!$("uex-status")||!r) return;
-  $("uex-status").innerHTML=!r.token?"":!r.ok?esc(r.error):`Connected. ${r.matched} of ${r.terminals} trade terminals tied to places on the map.${r.needs_position?.length?`<div style="margin-top:4px">Waiting for a /showlocation (they're "Map a station" jobs in Datarunner &gt; Jobs): ${r.needs_position.map(esc).join(", ")}</div>`:""}${r.unmatched.length?`<details style="margin-top:4px" ${S.uexListOpen?"open":""} ontoggle="S.uexListOpen=this.open"><summary style="cursor:pointer">Not on the map (${r.unmatched.length})</summary>${r.unmatched.map(esc).join(", ")}<div style="margin-top:4px">UEX lists trade terminals here, but Quantum can't match them to a place. If one isn't in the game, mark it "Doesn't exist" in Jobs.</div></details>`:""}`; }
+  $("uex-status").innerHTML=!r.token?"":!r.ok?esc(r.error):`Connected.${r.unmatched.length?`<details style="margin-top:4px" ${S.uexListOpen?"open":""} ontoggle="S.uexListOpen=this.open"><summary style="cursor:pointer">Not on the map (${r.unmatched.length})</summary>${r.unmatched.map(esc).join(", ")}<div style="margin-top:4px">UEX lists trade terminals here, but Quantum can't match them to a place. If one isn't in the game, mark it "Doesn't exist" in Jobs.</div></details>`:""}`; }
 // Shared clicks in both tabs: open a place, add it to the route, open UEX, open Settings.
 async function tradeClick(e){
   const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,false); return true; }
@@ -2230,6 +2245,17 @@ async function renderMarketGrid(){
     <div class="grid">${L.map(c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
       <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`).join("")}</div>`;
   S.mkData=null; syncMarketPanel(); fillPictures($("mk-panel")); }
+// A picture was approved on the Quantum server: put it in wherever "No picture yet" is showing, and
+// reload the vehicle list (its pictures come with it), so nothing needs a restart.
+async function refreshPictures(){
+  if(S.pics) for(const k in S.pics) if(!S.pics[k]) delete S.pics[k];
+  S.veh=null; S.vehGalKey=null; S.cpGalKey=null; S.drPhotoJobs=null; S.drExtra=null;
+  fillPictures(document.body);
+  for(const b of document.querySelectorAll(".pic-none [data-photosend]")){ const box=b.closest(".pic-none");
+    const u=await api().wiki_image(b.dataset.photoname).catch(()=>null);
+    if(u&&box.isConnected) box.replaceWith(Object.assign(document.createElement("img"),{src:u,alt:"",referrerPolicy:"no-referrer"})); }
+  if(S.tab==="vehicles") openVehicles(); else if(S.tab==="fleet") renderFleet();
+  else if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
 // Pictures from the Star Citizen Wiki, many per request, filled in when they arrive.
 async function fillPictures(root){ const els=[...root.querySelectorAll("[data-pic]")]; if(!els.length) return;
   S.pics=S.pics||{}; const need=[...new Set(els.map(e=>e.dataset.pic))].filter(r=>!(r in S.pics));
@@ -2299,24 +2325,32 @@ const trPref=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem("q-"+k)
 async function openTrade(){
   if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; return; }
   const r=await api().uex_origins(); if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  const cur=$("tr-from").value||trPref("from"); let html=r.here?`<option value="${r.here.kind}:${r.here.id}">Near me (${esc(r.here.name)})</option>`:"";
-  for(const sys of ["Stanton","Pyro","Nyx"]){ const g=r.items.filter(o=>o.system===sys); if(g.length) html+=`<optgroup label="${sys}">${g.map(o=>`<option value="${o.kind}:${o.id}">${esc(o.name)}</option>`).join("")}</optgroup>`; }
+  const cur=$("tr-from").value||trPref("from"); let html=r.here?`<option value="${r.here.kind}:${r.here.id}" data-name="${esc(r.here.name)}">Near me (${esc(r.here.name)})</option>`:"";
+  for(const sys of ["Stanton","Pyro","Nyx"]){ const g=r.items.filter(o=>o.system===sys); if(g.length) html+=`<optgroup label="${sys}">${g.map(o=>`<option value="${o.kind}:${o.id}" data-name="${esc(o.name)}">${esc(o.name)}</option>`).join("")}</optgroup>`; }
+  S.trOrigins=r.items;
   $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur;
+  trFillAt(trPref("at"));
   if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
   if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-sys").dataset.init=1; }
-  const fl=await api().fleet_list(), keep=$("tr-ship").value||trPref("ship");
-  $("tr-ship").innerHTML=`<option value="">None Selected</option>`+fl.ships.filter(x=>x.scu>0).map(x=>`<option value="${x.uid}" data-scu="${x.scu}">${esc(x.full)} · ${x.scu} SCU${x.main?" ★":""}</option>`).join("")
-    +(fl.ships.length?"":`<option disabled>Add ships in My Fleet to pick them here</option>`);
-  const pick=[...$("tr-ship").options].find(o=>o.value===keep)||[...$("tr-ship").options].find(o=>o.value&&o.value===fl.main);
-  if(pick){ $("tr-ship").value=pick.value; $("tr-scu").value=pick.dataset.scu; }
+  const fl=await api().fleet_list(), keep=S.trShip?.key||trPref("ship"); S.trFleet=fl.ships;
+  if(/^v:/.test(keep)&&!S.veh) await trLoadVehicles();
+  const pick=trShipFind(keep)||(fl.main?trShipFind(`f:${fl.main}`):null);
+  if(pick){ trShipSet(pick); $("tr-scu").value=pick.scu; } else if(!keep) trShipSet(null);
   if(!S.trDone) $("tr-out").innerHTML=`<div class="empty"><strong>Find a profitable route</strong>Pick where you'll start, enter your cargo space and budget, and Quantum ranks what to haul where by total profit.</div>`; }
+// Location: one place on the planet picked under From (a station, city or outpost with a terminal), or anywhere there
+function trFillAt(keep){ const o=(S.trOrigins||[]).find(o=>`${o.kind}:${o.id}`===$("tr-from").value), L=o?.terminals||[];
+  $("tr-at").innerHTML=`<option value="">Anywhere there</option>`+L.map(t=>`<option value="${t.id}" data-name="${esc(t.name)}" data-place="${esc(t.place||"")}">${esc(t.name)}</option>`).join("");
+  $("tr-at").value=keep&&L.some(t=>String(t.id)===String(keep))?String(keep):""; $("tr-at").disabled=!L.length; }
+$("tr-from").addEventListener("change",()=>{ trFillAt(""); trPref("at",""); });
+$("tr-at").addEventListener("change",()=>trPref("at",$("tr-at").value));
 async function runTrade(){
-  const [kind,id]=($("tr-from").value||"").split(":"); if(!id) return toast("Pick where you'll start");
+  let [kind,id]=($("tr-from").value||"").split(":"); if(!id) return toast("Pick where you'll start");
+  if($("tr-at").value){ kind="terminal"; id=$("tr-at").value; }
   setPreview(null);
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
   trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
   $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">Finding routes…</div>`;
-  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",$("tr-ship").value);
+  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",S.trShip?.key||"");
   const r=await api().uex_routes(kind,+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
   if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>Nothing from here makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
@@ -2326,12 +2360,46 @@ async function runTrade(){
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
       <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
-      <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small ${S.previewIdx===i?"primary":""}" data-prev="${i}">${S.previewIdx===i?"Previewing":"Preview"}</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
+      <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
         <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
   S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; renderSharedRoutes(); }
 $("tr-go").onclick=runTrade;
-$("tr-ship").onchange=()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu) $("tr-scu").value=o.dataset.scu; trPref("ship",$("tr-ship").value); };
-$("tr-scu").addEventListener("input",()=>{ const o=$("tr-ship").selectedOptions[0]; if(o?.dataset.scu&&$("tr-scu").value!==o.dataset.scu) $("tr-ship").value=""; });
+// ---- The ship for a trade run: type any ship. The ships in your fleet are listed first, then every
+// other ship with cargo space. Picking one fills in its cargo space.
+async function trLoadVehicles(){ if(S.veh) return; try{ const r=await api().uex_vehicles(); if(r.ok){ S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; } }catch(_){} }
+function trShipFind(key){ if(!key) return null; if(!key.includes(":")) key=`f:${key}`;          // older saves: a fleet uid
+  const id=key.slice(2);
+  if(key[0]==="f"){ const x=(S.trFleet||[]).find(x=>String(x.uid)===id); return x&&x.scu>0?{key,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}:null; }
+  const v=(S.veh||[]).find(v=>String(v.id)===id); return v&&v.scu>0?{key,label:`${v.full} · ${v.scu} SCU`,scu:v.scu}:null; }
+function trShipSet(p){ S.trShip=p||null; $("tr-ship").value=p?p.label:""; trPref("ship",p?p.key:""); }
+function trShipOptions(q){ q=q.trim().toLowerCase(); const has=t=>!q||t.toLowerCase().includes(q), own=new Set(), mine=[], rest=[];
+  for(const x of S.trFleet||[]){ own.add(x.vehicle_id); if(x.scu>0&&has(`${x.full} ${x.maker||""}`)) mine.push({key:`f:${x.uid}`,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}); }
+  for(const v of S.veh||[]) if(v.scu>0&&!own.has(v.id)&&has(`${v.full} ${v.maker||""}`)) rest.push({key:`v:${v.id}`,label:`${v.full} · ${v.scu} SCU`,scu:v.scu});
+  rest.sort((a,b)=>a.label.localeCompare(b.label)); return {mine, rest:rest.slice(0,80), more:Math.max(0,rest.length-80)}; }
+function trShipList(){ const box=$("tr-ship-list"), inp=$("tr-ship");
+  const q=S.trShip&&inp.value===S.trShip.label?"":inp.value, {mine,rest,more}=trShipOptions(q); S.trShipOpts=[...mine,...rest];
+  const row=(o,i)=>`<div class="opt ${i===S.trShipAct?"act":""}" role="option" data-trship="${esc(o.key)}">${esc(o.label)}</div>`;
+  box.innerHTML=(mine.length?`<div class="h">My fleet</div>${mine.map(row).join("")}`:"")
+    +(rest.length?`<div class="h">${mine.length?"Other ships":"Ships"}</div>${rest.map((o,i)=>row(o,i+mine.length)).join("")}`:"")
+    +(more?`<div class="muted" style="font-size:12px;padding:6px 8px">${more} more: keep typing to narrow</div>`:"")
+    +(!mine.length&&!rest.length?`<div class="muted" style="font-size:12px;padding:6px 8px">${S.veh?"No ship with cargo space matches":"Loading ships…"}</div>`:"");
+  box.hidden=false; inp.setAttribute("aria-expanded","true"); }
+function trShipClose(){ $("tr-ship-list").hidden=true; $("tr-ship").setAttribute("aria-expanded","false"); S.trShipAct=-1; }
+function trShipPick(key){ const p=trShipFind(key); if(!p) return; trShipSet(p); $("tr-scu").value=p.scu; trShipClose(); }
+$("tr-ship").addEventListener("focus",async()=>{ S.trShipAct=-1; $("tr-ship").select(); trShipList(); if(!S.veh){ await trLoadVehicles(); if(document.activeElement?.id==="tr-ship") trShipList(); } });
+$("tr-ship").addEventListener("input",()=>{ S.trShipAct=0; trShipList(); });
+$("tr-ship").addEventListener("mousedown",()=>{ if(document.activeElement?.id==="tr-ship"&&$("tr-ship-list").hidden){ S.trShipAct=-1; trShipList(); } });
+$("tr-ship").addEventListener("keydown",e=>{ const n=(S.trShipOpts||[]).length;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); if(!n) return; S.trShipAct=((S.trShipAct??-1)+(e.key==="ArrowDown"?1:-1)+n)%n; trShipList();
+    $("tr-ship-list").querySelector(".opt.act")?.scrollIntoView({block:"nearest"}); }
+  else if(e.key==="Enter"){ const o=S.trShipOpts?.[S.trShipAct]; if(o){ e.preventDefault(); trShipPick(o.key); $("tr-ship").blur(); } }
+  else if(e.key==="Escape"){ trShipClose(); $("tr-ship").blur(); } });
+// mousedown, so the pick happens before the box loses focus
+$("tr-ship-list").addEventListener("mousedown",e=>{ const o=e.target.closest("[data-trship]"); e.preventDefault(); if(o) trShipPick(o.dataset.trship); });
+$("tr-ship").addEventListener("blur",()=>{ trShipClose(); const v=$("tr-ship").value.trim();
+  if(!v) trShipSet(null); else if(S.trShip) $("tr-ship").value=S.trShip.label;       // typed but not picked: back to the ship picked before
+  else $("tr-ship").value=""; });
+$("tr-scu").addEventListener("input",()=>{ if(S.trShip&&$("tr-scu").value!==String(S.trShip.scu)) trShipSet(null); });
 // Preview: draw the run (you → buy → sell) on the map without touching your route.
 function previewPlaces(from,to,what){ setPreview(null); if(!from||!to) return; S.preview=[from,to]; S.previewIdx=null;
   S.previewLabels={[from]:`Buy ${what}`,[to]:`Sell ${what}`}; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false);
@@ -2346,10 +2414,10 @@ function setPreview(i){ if(i==null){ if(S.preview){ S.preview=null; S.previewIdx
   fitRoute(true,S.preview); }
 // Routes other Quantum users shared, under the UEX results (only those starting where you picked).
 async function renderSharedRoutes(){ const box=$("tr-shared"); if(!box) return;
-  const from=$("tr-from").selectedOptions[0]?.textContent?.replace(/^[●\s]+/,"").split(" (")[0].trim();
+  const at=$("tr-at").selectedOptions[0], from=at?.value?(at.dataset.place||at.dataset.name):$("tr-from").selectedOptions[0]?.dataset.name;
   const r=await api().shared_routes(from||null); if(!$("tr-shared")) return; S.trShared=r.routes||[];
   if(!S.trShared.length){ box.innerHTML=""; return; }
-  box.innerHTML=`<div class="mk-h" style="margin-top:16px">Shared by Quantum users <span class="muted" style="text-transform:none;letter-spacing:0">their own routes, last 7 days</span></div>`
+  box.innerHTML=`<div class="mk-h" style="margin-top:16px">Shared by Quantum users <span class="muted" style="text-transform:none;letter-spacing:0">their own routes from ${esc(from||"anywhere")}, last 7 days</span></div>`
     +S.trShared.map((x,i)=>`<div class="tr-card shared"><div class="top"><b>${esc(x.commodity)}</b>${x.units?`<span class="muted">${x.units.toLocaleString()} SCU</span>`:""}<span class="profit">+${money(x.per_scu)}/SCU</span></div>
       <div class="leg">Buy at <a data-open="${esc(x.from_place)}" style="cursor:pointer;text-decoration:underline">${esc(x.from_terminal||x.from_place)}</a> <span class="muted">${esc(x.from_place)} · ${money(x.buy)}/SCU</span><br>
         Sell at <a data-open="${esc(x.to_place)}" style="cursor:pointer;text-decoration:underline">${esc(x.to_terminal||x.to_place)}</a> <span class="muted">${esc(x.to_place)} · ${money(x.sell)}/SCU</span></div>
@@ -2360,7 +2428,7 @@ $("tr-out").onclick=async e=>{ const sh=e.target.closest("[data-sharedrun]"); if
     toast(r.ok?"Added to Planned Routes":(r.error||"Couldn't add it")); return; }
   if(await tradeClick(e)) return;
   if(!e.target.closest("button,a")){ const c=e.target.closest("[data-tri]"); if(c){ openRunDetail(+c.dataset.tri); return; } }
-  const pv=e.target.closest("[data-prev]"); if(pv){ const i=+pv.dataset.prev; setPreview(S.previewIdx===i?null:i); redrawTradeButtons(); return; }
+  const pv=e.target.closest("[data-prev]"); if(pv){ openRunDetail(+pv.dataset.prev); return; }
   const b=e.target.closest("[data-run]"); if(!b) return; const x=S.trRoutes[+b.dataset.run];
   await api().add_stops([x.from_place,x.to_place]); setPreview(null); redrawTradeButtons(); await poll();
   toast(`Run added: buy ${x.commodity} at ${x.from_place}, sell at ${x.to_place}`); };
@@ -2963,23 +3031,60 @@ $("update-bar").onclick=async e=>{ const ex=e.target.closest("[data-ext]"); if(e
 // No picture anywhere: anyone with a UEX token can send one in; it shows for everyone once approved.
 function picMissing(kind,name){ const can=!!S.live?.log?.uex_token;
   return `<div class="pic-none"><span>No picture yet</span>${can?`<button class="btn small" data-photosend="${esc(kind)}" data-photoname="${esc(name)}">Send a picture</button>`:""}</div>`; }
-function shrinkPicture(file){ return new Promise((ok,bad)=>{ const im=new Image(), url=URL.createObjectURL(file);
-  im.onload=()=>{ const k=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement("canvas");
-    c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-    URL.revokeObjectURL(url); ok(c.toDataURL("image/jpeg",0.88)); };
-  im.onerror=()=>{ URL.revokeObjectURL(url); bad(new Error("That file isn't a picture")); }; im.src=url; }); }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-photosend]"); if(!b) return; e.stopPropagation();
-  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/png,image/jpeg,image/webp";
-  inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
-    try{ b.disabled=true; b.textContent="Sending…"; const data=await shrinkPicture(f);
-      const r=await api().photo_submit(b.dataset.photosend,b.dataset.photoname,data);
-      if(r.ok) document.dispatchEvent(new CustomEvent("quantum:photosent",{detail:{kind:b.dataset.photosend,name:b.dataset.photoname}}));
-      if(r.ok&&r.approved){ const box=b.closest(".pic-none"), im=Object.assign(document.createElement("img"),{src:data,alt:""});
-        if(box){ box.replaceWith(im); } else b.replaceWith(im); toast("Picture live on Quantum for everyone"); }
-      else if(r.ok){ b.replaceWith(Object.assign(document.createElement("em"),{textContent:"Thanks! Sent for review",className:"pic-sent"})); }
-      else { toast(r.error||"Couldn't send it"); b.disabled=false; b.textContent="Send a picture"; } }
-    catch(err){ toast(err.message); b.disabled=false; b.textContent="Send a picture"; } };
-  inp.click(); },true);
+// ---- Sending a picture, from a picture job or any item with none: what makes a good one, a look at the
+// screenshot first, then "I accept" before it goes. The same form is used inline (jobs) and in a dialog.
+const PF_MIN_W=1920, PF_MIN_H=1080, PF_WHAT={vehicle:"ship or vehicle",component:"component",commodity:"commodity"};
+function pfTitle(name){ let t=String(name||"").replace(/\/$/,"").split("/").pop(); try{ t=decodeURIComponent(t); }catch(_){} return t.replace(/_/g," ").trim(); }
+function photoFormHtml(kind,name,job){ const what=PF_WHAT[kind]||"item";
+  return `<div class="pf" data-pfkind="${esc(kind)}" data-pfname="${esc(name)}" data-pfjob="${esc(job||"")}">
+    <ul class="pf-rules"><li>Take a <b>clear in-game screenshot of just the ${what}</b> (${esc(pfTitle(name))}), with nothing else in the shot.</li>
+      <li>The screenshot must be <b>16:9</b> and at least <b>${PF_MIN_W} × ${PF_MIN_H}</b>.</li>
+      <li>Every picture is reviewed, and may be declined if other things are visible in it or it isn't clear.</li></ul>
+    <div class="pf-shot"><button class="btn small" data-pfpick="1">Choose screenshot</button><span class="pf-msg muted">No screenshot chosen yet</span></div>
+    <div class="pf-prev" hidden><img alt="Your screenshot"></div>
+    <label class="pf-ok off"><input type="checkbox" data-pfagree disabled> I accept these requirements and have reviewed my screenshot</label>
+    <div class="row" style="gap:6px"><button class="btn small primary" data-pfsend="1" disabled>Submit picture</button>${job?`<button class="btn small ghost" data-phrelease="1">Let it go</button>`:""}</div></div>`; }
+function pfCheck(w,h){ if(w<PF_MIN_W||h<PF_MIN_H) return `It's ${w} × ${h}, smaller than ${PF_MIN_W} × ${PF_MIN_H}`;
+  if(Math.abs(w/h-16/9)>0.02) return `It's ${w} × ${h}, which isn't 16:9`; return ""; }
+// Sent at 1920 × 1080 (bigger screenshots are scaled down to it) as a JPEG, so it fits the server's size limit
+function pfEncode(im){ const k=Math.min(1,PF_MIN_W/im.naturalWidth), c=document.createElement("canvas");
+  c.width=Math.round(im.naturalWidth*k); c.height=Math.round(im.naturalHeight*k); c.getContext("2d").drawImage(im,0,0,c.width,c.height); return c.toDataURL("image/jpeg",0.9); }
+function pfAgreeOff(f){ const cb=f.querySelector("[data-pfagree]"); cb.checked=false; cb.disabled=true; cb.closest("label").classList.add("off"); f.querySelector("[data-pfsend]").disabled=true; }
+async function pfPicked(f,file){ const msg=f.querySelector(".pf-msg"), prev=f.querySelector(".pf-prev"), img=prev.querySelector("img");
+  f._data=null; pfAgreeOff(f); if(f._url) URL.revokeObjectURL(f._url); f._url=URL.createObjectURL(file);
+  const im=new Image(); im.src=f._url;
+  try{ await im.decode(); }catch(_){ msg.className="pf-msg bad"; msg.textContent="That file isn't a picture"; prev.hidden=true; return; }
+  img.src=f._url; prev.hidden=false; const bad=pfCheck(im.naturalWidth,im.naturalHeight);
+  msg.className=`pf-msg ${bad?"bad":"good"}`;
+  msg.textContent=bad?`${bad}. Choose another screenshot.`:`${im.naturalWidth} × ${im.naturalHeight}, 16:9. Look it over, then tick the box below.`;
+  if(bad) return; f._data=pfEncode(im); const cb=f.querySelector("[data-pfagree]"); cb.disabled=false; cb.closest("label").classList.remove("off"); }
+async function pfSend(f,btn){ const kind=f.dataset.pfkind, name=f.dataset.pfname, data=f._data;
+  if(!data||!f.querySelector("[data-pfagree]").checked) return;
+  btn.disabled=true; btn.textContent="Sending…";
+  try{ const r=await api().photo_submit(kind,name,data);
+    if(!r.ok){ toast(r.error||"Couldn't send it"); btn.disabled=false; btn.textContent="Submit picture"; return; }
+    const modal=f.closest(".pf-modal"), origin=modal?._origin; if(modal) closePhotoDialog();
+    if(origin?.isConnected){ if(r.approved){ const box=origin.closest(".pic-none"); (box||origin).replaceWith(Object.assign(document.createElement("img"),{src:data,alt:""})); }
+      else origin.replaceWith(Object.assign(document.createElement("em"),{textContent:"Thanks! Sent for review",className:"pic-sent"})); }
+    toast(r.approved?"Picture live on Quantum for everyone":"Thanks! Your picture was sent for review");
+    document.dispatchEvent(new CustomEvent("quantum:photosent",{detail:{kind,name}})); }
+  catch(err){ toast(err.message); btn.disabled=false; btn.textContent="Submit picture"; } }
+function openPhotoDialog(kind,name,origin){ closePhotoDialog();
+  const d=Object.assign(document.createElement("div"),{className:"pf-modal",id:"pf-modal"}); d._origin=origin;
+  d.innerHTML=`<div class="pf-box" role="dialog" aria-modal="true" aria-label="Send a picture"><div class="pf-head"><b>Send a picture of ${esc(pfTitle(name))}</b>
+    <button class="btn small ghost" data-pfclose="1" aria-label="Close">✕</button></div>${photoFormHtml(kind,name,"")}</div>`;
+  document.body.appendChild(d); d.querySelector("[data-pfpick]").focus(); }
+function closePhotoDialog(){ const d=$("pf-modal"); if(!d) return; const f=d.querySelector(".pf"); if(f?._url) URL.revokeObjectURL(f._url); d.remove(); }
+// Caught early (capture), so the card or panel the button sits in doesn't also react to the click
+document.addEventListener("click",e=>{
+  const ps=e.target.closest("[data-photosend]"); if(ps){ e.stopPropagation(); return openPhotoDialog(ps.dataset.photosend,ps.dataset.photoname,ps); }
+  if(e.target.id==="pf-modal"||e.target.closest("[data-pfclose]")){ e.stopPropagation(); return closePhotoDialog(); }
+  const pk=e.target.closest("[data-pfpick]"); if(pk){ e.stopPropagation(); const f=pk.closest(".pf"), inp=document.createElement("input");
+    inp.type="file"; inp.accept="image/png,image/jpeg,image/webp"; inp.onchange=()=>{ if(inp.files[0]) pfPicked(f,inp.files[0]); }; inp.click(); return; }
+  const sd=e.target.closest("[data-pfsend]"); if(sd){ e.stopPropagation(); pfSend(sd.closest(".pf"),sd); } },true);
+document.addEventListener("change",e=>{ const cb=e.target.closest?.("[data-pfagree]"); if(!cb) return; const f=cb.closest(".pf");
+  f.querySelector("[data-pfsend]").disabled=!(cb.checked&&f._data); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&$("pf-modal")) closePhotoDialog(); });
 // A wiki description: the first paragraph, with the rest behind "More".
 function wikiDesc(t,url){ const ps=String(t).split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean); if(!ps.length) return "";
   const first=`<p>${esc(ps[0])}</p>`, rest=ps.slice(1).map(p=>`<p>${esc(p)}</p>`).join("");
@@ -3157,7 +3262,8 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
     if(!r.ok){ mh.disabled=false; mh.textContent="I'm here: map it"; return toast(r.error); }
     await loadStatic(); await poll(); toast(`${mh.dataset.maphere} is on your map. It goes live for everyone once a second datarunner agrees`); return renderDrJobs(); }
   const jt=e.target.closest("[data-jobroute]"); if(jt){ await api().add_stops([jt.dataset.jobroute]); await poll(); toast(`Added ${jt.dataset.jobroute} to the route`); return; }
-  const card=e.target.closest(".dr-rep[data-k]"); if(card&&!e.target.closest("button")){ card.classList.toggle("open"); return; }
+  const rs=e.target.closest("[data-repshot]"); if(rs){ const r=await api().dr_report_shot(rs.dataset.repshot); if(!r.ok) return toast(r.error); return drShotViewer(r.src); }
+  const card=e.target.closest(".dr-rep[data-k]"); if(card&&!e.target.closest("button,a")){ card.classList.toggle("open"); return; }
   if(e.target.closest('[data-act="shoot"]')) return $("dr-shoot").click();
   if(e.target.id==="dr-go") return drReview();
   if(e.target.id==="dr-add-b"){ const c=$("dr-add-c").value; if(!c) return toast("Pick a commodity to add");
@@ -3538,7 +3644,7 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   // Stations Quantum can't place yet: go there, /showlocation, and they go on everyone's map.
   // Jobs come in two kinds: mapping stations and updating prices. Once every station is mapped the
   // selector and the "Map a station" list go away and only price jobs are left.
-  const unmapped=(S.locs||[]).filter(L=>!L.pos).length, kind=unmapped?(S.drJobKind||"all"):"prices";
+  const unmapped=(S.locs||[]).filter(L=>!L.pos).length, kind=!unmapped&&S.drJobKind==="map"?"all":(S.drJobKind||"all");
   const pl=S.live?.player, mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
     .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
   const reading=L=>L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body));
@@ -3557,16 +3663,41 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
         ${drJobTabs(kind,unmapped)}
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`
+    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${kind==="all"?drAlignGuide()+drPhotoBanner():""}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`
         :kind==="map"?`<div class="dr-empty">Every station${S.drJobSys?` in ${esc(S.drJobSys)}`:""} is on the map.</div>`:""):""}
-      ${kind!=="map"?`${kind==="all"&&mapJobs.length?`<div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
+      ${kind==="all"?`<div id="dr-all-extra"></div>`:""}
+      ${kind!=="map"?`${kind==="all"?`<div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
       ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}`:""}${uexCredit(r.at)}
-      <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`; }
+      <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`;
+  if(kind==="all") drAllExtras(); }
+
+// All jobs: a few of the planet alignments and pictures still to do (their own tabs list them all).
+// Fetched at most once a minute (the list re-renders often); a job taken or done clears it.
+async function drAllExtras(){ if(!S.drExtra||Date.now()-S.drExtra.at>60000)
+    S.drExtra={at:Date.now(), p:Promise.all([api().dr_align_jobs().catch(()=>null), api().dr_photo_jobs(false).catch(()=>null)])};
+  const [a,p]=await S.drExtra.p;
+  drJobCounts(a,p); const box=$("dr-all-extra"); if(!box||S.dr?.view!=="jobs") return;
+  if(p?.ok) S.drPhotoJobs=p.jobs;
+  const sys=S.drJobSys||"", rank={waiting:0,open:1}, SHOW=3, h=t=>`<span class="muted" style="text-transform:none;letter-spacing:0">${t}</span>`;
+  const al=a?.ok?a.jobs.filter(j=>(j.status==="open"||j.status==="waiting")&&(!sys||j.system===sys))
+    .sort((x,y)=>(x.system!==S.system)-(y.system!==S.system)||rank[x.status]-rank[y.status]||x.body.localeCompare(y.body)):[];
+  const mine=drPhotoMine(), ph=(p?.ok?p.jobs:[]).filter(j=>!drPhotoYou(j,mine));
+  const more=(k,n)=>n>SHOW?`<button class="btn small ghost" data-jobkind="${k}" style="margin:0 2px 12px">See all ${n}</button>`:"";
+  box.innerHTML=(al.length?`<div class="mk-h">Planet alignment ${h(`${al.length} to line up for game version ${esc(a.build)}`)}</div>${al.slice(0,SHOW).map(ajCard).join("")}${more("align",al.length)}`:"")
+    +(ph.length?`<div class="mk-h">Pictures ${h(`${plural(ph.length,"thing")} with no picture yet`)}</div>${ph.slice(0,SHOW).map(j=>pjCard(j,mine)).join("")}${more("photos",ph.length)}`:""); }
+
+// How many jobs of each kind there are, so a tab with none hides itself (and comes back when there are).
+function drJobCounts(a,p){ const n=S.drJobN=S.drJobN||{};
+  if(a?.ok) n.align=a.jobs.filter(j=>j.status==="open"||j.status==="waiting").length;
+  if(p?.ok){ n.photos=p.jobs.length; n.photoKinds=p.counts||{}; }
+  const t=$("dr-job-tabs"); if(t) t.outerHTML=drJobTabs(t.dataset.kind,(S.locs||[]).some(L=>!L.pos)); }
 
 // Which jobs to list: map stations and price updates (together under All jobs), planet alignments, pictures.
 function drJobTabs(kind,unmapped){
-  const t=[["all","All jobs"],...(unmapped?[["map","Map stations"]]:[]),["prices","Update prices"],["align","Planet alignment"],["photos","Pictures"]];
-  return `<div class="seg-mini" title="Which jobs to list">${t.map(([k,n])=>`<button data-jobkind="${k}" class="${kind===k?"on":""}">${n}</button>`).join("")}</div>`; }
+  const n=S.drJobN||{}, has=k=>n[k]!==0||kind===k;       // unknown yet: shown
+  const t=[["all","All jobs"],...(unmapped?[["map","Map stations"]]:[]),["prices","Update prices"],
+    ...(has("align")?[["align","Planet alignment"]]:[]),...(has("photos")?[["photos","Pictures"]]:[])];
+  return `<div class="seg-mini" id="dr-job-tabs" data-kind="${esc(kind)}" title="Which jobs to list">${t.map(([k,n])=>`<button data-jobkind="${k}" class="${kind===k?"on":""}">${n}</button>`).join("")}</div>`; }
 function drJobsHead(kind,extra,where){
   return `<div class="dr-top"><div><h2>Jobs</h2><div class="where">${where}</div></div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${drJobTabs(kind,(S.locs||[]).some(L=>!L.pos))}${extra||""}</div></div>`; }
@@ -3574,80 +3705,100 @@ function drJobsHead(kind,extra,where){
 // ---- Planet alignment jobs: every planet and moon for this game version. Land at a known place on it and
 // type /showlocation: Quantum lines it up and sends it. Live for everyone once a second alignment agrees.
 const AJ_ST={live:["⚡ Live on Quantum","#7fe7ff"],mine:["You aligned it","#57e39b"],waiting:["Needs a second alignment","#f2c14e"],open:["Not aligned yet","#8cc4ff"]};
+function ajCard(j){ const [label,col]=AJ_ST[j.status], mine=S.drAlignJob?.body===j.body;
+  const sub=j.status==="live"?`Agreed by ${plural(j.reporters||2,"datarunner")}: every Quantum user's map uses it`
+    :j.status==="mine"?`Waiting for another datarunner's alignment to agree with yours`
+    :j.status==="waiting"?`${plural(Math.max(1,j.others),"datarunner")} lined it up already: yours confirms it, and you both get the approved report`
+    :`Nobody has lined it up for this game version yet`;
+  return `<div class="dr-job ${j.you_here?"here":""}"><div class="n">🪐</div><div class="age ${j.status==="live"?"a0":j.status==="mine"?"a1":j.status==="waiting"?"a2":"a3"}" style="font-size:12px">${j.kind==="moon"?"Moon":"Planet"}</div>
+    <div class="info"><b>${esc(j.body)}</b>${j.you_here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`a:${j.body}`)}
+      <span class="badge" style="margin-left:8px;color:${col};border-color:${col}66;background:${col}14">${label}</span>
+      <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.system)}${j.place_count?` · land at any of ${j.place_count} known places, like ${j.places.slice(0,3).map(esc).join(", ")}`:""}</div>
+      <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${sub}</div></div>
+    <div class="go"><button class="btn small ghost" data-ajmap="${esc(j.body)}" title="Show it on the map">Map</button>${j.status==="live"||j.status==="mine"?""
+      :mine?`<span class="chip y">Your job</span>`:drClaimOf(`a:${j.body}`)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
+      :`<button class="btn small primary" data-ajaccept="${esc(j.body)}" title="Hold it for ${CLAIM_MIN} minutes so others know you're on it">Accept job</button>`}</div></div>`; }
+function drAlignGuide(){ const aj=S.drAlignJob; if(!aj||aj.until<=Date.now()){ S.drAlignJob=null; return ""; }
+  return `<div class="dr-job here" style="display:block;padding:14px"><b>Your job: line up ${esc(aj.body)}</b> <span class="muted">· held for ${Math.max(1,Math.round((aj.until-Date.now())/60000))} more min</span>
+    <ol style="margin:8px 0 6px 18px;padding:0;line-height:1.6;font-size:13px"><li>Land at a known place on ${esc(aj.body)}: a city, outpost or landing zone that's on Quantum's map.</li>
+      <li>Stand there and type <b>/showlocation</b> in game chat${S.live?.autoloc?.loc_hotkey?` (or press ${esc(S.live.autoloc.loc_hotkey)})`:""}.</li>
+      <li>Quantum lines the planet up and sends it by itself. When another datarunner's alignment agrees, it goes live for everyone and counts as an approved report for you both.</li></ol>
+    <div class="row" style="gap:6px"><button class="btn small ghost" data-ajmap="${esc(aj.body)}">Show on map</button><button class="btn small ghost" data-ajrelease="1">Let it go</button></div></div>`; }
+// The held alignment job is done once the server lists it as yours (or live)
+function drAlignDone(r){ const aj=S.drAlignJob; if(!aj) return; const j=r.jobs.find(x=>x.body===aj.body&&(x.status==="mine"||x.status==="live")); if(!j) return;
+  S.drAlignJob=null; toast(j.status==="live"?`${aj.body} lined up and live for everyone`:`${aj.body} lined up and sent. It counts once another datarunner's alignment agrees`); }
+
+// ---- Planet alignment jobs: every planet and moon for this game version. Land at a known place on it and
+// type /showlocation: Quantum lines it up and sends it. Live for everyone once a second alignment agrees.
 async function renderDrAlignJobs(){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-jobs.align")) P.innerHTML=`${drViews()}${qLoader("Checking which planets are lined up…")}`;
   const [r]=await Promise.all([api().dr_align_jobs(), drLoadClaims()]); if(d.view!=="jobs"||S.drJobKind!=="align") return;
   if(!r.ok){ P.innerHTML=`${drViews()}${drJobsHead("align","","Planets and moons to line up for this game version.")}<div class="dr-list dr-jobs special align"><div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div></div>`; return; }
-  const sys=S.drJobSys&&r.systems.includes(S.drJobSys)?S.drJobSys:"";
-  const aj=S.drAlignJob&&S.drAlignJob.until>Date.now()?S.drAlignJob:null; if(!aj) S.drAlignJob=null;
-  const done=aj&&r.jobs.find(j=>j.body===aj.body&&(j.status==="mine"||j.status==="live"));
-  if(done){ S.drAlignJob=null; toast(`${aj.body} lined up and sent. It counts once another datarunner's alignment agrees`); }
-  const rank={waiting:0,open:1,mine:2,live:3};
+  drJobCounts(r,null); drAlignDone(r);
+  if(!S.drJobN.align&&!drAlignGuide()){ S.drJobKind="all"; return renderDrJobs(); }      // nothing left to line up: the tab hides itself
+  const sys=S.drJobSys&&r.systems.includes(S.drJobSys)?S.drJobSys:"", rank={waiting:0,open:1,mine:2,live:3};
   const L=r.jobs.filter(j=>!sys||j.system===sys).sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||rank[a.status]-rank[b.status]||a.body.localeCompare(b.body));
-  const todo=r.jobs.filter(j=>j.status==="open"||j.status==="waiting").length;
-  const card=j=>{ const [label,col]=AJ_ST[j.status], mine=S.drAlignJob?.body===j.body;
-    const sub=j.status==="live"?`Agreed by ${plural(j.reporters||2,"datarunner")}: every Quantum user's map uses it`
-      :j.status==="mine"?`Waiting for another datarunner's alignment to agree with yours`
-      :j.status==="waiting"?`${plural(Math.max(1,j.others),"datarunner")} lined it up already: yours confirms it, and you both get the approved report`
-      :`Nobody has lined it up for this game version yet`;
-    return `<div class="dr-job ${j.you_here?"here":""}"><div class="n">🪐</div><div class="age ${j.status==="live"?"a0":j.status==="mine"?"a1":j.status==="waiting"?"a2":"a3"}" style="font-size:12px">${j.kind==="moon"?"Moon":"Planet"}</div>
-      <div class="info"><b>${esc(j.body)}</b>${j.you_here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`a:${j.body}`)}
-        <span class="badge" style="margin-left:8px;color:${col};border-color:${col}66;background:${col}14">${label}</span>
-        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.system)}${j.place_count?` · land at any of ${j.place_count} known places, like ${j.places.slice(0,3).map(esc).join(", ")}`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${sub}</div></div>
-      <div class="go"><button class="btn small ghost" data-ajmap="${esc(j.body)}" title="Show it on the map">Map</button>${j.status==="live"||j.status==="mine"?""
-        :mine?`<span class="chip y">Your job</span>`:drClaimOf(`a:${j.body}`)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
-        :`<button class="btn small primary" data-ajaccept="${esc(j.body)}" title="Hold it for ${CLAIM_MIN} minutes so others know you're on it">Accept job</button>`}</div></div>`; };
-  const guide=S.drAlignJob?`<div class="dr-job here" style="display:block;padding:14px"><b>Your job: line up ${esc(S.drAlignJob.body)}</b> <span class="muted">· held for ${Math.max(1,Math.round((S.drAlignJob.until-Date.now())/60000))} more min</span>
-      <ol style="margin:8px 0 6px 18px;padding:0;line-height:1.6;font-size:13px"><li>Land at a known place on ${esc(S.drAlignJob.body)}: a city, outpost or landing zone that's on Quantum's map.</li>
-        <li>Stand there and type <b>/showlocation</b> in game chat${S.live?.autoloc?.loc_hotkey?` (or press ${esc(S.live.autoloc.loc_hotkey)})`:""}.</li>
-        <li>Quantum lines the planet up and sends it by itself. When another datarunner's alignment agrees, it goes live for everyone and counts as an approved report for you both.</li></ol>
-      <div class="row" style="gap:6px"><button class="btn small ghost" data-ajmap="${esc(S.drAlignJob.body)}">Show on map</button><button class="btn small ghost" data-ajrelease="1">Let it go</button></div></div>`:"";
+  const todo=S.drJobN.align;
   P.innerHTML=`${drViews()}${drJobsHead("align",`<select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===sys?"selected":""}>${esc(x)}</option>`).join("")}</select>`,
       `Game version ${esc(r.build)} · ${todo?`${todo} ${todo===1?"planet or moon":"planets and moons"} still to line up`:"every planet and moon is lined up"}. Each update can shift where a planet's surface is turned, so they're lined up again per version.`)}
-    <div class="dr-list dr-jobs special align">${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${guide}${L.map(card).join("")||`<div class="dr-empty">Nothing to line up here.</div>`}</div>`; }
+    <div class="dr-list dr-jobs special align">${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drAlignGuide()}${L.map(ajCard).join("")||`<div class="dr-empty">Nothing to line up here.</div>`}</div>`; }
 
 // ---- Picture jobs: ships, vehicles, components and commodities with no picture anywhere yet.
+// Accept one and the job shows what's needed; the screenshot is checked and looked over before it's sent.
 const PJ_KIND={vehicle:"Ships & vehicles",component:"Components",commodity:"Commodities"};
+function drPhotoHeld(){ const h=S.drPhotoJob; if(h&&h.until>Date.now()) return h; S.drPhotoJob=null; return null; }
+function drPhotoMine(){ return new Set((S.drProf?.contrib||[]).filter(c=>c.type==="photo"&&["submitted","in_review"].includes(c.status)).map(c=>`${c.kind}:${String(c.name).toLowerCase()}`)); }
+function drPhotoYou(j,mine){ const key=`${j.kind}:${j.title.toLowerCase()}`; return !!((S.drPhotoSent||{})[key]||mine.has(key)); }
+function pjCard(j,mine){ const id=`ph:${j.kind}:${j.title}`, you=drPhotoYou(j,mine), isMine=drPhotoHeld()?.id===id;
+  return `<div class="dr-job ${isMine?"here":""}"><div class="n">📷</div><div class="age a3" style="font-size:12px">${j.kind==="vehicle"?"Ship":j.kind==="component"?"Part":"Cargo"}</div>
+    <div class="info"><b>${esc(j.label)}</b>${drClaimChip(id)}${you?` <span class="chip" style="margin-left:6px;color:#f2c14e">You sent one · in review</span>`:""}
+      <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.group)} · ${esc(PJ_KIND[j.kind])}</div></div>
+    <div class="go">${you?"":isMine?`<span class="chip y">Your job</span>`:drClaimOf(id)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
+      :`<button class="btn small primary" data-phaccept="${esc(id)}" title="Hold it for ${CLAIM_MIN} minutes; Quantum shows you what's needed">Accept job</button>`}</div></div>`; }
+function drPhotoGuide(){ const h=drPhotoHeld(); if(!h) return "";
+  return `<div class="dr-job here" style="display:block;padding:14px"><b>Your job: a picture of ${esc(h.label)}</b> <span class="muted">· held for ${Math.max(1,Math.round((h.until-Date.now())/60000))} more min</span>
+    ${photoFormHtml(h.kind,h.name,h.id)}</div>`; }
+// On All jobs: a short note that opens the Pictures tab, where the form is
+function drPhotoBanner(){ const h=drPhotoHeld(); if(!h) return "";
+  return `<div class="dr-job here" style="display:block;padding:12px 14px"><b>Your job: a picture of ${esc(h.label)}</b> <span class="muted">· held for ${Math.max(1,Math.round((h.until-Date.now())/60000))} more min</span>
+    <button class="btn small primary" data-jobkind="photos" style="margin-left:8px">Send it</button></div>`; }
 async function renderDrPhotoJobs(refresh){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-jobs.photos")) P.innerHTML=`${drViews()}${qLoader("Finding things with no picture…")}`;
   const [r]=await Promise.all([api().dr_photo_jobs(!!refresh), drLoadClaims()]); if(d.view!=="jobs"||S.drJobKind!=="photos") return;
   if(!r.ok){ P.innerHTML=`${drViews()}${drJobsHead("photos","","Things with no picture yet.")}<div class="dr-list dr-jobs special photos"><div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div></div>`; return; }
-  S.drPhotoJobs=r.jobs; const k=S.drPhotoKind||"";
-  P.innerHTML=`${drViews()}${drJobsHead("photos",`<div class="seg-mini"><button data-phkind="" class="${!k?"on":""}">All</button>${Object.entries(PJ_KIND).map(([x,n])=>`<button data-phkind="${x}" class="${k===x?"on":""}">${n} <small class="muted">${r.counts[x]||0}</small></button>`).join("")}</div>`,
-      `${plural(r.jobs.length,"thing")} with no picture anywhere yet. Send a clear in-game screenshot of one; it goes live for every Quantum user once it's approved.`)}
+  S.drPhotoJobs=r.jobs; drJobCounts(null,r);
+  if(!r.jobs.length&&!drPhotoHeld()){ S.drJobKind="all"; return renderDrJobs(); }      // everything has a picture: the tab hides itself
+  const kinds=Object.entries(PJ_KIND).filter(([x])=>r.counts[x]);                      // kinds with no jobs aren't shown
+  if(S.drPhotoKind&&!r.counts[S.drPhotoKind]) S.drPhotoKind="";
+  const k=S.drPhotoKind||"";
+  P.innerHTML=`${drViews()}${drJobsHead("photos",kinds.length>1?`<div class="seg-mini"><button data-phkind="" class="${!k?"on":""}">All</button>${kinds.map(([x,n])=>`<button data-phkind="${x}" class="${k===x?"on":""}">${n} <small class="muted">${r.counts[x]}</small></button>`).join("")}</div>`:"",
+      `${plural(r.jobs.length,"thing")} with no picture anywhere yet. Accept a job to see what's needed; it goes live for every Quantum user once it's approved.`)}
     <input class="search" id="dr-ph-q" placeholder="Find one, like “Atlas” or “Gold”" value="${esc(S.drPhotoQ||"")}" autocomplete="off" style="margin:0 2px 10px;width:calc(100% - 4px)">
-    <div class="dr-list dr-jobs special photos" id="dr-ph-list"></div>`;
+    <div class="dr-list dr-jobs special photos" id="dr-ph-list"><div id="dr-ph-guide">${drPhotoGuide()}</div><div id="dr-ph-cards"></div></div>`;
   drPhotoList(); }
-function drPhotoList(){ const box=$("dr-ph-list"); if(!box) return;
-  const k=S.drPhotoKind||"", q=(S.drPhotoQ||"").trim().toLowerCase(), sent=S.drPhotoSent||{};
-  const mine=new Set((S.drProf?.contrib||[]).filter(c=>c.type==="photo"&&["submitted","in_review"].includes(c.status)).map(c=>`${c.kind}:${String(c.name).toLowerCase()}`));
+function drPhotoList(){ const box=$("dr-ph-cards"); if(!box) return;
+  const k=S.drPhotoKind||"", q=(S.drPhotoQ||"").trim().toLowerCase(), mine=drPhotoMine();
   const L=(S.drPhotoJobs||[]).filter(j=>(!k||j.kind===k)&&(!q||`${j.label} ${j.group}`.toLowerCase().includes(q)));
-  const held=S.drPhotoJob&&S.drPhotoJob.until>Date.now()?S.drPhotoJob:null;
-  const card=j=>{ const id=`ph:${j.kind}:${j.title}`, key=`${j.kind}:${j.title.toLowerCase()}`, you=sent[key]||mine.has(key), isMine=held&&held.id===id;
-    return `<div class="dr-job ${isMine?"here":""}"><div class="n">📷</div><div class="age a3" style="font-size:12px">${j.kind==="vehicle"?"Ship":j.kind==="component"?"Part":"Cargo"}</div>
-      <div class="info"><b>${esc(j.label)}</b>${drClaimChip(id)}${you?` <span class="chip" style="margin-left:6px;color:#f2c14e">You sent one · in review</span>`:""}
-        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.group)} · ${esc(PJ_KIND[j.kind])}</div></div>
-      <div class="go">${you?"":`${isMine?`<span class="chip y">Your job</span>`:drClaimOf(id)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
-        :`<button class="btn small ghost" data-phaccept="${esc(id)}" title="Hold it for ${CLAIM_MIN} minutes so others know you're on it">Accept job</button>`}
-        <button class="btn small primary" data-photosend="${esc(j.kind)}" data-photoname="${esc(j.name)}" data-photojob="${esc(id)}">Send a picture</button>`}</div></div>`; };
-  box.innerHTML=L.length?L.slice(0,150).map(card).join("")+(L.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">Showing 150 of ${L.length}: search to narrow.</div>`:"")
+  box.innerHTML=L.length?L.slice(0,150).map(j=>pjCard(j,mine)).join("")+(L.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">Showing 150 of ${L.length}: search to narrow.</div>`:"")
     :`<div class="dr-empty">${q||k?"Nothing matches.":"Everything has a picture. Thank you, datarunners!"}</div>`; }
 // A picture went out from anywhere in Quantum: that job is done (the server frees its hold).
-document.addEventListener("quantum:photosent",e=>{ const t=String(e.detail.name).replace(/\/$/,"").split("/").pop();
-  let title=t; try{ title=decodeURIComponent(t); }catch(_){}
-  title=title.replace(/_/g," ").trim(); (S.drPhotoSent=S.drPhotoSent||{})[`${e.detail.kind}:${title.toLowerCase()}`]=true;
+document.addEventListener("quantum:photosent",e=>{ const title=pfTitle(e.detail.name);
+  (S.drPhotoSent=S.drPhotoSent||{})[`${e.detail.kind}:${title.toLowerCase()}`]=true;
   if(S.drPhotoJob?.id===`ph:${e.detail.kind}:${title}`) S.drPhotoJob=null;
-  S.drProf=null; if(S.dr?.view==="jobs"&&S.drJobKind==="photos") drPhotoList(); });
+  S.drProf=null; S.drExtra=null; if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); });
 async function drSpecialJobClick(e){
+  if(e.target.closest("[data-phaccept],[data-ajaccept],[data-phrelease],[data-ajrelease]")) S.drExtra=null;
   const pk=e.target.closest("[data-phkind]"); if(pk){ S.drPhotoKind=pk.dataset.phkind; for(const b of $("dr-panel").querySelectorAll("[data-phkind]")) b.classList.toggle("on",b===pk); drPhotoList(); return true; }
-  const pa=e.target.closest("[data-phaccept]"); if(pa){ pa.disabled=true; const u=await drAccept(pa.dataset.phaccept);
-    if(u){ S.drPhotoJob={id:pa.dataset.phaccept, until:u}; toast(`Job accepted: it's yours for ${CLAIM_MIN} minutes`); }
-    await drLoadClaims(); drPhotoList(); return true; }
+  // Accepting a picture job opens the Pictures tab with what's needed and the form at the top
+  const pa=e.target.closest("[data-phaccept]"); if(pa){ pa.disabled=true; pa.textContent="Accepting…"; const id=pa.dataset.phaccept;
+    const j=(S.drPhotoJobs||[]).find(x=>`ph:${x.kind}:${x.title}`===id), u=await drAccept(id);
+    if(u&&j){ S.drPhotoJob={id, until:u, kind:j.kind, name:j.name, label:j.label}; toast(`Job accepted: it's yours for ${CLAIM_MIN} minutes`); }
+    S.drJobKind="photos"; await renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
+  if(e.target.closest("[data-phrelease]")){ if(S.drPhotoJob) drRelease(S.drPhotoJob.id); S.drPhotoJob=null; renderDrJobs(); return true; }
   const aa=e.target.closest("[data-ajaccept]"); if(aa){ aa.disabled=true; const u=await drAccept(`a:${aa.dataset.ajaccept}`);
     if(u){ if(S.drAlignJob) drRelease(`a:${S.drAlignJob.body}`); S.drAlignJob={body:aa.dataset.ajaccept, until:u}; toast(`Job accepted: line up ${aa.dataset.ajaccept} within ${CLAIM_MIN} minutes`); }
-    renderDrAlignJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
-  if(e.target.closest("[data-ajrelease]")){ if(S.drAlignJob) drRelease(`a:${S.drAlignJob.body}`); S.drAlignJob=null; renderDrAlignJobs(); return true; }
+    S.drJobKind="align"; await renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
+  if(e.target.closest("[data-ajrelease]")){ if(S.drAlignJob) drRelease(`a:${S.drAlignJob.body}`); S.drAlignJob=null; renderDrJobs(); return true; }
   const am=e.target.closest("[data-ajmap]"); if(am){ document.querySelector('.tab[data-tab="route"]')?.click(); select({kind:"body",name:am.dataset.ajmap}); focusBody(am.dataset.ajmap); return true; }
   return false; }
 
@@ -3697,6 +3848,19 @@ function drProfileCard(p){ if(!p?.ok) return "";
     <div class="ladder">${p.ranks.slice(1).map((x,i)=>`<span class="${x[1]===p.rank.name?"on":p.rank.count>=x[0]?"done":""}">${esc(x[1])}<small>${x[0]}${i===p.ranks.length-2?"+":"–"+(p.ranks[i+2][0]-1)}</small></span>`).join("")}</div>
     ${p.source==="local"?`<div class="muted" style="grid-column:1/-1;font-size:11.5px">Worked out on this PC: the Quantum server couldn't be reached.</div>`:p.test?`<div class="muted" style="grid-column:1/-1;font-size:11.5px">Test mode: test reports don't count toward rank or stars.</div>`:""}
   </div>`; }
+// A row's status opens that item's report on UEX ({id}: UEX's report number). Without a number yet,
+// it opens UEX's page for that commodity at that terminal instead.
+const UEX_REPORT_URL="https://uexcorp.space/data/info/id/{id}/";
+// Reports sent from the same terminal within 15 minutes of each other are one visit (newest first)
+function drGroupReports(list){ const out=[];
+  for(const e of [...list].sort((a,b)=>(b.at||0)-(a.at||0))){ const g=out.find(g=>g.id_terminal===e.id_terminal&&g.last-(e.at||0)<=900);
+    if(g&&g.test===!!e.test&&g.id_terminal===e.id_terminal&&g.last-(e.at||0)<=900){ g.items.push(e); g.last=e.at||0; }
+    else out.push({id_terminal:e.id_terminal, at:e.at||0, last:e.at||0, test:!!e.test, items:[e]}); }
+  return out; }
+function drShotViewer(src){ closePhotoDialog(); const d=Object.assign(document.createElement("div"),{className:"pf-modal",id:"pf-modal"});
+  d.innerHTML=`<div class="pf-box" style="width:min(1100px,100%)" role="dialog" aria-modal="true" aria-label="Screenshot sent with the report"><div class="pf-head"><b>The screenshot this report was sent with</b>
+    <button class="btn small ghost" data-pfclose="1" aria-label="Close">✕</button></div><img src="${esc(src)}" alt="" style="display:block;width:100%;margin-top:10px;border-radius:8px;border:1px solid var(--line-2)"></div>`;
+  document.body.appendChild(d); }
 async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
   if(!refresh) P.innerHTML=`${drViews()}${qLoader("Loading your reports…")}`;
   let r, pr;
@@ -3712,19 +3876,30 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
     :`Checked UEX ${Math.max(1,Math.round(r.checked_ago||0))} s ago. Refresh can ask again in ${Math.max(1,60-Math.round(r.checked_ago||0))} s`);
   const sum=Object.entries(r.summary||{}).map(([k,n])=>`<span class="chip" style="border-color:${DR_ST[k][1]}55;color:${DR_ST[k][1]}">${n} ${esc(DR_SUM[k])}</span>`).join("");
   const st=d.pf.status_names;
-  const card=(e,i)=>{ const [label,col]=drOverall(e);
-    return `<div class="dr-rep" data-k="${i}"><div class="hd"><div><b>${esc(e.terminal||"Terminal")}</b><div class="muted" style="font-size:12px">${esc(e.where||"")} · ${new Date(e.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})} · ${e.rows.length} row${e.rows.length===1?"":"s"}${e.ids?.length?` · UEX #${esc(e.ids.join(", #"))}`:""}</div></div>
+  // One card per terminal visit: the reports sent from it in one go (one per screenshot, as UEX wants)
+  // together, every item with its own status, and the screenshot each item went with while it's kept.
+  const fin=["approved","consolidated","declined","expired"];
+  const line=x=>{ const e=x._e, nd=e.no_decision&&!(x.uex&&fin.includes(x.uex)), s2=x.uex&&DR_ST[x.uex];
+    const txt=nd?"No decision":s2?s2[0]:e.test?"":"–", c=nd?"#6f82a0":s2?s2[1]:"var(--dim)";
+    const link=x.uex_id&&UEX_REPORT_URL?UEX_REPORT_URL.replace("{id}",encodeURIComponent(x.uex_id)):x.uex_url||"";
+    return `<div class="ln"><span>${esc(x.name||"#"+x.id_commodity)} <span class="muted">${x.side==="buy"?"BUY":"LMV"}</span></span>
+      <span>${x.missing?"no longer traded":`${x.price!=null?money(x.price):"?"} · ${drFmt(x.scu)} SCU · ${esc(st[x.status]||"?")}`}</span>
+      <span>${e.shot?`<button class="btn small ghost dr-shotbtn" data-repshot="${esc(e.shot)}" title="See the screenshot this was sent with">📷</button> `:""}${link
+        ?`<a data-url="${esc(link)}" style="color:${c};cursor:pointer;text-decoration:underline" title="${x.uex_id?`Open UEX report #${esc(x.uex_id)}`:"Open this price on UEX"}">${esc(txt)}</a>`
+        :`<span style="color:${c}">${esc(txt)}</span>`}${x.uex_id?` <span class="muted" style="font-size:11px">#${esc(x.uex_id)}</span>`:""}</span>${x.reason?`<div class="reject-why">UEX: ${esc(x.reason)}</div>`:""}</div>`; };
+  const card=(g,i)=>{ const all=g.items, e0=all[0], rows=all.flatMap(e=>(e.rows||[]).map(x=>({...x,_e:e})));
+    const [label,col]=drOverall({test:g.test, states:all.flatMap(e=>e.states||[]), no_decision:all.every(e=>e.no_decision)});
+    return `<div class="dr-rep" data-k="${i}"><div class="hd"><div><b>${esc(e0.terminal||"Terminal")}</b><div class="muted" style="font-size:12px">${esc(e0.where||"")} · ${new Date(g.at*1000).toLocaleString([], {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})} · ${plural(rows.length,"item")}${all.length>1?` in ${all.length} reports, one per screenshot`:""}</div></div>
       <span class="badge" style="color:${col};border-color:${col}66;background:${col}14">${esc(label)}</span></div>
-      <div class="bd">${e.rows.map(x=>{ const s2=x.uex&&DR_ST[x.uex]; return `<div class="ln"><span>${esc(x.name||"#"+x.id_commodity)} <span class="muted">${x.side==="buy"?"BUY":"LMV"}</span></span>
-        <span>${x.missing?"no longer traded":`${x.price!=null?money(x.price):"?"} · ${drFmt(x.scu)} SCU · ${esc(st[x.status]||"?")}`}</span>
-        <span style="color:${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"#6f82a0":s2?s2[1]:"var(--dim)"}">${e.no_decision&&!(x.uex&&["approved","consolidated","declined","expired"].includes(x.uex))?"No decision":s2?esc(s2[0]):e.test?"":"–"}</span>${x.reason?`<div class="reject-why">UEX: ${esc(x.reason)}</div>`:""}</div>`; }).join("")}
-        ${e.no_decision?`<div class="muted" style="font-size:11.5px;margin-top:6px">UEX didn't decide on this within 14 days, so Quantum stopped asking. It doesn't count toward your rating.</div>`:""}</div></div>`; };
+      <div class="bd">${rows.map(line).join("")}
+        ${all.some(e=>e.no_decision)?`<div class="muted" style="font-size:11.5px;margin-top:6px">UEX didn't decide on ${all.length>1?"some of these":"this"} within 14 days, so Quantum stopped asking. It doesn't count toward your rating.</div>`:""}
+        ${all.some(e=>e.shot)?`<div class="muted" style="font-size:11.5px;margin-top:6px">📷 shows the screenshot an item was sent with. They're kept on this PC for 14 days.</div>`:""}</div></div>`; };
   P.innerHTML=`${drViews()}${drProfileCard(pr)}<div class="dr-top"><div><h2>My Reports</h2><div class="where">${r.live?"Their review status comes from UEX.":"Test mode: these were saved to a folder, not sent, so UEX has no status for them."}</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">${r.approval!=null?`<span class="chip" style="border-color:#57e39b66;color:#9fe0b4">${r.approval}% Approval</span>`:""}<button class="btn small" data-mine="refresh">Refresh</button></div></div>
     ${sum?`<div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 2px 10px">${sum}</div>`:""}
     ${r.error?`<div class="warnbox">Couldn't get the review status from UEX: ${esc(r.error)}</div>`:""}
     ${!r.can_check&&r.reports.some(e=>!e.test)?`<div class="warnbox">Add your datarunner secret key in Settings to see what UEX did with your reports.</div>`:""}
-    <div class="dr-list">${(()=>{ const items=[...r.reports.map((e,k)=>({at:e.at||0,h:card(e,k)})),...(pr?.contrib||[]).map(c=>({at:c.at||0,h:drContribCard(c)}))].sort((a,b)=>b.at-a.at);
+    <div class="dr-list">${(()=>{ const items=[...drGroupReports(r.reports).map((g,k)=>({at:g.at,h:card(g,k)})),...(pr?.contrib||[]).map(c=>({at:c.at||0,h:drContribCard(c)}))].sort((a,b)=>b.at-a.at);
       return items.length?items.map(x=>x.h).join(""):`<div class="dr-empty">No reports yet. Your price reports, pictures and station positions show up here with their status.</div>`; })()}</div>`; }
 
 // ---- sidebar: stats, screenshots, details
@@ -3888,6 +4063,7 @@ async function poll(){
   const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
+  if(live.photos_version!==S.photosVersion){ const first=S.photosVersion===undefined; S.photosVersion=live.photos_version; if(!first) refreshPictures(); }
   const here=live.player?.system||live.where?.system;
   if(here && here!==prevSys){ renderSysSeg(); if(S.autoSystem && here!==S.system) setSystem(here); }
   const rk=JSON.stringify([live.route,live.legs.map(x=>x&&Math.round(x/1000)),live.stop_roles,live.route_warning]); if(rk!==S.routeKey){ S.routeKey=rk; renderRoute(); renderResults(); }

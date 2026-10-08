@@ -28,9 +28,18 @@
    "reading_utc": 1791182704.9,
    "build": "12660092",
    "session": "0e22c840c6"
+  },
+  {
+   "kind": "auto-hangar",
+   "body": "ArcCorp",
+   "place": "Riker Memorial Spaceport",
+   "residual_deg": 0.0091,
+   "reading_utc": 1791418889.0,
+   "build": "12660092",
+   "session": "2097c887c1"
   }
  ],
- "updated": "2026-10-04 23:45:04",
+ "updated": "2026-10-07 17:21:29",
  "bodies": {
   "Aberdeen": {
    "system": "Stanton",
@@ -43,10 +52,10 @@
   },
   "ArcCorp": {
    "system": "Stanton",
-   "rotation_offset_deg": 178.715472,
+   "rotation_offset_deg": 178.706327,
    "rotation_period_h": 3.1099999,
    "epoch_utc": 1577836800.0,
-   "calibrated_at": 1790617005.753655,
+   "calibrated_at": 1791418889.0347793,
    "place": "Riker Memorial Spaceport",
    "quality": "hangar"
   },

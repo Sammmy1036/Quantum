@@ -6,6 +6,7 @@ Read-only data sources; nothing touches the game process:
   - Game.log                      -> contracts, exact objective markers, current system/planet
   - locations.json                -> map database (run import_data.py once)
 """
+import base64
 import json
 import secrets
 import urllib.parse
@@ -90,6 +91,42 @@ CAL_PATH = HERE / "calibrations.json"
 PLACES_PATH = HERE / "places.json"
 COMMUNITY_PLACES_PATH = HERE / "community_places.json"
 SYSTEM_ORDER = {"Stanton": 0, "Pyro": 1, "Nyx": 2}
+# RSI store pages UEX has wrong (a dead link), by vehicle name in lower case
+STORE_FIX = {"pitbull": "https://robertsspaceindustries.com/en/pledge/ships/pitbull/Pitbull"}
+
+
+# Add-ons UEX lists (cargo modules and the like) aren't ships, so they stay out of the lists, except ones
+# that fly on their own: the Drake Command Module comes with a Caterpillar or Ironclad and detaches.
+FLYING_ADDONS = ("command module",)
+# Ships UEX doesn't list at all, added so they can be looked up and put in My Fleet. Dropped by itself
+# once UEX lists one with the same name. The id is far outside UEX's range, so it never clashes.
+EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake Command Module", "slug": "command-module",
+                   "company_name": "Drake Interplanetary", "scu": 0, "crew": "1,2", "pad_type": "S", "is_spaceship": 1,
+                   "is_addon": 1, "is_concept": 0, "url_store": None, "url_photo": None, "quantum_extra": True}]
+
+
+def listed_vehicle(v):
+    """Shown in Vehicles, My Fleet and the trade route ship list: in the game, and a ship (not a module)."""
+    if v.get("is_concept"):
+        return False
+    return not v.get("is_addon") or any(a in str(v.get("name_full") or v.get("name") or "").lower() for a in FLYING_ADDONS)
+
+
+def with_extra_vehicles(rows):
+    """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet."""
+    have = {str(v.get(k) or "").strip().lower() for v in rows for k in ("name", "name_full")}
+    return list(rows) + [dict(x) for x in EXTRA_VEHICLES if x["name"].lower() not in have and x["name_full"].lower() not in have
+                         and not any(x["name"].lower() in h for h in have)]
+
+
+def store_url(v):
+    """A vehicle's RSI store page: UEX's, unless it's one we know is wrong."""
+    for k in (v.get("name"), v.get("name_full")):
+        if k and str(k).strip().lower() in STORE_FIX:
+            return STORE_FIX[str(k).strip().lower()]
+    return v.get("url_store")
+
+
 VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", "Salvage"), ("is_military", "Combat"),
                  ("is_bomber", "Bomber"), ("is_exploration", "Exploration"), ("is_medical", "Medical"),
                  ("is_refuel", "Refuel"), ("is_passenger", "Passenger"),
@@ -194,6 +231,7 @@ class Api:
             self._sign_in_soon()                              # signs in on first start after updating, too
         threading.Thread(target=self._sync_places, daemon=True).start()
         threading.Thread(target=self._backup_loop, daemon=True).start()
+        threading.Thread(target=self._sync_photos, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
         self._update = None
@@ -848,7 +886,7 @@ class Api:
             self._prune_finished_tasks()
             stops = self._stops()
             names = [st["place"] for st in stops]
-            live = {"now": t, "static_version": self._static_version, "route": names,
+            live = {"now": t, "static_version": self._static_version, "photos_version": getattr(self, "_photos_version", 0), "route": names,
                     "player": None, "next": None, "legs": [], "total": 0.0, "guide": None,
                     "contracts": [], "contracts_version": self._tracker.version,
                     "log": {"path": self._tracker.log_path, "status": self._tracker.status,
@@ -2386,6 +2424,10 @@ class Api:
         entry = {"at": int(data.get("date_added") or time.time()), "test": bool(res.get("test")), "ids": ids,
                  "username": data.get("username"), "id_terminal": body.get("id_terminal"), "terminal": term.get("name"),
                  "where": uex.where(term) if term else None, "rows": rows}
+        try:
+            entry["shot"] = self._dr_keep_shot(body.get("screenshot"))
+        except Exception:                                  # keeping a copy is a nicety: never stop the log for it
+            watcher_mod.log_error("keep report screenshot")
         log = [entry] + self._dr_report_log()
         try:
             (HERE / "datarunner_reports.json").write_text(json.dumps(log[:300], indent=1), encoding="utf-8")
@@ -2394,6 +2436,47 @@ class Api:
         if data.get("username"):
             self._dr_cfg()["username"] = data["username"]
             self._save_settings()
+
+    # The screenshot each report went to UEX with, kept on this PC for SHOT_KEEP_DAYS so My Reports can
+    # show what was sent next to UEX's decision. UEX's API doesn't hand its own copy back.
+    SHOT_KEEP_DAYS = 14
+    _SHOT_NAME = re.compile(r"\d+-[0-9a-f]{8}\.(jpg|png)")
+
+    def _dr_shots_dir(self):
+        return HERE / "report_screenshots"
+
+    def _dr_keep_shot(self, b64):
+        ext = "jpg" if (b64 or "").startswith("/9j/") else "png" if (b64 or "").startswith("iVBOR") else None
+        if not ext:
+            return None
+        d = self._dr_shots_dir()
+        d.mkdir(exist_ok=True)
+        name = f"{int(time.time())}-{secrets.token_hex(4)}.{ext}"
+        (d / name).write_bytes(base64.b64decode(b64))
+        self._dr_prune_shots()
+        return name
+
+    def _dr_prune_shots(self):
+        """Screenshots older than SHOT_KEEP_DAYS are deleted."""
+        cut = time.time() - self.SHOT_KEEP_DAYS * 86400
+        try:
+            for p in self._dr_shots_dir().iterdir():
+                if p.is_file() and self._SHOT_NAME.fullmatch(p.name) and p.stat().st_mtime < cut:
+                    p.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    def _dr_shot_ok(self, name):
+        return bool(name and self._SHOT_NAME.fullmatch(str(name)) and (self._dr_shots_dir() / name).is_file())
+
+    def dr_report_shot(self, name):
+        """The screenshot a report was sent with, as a data URL, while it's kept."""
+        name = str(name or "")
+        if not self._dr_shot_ok(name):
+            return {"ok": False, "error": f"That screenshot isn't kept any more (they're deleted after {self.SHOT_KEEP_DAYS} days)"}
+        raw = (self._dr_shots_dir() / name).read_bytes()
+        mime = "jpeg" if name.endswith(".jpg") else "png"
+        return {"ok": True, "src": f"data:image/{mime};base64," + base64.b64encode(raw).decode("ascii")}
 
     def dr_reports(self, refresh=False):
         try:
@@ -2406,6 +2489,7 @@ class Api:
     def _dr_reports(self, refresh=False):
         """The "My reports" view: what was sent, and each report's state at UEX (pending, under review,
         approved, live, declined, expired). Test reports were never sent, so they have none."""
+        self._dr_prune_shots()
         log = self._dr_report_log()
         if self._dr.live:                                  # test reports were never sent: not in the live list
             log = [e for e in log if not e.get("test")]
@@ -2460,7 +2544,8 @@ class Api:
                 for row in rows:
                     row.setdefault("uex", (e.get("row_states") or {}).get(str(row["id_commodity"])))
                     row.setdefault("reason", (e.get("row_reasons") or {}).get(str(row["id_commodity"])))
-                out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
+                    row.setdefault("uex_id", (e.get("row_ids") or {}).get(str(row["id_commodity"])))
+                out.append(self._dr_out(e, rows, states, now))
                 continue
             if not e.get("test"):
                 for rid in e.get("ids", []):
@@ -2471,6 +2556,7 @@ class Api:
                         for row in rows:
                             if row["id_commodity"] == r.get("id_commodity") and "uex" not in row:
                                 row["uex"] = r.get("status")
+                                row["uex_id"] = rid
                                 row["checked"] = r.get("date_checked")
                                 if r.get("status") in ("declined", "expired") or r.get("is_contested"):
                                     row["reason"] = uex.decline_reason(r)
@@ -2480,13 +2566,15 @@ class Api:
                 for row in rows:
                     row.setdefault("uex", (e.get("row_states") or {}).get(str(row["id_commodity"])))
                     row.setdefault("reason", (e.get("row_reasons") or {}).get(str(row["id_commodity"])))
+                    row.setdefault("uex_id", (e.get("row_ids") or {}).get(str(row["id_commodity"])))
             elif states and states != e.get("states"):
                 e["states"], changed = states, True
                 e["row_states"] = {str(r["id_commodity"]): r.get("uex") for r in rows if r.get("uex")}
+                e["row_ids"] = {str(r["id_commodity"]): r["uex_id"] for r in rows if r.get("uex_id")}
                 e["row_reasons"] = {str(r["id_commodity"]): r["reason"] for r in rows if r.get("reason")}
                 if all(st in self.FINAL for st in states):
                     e["final"] = True                          # UEX is done with it: never asked about again
-            out.append(dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now)))
+            out.append(self._dr_out(e, rows, states, now))
         if changed:
             self._dr_save_states(log)
         counted = [s for e in out for s in e["states"] if not e.get("no_decision")]
@@ -2499,6 +2587,37 @@ class Api:
                 "error": error, "can_check": bool(secret and self._uex.token), "live": self._dr.live,
                 "asked": asked, "waiting": len(waiting),
                 "checked_ago": time.time() - getattr(self, "_dr_info_cache", (time.time(),))[0]}
+
+    def _dr_out(self, e, rows, states, now):
+        """One report for My Reports: each row with its own UEX report number where known, and whether
+        the screenshot it was sent with is still kept on this PC."""
+        if e.get("from_server") and len(e.get("ids") or []) == len(rows):
+            for row, rid in zip(rows, e["ids"]):            # the server lists them in the same order
+                row.setdefault("uex_id", rid)
+        for row in rows:
+            row["uex_url"] = self._uex_price_url(row.get("id_commodity"), e.get("id_terminal"), row.get("side"))
+        return dict(e, rows=rows, states=states, no_decision=self._dr_no_decision(e, states, now),
+                    shot=e.get("shot") if self._dr_shot_ok(e.get("shot")) else None)
+
+    def _uex_price_url(self, id_commodity, id_terminal, side):
+        """UEX's page for one commodity's price at one terminal (where a report shows up once it's live).
+        UEX's API has no page for a single report. side "buy": you bought, so the terminal sells it."""
+        if not id_commodity or not id_terminal:
+            return None
+        slugs = getattr(self, "_com_slugs", None)
+        if slugs is None or time.time() - slugs[0] > 3600:
+            try:
+                rows = self._uex.get("commodities", offline=True)[0]
+            except uex.UexError:
+                rows = []
+            slugs = self._com_slugs = (time.time(), {c["id"]: c.get("slug") or re.sub(r"[^a-z0-9]+", "-", str(c.get("name") or "").lower()).strip("-")
+                                                     for c in rows if c.get("id")})
+        slug = slugs[1].get(id_commodity)
+        if not slug:
+            return None
+        tab = "locations_selling" if side == "buy" else "locations_buying"
+        return (f"https://uexcorp.space/commodities/info/name/{urllib.parse.quote(slug)}/tab/{tab}/"
+                f"id_terminal/{int(id_terminal)}/highlight/price_last/")
 
     def community_status(self):
         return {"url": self._community.url, **self._community.health()}
@@ -2730,7 +2849,7 @@ class Api:
         for e in full:
             got = by.get((tuple(e.get("ids") or []), e.get("at")))
             if got:
-                for k in ("states", "row_states", "row_reasons", "final"):
+                for k in ("states", "row_states", "row_reasons", "row_ids", "final"):
                     if k in got:
                         e[k] = got[k]
         try:
@@ -3046,6 +3165,7 @@ class Api:
         """Every ship and ground vehicle, with where to buy and rent it in game and for how much."""
         def run():
             vehicles, at = self._uex.get("vehicles")
+            vehicles = with_extra_vehicles(vehicles)
             terms = self._uex.terminals()
             places = self._uex.place_map(self._db.locations)
             spots = {}
@@ -3066,7 +3186,7 @@ class Api:
             wiki = self._wikiapi.vehicle_summary(wait=True)    # medical beds and cargo grid, from the wiki
             out = []
             for v in vehicles:
-                if v.get("is_concept") or v.get("is_addon"):
+                if not listed_vehicle(v):                # concepts, and add-on modules that aren't ships
                     continue
                 sp = spots.get(v["id"], {"buy": [], "rent": []})
                 for k in ("buy", "rent"):
@@ -3077,7 +3197,8 @@ class Api:
                     "pad": v.get("pad_type"), "ground": bool(v.get("is_ground_vehicle")),
                     "roles": self._vehicle_roles(v, wiki),
                     "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
-                    "store": v.get("url_store"), "photo": v.get("url_photo"), "buy": sp["buy"], "rent": sp["rent"]})
+                    "addon": bool(v.get("is_addon")),
+                    "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"]})
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
         return self._uex_call(run)
@@ -3185,7 +3306,7 @@ class Api:
             v = rows.get(f["vehicle_id"], {})
             name = v.get("name") or f["name"]
             out = {"uid": f["uid"], "name": v.get("name_full") or f["name"], "main": bool(f.get("main")),
-                   "photo": v.get("url_photo"), "slots": []}
+                   "photo": self._vehicle_photo(v), "slots": []}
             try:
                 data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
                                               v.get("name_full")])
@@ -3299,7 +3420,7 @@ class Api:
         inv = d.get("vehicle_inventory")
         out = {
             "ok": True, "id": v["id"], "name": v.get("name_full") or name, "maker": v.get("company_name") or "",
-            "photo": v.get("url_photo"), "store": v.get("url_store"), "wiki": bool(d),
+            "photo": self._vehicle_photo(v), "store": store_url(v), "wiki": bool(d),
             "roles": self._vehicle_roles(v, self._wikiapi.vehicle_summary()),
             "career": d.get("career") or d.get("role"), "description": self._vehicle_desc(d, name),
             "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
@@ -3339,6 +3460,37 @@ class Api:
                     got[ref] = p
         return got
 
+    def _vehicle_photo(self, v):
+        """UEX's picture of a vehicle, or else one a Quantum user sent in and you approved (sent under the
+        vehicle's full name, like "Drake Command Module")."""
+        if v.get("url_photo"):
+            return v["url_photo"]
+        mine = self._community.photos()
+        return next((mine[k] for k in (self._pic_key(v.get("name_full")), self._pic_key(v.get("name"))) if k and k in mine), None)
+
+    # Approved pictures are checked for every PHOTOS_SYNC_EVERY; when the set changes, photos_version goes
+    # up in the live state and the page swaps in the new pictures, without restarting Quantum.
+    PHOTOS_SYNC_EVERY = 120
+
+    def _photos_changed(self):
+        sig = hash(tuple(sorted(self._community.photos(fresh=True).items())))
+        if sig != getattr(self, "_photos_sig", None):
+            first = not hasattr(self, "_photos_sig")
+            self._photos_sig = sig
+            if not first:
+                self._photos_version = getattr(self, "_photos_version", 0) + 1
+                self._photo_jobs = None                  # an approved picture takes its picture job away
+
+    def _sync_photos(self):
+        time.sleep(15)
+        while True:
+            try:
+                if self._community.url:
+                    self._photos_changed()
+            except Exception as e:
+                print("photo sync:", e, flush=True)
+            time.sleep(self.PHOTOS_SYNC_EVERY)
+
     @staticmethod
     def _pic_key(ref):
         return urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip().lower()
@@ -3351,7 +3503,13 @@ class Api:
         if not user:
             return {"ok": False, "error": "Add your UEX Secret Key in Settings, so the picture is credited to your UEX name"}
         title = urllib.parse.unquote(str(name or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
-        return self._community.submit_photo(kind, title, data_url, user)
+        r = self._community.submit_photo(kind, title, data_url, user)
+        if r.get("ok") and r.get("approved"):
+            try:
+                self._photos_changed()                 # live straight away: shown everywhere now
+            except Exception:
+                pass
+        return r
 
     # ---- trade routes Quantum users share
     def shared_routes(self, origin=None):
@@ -3361,7 +3519,7 @@ class Api:
         for r in self._community.routes():
             loc = self._db.locations.get(r["from_place"])
             planet = getattr(loc, "body", None) or getattr(loc, "parent", None)
-            if origin and origin not in (r["from_place"], planet, getattr(loc, "system", None)):
+            if origin and origin not in (r["from_place"], r.get("from_terminal"), planet, getattr(loc, "system", None)):
                 continue
             out.append(dict(r, per_scu=round(r["sell"] - r["buy"], 2),
                             profit=round((r["sell"] - r["buy"]) * r["units"]) if r.get("units") else None))
@@ -3388,7 +3546,7 @@ class Api:
 
     def _vehicle_rows(self):
         try:
-            return {v["id"]: v for v in self._uex.get("vehicles", offline=not self._uex.token)[0]}
+            return {v["id"]: v for v in with_extra_vehicles(self._uex.get("vehicles", offline=not self._uex.token)[0])}
         except uex.UexError:
             return {}
 
@@ -3398,7 +3556,7 @@ class Api:
         for f in self._fleet():
             v = rows.get(f["vehicle_id"], {})
             out.append(dict(f, full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
-                            scu=v.get("scu") or 0, photo=v.get("url_photo"), pad=v.get("pad_type"),
+                            scu=v.get("scu") or 0, photo=self._vehicle_photo(v), pad=v.get("pad_type"),
                             swaps=len(f.get("loadout") or {})))
         return {"ok": True, "ships": out, "main": next((f["uid"] for f in self._fleet() if f.get("main")), None)}
 
@@ -3495,7 +3653,7 @@ class Api:
             lo.setdefault("fixed", []).insert(0, {"port": fleet.WEAPONS, "type": fleet.WEAPONS, "label": "Weapons",
                                                   "stock": {"name": f"{len(guns)} gun{'s' if len(guns) != 1 else ''}"},
                                                   "power": now["parts"].get(fleet.WEAPONS)})
-        return {"ok": True, "uid": uid, "ship": dict(f, full=v.get("name_full") or f["name"], photo=v.get("url_photo"),
+        return {"ok": True, "uid": uid, "ship": dict(f, full=v.get("name_full") or f["name"], photo=self._vehicle_photo(v),
                                                      scu=v.get("scu") or 0),
                 "game_data": self._game.generated, **lo}
 
@@ -3675,11 +3833,12 @@ class Api:
 
     def uex_origins(self):
         """Starting points for trade routes: every planet (or orbit, where UEX has no planet) that has
-        a commodity terminal, plus the one nearest you."""
+        a commodity terminal, with its terminals (to start from one place, like Baijini Point), plus the
+        one nearest you."""
         def run():
             terms = self._uex.terminals()
             places = self._uex.place_map(self._db.locations)
-            opts, near = {}, None
+            opts, near, at = {}, None, {}
             for tid, t in terms.items():
                 if t.get("type") != "commodity":
                     continue
@@ -3687,10 +3846,13 @@ class Api:
                       ("orbit", t["id_orbit"], t.get("orbit_name"))
                 if key[1] and key[2]:
                     opts[key] = t.get("star_system_name")
+                    at.setdefault(key, []).append({"id": tid, "name": t.get("name") or places.get(tid) or str(tid),
+                                                   "place": places.get(tid)})
                 d = self._dist_from_you(places.get(tid))
                 if d is not None and (near is None or d < near[0]):
                     near = (d, key)
-            items = [{"kind": k[0], "id": k[1], "name": k[2], "system": sysn} for k, sysn in opts.items()]
+            items = [{"kind": k[0], "id": k[1], "name": k[2], "system": sysn,
+                      "terminals": sorted(at.get(k, []), key=lambda x: x["name"].lower())} for k, sysn in opts.items()]
             items.sort(key=lambda o: (SYSTEM_ORDER.get(o["system"], 9), o["name"]))
             here = {"kind": near[1][0], "id": near[1][1], "name": near[1][2]} if near else None
             return {"ok": True, "items": items, "here": here}

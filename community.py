@@ -167,11 +167,14 @@ class Community:
             self.last_error = str(e)
             return None
 
-    def photos(self):
-        """{lowercase name: full picture URL} for pictures you've approved on the server. Cached an hour."""
+    PHOTOS_FOR = 300              # s: approved pictures are fetched again after this long
+
+    def photos(self, fresh=False):
+        """{lowercase name: full picture URL} for pictures you've approved on the server. Cached for
+        PHOTOS_FOR (fresh: fetched now)."""
         if not self.url:
             return {}
-        if getattr(self, "_photos_at", 0) > time.time() - 3600:
+        if not fresh and getattr(self, "_photos_at", 0) > time.time() - self.PHOTOS_FOR:
             return self._photos
         try:
             r = self._req("/v1/photos", timeout=8)
