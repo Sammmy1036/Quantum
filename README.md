@@ -59,10 +59,6 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 
 - Windows 10 or 11
 
-### Settings
-
-Quantum creates `settings.json` the first time you change something. Until then it uses its defaults, so there's nothing to set up. `settings.example.json` shows what the file looks like.
-
 ## Connecting UEX (trade data)
 
 The **Commodities**, **Trade Routes**, **Datarunner**, **Vehicles**, **Components** and **My Fleet** tabs use live, community-reported data from the [UEX API](https://uexcorp.space/api/documentation/). Access is free but needs your own token. These tabs stay hidden until you add one.
