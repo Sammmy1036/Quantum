@@ -5,6 +5,7 @@
 # Quantum - A 3D navigation map, route planner, contract tracker, trade companion and datarunner tool for Star Citizen.
 
 ---
+<video src="images/output.mp4" autoplay loop muted playsinline width="100%"></video>
 
 <p align="center">
   <picture>
