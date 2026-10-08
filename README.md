@@ -1,11 +1,8 @@
 <p align="center">
-  <img src="images/quantum-banner.svg" alt="Quantum by microTech" width="820">
+  <img src="images/quantum-banner.svg" alt="Quantum, a Star Citizen route planner and 3D map" width="820">
 </p>
 
-<p align="center">
-  <b>A 3D navigation map, route planner, contract tracker, trade companion and datarunner tool for Star Citizen.</b><br>
-  Stanton · Pyro · Nyx
-</p>
+# Quantum - A 3D navigation map, route planner, contract tracker, trade companion and datarunner tool for Star Citizen.
 
 ---
 
