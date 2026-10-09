@@ -53,7 +53,16 @@ ships keeps its own terms:
     rules.
   - Valalol / Star-Citizen-Navigation and starnav: community navigation data,
     under their own licenses.
-  - Component statistics extracted from the Star Citizen game files.
+  - Component statistics extracted from the Star Citizen game files. Jump
+    module statistics come from the Star Citizen Wiki until the game-file
+    extraction includes them.
+  - Manufacturer logos, downloaded at run time from the Star Citizen Wiki
+    (Sc-icon-brand-*.svg and Sc-logo-*.svg files) and, for the Vanduul, from
+    the Star Citizen Fandom wiki. The logos are the property of Cloud Imperium
+    Games and are shown to identify each manufacturer.
+  - Interface icons for component and vehicle types (ui/index.html) are Star
+    Citizen's own in-game icons, the property of Cloud Imperium Games, used to
+    match the game.
 
 -------------------------------------------------------------------------------
 Community contributions
@@ -63,7 +72,9 @@ trade routes that Quantum users share through the Quantum community server are
 contributed by those users. By sending a picture, a user confirms they took it
 or otherwise have the right to share it, and agrees that it may be shown to
 other Quantum users. Pictures can be reviewed, rejected, replaced or removed by
-the server owner and their moderators at any time. Shared data is provided as
+the server owner and their moderators at any time, and the server owner may
+show their own picture in place of any picture, including one from the Star
+Citizen Wiki or UEX. Shared data is provided as
 is, like the rest of the Software, and may be inaccurate or out of date.
 
 -------------------------------------------------------------------------------
@@ -90,7 +101,8 @@ server.
 
 Anyone running their own community server receives users' secret keys in the
 same way and should handle them with the same care. Users who don't want their
-secret key to reach the community server can set "community_url" to "off" in
+secret key to reach the community server can turn community features off in
+Settings (Disable community features), or set "community_url" to "off" in
 settings.json; Quantum then uses UEX's data alone.
 
 -------------------------------------------------------------------------------
@@ -128,20 +140,11 @@ report was sent with for 14 days, then deletes it. It is never sent to the
 community server.
 
 -------------------------------------------------------------------------------
-Admin page accounts
-
-People who run or moderate a community server sign in to its admin page with
-their own account: a password, kept on the server only as a salted scrypt
-hash, and a code from an authenticator app, whose secret is kept on the server.
-Sign-ins are kept as one-way hashes of their tokens. The admin activity log
-records each sign-in and change with the account, time and IP address. Anyone
-running their own community server holds this data and is responsible for it.
-
--------------------------------------------------------------------------------
 Backups
 
-Quantum can back up a user's fleet, component swaps, waypoints, planned trade
-routes and mapped stations to the Quantum community server. Backups are
+Quantum can back up a user's fleet (with each ship's loadouts and component
+swaps), waypoints, planned trade routes and mapped stations to the Quantum
+community server. Backups are
 encrypted on the user's own computer with a key made from their UEX Bearer
 Token; the server stores them without being able to read them, and the token is
 never sent to it (signing in uses the separate secret key, as described above). 
