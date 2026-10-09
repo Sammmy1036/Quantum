@@ -4406,5 +4406,7 @@ async function init(){
 window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); try{ await init(); } finally {
   setTimeout(()=>$("splash").classList.add("hide"), Math.max(0,1400-(performance.now()-t0))); } });
 </script>
+<!-- The self-running feature tour, for screen recording: Ctrl+Shift+D, or launch with --demo -->
+<script src="demo.js"></script>
 </body>
 </html>
