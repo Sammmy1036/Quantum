@@ -59,6 +59,13 @@ RE_VEH_READY = re.compile(r"SetVehicleSpawnedInformations - VehicleEntityId: \[\
                           r"LandingArea: (.+?) \[\d+\]")
 RE_CHANNEL = re.compile(r"You have (joined|left) (?:the )?channel '(.+?) : ([^']+)'")
 RE_CLEAR_DRIVER = re.compile(r"ClearDriver: Local client node \[(\d+)\] releasing control token for '([A-Za-z0-9_]+?)_\d+'")
+# The physics stats dump the game writes from time to time lists the planets it has loaded, e.g.
+#   PHYSICS INSTANCE STATS BEGIN 3 ... planet cells: 0 [0] meshes: 0 [0] name: OOC_Stanton_4_Microtech
+#   ... name: pyro5 ... PHYSICS INSTANCE STATS END
+# A system's planets appear when you arrive there through a gateway (the old system's can stay listed
+# for a while), so a system that's new since the previous dump is where you've just jumped to.
+RE_PHYS_PLANET = re.compile(r"planet cells:.*?name: (\S+)")
+RE_PLANET_SYS = re.compile(r"^(?:OOC_)?(Stanton|Pyro|Nyx)(?:_|\d|$)", re.I)
 RE_SHOP = re.compile(r"playerId\[(\d+)\] shopId\[\d+\] shopName\[SCShop_([A-Za-z0-9]+)_([A-Za-z0-9_]+)\]"
                      r"(?:.*?itemName\[([A-Za-z0-9_]+)\])?")
 MAKERS = {"AEGS": "Aegis", "ANVL": "Anvil", "ARGO": "Argo", "BANU": "Banu", "CNOU": "C.O.", "CRUS": "Crusader",
@@ -193,6 +200,7 @@ class Objective:
     found: str = ""                 # how the place was worked out: text|marker|zone|station|visited|manual
     manual: bool = False            # marked done by you (the game didn't log it)
     item_for: str = ""              # a "get the item" step you added: the id of the item it's for
+    space: dict | None = None       # a marker out in open space: {"zone", "offset": [x,y,z], "system", "at"}
 
 
 @dataclass
@@ -319,6 +327,9 @@ class ContractTracker(threading.Thread):
         self.zone_bodies = {}      # zoneHostId -> body name, learned per game session
         self.zone_places = {}      # zoneHostId -> place name (buildings/stations), learned per session
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
+        self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
+        self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
+        self._phys = None          # systems seen in the dump being read now
         self._pending = None       # buffered multi-line notification
         self._reopen = False
         self.game_running = False
@@ -343,6 +354,7 @@ class ContractTracker(threading.Thread):
         self.log_sig, self.offset = raw.get("log_sig"), raw.get("offset", 0)
         self.where, self.zone_bodies = raw.get("where", {}), raw.get("zone_bodies", {})
         self.build = raw.get("build", "")
+        self.phys_systems = raw.get("phys_systems", [])
         self.loc_ids, self.cur = raw.get("loc_ids", {}), raw.get("cur", {})
         self.dest_ids, self.qt = raw.get("dest_ids", {}), raw.get("qt", {})
         self.zone_places, self.atc = raw.get("zone_places", {}), {int(k): v for k, v in raw.get("atc", {}).items()}
@@ -358,6 +370,7 @@ class ContractTracker(threading.Thread):
         data = {"log_path": self.log_path, "log_sig": self.log_sig, "offset": self.offset,
                 "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build,
                 "loc_ids": self.loc_ids, "cur": self.cur, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places,
+                "phys_systems": self.phys_systems,
                 "atc": {str(k): v for k, v in self.atc.items()},
                 "contracts": [asdict(c) for c in self.contracts.values()]}
         tmp = self.store_path.with_suffix(".tmp")
@@ -418,7 +431,7 @@ class ContractTracker(threading.Thread):
                         verb = {"pickup": "Pick up", "dropoff": "Deliver"}.get(o["kind"], "Go")
                         what = f" {cargo}" if cargo and o["kind"] in ("pickup", "dropoff") else ""
                         prep = {"pickup": "at", "dropoff": "to"}.get(o["kind"], "to")
-                        where = o["location"] or (f"the marked spot {'on ' + o['marker']['body'] if o['marker'].get('body') else 'near ' + o['marker'].get('lpoint', 'a Lagrange point')}" if o["marker"]
+                        where = o["location"] or (f"the marked spot {'on ' + o['marker']['body'] if o['marker'].get('body') else 'near ' + (o['marker'].get('lpoint') or o['marker'].get('near') or 'a Lagrange point')}{' (approximate)' if o['marker'].get('approx') else ''}" if o["marker"]
                                                    else "a spot the log didn't give")
                         o["label"] = f"{verb}{what} {prep} {where}"
                     else:
@@ -478,7 +491,7 @@ class ContractTracker(threading.Thread):
                 "delivered": len(dropped), "last_drop": last_drop,
                 "cargo": [{"what": k, "done": v[0], "total": v[1]} for k, v in cargo.items()],
                 "scu_total": sum(v[1] for v in cargo.values()),
-                "drops": [{"id": o.id, "where": o.location or (o.marker and (f"Marker on {o.marker['body']}" if o.marker.get('body') else f"Marker near {o.marker.get('lpoint', 'a Lagrange point')}")),
+                "drops": [{"id": o.id, "where": o.location or (o.marker and (f"Marker on {o.marker['body']}" if o.marker.get('body') else f"Marker near {o.marker.get('lpoint') or o.marker.get('near') or 'a Lagrange point'}")),
                            "status": o.status, "at": o.done_at, "scu": scu_progress(o.text)} for o in drops]}
 
     def mark_collected(self, cid, oid):
@@ -672,6 +685,79 @@ class ContractTracker(threading.Thread):
         self.zone_bodies[zone] = "@" + lp
         return {"body": None, "lpoint": lp, "system": self.nav.locations[lp].system, "pos": g}, station
 
+    # ------------------------------------------------------------ markers out in open space
+    # Some missions (Gilly's Pilot School, some combat and salvage jobs) put their marker at a random
+    # spot in space. The log gives that spot only relative to its zone (zoneHostId), and for these the
+    # zone is a small local one around where the mission was set up, whose own position isn't logged.
+    # Quantum places the marker relative to the known space place (station, Lagrange point, gateway)
+    # closest to you when the marker was created: usually that's the zone it was spawned in. It's marked
+    # approximate, and recomputed if a /showlocation arrives later than the marker (logs read on startup).
+    FREE_MARKER_REACH = 2.0e9      # the frame must be within 2 Gm of you to be believed
+
+    def _reference(self, system, ts):
+        """Where you were around time ts: your /showlocation if it's recent, else the place the log puts
+        you at. (global pos, system) or None."""
+        ref = self.player_ref() if self.player_ref else None
+        if ref and ref[0] is not None and (not system or ref[1] == system) and abs((ref[2] or 0) - ts) < 1800:
+            return ref[0], ref[1], "reading"
+        code = self.where.get("code") or ""
+        try:
+            place = self.place_for_code(code) if code else None
+        except Exception:
+            place = None
+        L = self.nav.locations.get(place) if place else None
+        if L is not None and L.pos is not None and (not system or L.system == system):
+            return self.nav.global_pos(L, ts), L.system, "log"
+        return None
+
+    def _free_marker(self, o, zone, offset, system, ts):
+        """Place an open-space marker; True if it could be placed."""
+        o.space = {"zone": zone, "offset": list(offset), "system": system, "at": ts}
+        ref = self._reference(system, ts)
+        if not ref:
+            return False
+        rpos, rsys, how = ref
+        best, bd = None, self.FREE_MARKER_REACH
+        for loc in self.nav.locations.values():
+            # stations in orbit are stored on their planet, so "space or a station" rather than kind alone
+            if loc.source != "db" or loc.pos is None or loc.system != rsys or \
+                    not (loc.kind == "space" or loc.category in ("station", "lpoint", "jump")):
+                continue
+            try:
+                lp = self.nav.global_pos(loc, ts)
+            except Exception:
+                continue
+            d = math.dist(lp, rpos)
+            if d < bd:
+                best, bd, bpos = loc, d, lp
+        if best is None:
+            return False
+        g = [bpos[i] + offset[i] for i in range(3)]
+        o.marker = {"body": None, "near": best.name, "system": best.system, "pos": g, "approx": True, "ref": how}
+        if o.found != "manual":
+            o.location, o.found = None, "space"
+        return True
+
+    def resolve_free_markers(self):
+        """Markers in open space that couldn't be placed yet (no position for you then): try again."""
+        changed = False
+        with self.lock:
+            for c in self.contracts.values():
+                if c.status != "active":
+                    continue
+                for o in c.objectives:
+                    sp = o.space
+                    if not sp or o.status != "active" or o.found == "manual":
+                        continue
+                    if o.marker and (not o.marker.get("approx") or o.marker.get("ref") == "reading"):
+                        continue                  # placed from a reading already (or not a free marker)
+                    old = dict(o.marker) if o.marker else None
+                    if self._free_marker(o, sp["zone"], sp["offset"], sp.get("system"), sp["at"]) and o.marker != old:
+                        changed = True
+            if changed:
+                self._changed()
+        return changed
+
     def recheck_markers(self):
         """Fix markers placed on the wrong same-size body by an older version: if the marker lands on
         a known place on another body of the same radius, move it there."""
@@ -842,6 +928,8 @@ class ContractTracker(threading.Thread):
                 self.build = m.group(1)
         if "objective marker" in line:
             return self._marker(line)
+        if "PHYSICS INSTANCE STATS" in line or (self._phys is not None and "planet cells:" in line):
+            return self._physics_stats(line)
         if ("LoadingPlatformManager_" in line or "LandingArea_" in line) and (m := RE_HANGAR_SYS.search(line)):
             return self._system_seen(m.group(1).capitalize(), log_time(line) or time.time(), "HANGAR:" + m.group(0))
         if "STATE_CURRENT" in line and (m := RE_CHARACTER.search(line)):
@@ -1071,6 +1159,27 @@ class ContractTracker(threading.Thread):
             self._system_seen(sysname, ts, f"ACTIVITY:{place}")
         return True
 
+    def _physics_stats(self, line):
+        """Collect the planets of one physics stats dump; at its end, a system that's newly loaded (or
+        the only one left) is the one you're in."""
+        if "STATS BEGIN" in line:
+            self._phys = set()
+            return False
+        if "STATS END" in line:
+            now, self._phys = self._phys or set(), None
+            prev, self.phys_systems = set(self.phys_systems), sorted(now)
+            new = now - prev
+            if len(now) == 1:
+                sysname = next(iter(now))
+            elif prev and len(new) == 1:
+                sysname = next(iter(new))
+            else:
+                return False                  # first dump of the session, or nothing changed
+            return self._system_seen(sysname, log_time(line) or time.time(), "PHYSICS:" + sysname)
+        if self._phys is not None and (m := RE_PHYS_PLANET.search(line)) and (n := RE_PLANET_SYS.match(m.group(1))):
+            self._phys.add(n.group(1).capitalize())
+        return False
+
     def _system_seen(self, sysname, ts, code):
         """The log shows you're in this system (a hangar or shop that only exists there). Updates the
         system only: which place you're at still comes from the location lines."""
@@ -1191,6 +1300,10 @@ class ContractTracker(threading.Thread):
         body = self._resolve_body(zone, pos, o.text + " " + c.name, c.system, c.code or code)
         if body is not None and body.startswith("@"):
             return False
+        if body is None and math.sqrt(sum(v * v for v in pos)) >= 20_000:
+            # Too far out for a building, not on any planet or at a Lagrange point: open space.
+            self._free_marker(o, zone, pos, c.system or self.where.get("system"), ts)
+            return True
         if body is None:
             # Marker inside a building or station: the log gives no planet position, only the zone.
             o.zone = zone
@@ -1254,6 +1367,7 @@ class ContractTracker(threading.Thread):
                         if sig != self.log_sig or size < self.offset:     # new game session
                             self.log_sig, self.offset, self.zone_bodies = sig, 0, {}
                             self.zone_places, self.atc = {}, {}
+                            self.phys_systems, self._phys = [], None
                         self._reopen = False
                 if self._seen and self._seen[0] == sig and size > self._seen[1]:
                     self.last_growth = time.time()        # written since the last pass: the game is live

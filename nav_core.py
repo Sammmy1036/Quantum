@@ -417,14 +417,21 @@ class NavDB:
             info.surface_distance_m, info.heading_deg = great_circle(plat, plon, tlat, tlon, body.radius_m)
         return info
 
-    def route_length(self, start: Vec | None, start_system: str | None, stops: list[str], t: float) -> list:
-        """Per-leg distances; None where the leg crosses systems (a jump) or has no start."""
-        legs, cur, cur_sys = [], start, start_system
+    def route_length(self, start: Vec | None, start_system: str | None, stops: list[str], t: float,
+                     arrive=None) -> list:
+        """Per-leg distances; None where the leg crosses systems (a jump) or has no start.
+        arrive(previous stop, system): where you come out in that system after jumping from the previous
+        stop (a gateway), so the leg after a jump is measured from the far side; None if unknown."""
+        legs, cur, cur_sys, prev = [], start, start_system, None
         for name in stops:
             loc = self.locations[name]
             g = self.global_pos(loc, t)
-            legs.append(dist(cur, g) if cur is not None and cur_sys == loc.system else None)
-            cur, cur_sys = g, loc.system
+            if cur is not None and cur_sys == loc.system:
+                legs.append(dist(cur, g))
+            else:
+                came = arrive(prev, loc.system) if arrive and prev and cur_sys != loc.system else None
+                legs.append(dist(came, g) if came is not None else None)
+            cur, cur_sys, prev = g, loc.system, name
         return legs
 
     def optimize(self, start: Vec, start_system: str, stops: list[str], t: float,

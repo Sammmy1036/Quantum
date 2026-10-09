@@ -146,6 +146,127 @@ class Wiki:
               "mirai": "File:Sc-logo-mirai.svg", "tmbl": "File:Sc-logo-tumbril.svg",
               "vanduul": "https://static.wikia.nocookie.net/starcitizen/images/2/2e/Vanduul_Clans.png/revision/latest?cb=20200530103449"}
 
+    # Component makers, keyed "cmp:<name, lowercase letters and digits>". The wiki keeps their logos under a
+    # few naming patterns ("ACOM - JP0907.svg", "Basilisk logo.jpg", "Comm-Link-WillsOp Logo 13a.jpg"), so
+    # each has a list of likely file names, tried in order; the first that exists is used. Makers that are
+    # also ship makers (Aegis, RSI, Gallenson…) use the ship icons above instead.
+    COMPONENT_MAKERS = {
+        "Behring": ["Behring Applied Technology", "Behring"], "Juno Starwerk": ["Juno Starwerk"],
+        "Talon": ["Talon Shields", "Talon Shield", "Talon"], "Lightning Power Ltd.": ["Lightning Power Ltd.", "Lightning Power"],
+        "Hurston Dynamics": ["Hurston Dynamics"], "Klaus & Werner": ["Klaus & Werner", "Klaus and Werner"],
+        "Amon & Reese Co.": ["Amon & Reese", "Amon & Reese Co."], "GNP": ["Groupe Nouveau Paradigme", "GNP"],
+        "Gorgon Defender Industries": ["Gorgon Defender Industries", "Gorgon Defender"],
+        "Chimera Communications": ["Chimera Communications"], "WillsOp": ["WillsOp"], "Basilisk": ["Basilisk"],
+        "J-Span": ["J-Span"], "Tyler Design & Tech": ["Tyler Design & Tech", "Tyler Design and Tech", "Tyler Design"], "ACOM": ["ACOM"],
+        "Wen/Cassel Propulsion": ["Wen-Cassel Propulsion", "Wen Cassel Propulsion", "Wen-Cassel", "Wen Cassel"], "ArcCorp": ["ArcCorp"],
+        "Seal Corporation": ["Seal Corporation"], "Apocalypse Arms": ["Apocalypse Arms"], "Sakura Sun": ["Sakura Sun"],
+        "Wei-Tek": ["Wei-Tek"], "Tarsus": ["Tarsus"], "Ascension Astro": ["Ascension Astro"],
+        "Thermyte Concern": ["Thermyte Concern"], "RAMP Corporation": ["RAMP Corporation", "RAMP"],
+        "Blue Triangle Inc.": ["Blue Triangle Inc.", "Blue Triangle"], "Nav-E7 Gadgets": ["Nav-E7 Gadgets", "Nav-E7"],
+        "Yorm": ["Yorm"], "Nova Pyrotechnica": ["Nova Pyrotechnica"], "Ace Astrogation": ["Ace Astrogation"],
+        "KnightBridge Arms": ["KnightBridge Arms", "Knightbridge Arms"],
+        "PH Associated Science and Development": ["Associated Sciences & Development", "Associated Science and Development"],
+        "Kroneg": ["Kroneg"], "Joker Engineering": ["Joker Engineering"], "FireStorm Kinetics": ["FireStorm Kinetics"],
+        "Preacher Armaments": ["Preacher Armaments"], "MaxOx": ["MaxOx"], "Hedeby Gunworks": ["Hedeby Gunworks"]}
+    # Other file names the wiki is known to use for a few of them (pictures; made into a clean shape)
+    COMPONENT_EXTRA = {
+        "Behring": ["Behring Applied Technology.jpg", "Comm-Link-Behring Applied Technology2.jpg"],
+        "Hurston Dynamics": ["Company-hurstondynamics1.jpg"], "Klaus & Werner": ["Comm-Link-Kandwlogo.png"],
+        "GNP": ["CS SC GNP FINAL LOGO 01A-V2.jpg"], "Chimera Communications": ["Chimeracommunications logo.png"],
+        "WillsOp": ["Comm-Link-WillsOp Logo 13a.jpg"], "Basilisk": ["Basilisk logo.jpg"],
+        "Sakura Sun": ["CS SC SAKURA SUN COMP 01A.jpg"], "Blue Triangle Inc.": ["Bluetriangle logo.png"],
+        "Ascension Astro": ["Ascension Astro.jpg"], "Apocalypse Arms": ["Apocalypse-Arms.jpg"],
+        "Amon & Reese Co.": ["Amon & Reese.png"], "ACOM": ["ACOM.jpg"]}
+    JP_SUFFIXES = (" - JP0907", " - JP0905", " - JP0904", " - JP0906", " - JP0908", " - JP0901", " - JP0704", " - JP0801", "", " logo")
+    CMP_VERSION = 2          # bumped when the file names tried change: makers marked missing are looked up again
+
+    @staticmethod
+    def maker_key(name):
+        return "cmp:" + re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+    def _component_candidates(self):
+        """{"cmp:<maker>": [file titles to try, best first]}"""
+        out = {}
+        for maker, names in self.COMPONENT_MAKERS.items():
+            L = [f"File:{n}{suf}.svg" for n in names for suf in self.JP_SUFFIXES]
+            L += [f"File:{x}" for x in self.COMPONENT_EXTRA.get(maker, [])]
+            out[self.maker_key(maker)] = L
+        return out
+
+    def _component_logos(self, cache):
+        """Logos for component makers: one batch of title lookups (50 at a time), then the first file
+        that exists for each maker. Makers with none are remembered for a month, not asked again."""
+        cands = self._component_candidates()
+        logos, missing = dict(cache.get("cmp") or {}), dict(cache.get("cmp_missing") or {})
+        if cache.get("cmp_v") != self.CMP_VERSION:
+            missing = {}
+        want = {k: L for k, L in cands.items() if k not in logos and time.time() - missing.get(k, 0) > 30 * 86400}
+        if not want:
+            return logos, missing
+        titles = sorted({t for L in want.values() for t in L})
+        urls, alias = {}, {}
+        try:
+            for i in range(0, len(titles), 50):
+                q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url",
+                                            "titles": "|".join(titles[i:i + 50])})
+                data = _get(f"{PAGES_API}?{q}").get("query", {})
+                alias.update({m["from"]: m["to"] for m in data.get("normalized", [])})
+                urls.update({p.get("title"): (p.get("imageinfo") or [{}])[0].get("url")
+                             for p in data.get("pages", {}).values() if p.get("imageinfo")})
+        except Exception:
+            return logos, missing                          # the wiki can't be reached: try again next time
+        names = {self.maker_key(m): n for m, n in self.COMPONENT_MAKERS.items()}
+        for k, L in want.items():
+            got = None
+            for t in L:
+                url = urls.get(alias.get(t, t))
+                if url:
+                    got = self._logo_data(url)
+                    if got:
+                        break
+            if not got:
+                for url in self._search_logo_files(names.get(k) or []):
+                    got = self._logo_data(url)
+                    if got:
+                        break
+            if got:
+                logos[k] = got
+            else:
+                missing[k] = time.time()
+        return logos, missing
+
+    def _search_logo_files(self, names):
+        """Logo files on the wiki whose name starts with the maker's name, best first: the vector logos
+        (" - JP0907.svg" and the like), then any SVG, then pictures with "logo" in the name."""
+        found = []
+        for n in names[:3]:
+            try:
+                q = urllib.parse.urlencode({"action": "query", "format": "json", "list": "allimages", "aiprefix": n.replace(" ", "_"),
+                                            "ailimit": 50, "aiprop": "url|mime"})
+                found += _get(f"{PAGES_API}?{q}").get("query", {}).get("allimages", [])
+            except Exception:
+                continue
+        def rank(f):
+            t, mime = (f.get("name") or "").lower(), f.get("mime") or ""
+            return (0 if " - jp" in t.replace("_", " ") and mime.endswith("svg+xml") else 1 if mime.endswith("svg+xml")
+                    else 2 if "logo" in t else 9)
+        return [f["url"] for f in sorted(found, key=rank) if f.get("url") and rank(f) < 9]
+
+    def _logo_data(self, url):
+        """A logo file as a data: URL the page can use as a mask: SVG as it is, pictures made into a shape."""
+        import base64
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+                raw = r.read(1024 * 1024)
+        except Exception:
+            return None
+        if b"<svg" in raw[:4096]:
+            return "data:image/svg+xml;base64," + base64.b64encode(raw).decode("ascii")
+        if raw[:8] == b"\x89PNG\r\n\x1a\n" or raw[:3] == b"\xff\xd8\xff":
+            png = self._png_mask(raw)
+            return "data:image/png;base64," + base64.b64encode(png).decode("ascii") if png else None
+        return None
+
     def brand_logos(self):
         """{code: the icon as a data: URL (SVG, or PNG for a direct link)} for every one that could be fetched."""
         f = self.dir / "brand_logos.json"
@@ -156,8 +277,9 @@ class Wiki:
         if cache.get("v") != 2:                           # PNGs saved before they were turned into clean masks
             cache["logos"] = {k: v for k, v in (cache.get("logos") or {}).items() if not v.startswith("data:image/png")}
             cache["at"] = 0
-        if cache.get("at", 0) > time.time() - 30 * 86400 and all(b in cache.get("logos", {}) for b in self.BRANDS):
-            return cache["logos"]
+        if cache.get("at", 0) > time.time() - 30 * 86400 and all(b in cache.get("logos", {}) for b in self.BRANDS) \
+                and cache.get("cmp_at", 0) > time.time() - 30 * 86400 and cache.get("cmp_v") == self.CMP_VERSION:
+            return {**cache["logos"], **(cache.get("cmp") or {})}
         logos = dict(cache.get("logos") or {})
         try:
             files = [t for b, t in self.BRANDS.items() if b not in logos and t.startswith("File:")]
@@ -188,11 +310,15 @@ class Wiki:
                 raw = self._png_mask(raw)
             if kind and raw:
                 logos[b] = f"data:image/{kind};base64," + base64.b64encode(raw).decode("ascii")
-        if logos:
+        cmp, missing = self._component_logos(cache)
+        if logos or cmp:
             self.dir.mkdir(exist_ok=True)
-            f.write_text(json.dumps({"v": 2, "at": time.time() if len(logos) == len(self.BRANDS) else 0, "logos": logos}),
+            done = all(k in cmp or k in missing for k in self._component_candidates())
+            f.write_text(json.dumps({"v": 2, "at": time.time() if len(logos) == len(self.BRANDS) else 0, "logos": logos,
+                                     "cmp": cmp, "cmp_missing": missing, "cmp_at": time.time() if done else 0,
+                                     "cmp_v": self.CMP_VERSION}),
                          encoding="utf-8")
-        return logos
+        return {**logos, **cmp}
 
     @staticmethod
     def _png_mask(raw):

@@ -29,6 +29,7 @@ import community
 import datarunner
 import fleet
 import gateways
+import tray
 import services
 import uex
 import updater
@@ -209,12 +210,13 @@ class Api:
         if self._settings.get("clear_log_on_start", True):      # on unless the user turned it off
             self._log_cleared = clear_game_log(self._settings.get("log_path"))
         self._tracker = ContractTracker(MISSIONS_PATH, self._db, self._settings.get("log_path"))
+        self._tracker.player_ref = lambda: (self._player, self._player_sys, self._player_t)
         self._tracker.start()
         self._watcher = ClipboardWatcher(self._on_position)
         self._watcher.start()
         # Types /showlocation for you: F9 by default, optional timer (off by default). Windows only.
         self._sender = ShowLocationSender()
-        self._sender.on_overlay = lambda: overlay.toggle(restore_cb=self._restore_window,
+        self._sender.on_overlay = lambda: overlay.toggle(restore_cb=self._restore_window, show_cb=self._show_window,
                                                          after_show_cb=self._nudge_redraw)
         a = {"hotkey": "F9", "loc_hotkey": "", "interval": 0, "open_chat": "enter", "on_arrival": False,
              **self._settings.get("autoloc", {})}
@@ -285,6 +287,10 @@ class Api:
             self._last_fix = (pos, t, self._player_sys)
             self._learn_jump_from_reading()
             self._try_autocal()
+            try:
+                self._tracker.resolve_free_markers()       # open-space markers waiting for your position
+            except Exception:
+                watcher_mod.log_error("free markers")
 
     def _travel_view(self, cur, t):
         v = self._travel_view_base(cur, t)
@@ -421,7 +427,7 @@ class Api:
             return
         self._arrive_seen = evidence
         at = evidence[2] or time.time()
-        if all(tk["task"] == "visit" for tk in stops[0]["tasks"]):
+        if all(tk["task"] == "visit" for tk in stops[0]["tasks"]):      # gateways clear once you've jumped
             self._set_from_stops(stops[1:])
             self._save_settings()
             self._arrived_note = {"place": target, "at": at, "advanced": True}
@@ -797,6 +803,14 @@ class Api:
         except Exception:
             pass
 
+    def _show_window(self):
+        """Un-hide (from the tray) through pywebview, so the embedded browser draws again."""
+        try:
+            webview.windows[0].show()
+            time.sleep(0.15)
+        except Exception:
+            pass
+
     def _nudge_redraw(self):
         try:
             webview.windows[0].evaluate_js("window.dispatchEvent(new Event('resize'))")
@@ -881,9 +895,22 @@ class Api:
             if spot and (not p or spot_at > self._player_t):
                 L = self._db.locations[spot]
                 p, psys, ptime, approx = self._db.global_pos(L, t), L.system, t, L.name
+            # The log says you're in another system since then (you went through a gateway): you're at
+            # the gateway on this side until a /showlocation says otherwise.
+            w = self._tracker.where or {}
+            wsys = w.get("system")
+            if game_on and psys and wsys in nav_core.SYSTEMS and wsys != psys and (w.get("at") or 0) > (ptime or 0):
+                came = next(iter(gateways._gate_names(self._db, wsys, psys)), None)
+                L = self._db.locations.get(came) if came else None
+                if L is not None:
+                    p, psys, ptime, approx = self._db.global_pos(L, t), wsys, t, L.name
+                    spot_at = w.get("at") or t
+                else:
+                    p, psys = None, wsys
             if game_on:
                 self._auto_arrive(cur)
             self._prune_finished_tasks()
+            self._ensure_gates(psys)
             stops = self._stops()
             names = [st["place"] for st in stops]
             live = {"now": t, "static_version": self._static_version, "photos_version": getattr(self, "_photos_version", 0), "route": names,
@@ -958,12 +985,54 @@ class Api:
     def _task_ids(self):
         return {t["task"] for t in self._route}
 
+    # Stops Quantum adds itself so a route can cross systems: the gateway to fly to before each jump.
+    GATE = "gate"           # the gateway you fly to and jump from
+    GATE_IN = "gate-in"     # the gateway you come out at in the next system
+    GATES = (GATE, GATE_IN)
+
+    def _ensure_gates(self, start_sys=None):
+        """Put a gateway stop before every change of system in the route (and before the first stop, if
+        it's in another system from you), and take away ones no longer needed: after you've jumped, or
+        when the stops around them changed. Returns True if the route changed."""
+        before = [(t["place"], t["task"]) for t in self._route]
+        tasks = [t for t in self._route if t["task"] not in self.GATES]
+        if not tasks:
+            self._route = []
+            return bool(before)
+        cur = start_sys or self._db.locations[tasks[0]["place"]].system
+        out = []
+        for t in tasks:
+            L = self._db.locations.get(t["place"])
+            if L is not None and L.system and cur and L.system != cur:
+                hop_from = cur
+                for g in gateways.gate_path(self._db, cur, L.system) or []:
+                    if not out or out[-1]["place"] != g:
+                        out.append({"place": g, "task": self.GATE})
+                    came = gateways.arrival(self._db, g, hop_from)        # where the jump comes out
+                    if came and came != t["place"]:
+                        out.append({"place": came, "task": self.GATE_IN})
+                    hop_from = gateways.leads_to(g)
+            out.append(t)
+            if L is not None and L.system:
+                cur = L.system
+        self._route = out
+        if [(t["place"], t["task"]) for t in out] != before:
+            self._save_settings()
+            return True
+        return False
+
+    def _arrive_at(self, prev, system):
+        """For route legs: where you come out in `system` after jumping at stop `prev` (a gateway)."""
+        name = gateways.arrival(self._db, prev, self._db.locations[prev].system) if prev in self._db.locations else None
+        loc = self._db.locations.get(name) if name else None
+        return loc.pos if loc is not None and loc.pos is not None and loc.system == system else None
+
     def _prune_finished_tasks(self):
         """Drop contract tasks whose objective is done, failed or gone, and move tasks whose objective
         now resolves to a different place (e.g. after a marker was put on the right planet)."""
         keep, changed = [], False
         for t in self._route:
-            if t["task"] != "visit":
+            if t["task"] != "visit" and t["task"] not in self.GATES:
                 cid, _, oid = t["task"].partition("|")
                 c = self._tracker.get(cid)
                 o = next((o for o in c.objectives if o.id == oid), None) if c else None
@@ -1007,6 +1076,12 @@ class Api:
             r = []
             for t in st["tasks"]:
                 if t["task"] == "visit":
+                    continue
+                if t["task"] == self.GATE:
+                    r.append({"kind": "gate", "to": gateways.leads_to(t["place"])})
+                    continue
+                if t["task"] == self.GATE_IN:
+                    r.append({"kind": "gate-in", "from": gateways.leads_to(t["place"])})
                     continue
                 cid, _, oid = t["task"].partition("|")
                 c = by_id.get(cid)
@@ -1165,6 +1240,9 @@ class Api:
         """Reorder the tasks. Each task is a node (its place's position) tasks at the same place are
         zero distance apart, so they end up together unless a revisit is genuinely needed."""
         now = time.time()
+        self._route = [t for t in self._route if t["task"] not in self.GATES]
+        if not self._route:
+            return [], []
         first = self._db.locations[self._route[0]["place"]]
         start = self._player if self._player else self._db.global_pos(first, now)
         ssys = self._player_sys if self._player else first.system
@@ -1175,6 +1253,7 @@ class Api:
         order = self._db.optimize(start, ssys, keys, now, prec, place_of=place_of)
         task_of = dict(zip(keys, self._route))
         self._route = [task_of[k] for k in order]
+        self._ensure_gates(ssys)
         names = [st["place"] for st in self._stops()]
         legs = self._db.route_length(start if self._player else None, ssys, names, now)
         return names, legs
@@ -1187,11 +1266,13 @@ class Api:
                 if n in self._db.locations and n not in have:
                     self._route.append({"place": n, "task": "visit"})
                     have.add(n)
+            self._ensure_gates(self._player_sys)
             self._save_settings()
 
     def set_route(self, names):
         with self._lock:
             self._route = [{"place": n, "task": "visit"} for n in names if n in self._db.locations]
+            self._ensure_gates(self._player_sys)
             self._save_settings()
 
     def move_stop(self, frm, to):
@@ -1202,6 +1283,7 @@ class Api:
                 st = stops.pop(frm)
                 stops.insert(to, st)
                 self._set_from_stops(stops)
+                self._ensure_gates(self._player_sys)
                 self._save_settings()
             return {"ok": True}
 
@@ -1209,8 +1291,13 @@ class Api:
         with self._lock:
             stops = self._stops()
             if 0 <= int(index) < len(stops):
+                gone = stops[int(index)]
+                if all(t["task"] in self.GATES for t in gone["tasks"]):
+                    return {"ok": False, "error": "That gateway is how the route gets to the next system. "
+                                                  "Remove the stops after it instead"}
                 stops.pop(int(index))
                 self._set_from_stops(stops)
+                self._ensure_gates(self._player_sys)
                 self._save_settings()
             return {"ok": True}
 
@@ -3961,7 +4048,7 @@ class Api:
                                                   "power": now["parts"].get(fleet.WEAPONS)})
         return {"ok": True, "uid": uid, "ship": dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
                                                      full=v.get("name_full") or f["name"], photo=self._vehicle_photo(v),
-                                                     scu=v.get("scu") or 0),
+                                                     scu=v.get("scu") or 0, maker=v.get("company_name") or ""),
                 "loadouts": self.fleet_loadouts(uid),
                 "game_data": self._game.generated, **lo}
 
@@ -4168,11 +4255,74 @@ class Api:
             return {"ok": True, "items": items, "here": here}
         return self._uex_call(run)
 
+    ROUTES_PER_COMMODITY = 4      # wide searches: at most this many runs of one commodity in the list
+
+    def _price_routes(self, system=None, stay="", avoid=None, one_system=False, per_origin=6):
+        """UEX-style route rows worked out from every terminal's prices (one cached request), for searches
+        wider than one planet: the whole game, or one whole system. UEX's own routes endpoint only takes a
+        single starting planet, orbit or terminal. system: only runs that start there (None: anywhere)."""
+        terms = self._uex.terminals()
+        rows, at = self._uex.get("commodities_prices_all")
+        rows = self._community.overlay(rows)
+        names = {c["id"]: c["name"] for c in self._uex.get("commodities")[0]}
+        buys, sells = {}, {}
+        for r in rows:
+            t = terms.get(r.get("id_terminal"))
+            if not t or not uex.is_live(t):
+                continue
+            if (r.get("price_buy") or 0) > 0 and (not system or t.get("star_system_name") == system):
+                buys.setdefault(r["id_commodity"], []).append((r, t))
+            if (r.get("price_sell") or 0) > 0:
+                sells.setdefault(r["id_commodity"], []).append((r, t))
+        avoid = set(avoid or ())
+
+        def allowed(so, sd):
+            return not ((stay and (so != stay or sd != stay)) or so in avoid or sd in avoid or (one_system and so != sd))
+        out = []
+        for cid, B in buys.items():
+            S_ = sorted(sells.get(cid) or (), key=lambda x: -x[0]["price_sell"])
+            if not S_:
+                continue
+            for rb, tb in B:
+                pb, n = rb["price_buy"], 0
+                for rs, ts in S_:
+                    ps = rs["price_sell"]
+                    if ps <= pb or n >= per_origin:
+                        break
+                    if tb is ts or not allowed(tb.get("star_system_name"), ts.get("star_system_name")):
+                        continue
+                    n += 1
+                    out.append({
+                        "commodity_name": names.get(cid) or rb.get("commodity_name") or str(cid), "id_commodity": cid,
+                        "code": None, "price_origin": pb, "price_destination": ps,
+                        "price_margin": ps - pb, "price_roi": (ps - pb) / pb * 100,
+                        "id_terminal_origin": tb["id"], "id_terminal_destination": ts["id"],
+                        "origin_terminal_name": tb.get("name"), "destination_terminal_name": ts.get("name"),
+                        "origin_star_system_name": tb.get("star_system_name"),
+                        "destination_star_system_name": ts.get("star_system_name"),
+                        "origin_orbit_name": tb.get("orbit_name") or tb.get("planet_name"),
+                        "destination_orbit_name": ts.get("orbit_name") or ts.get("planet_name"),
+                        "scu_origin": rb.get("scu_buy"), "scu_destination": None,
+                        "status_origin": rb.get("status_buy"), "status_destination": rs.get("status_sell"),
+                        "container_sizes_origin": rb.get("container_sizes") or tb.get("container_sizes"),
+                        "container_sizes_destination": rs.get("container_sizes") or ts.get("container_sizes"),
+                        "date_added": max(rb.get("date_modified") or 0, rs.get("date_modified") or 0) or None,
+                        "faction_origin": tb.get("faction_name"), "faction_destination": ts.get("faction_name"),
+                        **{f"{flag}_{side}": t.get(flag) for side, t in (("origin", tb), ("destination", ts))
+                           for flag in ("has_freight_elevator", "has_loading_dock", "has_refuel", "has_docking_port",
+                                        "is_space_station", "is_on_ground", "is_monitored")}})
+        return out, at
+
     def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False):
-        """Best runs from a planet/orbit for your cargo space and budget, most profit first."""
+        """Best runs from a planet/orbit/terminal for your cargo space and budget, most profit first.
+        kind "all" searches every system at once, kind "system" one whole system (origin_id is its name)."""
         def run():
-            key = {"planet": "id_planet_origin", "orbit": "id_orbit_origin", "terminal": "id_terminal_origin"}[kind]
-            rows, at = self._uex.get("commodities_routes", {key: int(origin_id)})
+            wide = kind in ("all", "system")
+            if wide:
+                rows, at = self._price_routes(str(origin_id) if kind == "system" else None, stay, avoid, one_system)
+            else:
+                key = {"planet": "id_planet_origin", "orbit": "id_orbit_origin", "terminal": "id_terminal_origin"}[kind]
+                rows, at = self._uex.get("commodities_routes", {key: int(origin_id)})
             places = self._uex.place_map(self._db.locations)
             out = []
             for r in rows:
@@ -4218,10 +4368,37 @@ class Api:
                     "refuel_to": bool(r.get("has_refuel_destination")), "dock_from": bool(r.get("has_docking_port_origin")),
                     "refuel_from": bool(r.get("has_refuel_origin")), "dock_to": bool(r.get("has_docking_port_destination")),
                     "elevator_from": bool(r.get("has_freight_elevator_origin") or r.get("has_loading_dock_origin")),
-                    "faction_from": r.get("origin_faction_name"), "faction_to": r.get("destination_faction_name")})
+                    "faction_from": r.get("origin_faction_name") or r.get("faction_origin"),
+                    "faction_to": r.get("destination_faction_name") or r.get("faction_destination")})
             out.sort(key=lambda x: -x["profit"])
-            return {"ok": True, "routes": out[:60], "at": at, "total": len(out)}
+            if wide:                       # one commodity shouldn't fill the whole list
+                seen, kept = {}, []
+                for x in out:
+                    n = seen.get(x["commodity"], 0)
+                    if n < self.ROUTES_PER_COMMODITY:
+                        seen[x["commodity"]] = n + 1
+                        kept.append(x)
+                total, out = len(out), kept
+            else:
+                total = len(out)
+            return {"ok": True, "routes": out[:60], "at": at, "total": total, "wide": wide}
         return self._uex_call(run)
+
+    def journey(self, a, b):
+        """The places a run from a to b goes through: a, then for each jump the gateway you fly to and the
+        one you come out at, then b. Just [a, b] in one system or when no way through is known."""
+        La, Lb = self._db.locations.get(a), self._db.locations.get(b)
+        if not La or not Lb or La.system == Lb.system:
+            return {"ok": True, "places": [a, b]}
+        path, cur = [a], La.system
+        for g in gateways.gate_path(self._db, cur, Lb.system) or []:
+            path.append(g)
+            came = gateways.arrival(self._db, g, cur)
+            if came:
+                path.append(came)
+            cur = gateways.leads_to(g)
+        path.append(b)
+        return {"ok": True, "places": path}
 
     def open_url(self, url):
         if isinstance(url, str) and url.startswith("https://"):
@@ -4359,7 +4536,7 @@ class Api:
                 return loc.name
         cargo = contract_cargo(c.code)
         label = {"pickup": "Pickup", "dropoff": "Drop-off"}.get(o.kind, "Objective")
-        where = o.marker.get("body") or o.marker.get("lpoint", "space")
+        where = o.marker.get("body") or o.marker.get("lpoint") or (f"near {o.marker['near']}" if o.marker.get("near") else "space")
         name = self._db.unique_name(f"{label}{' ' + cargo if cargo else ''} ({where})")
         self._db.locations[name] = Location(name, "surface" if o.marker.get("body") else "space",
                                             tuple(o.marker["pos"]), o.marker.get("body"),
@@ -4626,6 +4803,11 @@ def main():
         if FROZEN:
             input("\nPress Enter to close.")
         return
+    single = tray.SingleInstance()
+    if not single.first:                 # Quantum's already running: bring it forward instead
+        single.notify()
+        print("Quantum is already running: it's been brought to the front.")
+        return
     overlay.set_app_id()                 # own taskbar icon instead of Python's
     api = Api()
     if not api._db.bodies:
@@ -4636,7 +4818,14 @@ def main():
                                    background_color="#05080f")
     window.events.closed += api.shutdown
     icon = RES / "assets" / "quantum.ico"
-    webview.start(func=lambda: overlay.set_window_icon(icon))
+    tray_icon = tray.Tray(window, icon, on_show=lambda: (api._nudge_redraw(), overlay.bring_to_front()))
+    window.events.closed += tray_icon.stop
+    single.on_show_request(tray_icon.show)                  # another launch: come to the front
+
+    def started():
+        overlay.set_window_icon(icon)
+        tray_icon.start()
+    webview.start(func=started)
 
 
 if __name__ == "__main__":

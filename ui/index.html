@@ -122,9 +122,11 @@ button{cursor:pointer}
 .trd-facts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}.trd-facts span{font-size:12px;background:var(--panel-3);border-radius:8px;padding:3px 9px;color:var(--ink-2)}
 
 /* the map shows through this window; everything around it is page */
-/* not positioned on purpose: its shadow paints with the page backgrounds, so the text and cards around
-   it stay on top while everything outside the window is covered */
-.trd-map{box-shadow:0 0 0 9999px var(--bg,#05080f);pointer-events:none;padding:10px 12px;min-height:440px}
+/* the window is positioned (its "next system" chip sits inside it, clickable), so its 9999px shadow would
+   paint over the cells around it: they're lifted one layer above it, everything else stays covered */
+.trd-map{box-shadow:0 0 0 9999px var(--bg,#05080f);pointer-events:none;padding:10px 12px;min-height:440px;position:relative;z-index:0}
+.side-panel .trd-head,.side-panel .trd-info,.side-panel .trd-grid > .vd-sec,.side-panel .trd-footer{position:relative;z-index:1}
+.pv-next.in-win{top:auto;bottom:14px;pointer-events:auto}
 .trd-map .lbl{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);background:rgba(5,8,15,.7);padding:2px 8px;border-radius:6px}
 .trd-info{min-width:0;background:var(--panel-2);padding:16px 20px;position:relative;z-index:1}.trd-info .trd-pic{width:min(100%,420px);aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin:4px 0 12px;background:var(--panel)}
 .trd-info .trd-pic img{width:100%;height:100%;object-fit:cover}
@@ -210,6 +212,9 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .best-tag{font:600 10px var(--text);background:#57e39b;color:#04160c;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
 em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}em.up{color:#57e39b}em.down{color:#ff8f8f}
 .mkp-stats div.chg{border-color:var(--route)}
+.pv-next{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:26;display:none;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:999px;border:1px solid rgba(87,227,155,.5);background:rgba(7,14,28,.92);color:#bff3d6;font:500 13px var(--text);cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.pv-next.show{display:flex}.pv-next:hover{border-color:#57e39b;color:#fff}.pv-next b{color:#fff}
 .map-back{position:absolute;left:50%;transform:translateX(-50%);bottom:22px;z-index:25;display:none}.map-back.show{display:flex}
 .cp-img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;margin:8px 0;display:block;background:var(--panel)}
 #vh-gallery .gh{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;color:var(--ink-2);font-size:13px}
@@ -417,8 +422,11 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .tooltip{position:absolute;pointer-events:none;background:rgba(8,13,26,.96);border:1px solid var(--line-2);border-radius:6px;padding:5px 9px;font-size:12.5px;max-width:360px;display:none;z-index:5}
 .tooltip .t{font-weight:600}
 .tooltip .s{color:var(--dim)}
-.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--line-2);border-radius:8px;padding:9px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:6}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);box-shadow:0 10px 30px rgba(0,0,0,.45);background:var(--panel-3);border:1px solid var(--line-2);border-radius:8px;padding:9px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
 .toast.show{opacity:1}
+.iconbtn.added{color:var(--ok);border-color:rgba(60,207,110,.55);background:rgba(60,207,110,.12)}
+@keyframes q-pulse{0%{box-shadow:0 0 0 0 rgba(75,141,255,.75);transform:scale(1)}40%{transform:scale(1.25)}100%{box-shadow:0 0 0 10px rgba(75,141,255,0);transform:scale(1)}}
+#c-route.pulse{animation:q-pulse .9s ease-out 2}
 .help{left:50%;bottom:22px;transform:translateX(-50%);color:var(--dim);font-size:12.5px;pointer-events:none;background:rgba(13,21,40,.6);border-radius:6px;padding:4px 10px}
 .lam{display:inline-block;width:.86em;height:.735em;vertical-align:baseline;overflow:visible}
 .brand svg.lam,.splash svg.lam{width:.86em;height:.735em;filter:none}   /* beat the logo-sized svg rules */
@@ -680,6 +688,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .svc-tile{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:9px;
   background:linear-gradient(180deg,rgba(47,134,255,.10),rgba(47,134,255,.03));border:1px solid rgba(111,190,255,.22);position:relative}
 .svc-tile svg{width:24px;height:24px;stroke:#dbeaff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.svc-tile svg.solid{fill:#dbeaff;stroke:none}
 .svc-tile .bar{width:22px;height:3px;border-radius:2px;background:var(--ok);box-shadow:0 0 6px rgba(60,207,110,.6)}
 .svc-tile .l{font:600 9.5px/1.2 var(--text);letter-spacing:.06em;text-transform:uppercase;color:#bcd6f5;text-align:center}
 .svc-tile .sz{position:absolute;top:3px;right:6px;font:700 10px var(--display);color:#fff}
@@ -771,6 +780,81 @@ svg.ofc{stroke:none!important;fill:currentColor!important}
 .sg-h{display:flex;align-items:center;gap:7px}.sg-h svg{width:16px;height:16px;flex:none;color:#9cc8ff;stroke:#9cc8ff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .cp-nav .ic svg.ofc,.cp-tile .ic svg.ofc{color:#9cc8ff}.cp-tile.wt .ic svg.ofc,.cp-nav.sub .ic svg.ofc{color:#7fe7ff}
 .pwr-ic.ofc{color:var(--ink-2)}.pc.off .pwr-ic.ofc{opacity:.5}.wt-chip svg.ofc{color:inherit}
+.role.gate{background:rgba(255,180,84,.15);color:#ffcf8f}
+/* Ship header (Vehicles and My Fleet): title with the maker's logo in its corner, then headline + readout stats */
+.hd-main{min-width:0}
+.hd-title{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.hd-title>div{min-width:0}
+.hd-logo{flex:none;display:block;width:clamp(64px,7vw,104px);aspect-ratio:1;padding:0;border:0;background:none;cursor:default}
+button.hd-logo{cursor:pointer}
+.hd-logo.wide{width:clamp(150px,16vw,240px);aspect-ratio:4/3;margin:-18px -10px -18px 0}
+.hd-logo .brand-ic{width:100%;height:100%;background:linear-gradient(160deg,#e3f0ff,#8fb8ec);opacity:.9}
+button.hd-logo:hover .brand-ic,button.hd-logo:focus-visible .brand-ic{background:linear-gradient(160deg,#ffffff,#a9d0ff);opacity:1}
+button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;border-radius:8px}
+.hd-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0 12px;font-variant-numeric:tabular-nums}
+.hd-hero>div{padding:2px 18px;min-width:0}
+.hd-hero>div:first-child{padding-left:0}
+.hd-hero>div+div{border-left:1px solid var(--line-2)}
+.hd-hero .lab{display:block;font:600 10.5px var(--text);letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.hd-hero b{display:block;font:400 clamp(20px,2.2vw,28px) "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;line-height:1.3;overflow-wrap:anywhere}
+.hd-hero b small{font:600 13px "Exo 2",system-ui,sans-serif;letter-spacing:.02em;color:var(--ink-2);margin-left:6px}
+.hd-hero.n4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hd-hero.n4>div{padding:2px 14px}.hd-hero.n4>div:first-child{padding-left:0}
+.hd-hero.n4 b{font-size:clamp(16px,1.55vw,22px)}
+.hd-hero.n4 b small{font-size:12px;margin-left:4px}
+@media (max-width:980px){.hd-hero.n4{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}.hd-hero.n4>div:nth-child(3){padding-left:0;border-left:0}}
+.hd-hero .good b{color:var(--ok)}.hd-hero .bad b{color:var(--danger)}
+.vd-flat .mk-note{text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim);margin-left:6px}
+.hd-hero .dl{display:block;font-size:12px}.hd-hero .dl small{font-size:12px;color:var(--ink-2)}
+.hd-hero .dl em,.hd-read em{font-style:normal;font-weight:600;display:inline}
+.hd-hero .dl em.up,.hd-read em.up{color:var(--ok)}.hd-hero .dl em.down,.hd-read em.down{color:var(--danger)}
+.hd-read{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px;font-variant-numeric:tabular-nums}
+.hd-read .r{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.hd-read .r span{color:var(--ink-2);font-size:12.5px}
+.hd-read .r b{font:600 13.5px "Exo 2",system-ui,sans-serif;text-align:right}
+.hd-read .r em{font-size:11.5px;margin-left:4px}
+.hd-read .r.chg span{color:var(--ink)}
+@media (max-width:700px){.hd-hero{grid-template-columns:1fr}.hd-hero>div{padding:8px 0}.hd-hero>div+div{border-left:0;border-top:1px solid var(--line-2)}.hd-read{grid-template-columns:1fr}}
+/* Vehicle page breakdown in the same quiet style: no boxes, a label, rows split by hairlines */
+.vd-flat{gap:6px 32px}
+.vd-flat .vd-sec{border:0;border-radius:0;background:none;padding:0;margin-bottom:18px}
+.vd-flat .mk-h{margin:0 0 4px;padding-bottom:6px;font-size:10.5px;letter-spacing:.13em;color:var(--dim);border-bottom:1px solid var(--line-2)}
+.vd-flat .vd-row{padding:6px 0;font-size:12.5px;font-variant-numeric:tabular-nums}
+.vd-flat .vd-row span{color:var(--ink-2)}.vd-flat .vd-row b{font:600 13.5px "Exo 2",system-ui,sans-serif;text-align:right}
+.vd-flat .mk-row{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;margin:0;padding:9px 0}
+.vd-flat .mk-row:last-child{border-bottom:0}
+.vd-flat .cp-fitship{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;margin:0;padding:10px 0}
+.vd-flat .cp-fitship:last-child{border-bottom:0}
+.hd-main .cp-fits{margin-top:8px}
+/* My Fleet slots as a loadout sheet: each group a labelled list, one hairline row per slot */
+#fl-panel .slot-groups{display:block;columns:2 420px;column-gap:36px}
+#fl-panel .sg{break-inside:avoid;padding:14px 0 4px}
+#fl-panel .sg.many{grid-column:auto}
+#fl-panel .sg.open{column-span:all}
+#fl-panel .sg .mk-h{margin:0;padding-bottom:7px;border-bottom:1px solid var(--line-2);font-size:10.5px;letter-spacing:.13em;color:var(--dim)}
+#fl-panel .slot-grid,#fl-panel .sg.many .slot-grid,#fl-panel .sg.open .slot-grid{grid-template-columns:1fr;gap:0;margin:0}
+#fl-panel .slot{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:9px 0;gap:0}
+#fl-panel .slot .top{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;gap:10px;align-items:center}
+#fl-panel .slot .sz{background:none;color:#9cc8ff;border:1px solid rgba(75,141,255,.45);padding:2px 5px;min-width:28px;text-align:center}
+#fl-panel .slot .gr{background:none;color:var(--ink-2);padding:2px 0;min-width:12px;text-align:center}
+#fl-panel .slot .nm b{font-weight:600}
+#fl-panel .slot .nm span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fl-panel .slot .val{min-width:84px;font-variant-numeric:tabular-nums}
+#fl-panel .slot .val b{font:600 15px "Exo 2",system-ui,sans-serif}
+#fl-panel .slot .val b em{display:inline;margin-left:5px;font-size:11px}
+#fl-panel .slot .val span{font-size:9.5px;color:var(--dim)}
+#fl-panel .slot .acts{gap:4px}
+#fl-panel .slot.fit .nm b{color:var(--route-2)}
+#fl-panel .slot .swap{font-style:normal;color:var(--route-2)}
+#fl-panel .slot:hover{background:linear-gradient(90deg,transparent,rgba(75,141,255,.05),transparent)}
+#fl-panel .slot.open{background:none}
+#fl-panel .slot .opts{margin-top:10px}
+@media (max-width:560px){#fl-panel .slot-groups{columns:1}#fl-panel .slot .top{grid-template-columns:auto auto minmax(0,1fr) auto}#fl-panel .slot .acts{grid-column:1/-1;justify-content:flex-end}}
+.fl-logo{flex:0 0 34px;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center}
+#fl-out .vh>.hd{grid-template-columns:auto 1fr auto;align-items:center}
+.fl-logo .brand-ic{width:22px;height:22px;background:#9cc8ff}.fl-logo b{font-size:14px;color:var(--ink-2)}
+.vh.hl .fl-logo{border-color:rgba(127,231,255,.45)}.vh.hl .fl-logo .brand-ic{background:#cfe4ff}
+.vh .hd .fl-name{flex:1;min-width:0}
 .brand-ic{display:block;width:20px;height:20px;background:#9cc8ff;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
 .cp-nav.on .brand-ic,.cp-nav:hover .brand-ic{background:#cfe4ff}
 .cp-nav .ic svg,.cp-tile .ic svg{width:18px;height:18px;stroke:#9cc8ff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;display:block}
@@ -904,7 +988,7 @@ svg.ofc{stroke:none!important;fill:currentColor!important}
       <div id="tr-find">
       <div class="tr-form">
         <span class="k">From</span><select class="field" id="tr-from"></select>
-        <span class="k">Location</span><select class="field" id="tr-at" title="Start from one place there, like a station or city, or anywhere on it"><option value="">Anywhere there</option></select>
+        <span class="k">Location</span><select class="field" id="tr-at" title="Start from one place there, like a station or city, or anywhere on it"><option value="">Any</option></select>
         <span class="k">Ship</span><div class="tr-ship"><input class="field" id="tr-ship" placeholder="None Selected: type any ship" autocomplete="off" spellcheck="false"
           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tr-ship-list"><div class="tr-ship-list" id="tr-ship-list" role="listbox" hidden></div></div>
         <span class="k">Systems</span><select class="field" id="tr-sys"><option value="">Any</option><option value="one">Don't cross systems</option>
@@ -994,6 +1078,7 @@ svg.ofc{stroke:none!important;fill:currentColor!important}
     <div id="cp-panel" class="pic-panel"></div>
     <div id="fl-panel" class="pic-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
+    <button class="pv-next" id="pv-next" type="button"></button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
     <div class="ov topright">
       <div class="seg" id="sysSeg"></div>
@@ -1034,7 +1119,7 @@ const S = {
   bodies:[], bodyMap:{}, locs:[], locMap:{}, systems:["Stanton","Pyro","Nyx"], staticVersion:0, live:null,
   system:"Stanton", routeKey:"", contractsVersion:-1, wpKey:"",
   layers:Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])),
-  show:{missions:true, waypoints:true, orbits:true, grid:true},
+  show:{missions:true, waypoints:true, orbits:true, grid:true, sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
   cam:{target:[0,0,0], dist:1e11, yaw:-1.2, pitch:0.9, lock:null}, focus:{kind:"system"}, anim:null,
   selected:null, picks:[], search:"", typeFilter:null, tab:"route", editing:null, autoSystem:true,
 };
@@ -1076,13 +1161,276 @@ function resize(){ const r=$("mapwrap").getBoundingClientRect(); W=r.width; H=r.
   ovc.width=Math.round(W*DPR); ovc.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); }
 window.addEventListener("resize",resize);
 
-// Background stars: a fixed sphere of points that travels with the camera.
-const starfield=(()=>{ const n=2600, pos=new Float32Array(n*3), col=new Float32Array(n*3); let seed=7;
+// =================================================================== sky
+// What's behind the map, in the spirit of the in-game starmap: a galaxy backdrop (nebula clouds and the
+// Milky Way band with its dust lanes) and a field of stars that crowd along that band, each with a star's
+// own colour. The backdrop is noise worked out on the GPU once per system and kept in a cube map, so after
+// that it costs nothing a frame. Each system has its own colours. Layers > Galaxy background turns it off.
+const SKY_LOOK={
+  Stanton:{a:[0.006,0.035,0.16], b:[0.09,0.012,0.15], c:[0.0,0.10,0.14], band:[0.50,0.58,0.80], tilt:[0.32,-0.18,0.93], seed:1.37},
+  Pyro:   {a:[0.20,0.022,0.004], b:[0.22,0.075,0.006], c:[0.09,0.006,0.035], band:[0.80,0.52,0.36], tilt:[-0.25,0.40,0.88], seed:4.71},
+  Nyx:    {a:[0.07,0.012,0.17], b:[0.012,0.05,0.17], c:[0.15,0.012,0.12], band:[0.60,0.50,0.85], tilt:[0.45,0.30,0.84], seed:8.09}};
+const NOISE_GLSL=`
+  vec3 h3(vec3 p){ p=vec3(dot(p,vec3(127.1,311.7,74.7)),dot(p,vec3(269.5,183.3,246.1)),dot(p,vec3(113.5,271.9,124.6))); return -1.0+2.0*fract(sin(p)*43758.5453123); }
+  float noise(vec3 p){ vec3 i=floor(p), f=fract(p), u=f*f*(3.0-2.0*f);
+    return mix(mix(mix(dot(h3(i),f),dot(h3(i+vec3(1,0,0)),f-vec3(1,0,0)),u.x),mix(dot(h3(i+vec3(0,1,0)),f-vec3(0,1,0)),dot(h3(i+vec3(1,1,0)),f-vec3(1,1,0)),u.x),u.y),
+               mix(mix(dot(h3(i+vec3(0,0,1)),f-vec3(0,0,1)),dot(h3(i+vec3(1,0,1)),f-vec3(1,0,1)),u.x),mix(dot(h3(i+vec3(0,1,1)),f-vec3(0,1,1)),dot(h3(i+vec3(1,1,1)),f-vec3(1,1,1)),u.x),u.y),u.z); }
+  float fbm(vec3 p){ float v=0.0, a=0.5; for(int i=0;i<6;i++){ v+=a*noise(p); p=p*2.03+vec3(1.7,9.2,3.1); a*=0.5; } return v; }`;
+const sky=(()=>{
+  const rt=new THREE.WebGLCubeRenderTarget(1536,{generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter});
+  const cam=new THREE.CubeCamera(0.1,100,rt), sc=new THREE.Scene();
+  const mat=new THREE.ShaderMaterial({side:THREE.BackSide, depthTest:false, depthWrite:false,
+    uniforms:{A:{value:new THREE.Vector3()},B:{value:new THREE.Vector3()},C:{value:new THREE.Vector3()},BAND:{value:new THREE.Vector3()},TILT:{value:new THREE.Vector3(0,0,1)},SEED:{value:0}},
+    vertexShader:`varying vec3 vDir; void main(){ vDir=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader:`varying vec3 vDir; uniform vec3 A,B,C,BAND,TILT; uniform float SEED;${NOISE_GLSL}
+      void main(){ vec3 d=normalize(vDir), s=vec3(SEED,SEED*1.7,SEED*0.6);
+        float h=dot(d,normalize(TILT));                                   // distance from the galactic plane
+        float warp=fbm(d*2.2+s)*0.35;
+        float band=exp(-pow((h+warp*0.6)/0.20,2.0));                       // the Milky Way
+        float core=exp(-pow((h+warp*0.5)/0.07,2.0));
+        float dust=smoothstep(0.05,0.55,fbm(d*7.0+s*2.0+warp*2.0));        // dark lanes through the band
+        float grain=pow(max(0.0,fbm(d*42.0+s)),1.5);                       // unresolved stars along it
+        float n1=fbm(d*1.6+s+warp), n2=fbm(d*3.1-s*1.3), n3=fbm(d*5.4+s*0.4);
+        float neb=pow(smoothstep(0.0,0.55,n1),1.8)*0.9+pow(smoothstep(0.12,0.6,n2),2.0)*0.45;  // nebula clouds, dark gaps between
+        vec3 col=mix(A,B,smoothstep(-0.2,0.4,n2)); col=mix(col,C,smoothstep(0.1,0.5,n3));
+        vec3 c=col*neb*(0.6+1.1*band);
+        c+=BAND*(band*0.07+core*0.13)*(1.0-dust*0.9);
+        c+=BAND*grain*band*0.22*(1.0-dust*0.75);
+        c+=(fract(sin(dot(d.xy*917.0+d.z,vec2(12.9898,78.233)))*43758.5453)-0.5)/255.0;  // dither: no banding
+        gl_FragColor=vec4(max(c,0.0),1.0); }`});
+  sc.add(new THREE.Mesh(new THREE.SphereGeometry(10,64,32),mat));
+  const v3=a=>new THREE.Vector3(...a);
+  return { texture:rt.texture, bake(sys){ const L=SKY_LOOK[sys]||SKY_LOOK.Stanton, u=mat.uniforms;
+      u.A.value=v3(L.a); u.B.value=v3(L.b); u.C.value=v3(L.c); u.BAND.value=v3(L.band); u.TILT.value=v3(L.tilt); u.SEED.value=L.seed;
+      cam.update(renderer,sc); this.tilt=L.tilt; } };
+})();
+
+// The stars: a fixed sphere of points that travels with the camera. Most are faint pinpricks; they
+// crowd toward the galactic band, take a real star's colour (blue-white to red), and the brightest
+// few get a soft glow and twinkle a little.
+const STAR_COLORS=[[0.66,0.76,1.0,0.10],[0.84,0.89,1.0,0.22],[1.0,0.98,0.95,0.30],[1.0,0.92,0.78,0.20],[1.0,0.78,0.58,0.12],[1.0,0.62,0.48,0.06]];
+const starfield=(()=>{ const n=22000, R=1e12, pos=new Float32Array(n*3), col=new Float32Array(n*3), size=new Float32Array(n), ph=new Float32Array(n); let seed=7;
   const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
-  for(let i=0;i<n;i++){ const u=rnd()*2-1, th=rnd()*Math.PI*2, r=Math.sqrt(1-u*u); pos.set([r*Math.cos(th)*1e12, r*Math.sin(th)*1e12, u*1e12], i*3);
-    const b=0.35+rnd()*0.65; col.set([b*0.85,b*0.9,b], i*3); }
+  for(let i=0;i<n;i++){
+    let x,y,z; const u=rnd()*2-1, th=rnd()*Math.PI*2, r=Math.sqrt(1-u*u); x=r*Math.cos(th); y=r*Math.sin(th); z=u;
+    if(rnd()<0.6){ z=(rnd()+rnd()+rnd()-1.5)*0.17; const l=Math.hypot(x,y,z); x/=l; y/=l; z/=l; }   // into the band (tilted later)
+    pos.set([x*R,y*R,z*R],i*3);
+    let pick=rnd(), c=STAR_COLORS[0]; for(const sc of STAR_COLORS){ if((pick-=sc[3])<=0){ c=sc; break; } }
+    const m=Math.pow(rnd(),9), b=0.28+0.72*Math.pow(rnd(),2.2);                // most faint, a few bright
+    col.set([c[0]*b,c[1]*b,c[2]*b],i*3); size[i]=1.15+m*7.0+b*1.0; ph[i]=rnd()*6.283; }
   const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
-  const p=new THREE.Points(g,new THREE.PointsMaterial({size:1.6,sizeAttenuation:false,vertexColors:true,depthWrite:false})); scene.add(p); return p; })();
+  g.setAttribute("size",new THREE.BufferAttribute(size,1)); g.setAttribute("phase",new THREE.BufferAttribute(ph,1));
+  const mat=new THREE.ShaderMaterial({transparent:true, depthWrite:false, blending:THREE.AdditiveBlending, uniforms:{T:{value:0},PR:{value:1}},
+    vertexShader:`#include <common>
+      #include <logdepthbuf_pars_vertex>
+      attribute float size; attribute float phase; attribute vec3 color; uniform float T,PR; varying vec3 vC; varying float vS;
+      void main(){ float tw=size>3.0?0.82+0.18*sin(T*(1.3+fract(phase)*1.7)+phase*7.0):1.0; vC=color*tw; vS=size;
+        gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); gl_PointSize=size*PR;
+        #include <logdepthbuf_vertex>
+      }`,
+    fragmentShader:`#include <common>
+      #include <logdepthbuf_pars_fragment>
+      varying vec3 vC; varying float vS;
+      void main(){
+        #include <logdepthbuf_fragment>
+        float d=length(gl_PointCoord-0.5)*2.0; if(d>1.0) discard;
+        float core=exp(-d*d*(vS>3.0?14.0:5.0)), halo=vS>3.0?exp(-d*3.2)*0.35:0.0;
+        gl_FragColor=vec4(vC*(core+halo),1.0); }`});
+  const p=new THREE.Points(g,mat); p.frustumCulled=false; p.renderOrder=-5; scene.add(p); return p; })();
+function setSky(sys){
+  sky.bake(sys);
+  // Lay the stars' band along the backdrop's Milky Way: their crowded plane (z) turned to its tilt
+  const t=new THREE.Vector3(...sky.tilt).normalize(); starfield.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),t);
+  scene.background=S.show.sky?sky.texture:null; }
+
+// The sun: a moving surface (granulation, limb darkening) under a layered corona, and a glare that stays
+// visible however far out you zoom, like the in-game starmap.
+const SUN_GLSL_V=`#include <common>
+  #include <logdepthbuf_pars_vertex>
+  varying vec3 vN, vV, vP;
+  void main(){ vP=normalize(position); vec4 mv=modelViewMatrix*vec4(position,1.0); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz);
+    gl_Position=projectionMatrix*mv;
+    #include <logdepthbuf_vertex>
+  }`;
+function sunMaterial(hue){
+  const base=new THREE.Color(`hsl(${hue-10},100%,50%)`), hot=new THREE.Color(`hsl(${hue+14},100%,90%)`);
+  return new THREE.ShaderMaterial({uniforms:{T:{value:0},BASE:{value:base},HOT:{value:hot}}, vertexShader:SUN_GLSL_V,
+    fragmentShader:`#include <common>
+      #include <logdepthbuf_pars_fragment>
+      varying vec3 vN, vV, vP; uniform float T; uniform vec3 BASE, HOT;${NOISE_GLSL}
+      void main(){
+        #include <logdepthbuf_fragment>
+        float mu=clamp(dot(normalize(vN),normalize(vV)),0.0,1.0);
+        float g=fbm(vP*9.0+vec3(0.0,0.0,T*0.05))*0.5+0.5, cells=fbm(vP*26.0-vec3(T*0.08))*0.5+0.5;
+        float spots=smoothstep(0.62,0.72,fbm(vP*3.5+vec3(T*0.01)));
+        vec3 c=mix(BASE,HOT,pow(mu,0.9)*0.75+g*0.4)*(0.62+cells*0.7);
+        c*=(0.42+0.58*pow(mu,0.45))*(1.0-spots*0.35);                      // darker toward the edge
+        gl_FragColor=vec4(c*1.25,1.0); }`});
+}
+function coronaTexture(rgb){ const N=512, c=document.createElement("canvas"); c.width=c.height=N; const x=c.getContext("2d");
+  const g=x.createRadialGradient(N/2,N/2,0,N/2,N/2,N/2);
+  g.addColorStop(0,`rgba(${rgb},1)`); g.addColorStop(0.08,`rgba(${rgb},.85)`); g.addColorStop(0.2,`rgba(${rgb},.32)`); g.addColorStop(0.45,`rgba(${rgb},.08)`); g.addColorStop(1,"rgba(0,0,0,0)");
+  x.fillStyle=g; x.fillRect(0,0,N,N);
+  x.globalCompositeOperation="lighter"; const rnd=seededRand("corona"+rgb);           // faint streamers
+  for(let i=0;i<70;i++){ const a=rnd()*Math.PI*2, len=N*(0.16+rnd()*0.3), w=0.6+rnd()*2;
+    const lg=x.createLinearGradient(N/2,N/2,N/2+Math.cos(a)*len,N/2+Math.sin(a)*len); lg.addColorStop(0,`rgba(${rgb},${0.05+rnd()*0.08})`); lg.addColorStop(1,"rgba(0,0,0,0)");
+    x.strokeStyle=lg; x.lineWidth=w; x.beginPath(); x.moveTo(N/2,N/2); x.lineTo(N/2+Math.cos(a)*len,N/2+Math.sin(a)*len); x.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; }
+
+// =================================================================== planets
+// Planets with a look of their own, drawn on the GPU and matched to how they look from orbit in game
+// (Alpha 4.3): the surface is worked out from noise in the planet's own frame, so it turns with the planet;
+// it's lit from where the star really is, seen through the planet's own hazy atmosphere, with a glowing
+// rim, puffy clouds that cast light and shade, and the lights of its real cities on the night side (placed
+// at their real positions, so they're dark or lit exactly when they are in game). Planets not listed keep
+// the simpler painted look.
+//   haze: how much of the surface the atmosphere veils (0-1), hazeCol its colour; atmo: the rim's colour
+const PLANET_LOOK={
+  ArcCorp:   {type:1, atmo:[0.55,0.90,0.88], haze:0.36, hazeCol:[0.62,0.78,0.76], clouds:0.17, cloudCol:[0.84,0.93,0.91], cityR:0.07, seed:2.1},
+  Hurston:   {type:2, atmo:[0.78,0.93,0.90], haze:0.52, hazeCol:[0.80,0.86,0.83], clouds:0.24, cloudCol:[0.92,0.90,0.83], cityR:0.08, seed:5.3},
+  Crusader:  {type:3, atmo:[0.55,0.85,0.95], haze:0.18, hazeCol:[0.86,0.92,0.95], clouds:0.0,  cloudCol:[1,1,1],          cityR:0.012, seed:7.7},
+  microTech: {type:4, atmo:[0.62,0.80,1.00], haze:0.14, hazeCol:[0.85,0.90,1.00], clouds:0.16, cloudCol:[0.97,0.98,1.00], cityR:0.06, seed:3.9}};
+const PLANET_MATS=[];          // their materials, for the sun's position and time each frame
+const PLANET_V=`#include <common>
+  #include <logdepthbuf_pars_vertex>
+  uniform vec3 SUN; varying vec3 vP, vW, vN, vL;
+  void main(){ vP=normalize(position); vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; vN=normalize(mat3(modelMatrix)*normal);
+    vL=normalize(transpose(mat3(modelMatrix))*(SUN-w.xyz));            // toward the sun, in the planet's own frame
+    gl_Position=projectionMatrix*viewMatrix*w;
+    #include <logdepthbuf_vertex>
+  }`;
+const PLANET_F=`#include <common>
+  #include <logdepthbuf_pars_fragment>
+  varying vec3 vP, vW, vN, vL; uniform vec3 SUN, ATMO, HAZEC; uniform float T, SEED, HAZE, CITYR; uniform int TYPE;
+  uniform vec4 CITY[4];${NOISE_GLSL}
+  float h1(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
+  float ridge(vec3 p){ return 1.0-abs(fbm(p)*2.0); }
+  // Lights scattered like a city seen from orbit: many small points in clusters. Up close they're points;
+  // once they're too small on screen they blend into their average glow (no flicker).
+  float speckle(vec3 p, float k, float th){ float f=1.0-smoothstep(0.25,0.9,length(fwidth(p*k)));
+    return mix(1.0-th, step(th,h1(floor(p*k))), f); }
+  // Round points of light, one at a random spot in some of the cells; fade to their average glow when a
+  // cell gets smaller than a couple of pixels
+  float dots(vec3 p, float k, float th){ vec3 q=p*k, c=floor(q), f=fract(q); float h=h1(c);
+    vec3 o=vec3(h1(c+1.3),h1(c+2.7),h1(c+5.1))*0.5+0.25; float pix=length(fwidth(q));
+    float r=max(0.16,pix*0.9), d=step(th,h)*smoothstep(r,r*0.35,length(f-o))*(0.6+0.8*h1(c+9.7));
+    return mix((1.0-th)*0.08,d,1.0-smoothstep(0.35,0.7,pix)); }
+  // ArcCorp: rose-grey city crust under a teal haze, the whole planet built up, lights everywhere at night
+  vec3 arccorp(vec3 p, out float lights){ vec3 s=vec3(SEED);
+    float big=fbm(p*1.8+s), mid=fbm(p*6.0-s), fine=fbm(p*40.0+s), grain=fbm(p*160.0);
+    vec3 col=mix(vec3(0.60,0.48,0.51),vec3(0.70,0.57,0.57),smoothstep(-0.3,0.3,big));
+    col=mix(col,vec3(0.48,0.40,0.45),smoothstep(0.05,0.4,mid)*0.55);
+    col=mix(col,vec3(0.70,0.62,0.58),smoothstep(0.2,0.5,fbm(p*14.0+s*2.0))*0.4);
+    col*=0.86+0.16*fine+0.14*grain;
+    float cluster=0.3+0.7*smoothstep(-0.25,0.35,fbm(p*9.0+s*1.3))*(0.5+0.5*smoothstep(-0.2,0.3,fbm(p*3.0-s)));
+    lights=cluster*(dots(p,95.0,0.72)*1.8+dots(p,230.0,0.70)*1.2);
+    return col; }
+  // Hurston: maroon, rose and ochre ground, dark patches, and a glowing molten industrial zone
+  vec3 hurston(vec3 p, out vec3 em){ vec3 s=vec3(SEED);
+    float w=fbm(p*1.6+s)*0.7, n=fbm(p*2.6+s+w), d=fbm(p*8.0-s+w*2.0), e=fbm(p*30.0+w*3.0);
+    vec3 col=mix(vec3(0.46,0.28,0.30),vec3(0.60,0.42,0.33),smoothstep(-0.3,0.3,n));
+    col=mix(col,vec3(0.66,0.50,0.34),smoothstep(0.15,0.45,d)*0.55);                           // ochre
+    col=mix(col,vec3(0.26,0.17,0.19),smoothstep(0.25,0.5,fbm(p*4.5-s*1.7+w))*0.6);           // dark ground
+    col*=0.85+0.25*(e*0.5+0.5);
+    vec3 hot=normalize(vec3(0.35,-0.80,0.48));                                                   // the molten zone
+    float r=acos(clamp(dot(p,hot),-1.0,1.0)), zone=1.0-smoothstep(0.12,0.30,r+fbm(p*6.0+s)*0.08);
+    float lava=smoothstep(0.0,0.35,fbm(p*18.0+s*3.0+vec3(T*0.002)))*zone;
+    col=mix(col,vec3(0.55,0.22,0.16),zone*0.6);
+    em=(vec3(1.0,0.38,0.10)*lava+vec3(1.0,0.80,0.50)*pow(lava,2.5)*1.1)*1.25;
+    float lake=1.0-smoothstep(0.035,0.05,acos(clamp(dot(p,normalize(hot+vec3(-0.14,0.06,0.1))),-1.0,1.0))+fbm(p*20.0)*0.01);
+    col=mix(col,vec3(0.09,0.10,0.11),lake);                                                     // the dark crater lake
+    return col; }
+  // Crusader: cream gas giant with streaky rose-mauve patches along its bands
+  vec3 crusader(vec3 p){ vec3 s=vec3(SEED);
+    float warp=fbm(p*vec3(2.0,2.0,5.0)+s+vec3(T*0.003,0.0,0.0))*0.28;
+    float lat=p.z+warp*0.5, band=sin(lat*10.0+fbm(p*2.4)*2.6)*0.5+0.5;
+    float patchN=fbm(vec3(p.xy*6.0,p.z*30.0)+s+vec3(warp*6.0));                               // stretched along the bands
+    float pink=smoothstep(-0.06,0.08,patchN)*smoothstep(0.15,0.55,band), deep=smoothstep(0.12,0.26,patchN)*pink;
+    vec3 col=mix(vec3(0.95,0.93,0.86),vec3(0.83,0.81,0.88),smoothstep(-0.1,0.4,fbm(p*3.0-s+warp*2.0))*0.6);
+    col=mix(col,vec3(0.86,0.60,0.66),pink*0.8);
+    col=mix(col,vec3(0.76,0.46,0.56),deep*0.7);
+    col*=0.95+0.08*fbm(p*36.0+vec3(warp*10.0));                                                 // fine swirls
+    return col; }
+  // microTech: snow with broad blue-lavender lowlands
+  vec3 microtech(vec3 p){ vec3 s=vec3(SEED);
+    float w=fbm(p*1.8+s)*0.55, n=fbm(p*2.6+s+w)+fbm(p*9.0-s+w)*0.25;
+    float low=smoothstep(0.0,0.04,-n+0.05);
+    float isl=smoothstep(0.16,0.24,fbm(p*14.0+s*2.0))*low;                                     // snow islands in the lowlands
+    vec3 blue=mix(vec3(0.57,0.65,0.85),vec3(0.70,0.76,0.92),smoothstep(-0.2,0.3,fbm(p*6.0+s)));
+    vec3 col=mix(vec3(0.95,0.94,0.95),blue,low*(1.0-isl*0.8));
+    col*=0.95+0.07*fbm(p*40.0+w);
+    return col; }
+  void main(){
+    #include <logdepthbuf_fragment>
+    vec3 N=normalize(vN), L=normalize(SUN-vW), V=normalize(cameraPosition-vW);
+    float lights=0.0; vec3 em=vec3(0.0), alb;
+    if(TYPE==1) alb=arccorp(vP,lights); else if(TYPE==2) alb=hurston(vP,em); else if(TYPE==3) alb=crusader(vP); else alb=microtech(vP);
+    alb=pow(alb,vec3(2.2));
+    float nl=dot(N,L), day=smoothstep(-0.12,0.18,nl), diff=max(nl,0.0), nv=max(dot(N,V),0.0);
+    vec3 c=alb*(0.0025+1.0*diff);
+    // the atmosphere: a veil over the whole disc, thicker toward the edge, lit by the sun
+    float hz=HAZE*(0.35+0.65*pow(1.0-nv,1.4)), hl=smoothstep(-0.15,0.6,nl);
+    c=mix(c,pow(HAZEC,vec3(2.2))*(0.02+0.95*hl),hz);
+    c=mix(c,pow(ATMO,vec3(2.2))*(0.15+0.9*diff),pow(1.0-nv,3.5)*0.6*day);
+    // the planet's real cities: a bright core of many lights, and a wider glow round it
+    float cities=0.0;
+    for(int i=0;i<4;i++){ if(CITY[i].w<=0.0) continue;
+      float a=acos(clamp(dot(vP,CITY[i].xyz),-1.0,1.0))/(CITYR*CITY[i].w);
+      cities+=exp(-a*a)*(0.12+3.0*dots(vP,120.0,0.30)+2.0*dots(vP,300.0,0.45))+exp(-a*a*0.3)*0.07; }
+    c+=vec3(1.0,0.56,0.22)*(lights*0.6+cities)*(1.0-day)*(1.0-hz*0.4);
+    c+=em*(1.0-hz*0.6);
+    gl_FragColor=vec4(c,1.0);
+    #include <colorspace_fragment>
+  }`;
+// cities: up to four {dir:[x,y,z] (planet-local), size}
+function planetMaterial(look,cities=[]){
+  const C=[0,1,2,3].map(i=>{ const c=cities[i]; if(!c) return new THREE.Vector4(0,0,1,0); const d=new THREE.Vector3(...c.dir).normalize(); return new THREE.Vector4(d.x,d.y,d.z,c.size||1); });
+  const m=new THREE.ShaderMaterial({uniforms:{SUN:{value:new THREE.Vector3()},T:{value:0},SEED:{value:look.seed},TYPE:{value:look.type},
+    ATMO:{value:new THREE.Vector3(...look.atmo)},HAZE:{value:look.haze},HAZEC:{value:new THREE.Vector3(...look.hazeCol)},CITYR:{value:look.cityR},CITY:{value:C}},
+    vertexShader:PLANET_V, fragmentShader:PLANET_F});
+  PLANET_MATS.push(m); return m; }
+// The glow around the planet: a bright rim along the lit edge fading out into space
+function atmosphereMaterial(look){
+  const m=new THREE.ShaderMaterial({transparent:true, depthWrite:false, side:THREE.BackSide, blending:THREE.AdditiveBlending,
+    uniforms:{SUN:{value:new THREE.Vector3()},ATMO:{value:new THREE.Vector3(...look.atmo)},K:{value:0.55+look.haze}}, vertexShader:PLANET_V,
+    fragmentShader:`#include <common>
+      #include <logdepthbuf_pars_fragment>
+      varying vec3 vP, vW, vN, vL; uniform vec3 SUN, ATMO; uniform float K;
+      void main(){
+        #include <logdepthbuf_fragment>
+        vec3 N=normalize(vN), L=normalize(SUN-vW), V=normalize(cameraPosition-vW);
+        float lit=smoothstep(-0.35,0.45,dot(N,L));
+        float t=clamp(-dot(N,V)/0.29,0.0,1.0), a=pow(t,2.4);
+        gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K,1.0);
+        #include <colorspace_fragment>
+      }`});
+  PLANET_MATS.push(m); return m; }
+// Clouds: puffy patches with a lit top and a shaded side away from the sun
+function cloudMaterial(look){
+  const m=new THREE.ShaderMaterial({transparent:true, depthWrite:false,
+    uniforms:{SUN:{value:new THREE.Vector3()},T:{value:0},SEED:{value:look.seed+11.0},COV:{value:look.clouds},COL:{value:new THREE.Vector3(...look.cloudCol)}},
+    vertexShader:PLANET_V, fragmentShader:`#include <common>
+      #include <logdepthbuf_pars_fragment>
+      varying vec3 vP, vW, vN, vL; uniform vec3 SUN, COL; uniform float T, SEED, COV;${NOISE_GLSL}
+      float dens(vec3 p){ float w=fbm(p*2.6+vec3(SEED))*0.55;
+        float n=fbm(p*9.0+vec3(SEED)+w)*0.9+fbm(p*3.0-vec3(SEED))*0.35+((1.0-abs(fbm(p*30.0+w*3.0)))-0.75)*0.38+fbm(p*80.0)*0.08;
+        float th=0.60-COV*0.22; return smoothstep(th-0.02,th+0.05,n*0.5+0.5); }
+      void main(){
+        #include <logdepthbuf_fragment>
+        float a=T*0.0015; vec3 p=vec3(vP.x*cos(a)-vP.y*sin(a), vP.x*sin(a)+vP.y*cos(a), vP.z);    // they drift slowly
+        vec3 l=vec3(vL.x*cos(a)-vL.y*sin(a), vL.x*sin(a)+vL.y*cos(a), vL.z);
+        float d=dens(p); if(d<0.01) discard;
+        float shade=clamp(1.0-(dens(p+l*0.008)-d)*2.2,0.3,1.0);                                   // denser toward the sun: in shadow
+        shade*=0.66+0.34*(1.0-abs(fbm(p*55.0)))*(0.8+0.2*fbm(p*140.0));                             // puffy texture
+        vec3 N=normalize(vN), L=normalize(SUN-vW); float diff=max(dot(N,L),0.0);
+        float day=smoothstep(-0.15,0.2,dot(N,L));
+        gl_FragColor=vec4(pow(COL,vec3(2.2))*vec3(0.92,0.96,1.0)*(0.004+diff*mix(0.55,1.0,shade)),d*0.92*mix(0.35,1.0,day));
+        #include <colorspace_fragment>
+      }`});
+  PLANET_MATS.push(m); return m; }
+// The cities whose lights each planet shows: its real ones, from the map (positions are planet-local)
+const PLANET_CITIES={ArcCorp:[["Area 18",1.0]], Hurston:[["Lorville",1.15]], Crusader:[["Orison",1.0]], microTech:[["New Babbage",1.0]]};
+function citiesOf(name){ return (PLANET_CITIES[name]||[]).map(([n,size])=>{ const L=S.locMap?.[n]; return L&&L.pos&&L.body===name?{dir:L.pos,size}:null; }).filter(Boolean); }
 
 function seededRand(name){ let h=2166136261; for(const c of name){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; }
 const KIND_LABEL={star:"Star",planet:"Planet",moon:"Moon",asteroid:"Asteroid"};
@@ -1128,12 +1476,13 @@ let sysObjs=[];  // three objects of the current system
 function buildSystem(){
   for(const o of sysObjs){ scene.remove(o.group); o.group.traverse(n=>{ n.geometry?.dispose?.(); n.material?.map?.dispose?.(); n.material?.dispose?.(); });
     if(o.orbit){ scene.remove(o.orbit); o.orbit.geometry.dispose(); o.orbit.material.dispose(); } }   // leftover rings = "ghost" orbits
-  sysObjs=[];
+  sysObjs=[]; PLANET_MATS.length=0;
   for(const b of S.bodies.filter(b=>b.system===S.system)){
     const group=new THREE.Group(); const spin=new THREE.Group(); group.add(spin);
     const isStar=b.kind==="star", isRock=b.kind==="asteroid";
     let geo; if(isRock) geo=asteroidGeometry(b.name); else { geo=new THREE.SphereGeometry(1,96,64); geo.rotateX(Math.PI/2); }
-    const mat= isStar ? new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${BODY_HSL[b.name]?.[0]??45},100%,70%)`)})
+    const look=!isStar&&PLANET_LOOK[b.name];
+    const mat= isStar ? sunMaterial(BODY_HSL[b.name]?.[0]??45) : look ? planetMaterial(look,citiesOf(b.name))
                       : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:isRock?1:0.95, metalness:0, flatShading:isRock});
     const mesh=new THREE.Mesh(geo,mat); mesh.scale.setScalar(b.radius); spin.add(mesh);
     let grid=null, atmo=null;
@@ -1142,23 +1491,95 @@ function buildSystem(){
       grid=new THREE.LineSegments(GRAT,new THREE.LineBasicMaterial({color:0xa9c3ff,transparent:true,opacity:0.16,depthWrite:false}));
       grid.scale.setScalar(b.radius*1.002); spin.add(grid);
       const [h]=BODY_HSL[b.name]||[210];
+      if(look){
+        atmo=new THREE.Mesh(new THREE.SphereGeometry(1,96,64), atmosphereMaterial(look)); atmo.scale.setScalar(b.radius*1.05); group.add(atmo);
+        if(look.clouds>0){ const cl=new THREE.Mesh(geo, cloudMaterial(look)); cl.scale.setScalar(b.radius*1.008); spin.add(cl); }
+      } else {
       atmo=new THREE.Mesh(new THREE.SphereGeometry(1,48,32), new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${h},60%,70%)`),transparent:true,opacity:0.08,side:THREE.BackSide,depthWrite:false}));
-      atmo.scale.setScalar(b.radius*1.035); group.add(atmo);
+      atmo.scale.setScalar(b.radius*1.035); group.add(atmo); }
     } else {
-      const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(b.name==="Pyrostar"?"rgba(255,140,80,1)":"rgba(255,220,150,1)"),depthWrite:false,transparent:true,blending:THREE.AdditiveBlending}));
-      sp.scale.setScalar(b.radius*9); group.add(sp);
+      const rgb=b.name==="Pyrostar"?"255,138,72":b.system==="Nyx"?"255,214,170":"255,218,150";
+      const add=(map,opts)=>new THREE.Sprite(new THREE.SpriteMaterial({map,depthWrite:false,transparent:true,blending:THREE.AdditiveBlending,...opts}));
+      const corona=add(coronaTexture(rgb)); corona.scale.setScalar(b.radius*7.5); group.add(corona);
+      const halo=add(glowTexture(`rgba(${rgb},0.55)`),{opacity:0.32}); halo.scale.setScalar(b.radius*15); group.add(halo);
+      // glare: a fixed share of the screen, so the sun still shines when the whole system is in view
+      const glare=add(coronaTexture(rgb),{sizeAttenuation:false,opacity:0.55}); glare.scale.setScalar(0.16); group.add(glare);
     }
     scene.add(group);
     // orbit ring around the parent (drawn in the parent's plane)
     let orbit=null; const par=b.parent&&S.bodyMap[b.parent];
     if(par){ const r=Math.hypot(b.center[0]-par.center[0], b.center[1]-par.center[1]); const pts=[];
       for(let i=0;i<=256;i++){ const a=i/256*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
-      orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x6f8fc0,transparent:true,opacity:par.kind==="star"?0.28:0.18,depthWrite:false}));
+      orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x4fb6e0,transparent:true,opacity:par.kind==="star"?0.42:0.24,depthWrite:false}));
       scene.add(orbit); }
     sysObjs.push({b,group,spin,mesh,grid,atmo,orbit,par,orbitZ:b.center[2],orbitR:par?Math.hypot(b.center[0]-par.center[0],b.center[1]-par.center[1]):0});
   }
   sysObjs.group=null;
+  buildStations();
 }
+// =================================================================== space stations
+// Each station gets a 3D model in the style of the game's stations: a long spine with big spoked rings
+// around it, habitat blocks with lit windows, a cluster of tanks, a small ring and an antenna. Four designs,
+// made once; each station picks one by its name and is turned its own way. Real stations are only a km or
+// two long, so a model keeps a readable size on screen as you zoom out, and is hidden in the whole-system
+// view (its marker and name still show). Follows the Stations layer.
+const STATION_MATS=[new THREE.MeshStandardMaterial({color:0x9aa4b0,metalness:0.65,roughness:0.42}),
+  new THREE.MeshStandardMaterial({color:0xc6a04e,metalness:0.4,roughness:0.5}),
+  new THREE.MeshBasicMaterial({color:0xffe2a8}),
+  new THREE.MeshStandardMaterial({color:0x5f6873,metalness:0.7,roughness:0.5})];
+function mergeParts(parts){ const out=STATION_MATS.map(()=>({pos:[],nor:[]}));
+  for(const [geo,mat,m] of parts){ const g=(geo.index?geo.toNonIndexed():geo.clone()).applyMatrix4(m); g.computeVertexNormals?.();
+    const P=g.attributes.position.array, N=g.attributes.normal.array; for(let i=0;i<P.length;i++){ out[mat].pos.push(P[i]); out[mat].nor.push(N[i]); } g.dispose(); }
+  return out.map(o=>{ const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(o.pos,3)); g.setAttribute("normal",new THREE.Float32BufferAttribute(o.nor,3)); g.computeBoundingSphere(); return g; }); }
+const STATION_DESIGNS=[0,1,2,3].map(v=>{ const rnd=seededRand("station-design-"+v), parts=[], M=()=>new THREE.Matrix4();
+  const at=(x,y=0,z=0)=>M().makeTranslation(x,y,z), rotX=a=>M().makeRotationX(a), rotY=a=>M().makeRotationY(a), rotZ=a=>M().makeRotationZ(a);
+  const L=950+rnd()*350, nRing=2+Math.floor(rnd()*2.6), R0=250+rnd()*110;
+  parts.push([new THREE.CylinderGeometry(26,26,L,16),0,rotZ(Math.PI/2)]);                                     // spine along x
+  for(let k=0;k<4;k++){ const a=k*Math.PI/2+Math.PI/4;                                                         // truss round it
+    parts.push([new THREE.BoxGeometry(L*0.92,7,7),3,rotX(a).multiply(at(0,44,0))]);
+    for(let j=0;j<14;j++) parts.push([new THREE.BoxGeometry(5,62,5),3,at(-L*0.46+j*L*0.92/13).multiply(rotX(a))]); }
+  parts.push([new THREE.CylinderGeometry(6,3,L*0.32,6),3,at(L*0.5+L*0.16,0,0).multiply(rotZ(Math.PI/2))]);   // antenna mast
+  for(let i=0;i<nRing;i++){ const x=-L*0.42+i*(L*0.62/Math.max(1,nRing-1)), R=R0*(0.9+rnd()*0.2), tube=20+rnd()*8, spokes=3+Math.floor(rnd()*4);
+    const ringM=at(x).multiply(rotY(Math.PI/2));
+    parts.push([new THREE.TorusGeometry(R,tube,12,96),i%2?1:0,ringM]);                                       // the ring
+    parts.push([new THREE.TorusGeometry(R+tube*0.9,tube*0.35,6,96),3,ringM.clone()]);                          // its outer rim
+    for(let k=0;k<24;k++){ const a=k/24*Math.PI*2;                                                             // habitat segments with windows
+      const seg=at(x).multiply(rotX(a)).multiply(at(0,R,0));
+      parts.push([new THREE.BoxGeometry(tube*2.4,tube*1.4,R*0.2),k%6===0?1:0,seg]);
+      parts.push([new THREE.BoxGeometry(tube*2.45,tube*0.25,R*0.16),2,seg.clone().multiply(at(0,tube*0.2,0))]); }
+    parts.push([new THREE.CylinderGeometry(62,62,70,20),0,at(x).multiply(rotZ(Math.PI/2))]);                // hub
+    for(let k=0;k<spokes;k++){ const a=k/spokes*Math.PI*2+rnd();
+      parts.push([new THREE.CylinderGeometry(7,7,R,8),3,at(x).multiply(rotX(a)).multiply(at(0,R/2,0))]); } }
+  const hx=L*0.30;                                                                                            // the main module cluster
+  parts.push([new THREE.BoxGeometry(230,120,150),0,at(hx)]);
+  parts.push([new THREE.BoxGeometry(236,14,152),2,at(hx,30,0)]);
+  for(let k=0;k<9+Math.floor(rnd()*5);k++){ const a=rnd()*Math.PI*2, w=60+rnd()*90, h=40+rnd()*60, len=90+rnd()*150;
+    const m=at(hx+(rnd()-0.5)*260).multiply(rotX(a)).multiply(at(0,70+h/2+rnd()*40,0));
+    parts.push([new THREE.BoxGeometry(len,h,w),k%3===0?1:0,m]);
+    for(let j=0;j<3;j++) parts.push([new THREE.BoxGeometry(len*1.01,h*0.12,w*0.7),2,m.clone().multiply(at(0,(j-1)*h*0.28,0))]); }
+  const tx=L*0.04+rnd()*L*0.06;                                                                                // tanks
+  for(let k=0;k<8;k++){ const a=k/8*Math.PI*2; parts.push([new THREE.SphereGeometry(40,16,10),0,at(tx+(k%2)*60).multiply(rotX(a)).multiply(at(0,70,0))]); }
+  const sx=L*0.5;                                                                                              // the small ring at the end
+  parts.push([new THREE.TorusGeometry(140,11,8,64),0,at(sx).multiply(rotY(Math.PI/2))]);
+  for(let k=0;k<4;k++) parts.push([new THREE.CylinderGeometry(4,4,140,6),3,at(sx).multiply(rotX(k*Math.PI/2)).multiply(at(0,70,0))]);
+  return {geos:mergeParts(parts), length:L*1.2}; });
+let stationObjs=[];
+function buildStations(){
+  for(const o of stationObjs){ scene.remove(o.group); } stationObjs=[];
+  for(const L of S.locs||[]){
+    if(L.type!=="station"||L.system!==S.system||!L.pos) continue;
+    if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(!b||Math.hypot(...L.pos)<b.radius*1.02) continue; }   // ground stations: no model
+    const rnd=seededRand(L.name), d=STATION_DESIGNS[Math.floor(rnd()*STATION_DESIGNS.length)], group=new THREE.Group();
+    d.geos.forEach((g,i)=>{ if(g.attributes.position.count) group.add(new THREE.Mesh(g,STATION_MATS[i])); });
+    group.quaternion.setFromEuler(new THREE.Euler(rnd()*6.28,rnd()*6.28,rnd()*6.28)); group.visible=false; scene.add(group);
+    stationObjs.push({L,group,len:d.length,spin:(rnd()-0.5)*0.06}); } }
+function updateStations(t){ const f=H/2/Math.tan(camera.fov*Math.PI/360), on=S.layers?.station!==false, v=new THREE.Vector3();
+  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ o.group.visible=false; continue; }
+    v.set(g[0]-O[0],g[1]-O[1],g[2]-O[2]); const d=camera.position.distanceTo(v);
+    if(d>1.6e7){ o.group.visible=false; continue; }                                    // whole-system view: just the marker
+    o.group.visible=true; o.group.position.copy(v); o.group.scale.setScalar(Math.max(1,48*d/(o.len*f)));
+    o.group.rotateX(o.spin*0.016); } }
+
 function place(obj,p){ obj.position.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]); }
 
 // =================================================================== camera
@@ -1364,7 +1785,8 @@ function drawOverlay(t){
     ctx.fillText("No map data yet. Run  python import_data.py  and restart the app.",W/2,H/2); ctx.textAlign="left"; return; }
   prepOcclusion();
   // While a trade run is previewed, the map shows only that run: your Route and the guide line come back when it closes.
-  const live=S.live, route=S.preview?[]:(live?.route||[]), stopIdx=Object.fromEntries(route.map((n,i)=>[n,i+1]));
+  // A trade preview or a commodity's terminals on the map show just that: your own route stays hidden meanwhile
+  const solo=!!(S.preview||S.mapMarks), live=S.live, route=solo?[]:(live?.route||[]), stopIdx=Object.fromEntries(route.map((n,i)=>[n,i+1]));
   const f=H/2/Math.tan(camera.fov*Math.PI/360);
   drawRangeRings(t);
   // ---- route & guide paths (under the markers)
@@ -1376,9 +1798,9 @@ function drawOverlay(t){
       if(prev&&nd&&f>0){ let smp=legSamples(prev,nd,t); if(f<1) smp=smp.slice(0,Math.max(2,Math.ceil(smp.length*f)));
         strokePath(smp,{color:"#4b8dff",width:i===0?2.8:2,glow:"rgba(75,141,255,.24)",dash:i===0?[10,9]:[6,6],offset:i===0?-dash:0}); }
     prev=nd||prev; }); }
-  const guide=S.preview?null:live?.guide; let gnode=null;
+  const guide=solo?null:live?.guide; let gnode=null;
   if(guide && S.locMap[guide.name]){ gnode=nodeOf(guide.name,t); const pn=playerNode(); if(gnode&&pn) strokePath(legSamples(pn,gnode,t),{color:"#7fe7ff",width:2.4,glow:"rgba(127,231,255,.18)",dash:[4,7],offset:-dash}); }
-  if(S.preview){ let prev=playerNode(); for(const n of S.preview){ const nd=nodeOf(n,t);
+  if(S.preview){ let prev=nodeOf(S.preview[0],t)?playerNode():null; for(const n of S.preview){ const nd=nodeOf(n,t);
       if(prev&&nd) strokePath(legSamples(prev,nd,t),{color:"#57e39b",width:2.6,glow:"rgba(87,227,155,.22)",dash:[9,8],offset:-dash}); prev=nd||prev; } }
   // ---- bodies: dots and labels when small, labels always
   const bodyLabels=[];
@@ -1457,7 +1879,10 @@ function frame(){
     if(o.orbit){ o.orbit.visible=S.show.orbits && S.cam.dist>o.orbitR*0.04; o.orbit.position.set(o.par.center[0]-O[0],o.par.center[1]-O[1],o.orbitZ-O[2]); } }
   const star=sysObjs.find(o=>o.b.kind==="star"); const sp=star?star.b.center:[0,0,0];
   sun.position.set(sp[0]-O[0],sp[1]-O[1],sp[2]-O[2]); sun.target.position.set(0,0,0); sun.target.updateMatrixWorld();
-  starfield.position.copy(camera.position);
+  updateStations(t);
+  starfield.position.copy(camera.position); starfield.material.uniforms.T.value=performance.now()/1000; starfield.material.uniforms.PR.value=DPR;
+  if(star) star.mesh.material.uniforms.T.value=performance.now()/1000;
+  for(const m of PLANET_MATS){ m.uniforms.SUN.value.set(sp[0]-O[0],sp[1]-O[1],sp[2]-O[2]); if(m.uniforms.T) m.uniforms.T.value=performance.now()/1000; }
   renderer.render(scene,camera);
   drawOverlay(t);
   requestAnimationFrame(frame);
@@ -1545,8 +1970,8 @@ function renderOffmap(){ const L=S.locs.filter(x=>x.system===S.system&&!x.pos).s
   const el=$("offmap"); el.classList.toggle("show",L.length>0);
   el.innerHTML=L.length?`<div class="t">Not on the map yet (${L.length})</div>${L.slice(0,8).map(x=>`<a class="${x.type==="jump"?"gw":""}" data-om="${esc(x.name)}">${x.type==="jump"?"◎ ":""}${esc(x.name)}${x.to?` <span class="muted">→ ${esc(x.to)}</span>`:""}</a>`).join("")}${L.length>8?`<div class="muted">+${L.length-8} more in search</div>`:""}`:""; }
 $("offmap").onclick=e=>{ const a=e.target.closest("[data-om]"); if(a) select({kind:"loc",name:a.dataset.om}); };
-function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg(); renderOffmap();
-  if(changed){ setLock(null); S.anim=null; buildSystem(); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
+function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg(); renderOffmap(); if(changed&&S.preview) setTimeout(journeyChip);
+  if(changed){ setLock(null); S.anim=null; buildSystem(); setSky(sys); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
 function renderSysSeg(){ const here=S.live?.game_off?null:(S.live?.player?.system||S.live?.where?.system);
   $("sysSeg").innerHTML=S.systems.map(s=>{ const w=wikiSystem(s); const tip=w?`${w.affiliation} · ${w.star_type||""}`:"";
     return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}</button>`; }).join(""); }
@@ -1560,6 +1985,7 @@ function buildLayers(){
   for(const [k,v] of Object.entries(TYPES)) mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
   el.appendChild(document.createElement("hr"));
   mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>S.show.grid=v);
+  mk("Galaxy background",S.show.sky,"",v=>{ S.show.sky=v; try{ localStorage.setItem("q-sky",v?"1":"0"); }catch{} scene.background=v?sky.texture:null; });
   $("layers-hdr").onclick=()=>{ el.hidden=!el.hidden; $("layers-caret").textContent=el.hidden?"▸":"▾"; };
   el.hidden=true; $("layers-caret").textContent="▸";
 }
@@ -1579,7 +2005,14 @@ const SVC_ICONS={
   food:'<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10"/><path d="M16 3c-2 2-2 6 0 8v10"/>',
   ship:'<path d="M12 3l3 8 6 3-6 1-3 6-3-6-6-1 6-3z"/>',
   dot:'<circle cx="12" cy="12" r="4"/>'};
+// solid game-style icons (the Star Citizen UI's own glyphs), drawn filled on their own grid
+const SVC_SOLID={
+  pistol:['0 0 50 50','M50 9.5v-.9l-1.7-1.1h-2.2c0 .2-.2.4-.4.4h-2.5c-.2 0-.4-.2-.4-.4H31.1l.1.5h-8.5l-.6-.5H4.5L1.7 9.1c-.3.2-.5.4-.7.7l-.7 1.5V14l.7.8v1.1l5 2.3s1.2 2.5-.8 6-3.4 4.6-5 12.5c0 0-.8 3 1 3.7 0 0-.1.5.3.8l-.3.9s0 .3 1.5.4 7.8 0 7.8 0 2.7-.1 2.7-2.1l.5-2.2s-.7-.5-.2-2.5c.5-2 1.4-4.8 1.4-4.8s.2-1.2 1.3-1.7.4-1.1.4-1.1-.4-1.5.6-3.6l.4-.8s2.1-1.5 4.2.1h6.6l4.4-4.8 2.3-.7h11.4l.3-.4h.2l.5-.5h.7s.8-.1.8-1.1l-.1-2.3h.2l.5-1.3-.2-.2V12l-.2-.3s.5-.6.5-1.4l.3-.8zm-22.3 6.4 2.5 2.1-.2 2.4-1.8 2.1h-3.6l.1-.4-.1-.4s-2.5-1.1-1.9-5.8h5z'],
+  utility:['0 0 50 50','M24.8 16.2c-1.2.4-2.3 1-3.2 1.9-.8.8-1.4 1.7-1.8 2.7s-.5 2-.5 3.1c.1 1.2-.3 2.3-1.1 3.1L1 44.3c-.6.6-1 1.4-1 2.4 0 .9.3 1.7 1 2.3.6.6 1.4 1 2.4 1 .9 0 1.7-.3 2.3-1l16.6-16.6c1.2-1.2 2.3-1.6 3.4-1.5 1.2.2 2.4.1 3.5-.2 1.2-.4 2.2-1 3.1-1.9 1-1 1.6-2.1 2-3.5.3-1.3.3-2.6 0-3.9 0-.2-.1-.3-.2-.3-.1-.1-.3 0-.5.1L30.8 24c-.5.5-1.1.7-1.8.7s-1.3-.2-1.8-.7L26 23c-.5-.5-.7-1.1-.7-1.8s.2-1.3.7-1.8l2.7-2.7c.4-.4.3-.6-.3-.7-1.3-.2-2.5-.2-3.6.2m-4.5 12.3c.2-.2.5-.3.8-.3s.6.1.8.3c.2.2.3.5.3.8s-.1.6-.3.8L4.7 47.2c-.2.2-.5.3-.8.3s-.6-.1-.8-.3-.3-.5-.3-.8.1-.6.3-.8l17.2-17.1M45.4 9.2c0-.2-.1-.4-.2-.6l-3.8-3.8c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2l-3 3c-2.1-1.4-4.4-2.3-6.9-2.8V.8c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2h-5.4c-.2 0-.4.1-.5.2-.2.1-.2.3-.2.5v4.3c-2.5.6-4.7 1.5-6.8 2.9l-3.1-3.1c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2L8.7 8.7c-.1.1-.2.3-.2.5s.1.4.2.6l3.1 3.1C10.4 15 9.5 17.2 9 19.6H4.6c-.2 0-.4.1-.5.2-.1.2-.2.4-.2.6v5.4c0 .2.1.4.2.6.1.1.3.2.5.2h4.5c.3 1.5.8 3 1.4 4.3l3.9-3.9c-.7-2.3-.8-4.6-.2-7s1.7-4.5 3.5-6.2c2.6-2.6 5.7-3.8 9.3-3.8s6.7 1.3 9.3 3.8c2.6 2.6 3.9 5.7 3.9 9.3s-1.3 6.7-3.9 9.3c-1.8 1.8-3.9 2.9-6.3 3.5s-4.7.5-7-.3l-3.9 3.9c1.4.7 2.9 1.2 4.4 1.5v4.4c0 .2.1.4.2.6.2.1.3.2.5.2h5.4c.2 0 .4-.1.6-.2.1-.2.2-.3.2-.6V41c2.5-.5 4.8-1.4 6.8-2.8l3.1 3c.2.2.3.2.6.2s.4-.1.5-.2l3.8-3.8c.2-.2.2-.3.2-.6s-.1-.4-.2-.6l-3-3c1.4-2.1 2.4-4.3 2.9-6.9h4.2c.2 0 .4-.1.6-.2.2-.2.2-.3.2-.6v-5.4c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2H45c-.5-2.4-1.4-4.7-2.9-6.9l3-3c.2.1.3 0 .3-.3z'],
+  turret:['0 0 16 16','M9.617 14.31h2.195v.44H2.891v-.66l2.994-.634-.715-2.234-2.059.523c-.658-.385-1.015-.607-1.674-.992L1 9.046 7.646 7.31l.22.882 6.647-1.737.331 1.267-6.646 1.737.22.882-1.784.523.826 2.62 1.868.248.3.58zM8.464 4.281l.22.882-5.299 1.379c-.658-.386-1.015-.607-1.674-.993l-.44-1.71 6.645-1.734.221.855 6.532-1.71L15 2.518 8.464 4.224z']};
 function svcIcon(name){ const n=name.toLowerCase();
+  const s=n.includes("weapon")&&(n.includes("ship")||n.includes("vehicle"))?"turret":n.includes("weapon")?"pistol":n.includes("vehicle services")?"utility":null;
+  if(s) return `<svg class="solid" viewBox="${SVC_SOLID[s][0]}" aria-hidden="true"><path d="${SVC_SOLID[s][1]}"/></svg>`;
   const k=n.includes("landing pad")?"pad":n.includes("hangar")||n.includes("garage")?"hangar":n.includes("vehicle services")||n.includes("repair")?"wrench":n.includes("docking")?"dock"
     :n.includes("loading dock")||n.includes("commodity")||n.includes("cargo")?"cargo":n.includes("refinery")?"refine":n.includes("clinic")||n.includes("hospital")||n.includes("medical")?"med"
     :n.includes("food")?"food":n.includes("vehicle")||n.includes("ship")&&n.includes("rent")?"ship":n.includes("buy")||n.includes("rent")||n.includes("shop")?"shop":"dot";
@@ -1864,7 +2297,9 @@ function renderHud(){
     html+=`<div class="card guide"><div class="lbl">Guiding to<span class="spacer"></span><button class="btn small ghost" id="hud-stop">Stop</button></div>
       <div class="nm">${esc(g.name)}</div>${nums}${(ap||direct)?`<div class="approach"><div class="muted" style="font-size:12px">Fastest way there</div>${faster||direct}${ap}</div>`:""}</div>`; }
   const here=live.travel?.state==="landed"&&live.travel?.place===n?.name;
+  const gate=(live.stop_roles?.[0]||[]).find(r=>r.kind==="gate");
   if(n){ html+=`<div class="card next"><div class="lbl">Next stop${live.route.length>1?` · 1 of ${live.route.length}`:""}${here?' <span style="color:var(--ok);font-weight:600">· You\'re here</span>':""}</div><div class="nm">${esc(n.name)}</div>
+    ${gate?`<div class="hint">Quantum to the gateway, then fly into the jump point to reach ${esc(gate.to||"the next system")}.</div>`:""}
     ${n.other_system?`<div class="hint">It's in ${esc(n.system)}. Jump there first.</div>`:n.distance!=null?`<div class="nums"><div><div class="v">${fmtDist(n.distance)}</div><div class="k">straight line</div></div>
       ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(padLabel(n.pad))}</div><div class="k">pad</div></div>`:""}</div>`
       :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}</div>`; }
@@ -1904,7 +2339,10 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 
 // ---- route
 async function addStops(names){ await api().add_stops(names); await poll(); toast(names.length===1?`Added ${names[0]} to route`:`Added ${names.length} stops to route`); renderDetail(); }
-function roleTags(roles){ return (roles||[]).map(r=>`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
+function roleTags(roles){ return (roles||[]).map(r=>r.kind==="gate"?`<span class="role gate">Gateway${r.to?" · jump to "+esc(r.to):""}</span>`
+  :r.kind==="gate-in"?`<span class="role gate">Gateway${r.from?" · arrive from "+esc(r.from):""}</span>`
+  :`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
+const isGateStop=roles=>(roles||[]).some(r=>r.kind==="gate"||r.kind==="gate-in");
 function renderRoute(){
   const live=S.live, route=live.route, el=$("stops"); $("c-route").textContent=route.length;
   $("route-empty").style.display=route.length?"none":"block";
@@ -1918,10 +2356,10 @@ function renderRoute(){
     const back=route.indexOf(n)<i?'<span class="role back">Return visit</span>':"";
     return `<li class="stop" draggable="true" data-i="${i}"><div class="num">${i+1}</div>
       <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padLabel(padOf(L)))}</span>`:""}</div></div>
-      <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system):leg!=null?fmtDist(leg):""}</div><button class="x" aria-label="Remove stop ${i+1}">×</button></div></li>`; }).join("");
+      <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system)+(leg!=null?" · "+fmtDist(leg):""):leg!=null?fmtDist(leg):""}</div>${isGateStop(live.stop_roles?.[i])?`<span class="x" title="Added by Quantum: the route jumps to another system here" style="opacity:.35;cursor:default">⇄</span>`:`<button class="x" aria-label="Remove stop ${i+1}">×</button>`}</div></li>`; }).join("");
   for(const li of el.children){ const i=+li.dataset.i, n=route[i];
     li.querySelector(".name").onclick=()=>{ select({kind:"loc",name:n}); focusLoc(n); };
-    li.querySelector(".x").onclick=async()=>{ await api().remove_stop(i); await poll(); };
+    const xb=li.querySelector("button.x"); if(xb) xb.onclick=async()=>{ const r=await api().remove_stop(i); if(r&&r.ok===false) toast(r.error); await poll(); };
     li.ondragstart=e=>{ li.classList.add("dragging"); e.dataTransfer.setData("text/plain",String(i)); };
     li.ondragend=()=>li.classList.remove("dragging");
     li.ondragover=e=>{ e.preventDefault(); for(const o of el.children) o.classList.remove("drop-before"); li.classList.add("drop-before"); };
@@ -2317,10 +2755,15 @@ async function fillUexStatus(refresh){ const el=$("uex-status"); if(!el) return;
   { const pill=document.querySelector('label[for="s-uex"] .conn');                // the Connected beside the label, once it's known
     if(r.token&&pill&&!pill.classList.contains(r.ok?"ok":"bad")) return renderDetail(); }
   $("uex-status").innerHTML=!r.token?"":!r.ok?`<span class="st-bad">${esc(r.error)}</span>`:`${r.unmatched.length?`<details style="margin-top:4px" ${S.uexListOpen?"open":""} ontoggle="S.uexListOpen=this.open"><summary style="cursor:pointer">Not on the map (${r.unmatched.length})</summary>${r.unmatched.map(esc).join(", ")}<div style="margin-top:4px">UEX lists trade terminals here, but Quantum can't match them to a place. If one isn't in the game, mark it "Doesn't exist" in Jobs.</div></details>`:""}`; }
+// A place just added to the route: every + for it turns into a tick, and the Route tab's count pulses
+function markAdded(name){ for(const b of document.querySelectorAll("[data-add]")) if(b.dataset.add===name){ b.classList.add("added"); b.textContent="✓"; b.title="In your route"; }
+  const c=$("c-route"); if(c){ c.classList.remove("pulse"); void c.offsetWidth; c.classList.add("pulse"); } }
 // Shared clicks in both tabs: open a place, add it to the route, open UEX, open Settings.
 async function tradeClick(e){
   const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,false); return true; }
-  const ad=e.target.closest("[data-add]"); if(ad){ await api().add_stops([ad.dataset.add]); await poll(); toast(`Added ${ad.dataset.add} to the route`); return true; }
+  const ad=e.target.closest("[data-add]"); if(ad){ const name=ad.dataset.add, had=S.live?.route?.includes(name);
+    if(!had) await api().add_stops([name]); await poll(); markAdded(name);
+    toast(had?`${name} is already in your route`:`Added ${name} to your route (stop ${S.live?.route?.indexOf(name)+1||"?"} of ${S.live?.route?.length||1})`); return true; }
   const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return true; }
   if(e.target.closest("[data-act=opensettings]")){ select({kind:"settings"}); return true; }
   return false; }
@@ -2364,11 +2807,10 @@ async function renderMarket(){
     if(!L.length) return `<div class="muted" style="font-size:13px;margin:0 2px 8px">${kind==="buy"?"Nowhere sells it":"Nowhere buys it"}${sys?` in ${esc(sys)}`:""}.</div>`;
     return L.slice(0,25).map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
       <div class="p ${i===0?"best":""}">${money(x.price)}</div>
-      ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
+      ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`):`<span></span>`}
       <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.community?` · <span class="cm-pill" title="Reported by a Quantum datarunner and checked against UEX's copy of the report. UEX hasn't finished reviewing it yet.">⚡ ${agoTs(x.community.at)}, awaiting UEX review</span>`:x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
   const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
   $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
-    <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
     <div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>
     <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
     <div class="mk-h">Sell at <span class="muted" style="text-transform:none;letter-spacing:0">best price first, per SCU</span></div>${rows(r.sell,"sell")}${uexCredit(r.at)}`;
@@ -2380,13 +2822,16 @@ async function renderMarketPanel(){
   const avg=(L,k)=>L.length?L.reduce((a,x)=>a+(x[k]||x.price),0)/L.length:null;
   $("mk-panel").innerHTML=`<button class="btn" data-act="mkall" style="margin-bottom:14px">← All commodities</button>
     <div class="mkp-head"><div class="mkp-img" id="mkp-img">${qPic()}</div>
-    <div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div>
-      <div class="mkp-stats">${r.buy[0]?`<div><span>Cheapest buy</span><b>${money(r.buy[0].price)}</b></div>`:""}${r.sell[0]?`<div><span>Best sell</span><b>${money(r.sell[0].price)}</b></div>`:""}
-        ${r.buy[0]&&r.sell[0]?`<div><span>Best spread</span><b style="color:#57e39b">+${money(r.sell[0].price-r.buy[0].price)}</b></div>`:""}
-        <div><span>Sold at</span><b>${r.buy.length}</b></div><div><span>Bought at</span><b>${r.sell.length}</b></div></div>
-      <div class="desc" id="mkp-desc"></div>
+    <div class="hd-main"><div class="hd-title"><div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div></div></div>
+      ${(()=>{ const sp=r.buy[0]&&r.sell[0]?r.sell[0].price-r.buy[0].price:null, ab=avg(r.buy,"price"), av=avg(r.sell,"price");
+        return statBlock([{label:"Cheapest buy",value:r.buy[0]?money(r.buy[0].price):"Not sold"},{label:"Best sell",value:r.sell[0]?money(r.sell[0].price):"Not bought"},
+            {label:"Best spread",value:sp!=null?`${sp>0?"+":""}${money(sp)}`:"–",tone:sp>0?"good":sp<0?"bad":""}],
+          [{label:"Sold at",value:plural(r.buy.length,"terminal")},{label:"Bought at",value:plural(r.sell.length,"terminal")},
+           {label:"Average buy",value:ab!=null?money(ab):null},{label:"Average sell",value:av!=null?money(av):null}]); })()}
+      <div class="desc" id="mkp-desc" style="margin-top:12px"></div>
       <div class="row" style="gap:8px"><button class="btn primary" data-act="mkmap">See on map</button>${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
-    <div class="mkp-cols"><div><div class="mk-h">Buy at</div>${rows(r.buy,"buy")}</div><div><div class="mk-h">Sell at</div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
+    <div class="mkp-cols vd-flat"><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
+      <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
   syncMarketPanel();
   api().wiki_text(c.wiki||c.name).then(t=>{ const el=$("mkp-desc"); if(el&&S.mkData?.c===c&&t) el.innerHTML=wikiDesc(t,c.wiki); });
   const img=await api().wiki_image(c.wiki||c.name); if(S.mkData?.c!==c) return;
@@ -2410,6 +2855,7 @@ $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return
   await tradeClick(e); };
 $("mk-search").addEventListener("input",()=>{ if(!S.mkSel||$("mk-search").value.trim().toLowerCase()!==S.mkSel.name.toLowerCase()){ if(S.mkSel&&!S.mkByName?.[$("mk-search").value.trim().toLowerCase()]){ S.mkSel=null; S.mkData=null; openMarket(); } else if(!S.mkSel) renderMarketGrid(); } });
 $("map-back").onclick=()=>{ if(S.mkMap) toggleMarketMap(); };
+$("pv-next").onclick=()=>journeyNext($("pv-next").dataset.sys);
 $("mk-search").addEventListener("change",()=>{ const c=S.mkByName?.[$("mk-search").value.trim().toLowerCase()]; if(c){ S.mkSel=c; renderMarket(); } });
 $("mk-search").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const v=$("mk-search").value.trim().toLowerCase(); const c=S.mkByName?.[v]||S.mk?.find(x=>x.name.toLowerCase().includes(v)); if(c){ $("mk-search").value=c.name; S.mkSel=c; renderMarket(); } } });
 $("mk-sys").onchange=()=>{ if(S.mkSel) renderMarket(); };
@@ -2420,12 +2866,16 @@ async function openTrade(){
   if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; return; }
   const r=await api().uex_origins(); if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
   const cur=$("tr-from").value||trPref("from"); let html=r.here?`<option value="${r.here.kind}:${r.here.id}" data-name="${esc(r.here.name)}">Near me (${esc(r.here.name)})</option>`:"";
+  // Wider searches: the most profitable runs in the whole game, or anywhere in one system
+  const sysHave=["Stanton","Pyro","Nyx"].filter(sys=>r.items.some(o=>o.system===sys));
+  html+=`<optgroup label="Everywhere"><option value="all:all" data-name="">Anywhere (all systems)</option>${sysHave.map(sys=>`<option value="system:${sys}" data-name="">All of ${sys}</option>`).join("")}</optgroup>`;
   for(const sys of ["Stanton","Pyro","Nyx"]){ const g=r.items.filter(o=>o.system===sys); if(g.length) html+=`<optgroup label="${sys}">${g.map(o=>`<option value="${o.kind}:${o.id}" data-name="${esc(o.name)}">${esc(o.name)}</option>`).join("")}</optgroup>`; }
   S.trOrigins=r.items;
   $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur;
   trFillAt(trPref("at"));
-  if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
   if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-sys").dataset.init=1; }
+  trSysFit();
+  if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
   const fl=await api().fleet_list(), keep=S.trShip?.key||trPref("ship"); S.trFleet=fl.ships;
   if(/^v:/.test(keep)&&!S.veh) await trLoadVehicles();
   const pick=trShipFind(keep)||(fl.main?trShipFind(`f:${fl.main}`):null);
@@ -2433,23 +2883,31 @@ async function openTrade(){
   if(!S.trDone) $("tr-out").innerHTML=`<div class="empty"><strong>Find a profitable route</strong>Pick where you'll start, enter your cargo space and budget, and Quantum ranks what to haul where by total profit.</div>`; }
 // Location: one place on the planet picked under From (a station, city or outpost with a terminal), or anywhere there
 function trFillAt(keep){ const o=(S.trOrigins||[]).find(o=>`${o.kind}:${o.id}`===$("tr-from").value), L=o?.terminals||[];
-  $("tr-at").innerHTML=`<option value="">Anywhere there</option>`+L.map(t=>`<option value="${t.id}" data-name="${esc(t.name)}" data-place="${esc(t.place||"")}">${esc(t.name)}</option>`).join("");
+  $("tr-at").innerHTML=`<option value="">Any</option>`+L.map(t=>`<option value="${t.id}" data-name="${esc(t.name)}" data-place="${esc(t.place||"")}">${esc(t.name)}</option>`).join("");
   $("tr-at").value=keep&&L.some(t=>String(t.id)===String(keep))?String(keep):""; $("tr-at").disabled=!L.length; }
-$("tr-from").addEventListener("change",()=>{ trFillAt(""); trPref("at",""); });
+$("tr-from").addEventListener("change",()=>{ trFillAt(""); trPref("at",""); trSysFit(); });
+// Systems: only what can apply to where you start. Starting in Pyro, "Stay in Stanton" can't find
+// anything and "Avoid Pyro" rules out every run, so they're hidden (and a hidden choice goes back to Any).
+function trStartSystem(){ const [kind,id]=($("tr-from").value||"").split(":"); if(kind==="all") return null; if(kind==="system") return id;
+  const o=(S.trOrigins||[]).find(o=>`${o.kind}:${o.id}`===`${kind}:${id}`); return o?.system||null; }
+function trSysFit(){ const sel=$("tr-sys"), from=trStartSystem();
+  for(const o of sel.options){ const [k,n]=o.value.split(":"); o.hidden=o.disabled=!!from&&((k==="stay"&&n!==from)||(k==="avoid"&&n===from)); }
+  if(sel.selectedOptions[0]?.disabled){ sel.value=""; trPref("sys",""); } }
 $("tr-at").addEventListener("change",()=>trPref("at",$("tr-at").value));
 async function runTrade(){
   let [kind,id]=($("tr-from").value||"").split(":"); if(!id) return toast("Pick where you'll start");
   if($("tr-at").value){ kind="terminal"; id=$("tr-at").value; }
+  const wide=kind==="all"||kind==="system";
   setPreview(null);
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
   trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
-  $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">Finding routes…</div>`;
+  $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">${wide?`Comparing every terminal${kind==="system"?` in ${esc(id)}`:""}…`:"Finding routes…"}</div>`;
   const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",S.trShip?.key||"");
-  const r=await api().uex_routes(kind,+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
+  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>Nothing from here makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
+  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>${wide?"Nothing":"Nothing from here"} makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
-  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
+  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"}${r.wide?` · best ${r.routes.length} shown, a few per commodity`:""} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
     `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
@@ -2495,17 +2953,35 @@ $("tr-ship").addEventListener("blur",()=>{ trShipClose(); const v=$("tr-ship").v
   else $("tr-ship").value=""; });
 $("tr-scu").addEventListener("input",()=>{ if(S.trShip&&$("tr-scu").value!==String(S.trShip.scu)) trShipSet(null); });
 // Preview: draw the run (you → buy → sell) on the map without touching your route.
-function previewPlaces(from,to,what){ setPreview(null); if(!from||!to) return; S.preview=[from,to]; S.previewIdx=null;
-  S.previewLabels={[from]:`Buy ${what}`,[to]:`Sell ${what}`}; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false);
-  if(tradePanelOpen()) return framePreview(); fitRoute(true,S.preview); }
+// A run's places, through the gateways when it crosses systems: buy, (jump out, arrive)…, sell
+async function journeyOf(from,to,what){ let P=[from,to]; try{ const r=await api().journey(from,to); if(r?.places?.length) P=r.places; }catch(_){}
+  const lab={[from]:`Buy ${what}`,[to]:`Sell ${what}`}, sys=n=>S.locMap[n]?.system;
+  for(let i=1;i<P.length-1;i++) lab[P[i]]=sys(P[i+1])!==sys(P[i])?`Jump to ${sys(P[i+1])}`:`Arrive from ${sys(P[i-1])}`;
+  return {places:P, labels:lab}; }
+async function previewPlaces(from,to,what){ setPreview(null); if(!from||!to) return; const j=await journeyOf(from,to,what);
+  S.preview=j.places; S.previewIdx=null; S.previewLabels=j.labels; const L=S.locMap[from]; if(L&&L.system!==S.system) setSystem(L.system,false);
+  journeyChip(); if(tradePanelOpen()) return framePreview(); fitRoute(true,S.preview.filter(n=>S.locMap[n]?.system===S.system)); }
+// A run that crosses systems: a chip on the map to see its part in the next system (the map shows one at a time)
+// With the route page open, the chip sits inside its map window (the page covers the rest of the map).
+function journeyChip(){ const P=S.preview||[], order=[...new Set(P.map(n=>S.locMap[n]?.system).filter(Boolean))], inWin=tradePanelOpen()&&$("trd-next");
+  for(const el of [$("pv-next"),$("trd-next")]){ if(!el) continue;
+    if(order.length<2||(el.id==="pv-next")===!!inWin){ el.classList.remove("show"); continue; }
+    const i=order.indexOf(S.system), next=order[(i+1)%order.length], last=i===order.length-1;
+    el.innerHTML=last?`↺ Back to the start in <b>${esc(next)}</b>`:`This run continues in <b>${esc(next)}</b> · Show →`; el.dataset.sys=next; el.classList.add("show"); } }
+function journeyNext(sys){ if(!sys||!S.preview) return; S.autoSystem=false; setSystem(sys,false);
+  const here=S.preview.filter(n=>S.locMap[n]?.system===sys), t=now(), a=nodeOf(here[0],t), b=nodeOf(here[here.length-1],t);
+  if(tradePanelOpen()&&a&&b&&here.length>1){ const mid=[0,1,2].map(i=>(a.g[i]+b.g[i])/2), r=Math.max(d3(a.g,b.g)/2,2e5); flyTo({kind:"point",pos:mid}, r*1.45/fitHalf(), {pitch:1.25}); }
+  else fitRoute(true,here); journeyChip(); }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-pvnext]"); if(b) journeyNext(b.dataset.sys); });
 // Inside the route page: centre on the middle of the run and size it to the map window, seen more from
 // above so both ends and their labels sit inside it (your own position isn't part of this framing).
-function framePreview(){ const t=now(), a=nodeOf(S.preview[0],t), b=nodeOf(S.preview[1],t); if(!a||!b) return fitRoute(true,S.preview);
+function framePreview(){ const t=now(), a=nodeOf(S.preview[0],t), b=nodeOf(S.preview[1],t); if(!a||!b) return fitRoute(true,S.preview.filter(n=>S.locMap[n]?.system===S.system));
   const mid=[0,1,2].map(i=>(a.g[i]+b.g[i])/2), r=Math.max(d3(a.g,b.g)/2,2e5), h=fitHalf();
   flyTo({kind:"point",pos:mid}, r*1.45/h, {pitch:1.25}); }
-function setPreview(i){ if(i==null){ if(S.preview){ S.preview=null; S.previewIdx=null; document.querySelectorAll(".tr-card.hl").forEach(c=>c.classList.remove("hl")); } return; }
+function setPreview(i){ if(i==null){ if(S.preview){ S.preview=null; S.previewIdx=null; document.querySelectorAll(".tr-card.hl").forEach(c=>c.classList.remove("hl")); } journeyChip(); return; }
   const x=S.trRoutes[i]; S.preview=[x.from_place,x.to_place]; S.previewIdx=i; S.previewLabels={[x.from_place]:`Buy ${x.commodity}`,[x.to_place]:`Sell ${x.commodity}`};
-  fitRoute(true,S.preview); }
+  fitRoute(true,S.preview);
+  journeyOf(x.from_place,x.to_place,x.commodity).then(j=>{ if(S.previewIdx!==i) return; S.preview=j.places; S.previewLabels=j.labels; journeyChip(); }); }
 // Routes other Quantum users shared, under the UEX results (only those starting where you picked).
 async function renderSharedRoutes(){ const box=$("tr-shared"); if(!box) return;
   const at=$("tr-at").selectedOptions[0], from=at?.value?(at.dataset.place||at.dataset.name):$("tr-from").selectedOptions[0]?.dataset.name;
@@ -2535,8 +3011,7 @@ async function openVehicles(){
   if(!S.veh){ $("vh-nav").innerHTML=`<div class="muted" style="margin-top:10px">Loading vehicles…</div>`; if($("vh-gallery").classList.contains("show")) $("vh-gallery").innerHTML=qLoader("Loading vehicles…");
     const r=await api().uex_vehicles(); if(!r.ok){ $("vh-nav").innerHTML=`<div class="empty">${esc(r.error)}</div>`; $("vh-gallery").innerHTML=""; return; }
     S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; S.vehGalKey=null; }
-  if(!S.brands&&!S.brandsAsked){ S.brandsAsked=true;                   // manufacturer logos, fetched once in the background
-    api().brand_logos().then(b=>{ S.brands=b?.logos||{}; if(!Object.keys(S.brands).length) S.brandsAsked=false; if(S.tab==="vehicles") renderVehicles(); }).catch(()=>{ S.brandsAsked=false; }); }
+  loadBrands(()=>{ if(S.tab==="vehicles") renderVehicles(); });          // manufacturer logos, fetched once in the background
   renderVehicles(); }
 function vehSpots(list,kind){
   if(!list.length) return `<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${kind==="buy"?"Not sold in game":"Not for rent"}.</div>`;
@@ -2563,9 +3038,31 @@ const VH_OFF={Cargo:"hauler",Exploration:"exploration",Ground:"ground",ship:"han
 const vhIcon=k=>{ if(VH_OFF[k]) return offIcon(VH_OFF[k]); if(String(k).startsWith("brand:")){ const u=S.brands?.[k.slice(6)];      // a maker's own logo, from the wiki
     if(u) return `<i class="brand-ic" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')" aria-hidden="true"></i>`; k="maker"; }
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${VH_ICON[k]||VH_ICON.ship}</svg>`; };
-// A vehicle page's maker panel: the manufacturer's logo, large, with its name. Nothing for a maker without one.
-function vehBrand(maker){ const c=brandOf(maker), u=c&&S.brands?.[c]; if(!u) return "";
-  return `<button class="vd-brand" data-vhcat="maker:${esc(maker)}" title="Every ${esc(maker)} vehicle"><i class="brand-ic" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')" aria-hidden="true"></i><span>${esc(maker)}</span></button>`; }
+// My Fleet: a small logo tile for each ship in the list, and the large maker panel on the ship's page
+function brandTile(maker){ const c=brandOf(maker), u=c&&S.brands?.[c];
+  return `<span class="fl-logo" title="${esc(maker||"")}">${u?`<i class="brand-ic" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')" aria-hidden="true"></i>`:`<b>${esc((maker||"?").trim().charAt(0).toUpperCase())}</b>`}</span>`; }
+// The maker's logo in the upper right of a ship's title area (Vehicles and My Fleet). Clickable on the
+// Vehicles page, where it opens every vehicle by that maker.
+const makerLogo=m=>{ const c=brandOf(m); return (c&&S.brands?.[c])||S.brands?.["cmp:"+String(m||"").toLowerCase().replace(/[^a-z0-9]/g,"")]||null; };
+// Fetch every maker logo once, in the background, then redraw whichever page wanted them
+// Logos that ship with Quantum, used before the wiki's: makers whose wiki logo is missing or wrong. Embedded
+// as data, since a CSS mask won't load a separate local file (the page's own folder counts as another site).
+const LOCAL_BRANDS={"cmp:gnp":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGRhdGEtbmFtZT0iTGF5ZXIgMSIgdmlld0JveD0iMCAwIDgwMCA2MDAiPjxwYXRoIGQ9Ik0yMjguNSAzMzIuMWMtNTAuNSAwLTc4LjUtMjcuNy03OC41LTc5LjdzMjkuNi03OS41IDg0LjUtNzkuNWg2NC44djM0LjRoLTYwLjdjLTI5LjUgMC0zOC45IDE0LjItMzguOSA0NS4xIDAgMzEuNiA4IDQ2LjYgMzYuMyA0Ni42aDI3Ljd2LTI5aC0zMC4zdi0yOWg3Ni4ydjEzN2gtNDUuOXYtNDUuOGgtMzUuMnpNNTYzLjIgMjk3LjljMjcgMCAzNi41LTggMzYuNS00NHMtOC41LTQ2LjktMzYuNS00Ni45aC0yMS44djkwLjl6bS03MS4zLTEyNS4xaDc2LjJjNTIuMSAwIDgxLjkgMjQuMSA4MS45IDc5LjIgMCA1My42LTI5LjYgODAtODIuMiA4MGgtMjYuNHY0NS44aC00OS41ek00MzIuNSAxNzIuOHY5OS43bC01Ni05OS43aC01MS4zdjE1OS4zaDQyLjNWMjMxLjNsNTYuNyAxMDAuOGg1MC42VjE3Mi44aC00Mi4zek0yNjkuNyA0MTIuMUgyNjhWNDA5aDQuOHYxMy4yYTQuOCA0LjggMCAxMS05LjYgMHYtMjIuNWE0Ljc1NiA0Ljc1NiAwIDExOS41IDB2NS45aC0zLjJ2LTYuMWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNTI2IDEuNTI2IDAgMDAtMS41IDEuN3YyMi44YTEuNTg2IDEuNTg2IDAgMDAxLjUgMS43IDEuNTUgMS41NSAwIDAwMS42LTEuN3YtMTAuMnpNMjc5LjQgNDEwLjdoLjhjMS40IDAgMi0uNyAyLTIuNXYtNy40YzAtMS44LS42LTIuNi0yLTIuNmgtLjh6bTEgM2gtMXYxM2gtMy4ydi0zMS42aDQuM2MyLjcgMCA0LjggMS41IDQuOCA1LjN2Ny45YzAgMi41LS45IDQtMi4zIDQuN2wyLjUgMTMuNmgtMy4yek0yOTQuMSAzOTkuNWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNTI2IDEuNTI2IDAgMDAtMS41IDEuN3YyMi44YTEuNTg2IDEuNTg2IDAgMDAxLjUgMS43IDEuNTUgMS41NSAwIDAwMS42LTEuN3ptLTYuNCAyMi43di0yMi41YTQuNjUzIDQuNjUzIDAgMDE0LjctNSA0Ljc1MSA0Ljc1MSAwIDAxNC45IDV2MjIuNWE0Ljc1MyA0Ljc1MyAwIDAxLTQuOSA1IDQuNjUzIDQuNjUzIDAgMDEtNC43LTVNMzA3LjEgMzk1LjFoMy4ydjI3LjFhNC43ODggNC43ODggMCAwMS00LjggNSA0LjY1MyA0LjY1MyAwIDAxLTQuNy01di0yNy4xaDMuMnYyNy4yYTEuNiAxLjYgMCAwMDEuNiAxLjcgMS41NSAxLjU1IDAgMDAxLjYtMS43di0yNy4yek0zMTcuMSA0MTAuOWguN2MxLjQgMCAyLS44IDItMi41di03LjZjMC0xLjgtLjYtMi42LTItMi42aC0uN3ptMCAzdjEyLjloLTMuMnYtMzEuNmg0LjNjMi43IDAgNC44IDEuNSA0LjggNS4zdjguMWMwIDMuOC0yLjEgNS4zLTQuOCA1LjN6TTMyNS42IDM5NS4xaDcuNnYzLjFoLTQuNFY0MDloNC4zdjMuMWgtNC4zdjExLjZoNC40djMuMWgtNy42di0zMS43ek0zNDguOCA0MjYuOGMtMS4zLTkuNS0yLjEtMTguMi0zLjItMjcuNy4xIDkuNS40IDE4LjIuNSAyNy43SDM0M3YtMzEuNmg0LjdjMS4zIDkuNSAyLjEgMTguMiAzLjIgMjcuNy0uNC05LjUtLjQtMTguMi0uNi0yNy43aDMuMXYzMS42ek0zNjMuMiAzOTkuNWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNiAxLjYgMCAwMC0xLjYgMS43djIyLjhhMS42IDEuNiAwIDAwMS42IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd6bS02LjMgMjIuN3YtMjIuNWE0Ljc1NiA0Ljc1NiAwIDExOS41IDB2MjIuNWE0LjczIDQuNzMgMCAwMS00LjggNSA0LjY1MyA0LjY1MyAwIDAxLTQuNy01TTM3Ni4zIDM5NS4xaDMuMnYyNy4xYTQuNzg4IDQuNzg4IDAgMDEtNC44IDUgNC42NTMgNC42NTMgMCAwMS00LjctNXYtMjcuMWgzLjJ2MjcuMmExLjU4NiAxLjU4NiAwIDAwMS41IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd2LTI3LjJ6TTM4OS4zIDQyNi45aC00LjVsLTMuMy0zMS44aDMuNWMuNSA2LjMgMS41IDIxLjYgMi4xIDI3LjguNi02LjIgMS42LTIxLjYgMi4xLTI3LjhoMy41ek0zOTQuNiAzOTUuMWg3LjZ2My4xaC00LjRWNDA5aDQuM3YzLjFoLTQuM3YxMS42aDQuNHYzLjFoLTcuNnYtMzEuN3pNNDA3LjggNDE2LjFoMi44Yy0uNS01LjItMS4xLTEwLjctMS40LTE0LjJ6bTcuMiAxMC43aC0zLjVsLS43LTcuNmgtMy40bC0uNyA3LjZoLTMuNGw0LjItMzEuN2gzLjJ6TTQyMyAzOTUuMWgzLjJ2MjcuMWE0Ljc4OCA0Ljc4OCAwIDAxLTQuOCA1IDQuNjUzIDQuNjUzIDAgMDEtNC43LTV2LTI3LjFoMy4ydjI3LjJhMS41ODYgMS41ODYgMCAwMDEuNSAxLjcgMS41NSAxLjU1IDAgMDAxLjYtMS43ek00NDAuMSA0MTAuOWguN2MxLjQgMCAyLS44IDItMi41di03LjZjMC0xLjgtLjYtMi42LTItMi42aC0uN3ptMCAzdjEyLjloLTMuMnYtMzEuNmg0LjNjMi43IDAgNC44IDEuNSA0LjggNS4zdjguMWMwIDMuOC0yLjEgNS4zLTQuOCA1LjN6TTQ1MC42IDQxNi4xaDIuOGMtLjUtNS4yLTEuMS0xMC43LTEuNC0xNC4yem03LjIgMTAuN2gtMy41bC0uNy03LjZoLTMuNGwtLjcgNy42aC0zLjRsNC4yLTMxLjdoMy4yek00NjMgNDEwLjdoLjdjMS40IDAgMi0uNyAyLTIuNXYtNy40YzAtMS44LS42LTIuNi0yLTIuNmgtLjd6bTEgM2gtMXYxM2gtMy4ydi0zMS42aDQuM2MyLjcgMCA0LjggMS41IDQuOCA1LjN2Ny45YzAgMi41LS45IDQtMi4zIDQuN2wyLjUgMTMuNmgtMy4yek00NzQuNCA0MTYuMWgyLjhjLS41LTUuMi0xLjEtMTAuNy0xLjQtMTQuMnptNy4yIDEwLjdoLTMuNWwtLjctNy42SDQ3NGwtLjcgNy42aC0zLjRsNC4yLTMxLjdoMy4yek00ODYuOCA0MjMuN2gxYzEuNCAwIDItLjcgMi0yLjV2LTIwLjVjMC0xLjgtLjYtMi42LTItMi42aC0xem02LjEtMi4zYzAgMy44LTIuMSA1LjMtNC44IDUuM2gtNC41di0zMS42aDQuNWMyLjcgMCA0LjggMS41IDQuOCA1LjN6TTQ5Ni4zIDM5NS4xaDMuMnYzMS42aC0zLjJ6TTUwOS4xIDQxMi4xaC0xLjdWNDA5aDQuOHYxMy4yYTQuNjUzIDQuNjUzIDAgMDEtNC43IDUgNC43MyA0LjczIDAgMDEtNC44LTV2LTIyLjVhNC43NTYgNC43NTYgMCAxMTkuNSAwdjUuOUg1MDl2LTYuMWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNiAxLjYgMCAwMC0xLjYgMS43djIyLjhhMS42IDEuNiAwIDAwMS42IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd2LTEwLjJ6TTUxOC4zIDM5OC4xYzAgOS41LjMgMTkuMi40IDI4LjdoLTMuMXYtMzEuNmg1LjRjLjggOS41IDEuMiAxNS43IDEuOCAyNS4yLjUtOS41LjktMTUuNyAxLjctMjUuMmg1LjV2MzEuNmgtMy4xYy4xLTkuNS40LTE5LjIuNC0yOC43LTEuMiA5LjUtMS44IDE5LjItMi42IDI4LjdINTIxYy0uOS05LjUtMS41LTE5LjItMi43LTI4LjdNNTMzLjYgMzk1LjFoNy41djMuMWgtNC4zVjQwOWg0LjJ2My4xaC00LjJ2MTEuNmg0LjN2My4xaC03LjV2LTMxLjd6TTMyNS4yIDM0OC45aDE0OS42djI5SDMyNS4yeiIvPjwvc3ZnPg=="};
+function loadBrands(redraw){ if(S.brands||S.brandsAsked) return; S.brandsAsked=true;
+  api().brand_logos().then(b=>{ const got=b?.logos||{}; S.brands={...got,...LOCAL_BRANDS}; if(!Object.keys(got).length) S.brandsAsked=false; redraw&&redraw(); })
+    .catch(()=>{ S.brandsAsked=false; S.brands={...LOCAL_BRANDS}; redraw&&redraw(); }); }
+function titleLogo(maker,link,wide){ const u=makerLogo(maker); if(!u) return "";
+  const ic=`<i class="brand-ic" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')" aria-hidden="true"></i>`;
+  if(wide) return `<span class="hd-logo wide" title="${esc(maker)}">${ic}</span>`;     // component makers: wide wordmarks
+  return link?`<button class="hd-logo" data-vhcat="maker:${esc(maker)}" title="Every ${esc(maker)} vehicle">${ic}</button>`
+    :`<span class="hd-logo" title="${esc(maker)}">${ic}</span>`; }
+// Headline + readout: up to three numbers large, the rest in a quiet two-column list.
+// Each stat is {label, value, delta (html, optional), changed (bool)}; empty values are left out.
+function statBlock(hero,rest){ const has=x=>x&&x.value!=null&&x.value!=="";
+  hero=hero.filter(has); rest=rest.filter(has); if(!hero.length&&!rest.length) return "";
+  const big=v=>{ const m=String(v).match(/^([−\-+]?[\d.,]+)\s*([A-Za-z].*)$/); return m?`${esc(m[1])}<small>${esc(m[2])}</small>`:esc(v); };
+  return `<div class="hd-hero n${hero.length}">${hero.map(x=>`<div class="${x.changed?"chg":""} ${x.tone||""}"><span class="lab">${esc(x.label)}</span><b>${big(x.value)}</b>${x.delta?`<span class="dl">${x.delta}<small> from stock</small></span>`:""}</div>`).join("")}</div>`
+    +(rest.length?`<div class="hd-read">${rest.map(x=>`<div class="r ${x.changed?"chg":""}"><span>${esc(x.label)}</span><b>${esc(x.value)}${x.delta?` ${x.delta}`:""}</b></div>`).join("")}</div>`:""); }
 // Which wiki brand icon a UEX manufacturer name goes with (Sc-icon-brand-<code>.svg)
 const BRAND_CODE=[[/aegis/i,"aegs"],[/anvil/i,"anvl"],[/aopoa|xi.?an/i,"xnaa"],[/\bargo\b/i,"argo"],[/banu/i,"banu"],[/consolidated/i,"cnou"],
   [/crusader/i,"crus"],[/drake/i,"drak"],[/esperia/i,"espr"],[/gatac/i,"gama"],[/gallenson/i,"glsn"],[/kruger/i,"krig"],[/musashi|\bmisc\b/i,"misc"],
@@ -2633,14 +3130,15 @@ async function renderVehicleDetail(id){
   const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
   const cat=vehCat(), isAll=cat.id==="all";
   g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px"><button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
-    <div class="mkp-head vd-head"><div class="mkp-img">${picShown(v.photo,"vehicle",v.full)}</div>
-      <div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div>
+    <div class="mkp-head"><div class="mkp-img">${picShown(v.photo,"vehicle",v.full)}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div></div>${titleLogo(v.maker,true)}</div>
         ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
-        <div class="mkp-stats">${[["Crew",crew],["Cargo",v.scu?`${v.scu} SCU`:null],["Beds",d.beds],["Medical beds",d.medical_beds],["Buy",v.buy[0]?money(v.buy[0].price):null],["Rent",v.rent[0]?`${shortMoney(v.rent[0].price)}/day`:null]]
-          .filter(c=>c[1]!=null&&c[1]!==0).map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
-        <div class="row" style="gap:8px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div>${vehBrand(v.maker)}</div>
+        ${statBlock([{label:"Buy price",value:v.buy[0]?money(v.buy[0].price):"Not sold"},{label:"Rent price",value:v.rent[0]?`${money(v.rent[0].price)}/day`:"None"},
+            {label:"Crew size",value:crew||"–"},{label:"SCU capacity",value:v.scu?`${v.scu} SCU`:"None"}],
+          [{label:"Beds",value:d.beds||null},{label:"Medical beds",value:d.medical_beds||null},{label:"Landing pad",value:d.pad||null}])}
+        <div class="row" style="gap:8px;margin-top:12px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
     ${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
-    <div class="vd-grid">
+    <div class="vd-grid vd-flat">
       ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
       ${sec("Cargo & storage",[["Cargo grid",d.scu?`${d.scu} SCU`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
       ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
@@ -2650,7 +3148,7 @@ async function renderVehicleDetail(id){
       ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
       ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
     </div>
-    <div class="vd-grid vd-shop"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div></div>
+    <div class="vd-grid vd-shop vd-flat"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div></div>
     <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`; }
 $("vh-search").addEventListener("input",()=>{ S.vehDetail=null; renderVehicles(); });
 
@@ -2710,6 +3208,7 @@ function cpSearchAll(q){ if(!S.cpIndex||q.length<2) return [];
 const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
 const cpGrade=i=>String(i.game?.grade||i.grade||"");
 async function openComponents(){
+  loadBrands(()=>{ if(S.tab==="components"&&S.cpDetail) renderComponents(); });
   if(!S.live?.log?.uex_token){ cpShowBrowse(false); $("cp-home").innerHTML=needToken; $("cp-panel").innerHTML=""; return; }
   if(!S.cpCats){ $("cp-home").innerHTML=`<div class="muted" style="margin-top:10px">Loading…</div>`; $("cp-panel").innerHTML=qLoader("Loading components…");
     const r=await api().uex_component_categories(); if(!r.ok){ $("cp-home").innerHTML=`<div class="empty">${esc(r.error)}</div>`; $("cp-panel").innerHTML=""; return; }
@@ -2855,13 +3354,15 @@ async function renderComponentDetail(id){
   const rows=CP_STATS.filter(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(st[k]))}</b></div>`).join("");
   g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc(S.cpCat?.name||"components")}</button>
     <div class="mkp-head"><div class="mkp-img" id="cpd-img">${qPic()}</div>
-      <div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div></div>${titleLogo(gm.maker||i.maker,false,true)}</div>
         <div class="cp-fits" id="cpd-fits">${cpFitsBadges(i)}</div>
-        <div class="mkp-stats">${[["Size",cpSize(i)?`S${cpSize(i)}`:null],["Grade",cpGrade(i)||null],["Class",gm.class],["Price",i.buy[0]?money(i.buy[0].price):"Not in shops"],["Sold at",i.buy.length||null]]
-          .filter(c=>c[1]!=null&&c[1]!=="").map(c=>`<div><span>${c[0]}</span><b>${esc(c[1])}</b></div>`).join("")}</div>
-        <div class="row" style="gap:8px">${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
+        ${statBlock([{label:"Size",value:cpSize(i)?`S${cpSize(i)}`:"–"},{label:"Grade",value:cpGrade(i)||"–"},{label:"Class",value:gm.class||"–"},
+            {label:"Price",value:i.buy[0]?money(i.buy[0].price):"Not in shops"}],
+          [{label:"Sold at",value:i.buy.length?plural(i.buy.length,"shop"):null},...(()=>{ const k=(CP_KEY[S.cpCat?.slot]||[])[0], f=CP_STATS.find(x=>x[0]===k);
+            return f&&st[k]!=null?[{label:f[1],value:f[2](st[k])}]:[]; })()])}
+        <div class="row" style="gap:8px;margin-top:12px">${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
     ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px;max-width:900px">${esc(i.note)}</div>`:""}
-    <div class="vd-grid">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
+    <div class="vd-grid vd-flat">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
       <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, from crafting, or fitted stock on a ship.</div>`}</div>
       <div class="vd-sec cp-fit" id="cpd-fit"><div class="mk-h">Fit to a ship in My Fleet</div><div class="muted" style="font-size:13px">Checking your ships…</div></div></div>
     <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki; ship slots from the Star Citizen Wiki.</div>`;
@@ -2910,13 +3411,14 @@ const fmtBig=n=>n==null?"–":n>=1e9?`${(n/1e9).toFixed(1)} Gm`:n>=1e6?`${(n/1e6
 async function openFleet(){
   if(!S.live?.log?.uex_token){ $("fl-out").innerHTML=needToken; $("fl-panel").innerHTML=""; return; }
   if(!S.veh){ const r=await api().uex_vehicles(); if(r.ok){ S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; } }
+  loadBrands(()=>{ if(S.tab==="fleet") renderFleet(); });               // manufacturer logos, shared with the Vehicles tab
   $("fl-dl").innerHTML=(S.veh||[]).map(v=>`<option value="${esc(v.full)}">${esc(v.maker)}${v.scu?` · ${v.scu} SCU`:""}</option>`).join("");
   await renderFleet(); }
 async function renderFleet(){
   const fl=await api().fleet_list(); S.fleet=fl.ships;
   if(!S.flSel||!fl.ships.some(x=>x.uid===S.flSel)) S.flSel=fl.main||fl.ships[0]?.uid||null;
   $("fl-out").innerHTML=fl.ships.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${fl.ships.length} ship${fl.ships.length===1?"":"s"} · ★ marks your primary ship (used for fitting components, determining trade routes, etc.)</div>`
-    +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}"><div class="hd" data-fl="${x.uid}"><div><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
+    +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}"><div class="hd" data-fl="${x.uid}">${brandTile(x.maker)}<div class="fl-name"><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
       <div class="mk">${esc(x.maker)}${x.scu?` · ${x.scu} SCU`:""}${x.loadouts>1?` · ${x.loadouts} loadouts`:x.swaps?` · ${x.swaps} upgrade${x.swaps===1?"":"s"}`:" · stock"}</div></div>
       <div class="row" style="gap:4px">${x.main?"":`<button class="btn small ghost" data-flmain="${x.uid}" title="Make this your primary ship">★</button>`}<button class="btn small ghost" data-fldel="${x.uid}" title="Remove from your fleet">✕</button></div></div>
       ${S.flDel===x.uid?`<div class="fl-confirm"><div><b>Remove ${esc(x.full)} from your fleet?</b>
@@ -2971,23 +3473,27 @@ async function renderShip(uid){
   const ship=(S.fleet||[]).find(x=>x.uid===uid);
   if(!r.ok){ $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${ship?.photo?`<img src="${esc(ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div><div><h2>${esc(ship?.full||"")}</h2><div class="unknown" style="margin-top:10px">${esc(r.error)}</div></div></div>`; return; }
   S.flLoad=r; const st=r.stats, dl=r.delta||{};
-  const chips=SHIP_STATS.filter(([k])=>st[k]!=null&&st[k]!=="").map(([k,lab,fmt,lb])=>`<div class="${dl[k]?"chg":""}"><span>${lab}</span><b>${fmt(st[k])}</b>${deltaTxt(dl[k],fmt,lb)}</div>`).join("")
-    +(r.ship.scu?`<div><span>Cargo</span><b>${r.ship.scu} SCU</b></div>`:"");
+  const statOf=([k,lab,fmt,lb])=>({label:lab,value:st[k]!=null&&st[k]!==""?fmt(st[k]):null,changed:!!dl[k],
+      delta:dl[k]?deltaTxt(dl[k],fmt,lb):""});
+  const HERO=["dps","shield","qt_speed"], heroKeys=HERO.filter(k=>st[k]!=null&&st[k]!=="");
+  for(const k of ["hull","scm","max"]) if(heroKeys.length<3&&!heroKeys.includes(k)&&st[k]!=null) heroKeys.push(k);   // ground vehicles, unarmed ships
+  const stats=statBlock(heroKeys.map(k=>statOf(SHIP_STATS.find(x=>x[0]===k))),
+    [...SHIP_STATS.filter(([k])=>!heroKeys.includes(k)).map(statOf),{label:"Cargo",value:r.ship.scu?`${r.ship.scu} SCU`:null}]);
   const changed=r.slots.filter(sl=>sl.fitted).length;
   const groups={}; for(const sl of r.slots) (groups[sl.label]=groups[sl.label]||[]).push(sl);
   const card=sl=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
       maker=sl.fitted?sl.fitted_maker:sl.stock?.maker, val=k&&stats[k], stockVal=k&&sl.stock?.stats?.[k], open=S.flSlot===sl.port;
+    // One row per slot: size and grade, the part and its maker, its key number, and Change
     return `<div class="slot ${sl.fitted?"fit":""} ${open?"open":""}">
-      <div class="top"><span class="sz">S${esc(sl.size??"?")}</span>${grade?`<span class="gr">${esc(grade)}</span>`:""}
-        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}</span></div>
-        ${val?`<div class="val"><b>${ITEM_STAT[k][1](val)}</b><span>${ITEM_STAT[k][0]}</span>${sl.fitted&&stockVal?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</div>`:""}</div>
-      ${sl.fitted?`<div class="was">Stock: ${esc(sl.stock?.name||"none")}</div>`:""}
-
-      <div class="acts">${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}">Back to stock</button>`:""}<button class="btn small ${open?"":"primary"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div>
+      <div class="top"><span class="sz" title="Size ${esc(sl.size??"?")}">S${esc(sl.size??"?")}</span><span class="gr" title="${grade?`Grade ${esc(grade)}`:"No grade"}">${esc(grade||"–")}</span>
+        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
+        ${val?`<div class="val"><b>${ITEM_STAT[k][1](val)}${sl.fitted&&stockVal?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
+        <div class="acts">${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
   $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
-      <div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2>${loadoutBar(r.loadouts)}<div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div>
-        <div class="mkp-stats">${chips}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
+        ${loadoutBar(r.loadouts)}
+        ${stats}
         ${r.power?.pips_gen?`<div class="pwr-row">
           <div class="seg-mini" title="What's powered: Combat = weapons and shields on, quantum drive off. Travel = quantum drive on, weapons and shields off."><button data-pmode="scm" class="${r.power.mode!=="nav"?"on":""}">Combat · SCM</button><button data-pmode="nav" class="${r.power.mode==="nav"?"on":""}">Travel · NAV</button></div>
           <button class="btn small ghost" data-ptoggle="1">${S.flPowerOpen?"Hide power ▴":"Power ▾"}</button>
@@ -3150,7 +3656,7 @@ async function openRunDetail(i){
         <div class="row" style="gap:6px;flex-wrap:wrap">${x.from_place&&x.to_place?`<button class="btn primary" data-act="trstart">Plan this route</button><button class="btn" data-act="tradd">Add stops to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
           ${x.url?`<button class="btn ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div>
         <div class="trd-facts">${facts.map(f=>`<span>${f}</span>`).join("")}</div></div>
-      <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span></div>
+      <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span><button class="pv-next in-win" id="trd-next" type="button" data-pvnext="1"></button></div>
     ${endBox("Buy at",x.from_place,x.from,x.from_where,x.buy,"In stock",x.scu_from,x.boxes_from,x.elevator_from,x.dock_from,x.refuel_from,x.from_station,x.from_ground,x.from_monitored,x.faction_from,"You buy",x.units,"Cost")}
     ${endBox("Sell at",x.to_place,x.to,x.to_where,x.sell,"Demand",x.scu_to,x.boxes_to,x.elevator_to,x.dock_to,x.refuel_to,x.to_station,x.to_ground,x.to_monitored,x.faction_to,"You sell",x.units,"Revenue")}</div>
     <div class="trd-footer">${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
@@ -4395,7 +4901,7 @@ async function poll(){
 async function init(){
   resize(); buildLayers(); buildFilters(); await loadStatic();
   const live=await api().get_live(); S.live=live; const here=live.player?.system||live.where?.system; if(here&&S.systems.includes(here)) S.system=here;
-  buildSystem(); renderSysSeg(); S.cam.target=systemCenter(); S.cam.dist=systemExtent()*2.4; S.cam.pitch=1.0; S.focus={kind:"system"};
+  buildSystem(); setSky(S.system); renderSysSeg(); S.cam.target=systemCenter(); S.cam.dist=systemExtent()*2.4; S.cam.pitch=1.0; S.focus={kind:"system"};
   setFollow(true);
   await poll(); renderContracts(); requestAnimationFrame(frame);
   setTimeout(()=>ownerCheck().catch(()=>{}),4000);                 // the server owner gets Replace buttons on pictures

@@ -81,7 +81,7 @@ if AVAILABLE:
             user32.SetForegroundWindow(hwnd)
         return user32.GetForegroundWindow() == hwnd
 
-    def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None):
+    def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None, show_cb=None):
         """Show Quantum pinned on top of the game, or send it back behind the game.
 
         It is never minimised here: Quantum's page is drawn by an embedded browser (WebView2), and a
@@ -103,7 +103,10 @@ if AVAILABLE:
             else:
                 user32.ShowWindow(hwnd, SW_RESTORE)
         elif not user32.IsWindowVisible(hwnd):
-            user32.ShowWindow(hwnd, SW_SHOW)
+            if show_cb:
+                show_cb()                         # hidden in the tray: un-hide through the app as well
+            else:
+                user32.ShowWindow(hwnd, SW_SHOW)
         user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
         focused = _force_foreground(hwnd)
         if after_show_cb:
@@ -123,6 +126,15 @@ if AVAILABLE:
             user32.SetWindowPos(me, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
         game = _find_game()
         return bool(game) and _force_foreground(game)
+
+    def bring_to_front(title=WINDOW_TITLE):
+        """Put Quantum in front of whatever's open (without pinning it on top)."""
+        hwnd = user32.FindWindowW(None, title)
+        return bool(hwnd) and _force_foreground(hwnd)
+
+    def is_shown(title=WINDOW_TITLE):
+        hwnd = user32.FindWindowW(None, title)
+        return bool(hwnd) and bool(user32.IsWindowVisible(hwnd))
 
     def set_app_id(app_id="microTech.Quantum"):
         """Group Quantum under its own taskbar icon (not Python's). Call before the window opens."""
@@ -164,5 +176,11 @@ else:
     def set_window_icon(ico_path, title=WINDOW_TITLE, wait=15.0):
         return False
 
-    def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None):
+    def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None, show_cb=None):
         return "Only works on Windows"
+
+    def bring_to_front(title=WINDOW_TITLE):
+        return False
+
+    def is_shown(title=WINDOW_TITLE):
+        return None

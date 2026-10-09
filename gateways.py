@@ -18,7 +18,7 @@ import json
 import time
 from pathlib import Path
 
-from nav_core import Location
+from nav_core import SYSTEMS, Location
 
 # name in Quantum -> (system, leads to, position or None, note)
 GATEWAYS = {
@@ -180,3 +180,65 @@ def apply(db, learned=None):
             db.locations[name] = Location(name, "space", tuple(pos), None, notes=note, source="db",
                                           system=system, qt=True, category="station")
     return renamed, unplaced
+
+
+# ---------------------------------------------------------------- routing between systems
+# A route that goes from one system to another goes through a gateway: fly to the gateway station in the
+# system you're in, jump, and you come out at the gateway in the other system that leads back. Systems
+# without a direct link are reached through the one in between (Stanton -> Pyro -> Nyx, when the
+# temporary Stanton - Nyx link is closed). Built from what's actually on the map, so a gateway whose
+# position isn't known yet isn't used.
+
+def _gate_names(db, frm, to):
+    """Places in system `frm` you jump from to reach system `to`: the gateway station first (it's the
+    quantum marker you fly to), then the jump point itself. Only ones with a position."""
+    out = []
+    for table in (GATEWAYS, JUMP_POINTS):
+        for name, entry in table.items():
+            loc = db.locations.get(name)
+            if entry[0] == frm and entry[1] == to and loc is not None and loc.pos is not None \
+                    and loc.system == frm and name not in out:
+                out.append(name)
+    return out
+
+
+def links(db):
+    """{system: {systems you can jump to from it}}, from the gateways on the map."""
+    out = {}
+    for table in (GATEWAYS, JUMP_POINTS):
+        for name, entry in table.items():
+            frm, to = entry[0], entry[1]
+            if to in SYSTEMS and frm in SYSTEMS and _gate_names(db, frm, to):
+                out.setdefault(frm, set()).add(to)
+    return out
+
+
+def gate_path(db, frm, to):
+    """Gateways to fly to, in order, to get from system `frm` to system `to`: one per jump, each in the
+    system you're in at that point. [] if it's the same system, None if there's no way through."""
+    if not frm or not to or frm == to:
+        return []
+    graph, prev, queue = links(db), {frm: None}, [frm]
+    while queue:
+        cur = queue.pop(0)
+        if cur == to:
+            break
+        for nxt in sorted(graph.get(cur, ())):
+            if nxt not in prev:
+                prev[nxt] = cur
+                queue.append(nxt)
+    if to not in prev:
+        return None
+    hops, cur = [], to
+    while prev[cur] is not None:
+        hops.append((prev[cur], cur))
+        cur = prev[cur]
+    return [_gate_names(db, a, b)[0] for a, b in reversed(hops)]
+
+
+def arrival(db, gate_name, frm):
+    """Where you come out after jumping through `gate_name` (which is in system `frm`): the gateway on
+    the other side that leads back to `frm`. None if unknown."""
+    to = leads_to(gate_name)
+    names = _gate_names(db, to, frm) if to else []
+    return names[0] if names else None
