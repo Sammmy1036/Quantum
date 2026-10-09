@@ -31,23 +31,24 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 ## Features
 
 **Map and navigation**
-- Interactive 3D map of Stanton, Pyro and Nyx: planets, moons, stations, cities, outposts, Lagrange points and gateways.
-- Your position from `/showlocation`, and from the game log between readings (landed at, talking to traffic control, just took off from).
-- Plan routes with as many stops as you like, optimise their order, and follow a live guide to the next stop.
+- Interactive 3D map of Stanton, Pyro and Nyx: planets, moons, stations, cities, outposts, Lagrange points and gateways, under each system's own galaxy sky with its sun. ArcCorp, Hurston, Crusader and microTech have their own surfaces with day and night sides, clouds and city lights, and stations are shown as 3D models.
+- Your position from `/showlocation`, and from the game log between readings (landed at, talking to traffic control, just took off from). When you jump through a gateway, Quantum sees the new system in the game log and moves the map there.
+- Plan routes with as many stops as you like, optimise their order, and follow a live guide to the next stop. Routes can cross systems: Quantum adds the gateway to fly to and the one you come out at, going through Pyro to reach Nyx when there's no direct link.
 - An in-game overlay you toggle with a hotkey, and a hotkey that types `/showlocation` for you.
 - Places no dataset has a position for (Pyro and Nyx gateways, Wikelo emporiums, UEX-only stations) are listed under **Not on the map yet**. One `/showlocation` there puts them on your map, and once they're confirmed they appear on every Quantum user's map within about 10 minutes, without a restart.
 
 **Contracts**
 - Hauling contracts are picked up from `Game.log` automatically, with their pickups and drop-offs pinned on the map.
+- Mission markers out in open space (Gilly's Pilot School, some combat and salvage jobs) are pinned too. The game only logs them relative to a local zone, so they're placed from the known place nearest to you and marked approximate.
 - A tracker for each contract (*Accepted › Collected › Out for delivery › Delivered*) with a parcel-style tracking number.
 - Mark cargo as picked up yourself when the game doesn't report it.
 
 **Trade and ships** (with a free [UEX](https://uexcorp.space) token)
-- **Commodities:** where each commodity is cheapest to buy and sells best, with stock, prices and a map view.
-- **Trade Routes:** ranked routes from a planet, or from one place on it like Baijini Point, for your ship's cargo and your budget, with a full route page and preview. Type any ship with cargo space (your fleet's ships are listed first). Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
-- **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it (including the Drake Command Module, which comes with the Caterpillar and Ironclad). Browse by role, landing pad or manufacturer, each maker with its own logo, and every vehicle page shows its maker's logo.
-- **Components:** a landing page of every component category (systems, avionics, weapons, mining), with a search that finds any part in every category by name, and ship guns split by kind (repeaters, cannons, gatlings, scatterguns, distortion, beams). Each category has search and filters for size, grade, maker, where to get it (shops, or loot, crafting and ship stock) and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its game-file stats, where to buy it, whether it fits your primary ship, and **Fit here** buttons for every matching slot in your fleet.
-- **My Fleet:** your ships with their stock loadouts. Every ship with a quantum drive also gets its jump module slot (Explorer, Excelsior, Exodus, Exfiltrate). Keep up to 5 named loadouts per ship and mark one primary; swap components from a table that compares every option with the part in the slot (side by side, stat by stat), see the stats change, and get an EM/IR estimate with Combat (SCM) and Travel (NAV) modes.
+- **Commodities:** where each commodity is cheapest to buy and sells best, with headline prices, stock and a map view.
+- **Trade Routes:** ranked routes from every system at once, a single system, a planet, or one place on it like Baijini Point, for your ship's cargo and your budget, with a full route page and preview. Runs between systems are previewed one system at a time, through the gateways. Type any ship with cargo space (your fleet's ships are listed first). Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
+- **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it (including the Drake Command Module, which comes with the Caterpillar and Ironclad). Browse by role, landing pad or manufacturer, each maker with its own logo. Every vehicle page leads with its buy price, rent price, crew and cargo (SCU) beside its maker's logo.
+- **Components:** a landing page of every component category (systems, avionics, weapons, mining), with a search that finds any part in every category by name, and ship guns split by kind (repeaters, cannons, gatlings, scatterguns, distortion, beams). Each category has search and filters for size, grade, maker, where to get it (shops, or loot, crafting and ship stock) and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its maker's logo, its game-file stats, where to buy it, whether it fits your primary ship, and **Fit here** buttons for every matching slot in your fleet.
+- **My Fleet:** your ships with their stock loadouts, each with its maker's logo. Every ship with a quantum drive also gets its jump module slot (Explorer, Excelsior, Exodus, Exfiltrate). Keep up to 5 named loadouts per ship and mark one primary; swap components from a table that compares every option with the part in the slot (side by side, stat by stat), see the stats change, and get an EM/IR estimate with Combat (SCM) and Travel (NAV) modes.
 
 **Datarunner** (with a UEX datarunner account)
 - Report a terminal's prices to UEX from Quantum: the terminal is picked from the game log, every row starts from UEX's current numbers, and most rows need one key press.
@@ -111,17 +112,19 @@ You can change all of them in **Settings**. The `/showlocation` key starts unset
 - **Game.log** is found automatically while Star Citizen is running. Quantum reads it for contracts, approximate positions, the terminal you're at and the game version.
 - **Admin rights:** if Star Citizen (or the RSI Launcher) runs as administrator, Quantum must too, or Windows won't let its hotkeys type into the game. Settings has a **Restart Quantum as administrator** button.
 - **When the game is closed**, Quantum shows "Star Citizen isn't running" and hides your old position.
+- **Tray icon:** click it to show or hide Quantum; right click for **Exit Quantum**.
+- **One copy at a time:** launching Quantum again brings the running copy to the front (even from the tray) instead of opening a second one.
 
 ## The tabs
 
 | Tab | What it's for |
 |---|---|
-| **Route** | Search places, moons or services ("refinery", "refuel"); build, optimise and follow a route |
+| **Route** | Search places, moons or services ("refinery", "refuel"); build, optimise and follow a route, across systems too |
 | **Waypoints** | Places you've saved yourself |
 | **POI** | Browse every place on the map |
 | **Contracts** | Your hauling contracts from the game log, with trackers and map pins |
 | **Commodities** | Buy and sell prices for any commodity, as a picture grid with a detail page and map view |
-| **Trade Routes** | *Find Routes* ranks profitable runs from a planet or one place on it, including ones other users shared. *Planned Routes* tracks the ones you're doing, or ones you enter yourself |
+| **Trade Routes** | *Find Routes* ranks profitable runs from every system, one system, a planet or one place on it, including ones other users shared. *Planned Routes* tracks the ones you're doing, or ones you enter yourself |
 | **Datarunner** | *Report Prices*, *Jobs*, *My Reports*, *Top 10* and *FAQ* |
 | **My Fleet** | Your ships, up to 5 named loadouts each (one primary), component swaps with side-by-side comparison, and EM/IR with power settings |
 | **Components** | Every component category, a search across all of them, guns by kind, filters, game-file stats, shops and fitting to your fleet |
