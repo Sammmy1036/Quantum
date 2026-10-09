@@ -9,6 +9,7 @@ UEX has no coordinates, so each terminal is tied to a Quantum place by name (its
 outpost). Terminals that don't match still show, just without "add to route".
 """
 import difflib
+import html
 import json
 import re
 import threading
@@ -30,6 +31,17 @@ SYSTEMS = ("Stanton", "Pyro", "Nyx")           # what Quantum maps
 
 class UexError(Exception):
     pass
+
+
+def _unescape(rows):
+    """UEX sends some text HTML-escaped ("Grey&apos;s Market"): turn it back into plain text. Quantum's
+    page escapes everything it shows itself, so plain text is what it needs."""
+    for r in rows:
+        if isinstance(r, dict):
+            for k, v in r.items():
+                if isinstance(v, str) and "&" in v and ";" in v:
+                    r[k] = html.unescape(v)
+    return rows
 
 
 class Uex:
@@ -57,6 +69,8 @@ class Uex:
         if cached is None and f.exists():
             try:
                 cached = json.loads(f.read_text(encoding="utf-8"))
+                _unescape(cached.get("rows") or [])         # caches saved before this was done
+                self._mem[f] = cached
             except Exception:
                 cached = None
         if cached and (offline or (not fresh and time.time() - cached["at"] < ttl)):
@@ -103,7 +117,7 @@ class Uex:
             raise UexError({"requests_limit_reached": "UEX request limit reached, try again in a minute"}
                            .get(body.get("status"), f"UEX: {body.get('message') or body.get('status')}"))
         data = body.get("data")
-        return data if isinstance(data, list) else [data] if data else []
+        return _unescape(data if isinstance(data, list) else [data] if data else [])
 
     def test(self, token):
         """Check a token without adopting it a wrong one never replaces the one that works."""

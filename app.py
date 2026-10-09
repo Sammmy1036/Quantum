@@ -1405,12 +1405,30 @@ class Api:
             data = backup.decrypt(token, r["blob"])
         except Exception as e:
             return {"ok": False, "error": f"The backup couldn't be opened: {e}"}
-        added = {"ships": 0, "routes": 0, "waypoints": 0, "stations": 0}
+        added = {"ships": 0, "loadouts": 0, "routes": 0, "waypoints": 0, "stations": 0}
         fleet = self._fleet()
-        have = {f["uid"] for f in fleet}
+        have = {f["uid"]: f for f in fleet}
         for f in data.get("fleet") or []:
-            if f.get("uid") and f["uid"] not in have:
+            if not f.get("uid"):
+                continue
+            if f["uid"] not in have:
                 fleet.append(dict(f, main=False)); added["ships"] += 1
+                self._loadouts(fleet[-1])
+                continue
+            # A ship already here gets any loadout it's missing (by name), up to MAX_LOADOUTS; its own stay as they are
+            mine = self._loadouts(have[f["uid"]])
+            for lo in f.get("loadouts") or []:
+                if not isinstance(lo, dict) or len(mine) >= self.MAX_LOADOUTS:
+                    continue
+                name = str(lo.get("name") or "").strip()
+                if not name or any(x["name"].lower() == name.lower() for x in mine):
+                    continue
+                n = 1
+                while f"l{n}" in {x["id"] for x in mine}:
+                    n += 1
+                mine.append({"id": f"l{n}", "name": name[:40], "loadout": lo.get("loadout") if isinstance(lo.get("loadout"), dict) else {},
+                             "power": lo.get("power") if isinstance(lo.get("power"), dict) else {}})
+                added["loadouts"] += 1
         if fleet and not any(f.get("main") for f in fleet):
             fleet[0]["main"] = True
         runs = self._settings.setdefault("trade_runs", [])
@@ -2019,6 +2037,10 @@ class Api:
         else:
             cfg.pop("secret", None)
         old = cfg.pop("session", None) if changed else None
+        if changed:
+            cfg.pop("uex_user", None)                     # whose key it is gets asked of UEX again
+            if cfg.get("username") and secret:
+                cfg.pop("username", None)                 # filled in again from the new key's UEX account
         self._save_settings()
         if changed:
             def swap():                   # sign out of the old key's account, then in with the new key
@@ -2620,7 +2642,46 @@ class Api:
                 f"id_terminal/{int(id_terminal)}/highlight/price_last/")
 
     def community_status(self):
-        return {"url": self._community.url, **self._community.health()}
+        """The Quantum API server: whether community features are on, and whether it answers."""
+        return {"url": self._community.url, "enabled": bool(self._community.url), **self._community.health()}
+
+    def set_community_enabled(self, on):
+        """Turn the community features (the Quantum API) on or off from Settings, in place of editing
+        "community_url" in settings.json. Off: Quantum uses UEX's data alone. A server address you set
+        yourself is kept and comes back when you turn them on again."""
+        cur = self._settings.get("community_url")
+        if on:
+            back = self._settings.pop("community_url_was", None)
+            if back and str(back).lower() != "off":
+                self._settings["community_url"] = back
+            else:
+                self._settings.pop("community_url", None)         # the built-in server
+        else:
+            if cur and str(cur).lower() != "off":
+                self._settings["community_url_was"] = cur
+            self._settings["community_url"] = "off"
+        self._save_settings()
+        try:
+            self._community.prices(fresh=True)
+        except Exception:
+            pass
+        self._owner_at = None
+        if on:
+            self._sign_in_soon()
+        return self.community_status()
+
+    def uex_key_status(self):
+        """Whether the UEX Secret Key works: the UEX name it belongs to (asked of UEX, cached)."""
+        cfg = self._dr_cfg()
+        if not cfg.get("secret"):
+            return {"has_secret": False, "ok": False}
+        if not self._uex.token:
+            return {"has_secret": True, "ok": False, "error": "Add your UEX Bearer Token too"}
+        u = self._dr_uex_user() or {}
+        if not u.get("username"):
+            return {"has_secret": True, "ok": False, "error": "UEX didn't accept this key, or can't be reached"}
+        return {"has_secret": True, "ok": True, "username": u["username"],
+                "datarunner": bool(u.get("is_datarunner")), "signed_in": bool(self._session_token())}
 
     # ------------------------------------------------------------ Quantum server sign-in
     # Quantum signs in to the Quantum server with your UEX datarunner secret key: the server asks UEX
@@ -3223,35 +3284,22 @@ class Api:
         return out
 
     def wiki_image(self, ref):
-        """The wiki's picture, or else one a Quantum user sent in and you approved."""
-        return self._wiki_image(ref) or self._community.photos().get(self._pic_key(ref))
+        """The picture for an item page: one you (the server owner) put in its place, else the wiki's,
+        else one a Quantum user sent in and you approved."""
+        key = self._pic_key(ref)
+        over = self._community.photo_overrides().get(key)
+        return over or self._wiki_image(ref) or self._community.photos().get(key)
 
     def _wiki_image(self, ref):
         """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
-        wiki URL UEX gives, or a page title."""
-        title = urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
-        if not title:
+        wiki URL UEX gives, or a page title. A page about armour or clothing (a name a ship part shares)
+        counts as no picture."""
+        if not ref:
             return None
-        cache_f = HERE / "uex_cache" / "wiki_images.json"
         try:
-            cache = json.loads(cache_f.read_text(encoding="utf-8"))
+            return self._wikiapi.pictures([ref], size=720).get(ref)
         except Exception:
-            cache = {}
-        if title in cache:
-            return cache[title] or None
-        url = ("https://starcitizen.tools/api.php?action=query&format=json&prop=pageimages&piprop=thumbnail"
-               "&pithumbsize=720&redirects=1&titles=" + urllib.parse.quote(title))
-        try:
-            req = urllib.request.Request(url, headers={"User-Agent": "Quantum (Star Citizen route planner)"})
-            with urllib.request.urlopen(req, timeout=15) as r:
-                pages = json.loads(r.read().decode("utf-8")).get("query", {}).get("pages", {})
-            img = next((p["thumbnail"]["source"] for p in pages.values() if p.get("thumbnail")), "")
-        except Exception:
-            return None                                     # offline: try again next time
-        cache[title] = img
-        cache_f.parent.mkdir(exist_ok=True)
-        cache_f.write_text(json.dumps(cache), encoding="utf-8")
-        return img or None
+            return None
 
     def _item_spots(self):
         """id_item -> where it's sold, cheapest first."""
@@ -3272,7 +3320,8 @@ class Api:
         return spots
 
     COMPONENT_HINTS = ("vehicle", "ship", "cooler", "power plant", "quantum drive", "shield generator", "missile",
-                       "turret", "mining laser", "mining module", "gadget", "salvage", "tractor", "radar", "bomb")
+                       "turret", "mining laser", "mining module", "gadget", "salvage", "tractor", "radar", "bomb",
+                       "jump module", "jump drive")
     COMPONENT_SKIP = ("clothing", "armor", "undersuit", "jumpsuit", "helmet", "personal", "fps", "food", "drink",
                       "medical", "tool", "decoration", "flair", "paint", "livery", "utility")
 
@@ -3283,6 +3332,8 @@ class Api:
     def _slot_type_for(category):
         """The My Fleet slot type a UEX component category fits ("Coolers" -> "Cooler"), or None."""
         nm = (category or "").lower()
+        if "jump" in nm:                                  # "Jump Modules": a module, but one you fit like a part
+            return "JumpDrive"
         if any(k in nm for k in ("rack", "turret", "module", "gadget", "mount", "gimbal", "attachment")):
             return None
         for typ, (_, words) in fleet.SLOT_TYPES.items():
@@ -3315,7 +3366,7 @@ class Api:
             if not data:
                 out["error"] = "The Star Citizen Wiki has no loadout for this ship (or it can't be reached)"
                 return out
-            fitted = f.get("loadout") or {}
+            fitted = self._loadout_of(f, "primary")["loadout"]       # the Components tab fits your primary loadout
             for s_ in fleet.Wiki.loadout(data)["slots"]:
                 if s_["type"] != slot:
                     continue
@@ -3363,6 +3414,71 @@ class Api:
             return {"ok": True, "items": out}
         return self._uex_call(run)
 
+    # Ship guns by how they fire, for the Components tab: (id, label, words in the name). Checked in this
+    # order, so "Distortion Repeater" is a distortion weapon and "Scattergun" isn't a plain gun.
+    WEAPON_TYPES = (("distortion", "Distortion", ("distortion",)), ("scattergun", "Scatterguns", ("scattergun", "scatter gun")),
+                    ("gatling", "Gatlings", ("gatling",)), ("repeater", "Repeaters", ("repeater",)),
+                    ("cannon", "Cannons", ("cannon",)), ("beam", "Beams", ("beam",)),
+                    ("massdriver", "Mass drivers", ("mass driver", "railgun", "rail gun")))
+
+    @classmethod
+    def weapon_type(cls, name, game=None):
+        """A ship gun's kind (see WEAPON_TYPES), from its name and the game files' numbers; "other" when
+        neither says (a few named guns, like the Jericho)."""
+        n = (name or "").lower()
+        st = (game or {}).get("stats") or {}
+        dmg = str(st.get("damage_type") or "").lower()
+        if dmg == "distortion":
+            return "distortion"
+        for key, _, words in cls.WEAPON_TYPES:
+            if any(w in n for w in words):
+                return key
+        if dmg == "beam":
+            return "beam"
+        rpm = st.get("rpm") or 0
+        if rpm >= 900:                                   # very fast fire: a gatling if ballistic, else a repeater
+            return "gatling" if dmg == "physical" else "repeater"
+        if 0 < rpm <= 200:
+            return "cannon"
+        return "other"
+
+    def uex_component_index(self):
+        """Every part in every component category, small enough to search all at once from the
+        Components tab: name, maker, size, grade, its category and (for guns) what kind it is."""
+        def run():
+            cats = self.uex_component_categories()
+            if not cats.get("ok"):
+                return cats
+            out, at = [], None
+            for c in cats["items"]:
+                try:
+                    rows, at = self._uex.get("items", {"id_category": int(c["id"])})
+                except uex.UexError:
+                    continue
+                for i in rows:
+                    if i.get("is_commodity") or not i.get("name"):
+                        continue
+                    size = i.get("size")
+                    row = {"id": i["id"], "name": i.get("name"), "maker": i.get("company_name") or "",
+                           "size": None if str(size or "").strip() in ("", "0") else size, "grade": i.get("quality"),
+                           "cat": c["id"], "cat_name": c.get("name"), "wiki": i.get("wiki")}
+                    if c.get("slot") == "WeaponGun":
+                        try:
+                            sz = int(size) if str(size or "").strip() not in ("", "0") else None
+                        except ValueError:
+                            sz = None
+                        row["wtype"] = self.weapon_type(i.get("name"), self._game.find(i.get("uuid"), i.get("name"), sz))
+                    out.append(row)
+                if c.get("slot") == "JumpDrive":           # jump modules UEX doesn't list
+                    have = {(r.get("name") or "").lower() for r in out if r["cat"] == c["id"]}
+                    for g in self._game.of_kind("JumpDrive", None):
+                        if (g.get("name") or "").lower() not in have:
+                            out.append({"id": g["uuid"], "name": g["name"], "maker": g.get("maker") or "", "size": g.get("size"),
+                                        "grade": g.get("grade"), "cat": c["id"], "cat_name": c.get("name"), "wiki": g["name"]})
+            return {"ok": True, "items": out, "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]],
+                    "at": at}
+        return self._uex_call(run)
+
     def uex_components(self, id_category):
         """Items in one category with where to buy them and for how much."""
         def run():
@@ -3382,8 +3498,24 @@ class Api:
                                               or i.get("is_exclusive_concierge")),
                             "note": (i.get("notification") or None), "buy": buy,
                             "uuid": i.get("uuid"), "game": self._game_view(i.get("uuid"), i.get("name"), size)})
+            slot = self._slot_type_for(next((c.get("name") for c in self._uex.get("categories")[0]
+                                             if str(c.get("id")) == str(id_category)), ""))
+            guns = slot == "WeaponGun"
+            if slot == "JumpDrive":                       # every jump module, even ones UEX doesn't list (the Exfiltrate)
+                have = {(x.get("uuid") or "").lower() for x in out} | {(x["name"] or "").lower() for x in out}
+                for g in self._game.of_kind("JumpDrive", None):
+                    if g["uuid"].lower() in have or (g.get("name") or "").lower() in have:
+                        continue
+                    out.append({"id": g["uuid"], "name": g["name"], "maker": g.get("maker") or "", "size": g.get("size"),
+                                "grade": g.get("grade"), "category": None, "vehicle": None, "wiki": g["name"], "store": None,
+                                "exclusive": False, "note": None, "buy": [], "uuid": g["uuid"],
+                                "game": self._game_view(g["uuid"], g["name"], g.get("size"))})
+            if guns:
+                for x in out:
+                    x["wtype"] = self.weapon_type(x["name"], x["game"])
             out.sort(key=lambda x: (str(x["size"] or ""), x["buy"][0]["price"] if x["buy"] else 9e12, x["name"] or ""))
-            return {"ok": True, "items": out, "at": at}
+            return {"ok": True, "items": out, "at": at,
+                    "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]] if guns else None}
         return self._uex_call(run)
 
     def _vehicle_desc(self, d, name):
@@ -3447,22 +3579,35 @@ class Api:
         }
         return out
 
+    def brand_logos(self):
+        """The Star Citizen Wiki's manufacturer icons, for the Vehicles tab."""
+        try:
+            return {"ok": True, "logos": self._wikiapi.brand_logos()}
+        except Exception as e:
+            return {"ok": False, "logos": {}, "error": str(e)}
+
     def wiki_images(self, refs):
-        """{ref: picture url} for many wiki pages at once (commodity and component grids). Pictures
-        Quantum users sent in (and you approved) fill the gaps."""
+        """{ref: picture url} for many wiki pages at once (commodity and component grids). Pictures you
+        (the server owner) put in place of the wiki's come first; ones Quantum users sent in (and you
+        approved) fill the gaps."""
         refs = list(refs or [])
         got = self._wikiapi.pictures(refs)
-        mine = self._community.photos()
+        mine, over = self._community.photos(), self._community.photo_overrides()
         for ref in refs:
-            if not got.get(ref):
-                p = mine.get(self._pic_key(ref))
-                if p:
-                    got[ref] = p
+            k = self._pic_key(ref)
+            if over.get(k):
+                got[ref] = over[k]
+            elif not got.get(ref) and mine.get(k):
+                got[ref] = mine[k]
         return got
 
     def _vehicle_photo(self, v):
         """UEX's picture of a vehicle, or else one a Quantum user sent in and you approved (sent under the
         vehicle's full name, like "Drake Command Module")."""
+        over = self._community.photo_overrides()
+        hit = next((over[k] for k in (self._pic_key(v.get("name_full")), self._pic_key(v.get("name"))) if k and k in over), None)
+        if hit:
+            return hit                                     # you replaced UEX's picture
         if v.get("url_photo"):
             return v["url_photo"]
         mine = self._community.photos()
@@ -3473,7 +3618,8 @@ class Api:
     PHOTOS_SYNC_EVERY = 120
 
     def _photos_changed(self):
-        sig = hash(tuple(sorted(self._community.photos(fresh=True).items())))
+        sig = hash((tuple(sorted(self._community.photos(fresh=True).items())),
+                    tuple(sorted(self._community.photo_overrides()))))
         if sig != getattr(self, "_photos_sig", None):
             first = not hasattr(self, "_photos_sig")
             self._photos_sig = sig
@@ -3495,21 +3641,44 @@ class Api:
     def _pic_key(ref):
         return urllib.parse.unquote(str(ref or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip().lower()
 
-    def photo_submit(self, kind, name, data_url):
-        """A picture for something with none, sent to the Quantum server for review."""
+    def photo_submit(self, kind, name, data_url, replace=False):
+        """A picture for something with none, sent to the Quantum server for review. replace: you, the
+        server owner, putting it in place of the picture shown now (wrong or poor); it's live at once."""
         if not self._uex.token:
             return {"ok": False, "error": "Add your UEX Bearer Token in Settings to send pictures"}
         user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
         if not user:
             return {"ok": False, "error": "Add your UEX Secret Key in Settings, so the picture is credited to your UEX name"}
+        if replace and not self.photo_owner().get("owner"):
+            return {"ok": False, "error": "Only the Quantum server's owner can replace a picture"}
         title = urllib.parse.unquote(str(name or "").rstrip("/").rsplit("/", 1)[-1]).replace("_", " ").strip()
-        r = self._community.submit_photo(kind, title, data_url, user)
+        r = self._community.submit_photo(kind, title, data_url, user, replace=bool(replace))
         if r.get("ok") and r.get("approved"):
             try:
                 self._photos_changed()                 # live straight away: shown everywhere now
             except Exception:
                 pass
         return r
+
+    def photo_owner(self):
+        """Whether you're the Quantum server's owner, signed in: then pictures shown in Quantum get a
+        Replace button. Asked once every 10 minutes."""
+        hit = getattr(self, "_owner_at", None)
+        if hit and time.time() - hit[0] < (600 if hit[1].get("owner") else 60):
+            return hit[1]
+        cfg = self._dr_cfg()
+        user = cfg.get("username") or (cfg.get("uex_user") or {}).get("username")
+        out = {"owner": False}
+        if user and self._community.url and self._uex.token:
+            try:
+                if cfg.get("secret") and not self._session_token():
+                    self._sign_in()
+                r = self._community.trust(user) or {}
+                out = {"owner": bool(r.get("signed_in") and (r.get("info") or {}).get("owner"))}
+            except Exception:
+                pass
+        self._owner_at = (time.time(), out)
+        return out
 
     # ---- trade routes Quantum users share
     def shared_routes(self, origin=None):
@@ -3542,7 +3711,119 @@ class Api:
 
     # ------------------------------------------------------------ My Fleet
     def _fleet(self):
-        return self._settings.setdefault("fleet", [])
+        fl = self._settings.setdefault("fleet", [])
+        for f in fl:
+            self._loadouts(f)
+        return fl
+
+    # ---- loadouts: each ship keeps up to MAX_LOADOUTS named sets of component swaps and power settings.
+    # The one being edited in My Fleet is "active"; its swaps and power are also the ship's own "loadout"
+    # and "power" (the very same objects), so everything that reads those keeps working. The "primary" one
+    # is what the rest of Quantum uses for this ship (the Components tab's fitting, for one).
+    MAX_LOADOUTS = 5
+
+    @staticmethod
+    def _loadouts(f):
+        """The ship's loadouts, made from its single old loadout the first time, with the active one's
+        swaps and power linked to the ship's own."""
+        L = f.get("loadouts")
+        if not isinstance(L, list) or not L:
+            L = f["loadouts"] = [{"id": "l1", "name": "Default", "loadout": f.get("loadout") or {}, "power": f.get("power") or {}}]
+        L[:] = [x for x in L if isinstance(x, dict) and x.get("id")][:Api.MAX_LOADOUTS] or \
+            [{"id": "l1", "name": "Default", "loadout": {}, "power": {}}]
+        for x in L:
+            x.setdefault("name", "Loadout")
+            if not isinstance(x.get("loadout"), dict):
+                x["loadout"] = {}
+            if not isinstance(x.get("power"), dict):
+                x["power"] = {}
+        ids = [x["id"] for x in L]
+        if f.get("active_loadout") not in ids:
+            f["active_loadout"] = ids[0]
+        if f.get("primary_loadout") not in ids:
+            f["primary_loadout"] = ids[0]
+        act = next(x for x in L if x["id"] == f["active_loadout"])
+        f["loadout"], f["power"] = act["loadout"], act["power"]
+        return L
+
+    def _loadout_of(self, f, lid=None):
+        """One of a ship's loadouts: lid, or "primary", or (None) the one being edited."""
+        L = self._loadouts(f)
+        want = f["primary_loadout"] if lid == "primary" else (lid or f["active_loadout"])
+        return next((x for x in L if x["id"] == want), None)
+
+    def _ship(self, uid):
+        return next((x for x in self._fleet() if x["uid"] == uid), None)
+
+    def fleet_loadouts(self, uid):
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        return {"ok": True, "active": f["active_loadout"], "primary": f["primary_loadout"], "max": self.MAX_LOADOUTS,
+                "loadouts": [{"id": x["id"], "name": x["name"], "swaps": len(x["loadout"])} for x in f["loadouts"]]}
+
+    def fleet_loadout_new(self, uid, name, copy=True):
+        """A new loadout for this ship, named, starting as a copy of the one shown now (or stock), and
+        shown straight away."""
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        L = f["loadouts"]
+        if len(L) >= self.MAX_LOADOUTS:
+            return {"ok": False, "error": f"A ship can have up to {self.MAX_LOADOUTS} loadouts. Delete one first."}
+        name = " ".join(str(name or "").split())[:40] or f"Loadout {len(L) + 1}"
+        if any(x["name"].lower() == name.lower() for x in L):
+            return {"ok": False, "error": f"This ship already has a loadout called {name}"}
+        n = 1
+        while f"l{n}" in {x["id"] for x in L}:
+            n += 1
+        cur = self._loadout_of(f)
+        L.append({"id": f"l{n}", "name": name, "loadout": json.loads(json.dumps(cur["loadout"])) if copy else {},
+                  "power": json.loads(json.dumps(cur["power"])) if copy else {}})
+        f["active_loadout"] = f"l{n}"
+        self._loadouts(f)
+        self._save_settings()
+        return {"ok": True, "id": f"l{n}"}
+
+    def fleet_loadout_switch(self, uid, lid):
+        f = self._ship(uid)
+        if not f or not self._loadout_of(f, lid):
+            return {"ok": False, "error": "That loadout is gone"}
+        f["active_loadout"] = lid
+        self._loadouts(f)
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_loadout_rename(self, uid, lid, name):
+        f = self._ship(uid)
+        x = self._loadout_of(f, lid) if f else None
+        name = " ".join(str(name or "").split())[:40]
+        if not x or not name:
+            return {"ok": False, "error": "Give the loadout a name"}
+        if any(o["name"].lower() == name.lower() and o is not x for o in f["loadouts"]):
+            return {"ok": False, "error": f"This ship already has a loadout called {name}"}
+        x["name"] = name
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_loadout_primary(self, uid, lid):
+        f = self._ship(uid)
+        if not f or not self._loadout_of(f, lid):
+            return {"ok": False, "error": "That loadout is gone"}
+        f["primary_loadout"] = lid
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_loadout_delete(self, uid, lid):
+        f = self._ship(uid)
+        if not f or not self._loadout_of(f, lid):
+            return {"ok": False, "error": "That loadout is gone"}
+        if len(f["loadouts"]) <= 1:
+            return {"ok": False, "error": "A ship always keeps one loadout. Set its parts back to stock instead."}
+        f["loadouts"][:] = [x for x in f["loadouts"] if x["id"] != lid]
+        self._loadouts(f)                                  # active and primary move to another one if needed
+        self._save_settings()
+        return {"ok": True}
 
     def _vehicle_rows(self):
         try:
@@ -3555,9 +3836,12 @@ class Api:
         out = []
         for f in self._fleet():
             v = rows.get(f["vehicle_id"], {})
-            out.append(dict(f, full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
+            prim = self._loadout_of(f, "primary")
+            out.append(dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
+                            full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
                             scu=v.get("scu") or 0, photo=self._vehicle_photo(v), pad=v.get("pad_type"),
-                            swaps=len(f.get("loadout") or {})))
+                            swaps=len(prim["loadout"]), loadouts=len(f["loadouts"]), primary_name=prim["name"],
+                            total_swaps=sum(len(x["loadout"]) for x in f["loadouts"])))
         return {"ok": True, "ships": out, "main": next((f["uid"] for f in self._fleet() if f.get("main")), None)}
 
     def fleet_add(self, vehicle_id):
@@ -3568,6 +3852,7 @@ class Api:
         fl = self._fleet()
         fl.append({"uid": uid, "vehicle_id": v["id"], "name": v.get("name_full") or v.get("name"),
                    "main": not any(f.get("main") for f in fl), "loadout": {}})
+        self._loadouts(fl[-1])
         self._save_settings()
         return {"ok": True, "uid": uid}
 
@@ -3653,8 +3938,10 @@ class Api:
             lo.setdefault("fixed", []).insert(0, {"port": fleet.WEAPONS, "type": fleet.WEAPONS, "label": "Weapons",
                                                   "stock": {"name": f"{len(guns)} gun{'s' if len(guns) != 1 else ''}"},
                                                   "power": now["parts"].get(fleet.WEAPONS)})
-        return {"ok": True, "uid": uid, "ship": dict(f, full=v.get("name_full") or f["name"], photo=self._vehicle_photo(v),
+        return {"ok": True, "uid": uid, "ship": dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
+                                                     full=v.get("name_full") or f["name"], photo=self._vehicle_photo(v),
                                                      scu=v.get("scu") or 0),
+                "loadouts": self.fleet_loadouts(uid),
                 "game_data": self._game.generated, **lo}
 
     def fleet_options(self, slot_type, size, uid=None):
@@ -3764,11 +4051,13 @@ class Api:
         self._save_settings()
         return {"ok": True}
 
-    def fleet_set_slot(self, uid, port, item_name, uuid=None):
+    def fleet_set_slot(self, uid, port, item_name, uuid=None, loadout=None):
+        """Fit a part to a slot (or back to stock with no item_name), in the loadout shown in My Fleet, or
+        another one: loadout="primary" (the Components tab) or a loadout's id."""
         f = next((x for x in self._fleet() if x["uid"] == uid), None)
         if not f:
             return {"ok": False, "error": "That ship isn't in your fleet"}
-        lo = f.setdefault("loadout", {})
+        lo = (self._loadout_of(f, loadout) or self._loadout_of(f))["loadout"]
         if item_name:
             lo[port] = {"name": item_name, "uuid": uuid}
         else:

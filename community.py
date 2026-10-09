@@ -178,17 +178,30 @@ class Community:
             return self._photos
         try:
             r = self._req("/v1/photos", timeout=8)
-            self._photos = {k: self.url + v["url"] for k, v in (r.get("photos") or {}).items()} if r.get("status") == "ok" else {}
+            got = (r.get("photos") or {}) if r.get("status") == "ok" else {}
+            self._photos = {k: self.url + v["url"] for k, v in got.items()}
+            # Pictures the server owner put in place of the wiki's or UEX's (a wrong or poor one)
+            self._overrides = {k: self.url + v["url"] for k, v in got.items() if v.get("override")}
         except Exception:
             self._photos = getattr(self, "_photos", {})
+            self._overrides = getattr(self, "_overrides", {})
         self._photos_at = time.time()
         return self._photos
 
-    def submit_photo(self, kind, name, data_url, username):
+    def photo_overrides(self):
+        """{lowercase name: picture URL}: the pictures the server owner chose over the wiki's or UEX's."""
+        self.photos()
+        return getattr(self, "_overrides", {}) if self.url else {}
+
+    def submit_photo(self, kind, name, data_url, username, replace=False):
+        """replace: the server owner putting this picture in place of the one shown now (live at once)."""
         if not self.url:
             return {"ok": False, "error": "Community features are off"}
         try:
-            r = self._req("/v1/photos", {"kind": kind, "name": name, "image": data_url, "username": username}, timeout=60)
+            body = {"kind": kind, "name": name, "image": data_url, "username": username}
+            if replace:
+                body["replace"] = True
+            r = self._req("/v1/photos", body, timeout=60)
         except Exception as e:
             return {"ok": False, "error": str(e)}
         if r.get("status") != "ok":

@@ -23,6 +23,7 @@ SLOT_TYPES = {
     "Cooler": ("Cooler", ("cooler",)),
     "Shield": ("Shield", ("shield generator", "shield")),
     "QuantumDrive": ("Quantum drive", ("quantum drive",)),
+    "JumpDrive": ("Jump module", ("jump module", "jump drive")),
     "Radar": ("Radar", ("radar",)),
     "WeaponGun": ("Gun", ("gun", "weapon")),
     "Missile": ("Missile", ("missile",)),
@@ -31,6 +32,29 @@ SLOT_TYPES = {
 ORDER = list(SLOT_TYPES)
 # Parts that aren't swapped but use power: Erkul's "thrusters" bar is the flight controller.
 FIXED_TYPES = {"FlightController": "Flight controller", "LifeSupportGenerator": "Life support"}
+# Jump modules (Ship.JumpDrive), from the Star Citizen Wiki (4.9-4.10): the game-file stats don't have
+# them yet. A ship's jump module is the size of its quantum drive (S1 Avenger, S2 Cutlass, S3 Carrack,
+# S4 Idris); the wiki's "Used by" lists bear that out. jump_align / jump_tune: alignment and tuning
+# rates (higher is quicker), jump_fuel: fuel use multiplier (lower is better).
+JUMP_MODULES = {
+    "c8797bce-6220-4d1e-bc6d-23da4a366a6d": {"name": "Explorer", "type": "JumpDrive", "size": 1, "grade": "A", "class": "Civilian",
+                                             "maker": "Tarsus", "stats": {"jump_align": 0.33, "jump_tune": 0.2, "jump_fuel": 1, "health": 130}},
+    "14cbe476-4050-4af5-8635-178519722f4b": {"name": "Excelsior", "type": "JumpDrive", "size": 2, "grade": "C", "class": "Civilian",
+                                             "maker": "Tarsus", "stats": {"jump_align": 0.2, "jump_tune": 0.22, "jump_fuel": 1.5, "health": 350}},
+    "59346c37-671d-4aae-9eff-d38e13caa9c0": {"name": "Exodus", "type": "JumpDrive", "size": 3, "grade": "C", "class": "Civilian",
+                                             "maker": "Tarsus", "stats": {"jump_align": 0.2, "jump_tune": 0.24, "jump_fuel": 4.5, "health": 960}},
+    "af671ad3-d55d-44b3-8617-473bd3dc0da6": {"name": "Exfiltrate", "type": "JumpDrive", "size": 4, "grade": None, "class": "Bespoke",
+                                             "maker": "Wei-Tek", "stats": {"jump_align": 0.2, "jump_tune": 0.26, "jump_fuel": 8, "health": 41000}},
+}
+
+
+def stock_jump_module(size):
+    """The jump module a ship comes with for a quantum drive of this size, as a slot's stock item."""
+    uid, it = next(((u, m) for u, m in JUMP_MODULES.items() if m["size"] == size), (None, None))
+    return None if not it else {"name": it["name"], "grade": it["grade"], "class": it["class"], "size": it["size"],
+                                "maker": it["maker"], "uuid": uid, "stats": dict(it["stats"])}
+
+
 # The number that ranks components of each kind ("best" first)
 KEY_STAT = {"WeaponGun": "dps", "Missile": "missile", "Shield": "shield_hp", "QuantumDrive": "qt_speed",
             "Cooler": "cooling", "PowerPlant": "power"}
@@ -60,35 +84,153 @@ class Wiki:
                 self._pics = {}
         return self._pics
 
-    def pictures(self, refs):
-        """{ref: image url or None} for many pages, fetching only the ones not cached yet."""
+    # Pages whose picture isn't the thing itself: a person's armour or clothing with the same name as a
+    # ship part ("Citadel" is both a shield generator and an armour set), or a page listing several things.
+    WRONG_PAGE = re.compile(r"armou?r|helmet|undersuit|clothing|backpack|personal|fps|disambiguation|set index", re.I)
+    PIC_CACHE_V = 2                                          # bump to look every picture up again
+
+    def pictures(self, refs, size=480):
+        """{ref: image url or None} for many pages, fetching only the ones not cached yet. A page in an
+        armour, clothing or disambiguation category is treated as having no picture, so a ship part that
+        shares its name with something else shows "No picture yet" (and can be sent in) instead of the
+        wrong thing."""
         cache = self._pic_cache()
+        if cache.get("_v") != self.PIC_CACHE_V:
+            cache.clear()
+            cache["_v"] = self.PIC_CACHE_V
+        key = (lambda t: t) if size == 480 else (lambda t: f"{t}@{size}")
         titles = {ref: title_of(ref) for ref in refs if ref}
-        todo = sorted({t for t in titles.values() if t and t not in cache})
+        todo = sorted({t for t in titles.values() if t and key(t) not in cache})
         for i in range(0, len(todo), 50):
             batch = todo[i:i + 50]
-            q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "pageimages",
-                                        "piprop": "thumbnail", "pithumbsize": 480, "redirects": 1,
-                                        "titles": "|".join(batch)})
+            params = {"action": "query", "format": "json", "prop": "pageimages|categories",
+                      "piprop": "thumbnail", "pithumbsize": size, "pilimit": 50, "cllimit": "max",
+                      "redirects": 1, "titles": "|".join(batch)}
+            alias, pages = {}, {}
             try:
-                data = _get(f"{PAGES_API}?{q}").get("query", {})
+                cont = {}
+                for _ in range(20):                          # categories can come over several replies
+                    data = _get(f"{PAGES_API}?{urllib.parse.urlencode({**params, **cont})}")
+                    q = data.get("query", {})
+                    for k in ("normalized", "redirects"):
+                        for m in q.get(k, []):
+                            alias[m["from"]] = m["to"]
+                    for p in q.get("pages", {}).values():
+                        got = pages.setdefault(p.get("title"), {"pic": "", "cats": []})
+                        got["pic"] = got["pic"] or p.get("thumbnail", {}).get("source", "")
+                        got["cats"] += [c.get("title", "") for c in p.get("categories", [])]
+                    cont = data.get("continue") or {}
+                    if not cont:
+                        break
             except Exception:
                 break                                       # offline: try again next time
-            alias = {}
-            for key in ("normalized", "redirects"):
-                for m in data.get(key, []):
-                    alias[m["from"]] = m["to"]
-            found = {p.get("title"): p.get("thumbnail", {}).get("source", "")
-                     for p in data.get("pages", {}).values()}
             for t in batch:
                 final = t
                 for _ in range(3):
                     final = alias.get(final, final)
-                cache[t] = found.get(final, "")
+                pg = pages.get(final) or {}
+                wrong = any(self.WRONG_PAGE.search(c) for c in pg.get("cats", []))
+                cache[key(t)] = "" if wrong else pg.get("pic", "")
         if todo:
             self.dir.mkdir(exist_ok=True)
             (self.dir / "wiki_images.json").write_text(json.dumps(cache), encoding="utf-8")
-        return {ref: (cache.get(t) or None) for ref, t in titles.items()}
+        return {ref: (cache.get(key(t)) or None) for ref, t in titles.items()}
+
+    # ------------------------------------------------------------ manufacturer logos
+    # The Star Citizen Wiki's brand icons (File:Sc-icon-brand-<code>.svg), for the Vehicles tab's
+    # manufacturer list. Fetched once and kept for a month; shown as a mask, so the page colours them.
+    # code -> the wiki file it's drawn from, or a direct link for one the wiki doesn't have
+    BRANDS = {**{b: f"File:Sc-icon-brand-{b}.svg" for b in ("aegs", "anvl", "xnaa", "argo", "banu", "cnou", "crus",
+                                                             "drak", "espr", "gama", "glsn", "krig", "misc", "orig", "rsi")},
+              "grey": "File:Sc-logo-greycat.svg", "greys": "File:Sc-logo-greys-market.svg",
+              "mirai": "File:Sc-logo-mirai.svg", "tmbl": "File:Sc-logo-tumbril.svg",
+              "vanduul": "https://static.wikia.nocookie.net/starcitizen/images/2/2e/Vanduul_Clans.png/revision/latest?cb=20200530103449"}
+
+    def brand_logos(self):
+        """{code: the icon as a data: URL (SVG, or PNG for a direct link)} for every one that could be fetched."""
+        f = self.dir / "brand_logos.json"
+        try:
+            cache = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            cache = {}
+        if cache.get("v") != 2:                           # PNGs saved before they were turned into clean masks
+            cache["logos"] = {k: v for k, v in (cache.get("logos") or {}).items() if not v.startswith("data:image/png")}
+            cache["at"] = 0
+        if cache.get("at", 0) > time.time() - 30 * 86400 and all(b in cache.get("logos", {}) for b in self.BRANDS):
+            return cache["logos"]
+        logos = dict(cache.get("logos") or {})
+        try:
+            files = [t for b, t in self.BRANDS.items() if b not in logos and t.startswith("File:")]
+            urls, alias = {}, {}
+            if files:
+                q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url",
+                                            "titles": "|".join(files)})
+                data = _get(f"{PAGES_API}?{q}").get("query", {})
+                alias = {m["from"]: m["to"] for m in data.get("normalized", [])}
+                urls = {p.get("title"): (p.get("imageinfo") or [{}])[0].get("url") for p in data.get("pages", {}).values()}
+        except Exception:
+            urls, alias = {}, {}                          # the wiki can't be reached: direct links may still work
+        import base64
+        for b, t in self.BRANDS.items():
+            if b in logos:
+                continue
+            url = t if t.startswith("http") else urls.get(alias.get(t, t)) or next(
+                (u for k, u in urls.items() if k and k.lower().replace(" ", "-") == t.lower()), None)
+            if not url:
+                continue
+            try:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+                    raw = r.read(1024 * 1024)
+            except Exception:
+                continue                                  # tried again next time
+            kind = "svg+xml" if b"<svg" in raw[:4096] else "png" if raw[:8] == b"\x89PNG\r\n\x1a\n" else None
+            if kind == "png":
+                raw = self._png_mask(raw)
+            if kind and raw:
+                logos[b] = f"data:image/{kind};base64," + base64.b64encode(raw).decode("ascii")
+        if logos:
+            self.dir.mkdir(exist_ok=True)
+            f.write_text(json.dumps({"v": 2, "at": time.time() if len(logos) == len(self.BRANDS) else 0, "logos": logos}),
+                         encoding="utf-8")
+        return logos
+
+    @staticmethod
+    def _png_mask(raw):
+        """A picture logo (PNG) made into a clean shape for the page to colour: what differs from the
+        background becomes the logo, the background becomes see-through, trimmed and at most 256 px.
+        A logo that's already see-through around it keeps its own shape. None if it can't be read."""
+        try:
+            from PIL import Image
+            import io
+            im = Image.open(io.BytesIO(raw)).convert("RGBA")
+            im.thumbnail((512, 512))
+            w, h = im.size
+            px = im.load()
+            alpha = im.getchannel("A")
+            clear = sum(1 for a in alpha.getdata() if a < 40)
+            if clear < w * h * 0.05:                      # an opaque background: work the shape out from colour
+                corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
+                bg = [sum(c[i] for c in corners) / 4 for i in range(3)]
+                mask = Image.new("L", (w, h))
+                mp = mask.load()
+                for y in range(h):
+                    for x in range(w):
+                        r, g, b, _ = px[x, y]
+                        d = ((r - bg[0]) ** 2 + (g - bg[1]) ** 2 + (b - bg[2]) ** 2) ** 0.5
+                        mp[x, y] = max(0, min(255, int((d - 24) * 3)))
+                alpha = mask
+            out = Image.new("RGBA", (w, h), (255, 255, 255, 0))
+            out.putalpha(alpha)
+            box = alpha.point(lambda a: 255 if a > 30 else 0).getbbox()
+            if not box:
+                return None
+            out = out.crop(box)
+            out.thumbnail((256, 256))
+            buf = io.BytesIO()
+            out.save(buf, "PNG", optimize=True)
+            return buf.getvalue()
+        except Exception:
+            return None
 
     # ------------------------------------------------------------ descriptions
     def summary(self, ref):
@@ -254,16 +396,33 @@ class Wiki:
                     fixed.append({"port": here, "type": kind, "label": FIXED_TYPES[kind], "size": eq.get("size"),
                                   "where": "", "fixed": True, "stock": item_info(eq) or {"name": FIXED_TYPES[kind]}})
                     continue
-                if typ in SLOT_TYPES and (p.get("editable") or typ in ("Missile", "WeaponGun")):
+                if typ in SLOT_TYPES and (p.get("editable") or typ in ("Missile", "WeaponGun", "JumpDrive")):
                     size = (p.get("sizes") or {}).get("max") or (p.get("equipped_item") or {}).get("size")
                     slots.append({"port": here, "type": typ, "label": SLOT_TYPES[typ][0], "size": size,
                                   "where": under, "stock": item_info(p.get("equipped_item"))})
+                    if typ == "QuantumDrive":               # the jump module sits on the quantum drive
+                        walk([k for k in kids if (k.get("type") or (k.get("equipped_item") or {}).get("type")) == "JumpDrive"],
+                             here, under)
                     continue                                # a gun's barrel etc. aren't separate slots
                 if kids:
                     walk(kids, here, under or (p.get("category_label") or ""))
 
         fixed = []
         walk(v.get("ports"), "")
+        # The wiki's vehicle records don't always list the jump module: every ship with a quantum drive
+        # has one the size of its drive, so it's added when missing.
+        if not any(s["type"] == "JumpDrive" for s in slots):
+            qd = next((s for s in slots if s["type"] == "QuantumDrive"), None)
+            stock = stock_jump_module(qd["size"]) if qd else None
+            if stock:
+                slots.append({"port": f"{qd['port']}/jump_module", "type": "JumpDrive", "label": SLOT_TYPES["JumpDrive"][0],
+                              "size": qd["size"], "where": qd.get("where") or "", "stock": stock})
+        for s in slots:                                     # a listed one without numbers gets the table's
+            if s["type"] == "JumpDrive" and s.get("stock") and not (s["stock"].get("stats") or {}).get("jump_tune"):
+                ref = stock_jump_module(s.get("size"))
+                hit = next((m for m in JUMP_MODULES.values() if m["name"].lower() == s["stock"]["name"].lower()), None) or ref
+                if hit:
+                    s["stock"]["stats"] = {**(s["stock"].get("stats") or {}), **hit["stats"]}
         slots.sort(key=lambda s: (ORDER.index(s["type"]), -(s["size"] or 0), s["port"]))
         sp, q, sh, w = v.get("speed") or {}, v.get("quantum") or {}, v.get("shield") or {}, v.get("weaponry") or {}
         sig = v.get("signature") or {}
@@ -382,6 +541,8 @@ class GameData:
                 continue
             self.items, self.generated = raw.get("items", {}), raw.get("generated")
             break
+        if not any(x.get("type") == "JumpDrive" for x in self.items.values()):     # not in the game files yet
+            self.items = {**self.items, **{u: dict(m) for u, m in JUMP_MODULES.items()}}
         self.by_name = {}
         for uid, it in self.items.items():
             self.by_name.setdefault(((it.get("name") or "").lower().strip(), it.get("size")), uid)
@@ -523,7 +684,7 @@ def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=No
     gen = sum(_pstats(sl, fitted).get("power") or _pstats(sl, fitted).get("power_make") or 0
               for sl in slots if sl.get("type") == "PowerPlant")
     pool = weapon_pool(slots, fitted)
-    consumers = [sl for sl in every if sl.get("type") not in ("Missile", "PowerPlant", "WeaponGun")]
+    consumers = [sl for sl in every if sl.get("type") not in ("Missile", "PowerPlant", "WeaponGun", "JumpDrive")]
     if pool:
         consumers.append({"port": WEAPONS, "type": WEAPONS})
     alloc, info = allocate(consumers, gen, mode, overrides, fitted, pool)
