@@ -191,7 +191,6 @@ The community server is maintained owner and soon to be a small group of volunte
 | `community_places.json` | Station positions from other Quantum users |
 | `datarunner_reports.json` | The reports you've sent and what UEX did with them |
 | `report_screenshots/` | The screenshot each report was sent with, deleted after 14 days |
-| `datarunner_test/` | Test-mode reports, saved instead of sent |
 | `uex_cache/` | Cached UEX and wiki data, and datarunner avatars |
 
 ## Credits
