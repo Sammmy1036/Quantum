@@ -170,7 +170,6 @@ Quantum talks to these services:
 | **Quantum API** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10 |
 | **Star Citizen Wiki API** | Ship data, loadouts, pictures and manufacturer logos |
 | **GitHub** | Checking for updates |
-| **Star Citizen Fandom wiki** | The Vanduul logo (one image, downloaded once) |
 
 What the community server receives from you:
 - **Datarunner reports:** the UEX report IDs and values of reports you send, under your UEX username.
