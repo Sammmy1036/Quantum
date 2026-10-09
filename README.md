@@ -182,7 +182,7 @@ What the community server receives from you:
 
 It never receives your UEX Bearer Token, never keeps your secret key, and never receives your report screenshots (those go to UEX with the report, and Quantum's own copy stays on your PC).
 
-The community server is looked after by its owner and a small team of moderators, who review contributions and can suspend or ban accounts that misuse it. To have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
+The community server is maintained owner and soon to be a small group of volunteer moderators, who review contributions and can suspend or ban accounts that misuse it. To have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
 
 | File | Holds |
 |---|---|
