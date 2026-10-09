@@ -2641,22 +2641,17 @@ class Api:
         return (f"https://uexcorp.space/commodities/info/name/{urllib.parse.quote(slug)}/tab/{tab}/"
                 f"id_terminal/{int(id_terminal)}/highlight/price_last/")
 
-    # ---- the feature tour (ui/demo.js): its settings, and putting back what it changed
     def demo_config(self):
-        """How the tour runs: auto (launched with --demo), delay (extra seconds before it starts) and speed."""
         return dict(DEMO)
 
     def demo_snapshot(self):
-        """Before the tour: a copy of what it changes here (the route and the guide), to put back after.
-        The route starts empty for the tour; nothing is saved to settings.json until it's put back."""
         import copy
         with self._lock:
             self._demo_saved = {"route": copy.deepcopy(self._route), "guide": self._guide}
-            self._route, self._guide = [], None           # the tour plans its own route from an empty one
+            self._route, self._guide = [], None
         return {"ok": True}
 
     def demo_restore(self):
-        """After the tour: the route and guide as they were before it."""
         saved = getattr(self, "_demo_saved", None)
         if not saved:
             return {"ok": False}
@@ -4587,17 +4582,10 @@ def apply_calibrations(db, data):
     return applied, skipped
 
 
-# The feature tour (ui/demo.js), for screen recording:
-#   python app.py --demo [--demo-delay=5] [--demo-speed=0.7]      (Quantum.exe the same)
-# --demo starts it by itself about 2.5 s after the app has loaded; --demo-delay adds seconds before it starts
-# (time to start OBS); --demo-speed scales every pause and movement (1.5 slower, 0.7 quicker). Without --demo
-# the tour still runs with Ctrl+Shift+D, at --demo-speed if one was given.
 DEMO = {"auto": False, "delay": 0.0, "speed": 1.0}
 
 
 def _demo_args(argv):
-    """Reads --demo, --demo-delay=N and --demo-speed=X (or with a space before the number) out of argv,
-    and returns argv without them."""
     rest, i = [], 0
     while i < len(argv):
         a = argv[i]
@@ -4627,8 +4615,8 @@ def main():
     if DEMO["auto"]:
         print(f"Demo tour: starts {2.5 + DEMO['delay']:g} s after Quantum loads, at speed {DEMO['speed']:g}. "
               "Space pauses, Esc stops.")
-    if "--import" in sys.argv:          # Quantum.exe --import : download / refresh the map data
-        if FROZEN and os.name == "nt":  # the exe has no console of its own: open one for the progress
+    if "--import" in sys.argv:          
+        if FROZEN and os.name == "nt":  
             import ctypes
             ctypes.windll.kernel32.AllocConsole()
             sys.stdout = sys.stderr = open("CONOUT$", "w", buffering=1)
