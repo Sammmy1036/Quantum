@@ -14,6 +14,8 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 
 > **Fan project.** Quantum is an unofficial Star Citizen fan tool. It isn't affiliated with or endorsed by Cloud Imperium Games. It never changes game files or memory: it only reads `Game.log` and your clipboard, and (if you ask it to) types `/showlocation` into chat and takes screenshots of the game window for price reports.
 
+> **Notice.** Quantum is still in early development and is being updated nearly every day. There are certain features that do not work fully as intended and will improve with each update. If you have any bugs, suggestions, or questions, click into settings and then click the button Report Bug.
+
 ## Contents
 
 - [Features](#features)
