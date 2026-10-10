@@ -121,6 +121,8 @@ def _match(records, locations):
             by_key.setdefault(_key(r["name"]), []).append(r)
     out = {}
     for name, loc in locations.items():
+        if loc.category == "jump":
+            continue                     # a Gateway (jump point) has no services: its station does
         k = _key(name)
         cands = by_key.get(k) or (by_key.get(k[:-7]) if k.endswith("station") else None)  # "Checkmate Station"
         if not cands:

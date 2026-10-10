@@ -140,8 +140,8 @@ class Uex:
         terms = self.terminals(offline=offline)
         index = {}
         for name, loc in locations.items():
-            if loc.source != "db" or loc.category in ("lpoint", "om"):
-                continue
+            if loc.source != "db" or loc.category in ("lpoint", "om", "jump"):
+                continue                 # a Gateway has no terminals: "Pyro Gateway" is its station's
             index.setdefault((_key(name), loc.system), name)
         for alias, name in self.aliases.items():
             loc = locations.get(name)
@@ -267,7 +267,7 @@ def _similar(t, locations):
     bodies = {_key(b) for b in (t.get("moon_name"), t.get("planet_name")) if b}
     best = (0.0, None)
     for name, loc in locations.items():
-        if loc.system != sys_ or loc.source != "db" or loc.category in ("lpoint", "om", "cave", "wreck"):
+        if loc.system != sys_ or loc.source != "db" or loc.category in ("lpoint", "om", "cave", "wreck", "jump"):
             continue
         if bodies and loc.body and _key(loc.body) not in bodies:
             continue

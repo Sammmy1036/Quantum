@@ -102,6 +102,11 @@ SYSTEM_RE = re.compile(r"^(Stanton|Pyro|Nyx)", re.I)
 RE_HANGAR_SYS = re.compile(r"\b(?:LoadingPlatformManager|LandingArea)_[A-Za-z0-9_]*?_(Stanton|Pyro|Nyx)\b")
 
 
+def is_interstellar(code: str, name: str = "") -> bool:
+    """A contract that goes between systems: HaulCargo_AToB_Interstellar_..., or one whose name says so."""
+    return bool(re.search(r"interstellar|inter[-_ ]?system|cross[-_ ]?system", f"{code or ''} {name or ''}", re.I))
+
+
 def log_time(line: str) -> float | None:
     m = RE_TS.match(line)
     if not m:
@@ -168,8 +173,13 @@ class LocationMatcher:
 
     def __init__(self, names):
         self.keys = []
+        locs = names if hasattr(names, "values") else None
         for name in names:
+            if locs is not None and getattr(locs[name], "category", "") == "jump":
+                continue          # "Pyro Gateway" in a mission is the station, not the jump point
             variants = {name, re.sub(r"\s*\([^)]*\)\s*$", "", name)}
+            if re.search(r"Gateway Station", name):
+                variants |= {v.replace("Gateway Station", "Gateway") for v in list(variants)}
             for v in list(variants):
                 if v.lower().startswith("r&r "):
                     variants.add(v[4:])
@@ -213,14 +223,16 @@ class Contract:
     code: str = ""                  # internal contract name, e.g. FTL_Courier_Stanton_Hydrogen_Rank0
     system: str | None = None
     objectives: list[Objective] = field(default_factory=list)
-    departed_at: float | None = None   # left the pickup with the cargo ("out for delivery")
+    departed_at: float | None = None   # on the way to the drop-off with the cargo ("out for delivery")
+    departed_how: str = ""             # "route" (you set a route to the drop-off in game) or "manual" (in Quantum)
     closed_at: float | None = None
     pickup_code: str = ""              # location code where the cargo was collected
     turn_in: str = ""                  # collection contracts: the emporium to hand the items in at
     turn_in_how: str = ""              # "nearest" (picked by Quantum) or "manual" (picked by you)
     tracking_no: str = ""              # Quantum's own parcel-style number: 1SC + 15 random digits
 
-DEPART_FALLBACK_S = 180   # no departure signal? call it out for delivery 3 minutes after pickup
+# "Out for delivery" isn't guessed from time passing or from leaving the elevator: it starts when you set
+# your in-game route (quantum destination) to the drop-off, or press "Out for delivery" in Quantum.
 GENERIC_TOKENS = {"lawful", "semilawful", "unlawful", "port", "station", "stanton", "pyro", "nyx", "location",
                   "distributioncentre", "distribution", "centre", "center", "datamanager", "outpost"}
 
@@ -461,8 +473,8 @@ class ContractTracker(threading.Thread):
         elif collection and dropped:          # handing items in: you had them
             collected_at = min(o.done_at or c.updated_at for o in dropped)
         departed_at = c.departed_at
-        if collected_at and not departed_at and (c.status != "active" or now - collected_at > DEPART_FALLBACK_S):
-            departed_at = collected_at + DEPART_FALLBACK_S if c.status == "active" else (c.closed_at or collected_at)
+        if collected_at and not departed_at and c.status != "active":
+            departed_at = c.closed_at or collected_at          # finished: it went out at some point
         if c.status == "complete":
             stage = 3
         elif collected_at:
@@ -485,7 +497,7 @@ class ContractTracker(threading.Thread):
                 k = cargo.setdefault(m.group(3).strip(), [0, 0])
                 k[0] += int(m.group(2)) if o.status == "done" or c.status == "complete" else int(m.group(1))
                 k[1] += int(m.group(2))
-        return {"stage": stage, "collection": collection, "cancelled": c.status in ("failed", "abandoned"), "status": c.status,
+        return {"stage": stage, "collection": collection, "departed_how": c.departed_how if departed_at else "", "cancelled": c.status in ("failed", "abandoned"), "status": c.status,
                 "times": [c.accepted_at, collected_at, departed_at, c.closed_at if c.status == "complete" else None],
                 "picked": len(picked), "pickups": len(picks), "dropoffs": len(drops),
                 "delivered": len(dropped), "last_drop": last_drop,
@@ -540,12 +552,75 @@ class ContractTracker(threading.Thread):
             self._changed()
             return True
 
-    def mark_departed(self, cid, ts):
+    def mark_departed(self, cid, ts, how="manual"):
         with self.lock:
             c = self.contracts.get(cid)
             if c and c.status == "active" and not c.departed_at:
-                c.departed_at = ts
+                c.departed_at, c.departed_how = ts, how
                 self._changed()
+                return True
+            return False
+
+    def unmark_departed(self, cid):
+        """Back to "Collected" (an "Out for delivery" set by mistake)."""
+        with self.lock:
+            c = self.contracts.get(cid)
+            if c and c.status == "active" and c.departed_at:
+                c.departed_at, c.departed_how = None, ""
+                self._changed()
+                return True
+            return False
+
+    def _collected(self, c):
+        picks = [o for o in c.objectives if o.kind == "pickup"]
+        return bool(picks) and all(o.status == "done" for o in picks)
+
+    def _drop_targets(self, c):
+        """Where an active contract's cargo goes: (places, bodies, systems) of its open drop-offs."""
+        places, bodies, systems = set(), set(), set()
+        for o in c.objectives:
+            if o.kind != "dropoff" or o.status != "active":
+                continue
+            L = self.nav.locations.get(o.location) if o.location else None
+            if L is not None:
+                places.add(L.name)
+                if L.body:
+                    bodies.add(L.body)
+                if L.system:
+                    systems.add(L.system)
+            if o.marker:
+                if o.marker.get("body"):
+                    bodies.add(o.marker["body"])
+                if o.marker.get("near_place"):
+                    places.add(o.marker["near_place"])
+                if o.marker.get("system"):
+                    systems.add(o.marker["system"])
+        return places, bodies, systems
+
+    def _route_set(self, place, ts):
+        """You set an in-game route (quantum destination). For contracts with the cargo collected and not
+        out yet: out for delivery if that destination is the drop-off, its planet or moon, or the gateway
+        out of this system when the drop-off is in another one. A destination Quantum can't name yet
+        counts too: picking a route after loading up means you're on your way."""
+        changed = False
+        L = self.nav.locations.get(place) if place else None
+        here = self.where.get("system")
+        for c in self.contracts.values():
+            if c.status != "active" or c.departed_at or not self._collected(c):
+                continue
+            places, bodies, systems = self._drop_targets(c)
+            if L is None and place in self.nav.bodies:
+                ok = place in bodies
+            elif L is None:
+                ok = True
+            else:
+                ok = (L.name in places or (L.body and L.body in bodies)
+                      or (L.category in ("jump", "station") and bool(systems) and here not in systems
+                          and ("gateway" in L.name.lower() or "jump point" in L.name.lower())))
+            if ok:
+                c.departed_at, c.departed_how = ts, "route"
+                changed = True
+        return changed
 
     def set_objective_place(self, cid, oid, place):
         """The player tells us where an objective is. Also teaches the interior zone it sits in."""
@@ -601,14 +676,30 @@ class ContractTracker(threading.Thread):
                 return b.name
         return None
 
+    def _body_places(self, body):
+        """Known places on a body (db, on the surface), grouped once per change of the map: placing log
+        markers looks them up for every marker in every system, which made reading a long Game.log slow."""
+        key = (len(self.nav.locations), id(self.nav.locations))
+        if getattr(self, "_bp_key", None) != key:
+            idx = {}
+            for loc in self.nav.locations.values():
+                if loc.kind == "surface" and loc.source == "db" and loc.pos is not None and loc.body:
+                    idx.setdefault(loc.body, []).append(loc)
+            self._bp, self._bp_key = idx, key
+        return self._bp.get(body, ())
+
+    def _nearest_place(self, body, pos):
+        """(name, distance) of the closest known place on a body, preferring ones with a quantum marker
+        when two are about as close. (None, inf) if the body has none."""
+        best, bd = None, float("inf")
+        for loc in self._body_places(body):
+            d = math.dist(loc.pos, pos) - (500 if loc.qt else 0)
+            if d < bd:
+                best, bd = loc, d
+        return (best.name, math.dist(best.pos, pos)) if best else (None, float("inf"))
+
     def _nearest_place_dist(self, body, pos):
-        best = float("inf")
-        for loc in self.nav.locations.values():
-            if loc.body == body and loc.kind == "surface" and loc.source == "db":
-                d = math.dist(loc.pos, pos)
-                if d < best:
-                    best = d
-        return best
+        return min((math.dist(loc.pos, pos) for loc in self._body_places(body)), default=float("inf"))
 
     def _resolve_body(self, zone, pos, text, system, code=""):
         """Which planet/moon a marker's zone-local position belongs to.
@@ -653,16 +744,27 @@ class ContractTracker(threading.Thread):
     def _lpoint_station(self, pos, system):
         """Rest stops are logged relative to their Lagrange point, not a planet. If center+pos lands on a
         known station (within 5 km) at some L-point, return (lpoint, station, global position)."""
+        key = (len(self.nav.locations), id(self.nav.locations))
+        if getattr(self, "_lp_key", None) != key:          # L-points and stations, sorted once per map change
+            lps = [l for l in self.nav.locations.values() if l.category == "lpoint" and l.pos is not None]
+            sts = {}
+            for st in self.nav.locations.values():
+                if st.kind == "space" and st.category != "lpoint" and st.source == "db" and st.pos is not None:
+                    sts.setdefault(st.system, []).append(st)
+            self._lp_cache, self._lp_key = (lps, sts), key
+        lps, sts = self._lp_cache
+        r = math.sqrt(sum(v * v for v in pos))
         best = None
-        for lp in self.nav.locations.values():
-            if lp.category != "lpoint" or (system and lp.system != system):
+        for lp in lps:
+            if system and lp.system != system:
                 continue
             g = [lp.pos[i] + pos[i] for i in range(3)]
-            for st in self.nav.locations.values():
-                if st.kind == "space" and st.system == lp.system and st.category != "lpoint" and st.source == "db":
-                    d = math.dist(st.pos, g)
-                    if d < 5_000 and (best is None or d < best[3]):
-                        best = (lp.name, st.name, g, d)
+            for st in sts.get(lp.system, ()):
+                if abs(math.dist(st.pos, lp.pos) - r) > 5_000:     # can't be within 5 km of the marker
+                    continue
+                d = math.dist(st.pos, g)
+                if d < 5_000 and (best is None or d < best[3]):
+                    best = (lp.name, st.name, g, d)
         return best[:3] if best else None
 
     def _any_body_has_place(self, pos, system):
@@ -776,16 +878,25 @@ class ContractTracker(threading.Thread):
                         o.location, o.found = sp[1], "marker"
                     changed = True
                     continue
-                r0 = self.nav.bodies[m["body"]].radius_m
-                for b in self.nav.bodies.values():
-                    if b.name != m["body"] and b.system == m["system"] and abs(b.radius_m - r0) < 1_000 \
-                            and self._nearest_place_dist(b.name, m["pos"]) <= 3_000:
-                        m["body"] = b.name
-                        if o.found != "manual":
-                            o.location = self._match_location(o)
-                            o.found = "marker" if o.location else ""
+                # Another body (in any system: interstellar contracts end in another one) with a known
+                # place right under the marker is where it really is.
+                r = math.sqrt(sum(v * v for v in m["pos"]))
+                fits = [b for b in self.nav.bodies.values() if b.name != m["body"] and b.kind != "star" and b.radius_m > 0
+                        and b.radius_m * 0.97 - 5_000 <= r <= (3 * b.om_radius_m if b.om_radius_m else 1.6 * b.radius_m)]
+                hit = min(((self._nearest_place_dist(b.name, m["pos"]), b) for b in fits), default=None, key=lambda x: x[0])
+                if hit and hit[0] <= 3_000:
+                    m["body"], m["system"] = hit[1].name, hit[1].system
+                    m.pop("near_place", None), m.pop("near_km", None)
+                    if o.found != "manual":
+                        o.location = self._match_location(o)
+                        o.found = "marker" if o.location else ""
+                    changed = True
+                    continue
+                if not o.location and not m.get("near_place"):
+                    near, d = self._nearest_place(m["body"], m["pos"])
+                    if near and d <= 60_000:
+                        m["near_place"], m["near_km"] = near, round(d / 1000, 1)
                         changed = True
-                        break
         return changed
 
     LEO = {"HUR": "Everus Harbor", "CRU": "Seraphim Station", "ARC": "Baijini Point", "MIC": "Port Tressler"}
@@ -1006,9 +1117,6 @@ class ContractTracker(threading.Thread):
                 self.cur["place"] = self._resolve_loc(cur.get("landing"), cur["id"])
             if place:
                 self._learn_after_jump(place, ts, "named location")
-            for c in self.contracts.values():   # somewhere new with the cargo: out for delivery
-                if c.status == "active" and not c.departed_at and c.pickup_code and code != c.pickup_code:
-                    c.departed_at = ts
             return True
         return False
 
@@ -1075,6 +1183,7 @@ class ContractTracker(threading.Thread):
                        "start": (self.qt or {}).get("start") if (self.qt or {}).get("dest") == m.group(1) else None,
                        "start_body": None, "place": None, "learned": False}
             self.qt["place"] = self.dest_place(m.group(1))
+            self._route_set(self.qt["place"], ts)
             return True
         if m := RE_QT_START.search(line):
             start = m.group(1).strip()
@@ -1115,9 +1224,6 @@ class ContractTracker(threading.Thread):
             if old_landing == 0:
                 return False                      # already in flight: nothing new
             self.cur = {"id": loc, "landing": 0, "at": ts, "place": None, "left": prev}
-            for c in self.contracts.values():   # took off with the cargo: out for delivery
-                if c.status == "active" and not c.departed_at and c.pickup_code:
-                    c.departed_at = ts
             return True
         place = self._resolve_loc(landing, loc)
         spawned = bool(self.cur and self.cur.get("spawned") and ts - self.cur.get("at", 0) < 60)
@@ -1288,16 +1394,25 @@ class ContractTracker(threading.Thread):
         if o is None:
             o = Objective(oid, "Objective", "active", objective_kind("", oid))
             c.objectives.append(o)
+        # Which system to look in. The contract's own system is where you took it; an interstellar
+        # contract's drop-off is in another one, so every system is searched for those. And if nothing
+        # in the contract's system has a known place under the marker but another system does, that's
+        # where it is (a cross-system contract the code doesn't call interstellar).
+        msys = c.system
+        far = math.sqrt(sum(v * v for v in pos)) >= 20_000
+        if is_interstellar(c.code or code, c.name):
+            msys = None
+        elif far and msys and not self._any_body_has_place(pos, msys) and self._any_body_has_place(pos, None):
+            msys = None
         known = self.zone_bodies.get(zone, "")
-        if known.startswith("@") or (not known and math.sqrt(sum(v * v for v in pos)) >= 20_000
-                                    and not self._any_body_has_place(pos, c.system)):
-            sp = self._space_marker(zone, pos, c.system)
+        if known.startswith("@") or (not known and far and not self._any_body_has_place(pos, msys)):
+            sp = self._space_marker(zone, pos, msys)
             if sp:
                 o.marker = sp[0]
                 if o.found != "manual":
                     o.location, o.found = sp[1], "marker"
                 return True
-        body = self._resolve_body(zone, pos, o.text + " " + c.name, c.system, c.code or code)
+        body = self._resolve_body(zone, pos, o.text + " " + c.name, msys, c.code or code)
         if body is not None and body.startswith("@"):
             return False
         if body is None and math.sqrt(sum(v * v for v in pos)) >= 20_000:
@@ -1316,6 +1431,12 @@ class ContractTracker(threading.Thread):
         if o.found != "manual":
             o.location = self._match_location(o)
             o.found = "marker" if o.location else ""
+        if not o.location:
+            # Not on a known place: name the nearest one so the stop reads "near Canard View" rather
+            # than as bare coordinates. The stop itself stays at the exact marker.
+            near, d = self._nearest_place(body, pos)
+            if near and d <= 60_000:
+                o.marker["near_place"], o.marker["near_km"] = near, round(d / 1000, 1)
         if o.zone and o.location:           # this interior belongs to that place: remember it
             self.zone_places[o.zone] = o.location
             self._propagate_zones()

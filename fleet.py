@@ -424,6 +424,103 @@ class Wiki:
                 return data
         return None
 
+    # ------------------------------------------------------------ items by kind
+    # The Star Citizen Wiki's own blocks of numbers per kind of part; flattened into rows for the
+    # Components tab when the game-file numbers don't have the part.
+    STAT_BLOCKS = ("mining_laser", "mining_module", "flight_controller", "cooler", "power_plant", "radar",
+                   "quantum_drive", "shield", "vehicle_weapon")
+    SKIP_STATS = {"uuid", "class_name", "type", "name", "description", "modifiers", "ports", "tags", "states"}
+
+    @classmethod
+    def stat_rows(cls, d, limit=24):
+        """[[label, value], ...] from the wiki's blocks of numbers for a part (two levels deep)."""
+        rows = []
+
+        def label(k):
+            t = k.replace("_", " ").strip()
+            t = t[:1].upper() + t[1:]
+            return re.sub(r"\b[Ee]m\b", "EM", re.sub(r"\b[Ii]r\b", "IR", t))
+
+        def add(prefix, key, v):
+            if isinstance(v, bool) or v is None or v == "" or key in cls.SKIP_STATS:
+                return
+            if isinstance(v, (int, float)):
+                v = round(v, 3) if isinstance(v, float) else v
+            elif not isinstance(v, str) or len(v) > 40:
+                return
+            rows.append([label(f"{prefix} {key}".strip()), v])
+        for block in cls.STAT_BLOCKS:
+            b = d.get(block)
+            if not isinstance(b, dict):
+                continue
+            for k, v in b.items():
+                if isinstance(v, dict):
+                    for k2, v2 in v.items():
+                        if not isinstance(v2, (dict, list)):
+                            add(k if k not in ("values", "data") else "", k2, v2)
+                else:
+                    add("", k, v)
+        mods = (d.get("mining_laser") or {}).get("modifiers") if isinstance(d.get("mining_laser"), dict) else None
+        if isinstance(mods, (list, dict)):
+            for m in (mods.values() if isinstance(mods, dict) else mods):
+                if isinstance(m, dict) and (m.get("name") or m.get("display_name")) and m.get("value") is not None:
+                    rows.append([str(m.get("display_name") or m.get("name")), m["value"]])
+        seen, out = set(), []
+        for r in rows:
+            if r[0] not in seen:
+                seen.add(r[0])
+                out.append(r)
+        return out[:limit]
+
+    def items_of_type(self, wtype, max_pages=40):
+        """Every part of one kind on the Star Citizen Wiki ("WeaponMining", "FlightController", "Cooler"...),
+        trimmed to what the Components tab needs. Cached for a day; an old copy is used if the wiki can't
+        be reached."""
+        f = self.dir / f"wiki_type_{re.sub(r'[^A-Za-z0-9_-]+', '_', wtype)}.json"
+        old = None
+        if f.exists():
+            try:
+                old = json.loads(f.read_text(encoding="utf-8"))
+                if time.time() - f.stat().st_mtime < 86400:
+                    return old
+            except Exception:
+                old = None
+        out, page = [], 1
+        try:
+            while page <= max_pages:
+                url = "https://api.star-citizen.wiki/api/items?" + urllib.parse.urlencode(
+                    {"filter[type]": wtype, "page[number]": page, "page[size]": 100})
+                r = _get(url, timeout=30)
+                data = r.get("data") or []
+                for d in data:
+                    if (d.get("type") or wtype) != wtype:
+                        continue
+                    mk = d.get("manufacturer")
+                    prices = ((d.get("uex_prices") or {}).get("purchase") or []) if isinstance(d.get("uex_prices"), dict) else []
+                    imgs = d.get("images") or []
+                    out.append({"uuid": d.get("uuid"), "name": d.get("name"), "class_name": d.get("class_name") or "",
+                                "size": d.get("size"), "grade": d.get("grade"), "class": d.get("class"),
+                                "maker": (mk.get("name") if isinstance(mk, dict) else mk) or "",
+                                "base": bool(d.get("is_base_variant")), "web_url": d.get("web_url") or d.get("link"),
+                                "image": (imgs[0].get("url") if imgs and isinstance(imgs[0], dict) else None),
+                                "stats": self.stat_rows(d),
+                                "prices": [{"terminal_id": p.get("terminal_id"), "terminal": p.get("terminal_name"),
+                                            "price": p.get("price_buy"), "updated": p.get("date_updated"),
+                                            "where": (p.get("starmap_location") or {}).get("name"),
+                                            "system": (p.get("starmap_location") or {}).get("star_system_name")}
+                                           for p in prices if isinstance(p, dict) and p.get("price_buy")]})
+                last = (r.get("meta") or {}).get("last_page") or page
+                if not data or page >= last:
+                    break
+                page += 1
+        except Exception:
+            if old is not None:
+                return old
+            raise
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(out), encoding="utf-8")
+        return out
+
     # ------------------------------------------------------------ ship loadouts
     def vehicle_summary(self, wait=False):
         """{key: {medical_beds, medical_tier, cargo}} for every ship on the wiki, keyed by uuid, name and slug
@@ -507,6 +604,7 @@ class Wiki:
             return None if not name or "PLACEHOLDER" in name else {
                 "name": name, "grade": it.get("grade"), "class": it.get("class"), "size": it.get("size"),
                 "maker": (it.get("manufacturer") or {}).get("name"), "uuid": it.get("uuid"),
+                "class_name": it.get("class_name") or "",
                 "stats": item_stats(it)}
 
         def walk(ports, path, under=""):
@@ -589,6 +687,29 @@ def _dig(d, *path):
             return None
         d = d.get(k)
     return d
+
+
+def flight_speeds(it):
+    """(scm, max) speed in m/s from a wiki item record of a flight controller or flight blade; the field
+    names are searched for, as the wiki's layout for these has changed between versions."""
+    found = {}
+
+    def walk(d, depth=0):
+        if not isinstance(d, dict) or depth > 4:
+            return
+        for k, v in d.items():
+            kl = k.lower()
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0:
+                if "scm" in kl and "speed" in kl and "boost" not in kl and "scm" not in found:
+                    found["scm"] = v
+                elif kl in ("max_speed", "maximum_speed", "max", "speed_max") and "max" not in found:
+                    found["max"] = v
+                elif kl == "scm" and "scm" not in found:
+                    found["scm"] = v
+            elif isinstance(v, dict):
+                walk(v, depth + 1)
+    walk((it or {}).get("flight_controller") or (it or {}).get("ifcs") or {})
+    return found.get("scm"), found.get("max")
 
 
 def item_stats(it):

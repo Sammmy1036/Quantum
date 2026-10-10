@@ -86,7 +86,12 @@ def great_circle(lat1, lon1, lat2, lon2, radius) -> tuple[float, float]:
 CITIES = {"lorville", "area 18", "area18", "new babbage", "orison", "grimhex", "grim hex"}
 
 # The game data lists Delamar as a planet, but it's a moon-sized asteroid in Nyx's Glaciem Ring.
-BODY_KIND = {"Delamar": "asteroid"}
+BODY_KIND = {"Delamar": "asteroid", "Pyro4": "planet"}
+# Body centers the community data has wrong. Pyro IV and Fuego lost their Y coordinate (they came out
+# ~40 Gm from Pyro V, which Fuego orbits). These are the game-file positions (Star Citizen Wiki
+# starmap data) turned into the in-game frame: that data's Pyro is rotated 85.23 deg from the game's,
+# checked against a /showlocation at Stanton Gateway and against Pyro I, Monox, Bloom and Pyro V.
+BODY_CENTER = {"Pyro4": (-3704137009.2, -43071659047.6, 0.0), "Fuego": (-3780111838.0, -42827195804.3, 0.0)}
 # Planets with no surface you can reach in the game yet (all three of Nyx's). With nowhere to land,
 # there's no /showlocation to line them up from, so they get no alignment.
 NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
@@ -107,6 +112,9 @@ def normalize(db) -> bool:
         kind = BODY_KIND.get(b.name)
         if kind and b.kind != kind:
             b.kind, changed = kind, True
+        center = BODY_CENTER.get(b.name)
+        if center and dist(tuple(b.center), center) > 1_000_000:
+            b.center, changed = center, True
         if not can_align(b) and b.kind != "star" and (b.calibrated or b.calibration_quality):
             if b.community_offset_deg is not None:
                 b.rotation_offset_deg = b.community_offset_deg

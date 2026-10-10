@@ -36,6 +36,7 @@ import updater
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
+import gamelog
 from nav_core import Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
 import nav_core
 import missions_wiki
@@ -103,21 +104,59 @@ FLYING_ADDONS = ("command module",)
 # once UEX lists one with the same name. The id is far outside UEX's range, so it never clashes.
 EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake Command Module", "slug": "command-module",
                    "company_name": "Drake Interplanetary", "scu": 0, "crew": "1,2", "pad_type": "S", "is_spaceship": 1,
-                   "is_addon": 1, "is_concept": 0, "url_store": None, "url_photo": None, "quantum_extra": True}]
+                   "is_addon": 1, "is_concept": 0, "url_store": None, "url_photo": None, "quantum_extra": True},
+                  # The new Constellation generation, in game since 4.x (the older ones are the Mk IV now). Until
+                  # UEX lists them; then UEX's own entries take over. Centaurus: 240 SCU, crew 4, size 5 (Sam, in game).
+                  {"id": 990010, "name": "Constellation Mk V Andromeda", "name_full": "RSI Constellation Mk V Andromeda",
+                   "slug": "constellation-mk-v-andromeda", "company_name": "Roberts Space Industries", "scu": 0,
+                   "crew": "", "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "url_store": None,
+                   "url_photo": None, "quantum_extra": True},
+                  {"id": 990011, "name": "Constellation Mk V Centaurus", "name_full": "RSI Constellation Mk V Centaurus",
+                   "slug": "constellation-mk-v-centaurus", "company_name": "Roberts Space Industries", "scu": 240,
+                   "crew": "4", "size": 5, "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0,
+                   "url_store": None, "url_photo": None, "quantum_extra": True}]
+# Ships UEX still flags as concepts that are flying in game.
+IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"})
+
+
+def is_concept(v):
+    """A ship that isn't in the game yet (UEX's flag, unless we know it's flying). Word order doesn't
+    matter ("Constellation Andromeda Mk V" is the same ship)."""
+    if not v.get("is_concept"):
+        return False
+    words = set(re.findall(r"[a-z0-9]+", f"{v.get('name') or ''} {v.get('name_full') or ''}".lower()))
+    return not any(w <= words for w in IN_GAME)
 
 
 def listed_vehicle(v):
     """Shown in Vehicles, My Fleet and the trade route ship list: in the game, and a ship (not a module)."""
-    if v.get("is_concept"):
+    if is_concept(v):
         return False
     return not v.get("is_addon") or any(a in str(v.get("name_full") or v.get("name") or "").lower() for a in FLYING_ADDONS)
+
+
+# The Constellation line was renamed in game when the Mk V arrived: the older ones are the Mk IV now
+# ("Constellation Mk IV Andromeda"). UEX and the wiki may still use the old names, so both are searchable.
+MK_ALIASES = ((r"^(?:RSI\s+)?Constellation (Andromeda|Aquila|Phoenix(?: Emerald)?|Taurus)$", "Constellation Mk IV {0}"),)
+
+
+def vehicle_aka(v):
+    """Other names a ship goes by (its current in-game name when UEX still uses an old one), or ""."""
+    name = str(v.get("name") or "")
+    for rx, fmt in MK_ALIASES:
+        m = re.match(rx, name, re.I)
+        if m:
+            return fmt.format(*m.groups())
+    return ""
 
 
 def with_extra_vehicles(rows):
     """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet."""
     have = {str(v.get(k) or "").strip().lower() for v in rows for k in ("name", "name_full")}
+    words = [set(re.findall(r"[a-z0-9]+", h)) for h in have]
     return list(rows) + [dict(x) for x in EXTRA_VEHICLES if x["name"].lower() not in have and x["name_full"].lower() not in have
-                         and not any(x["name"].lower() in h for h in have)]
+                         and not any(x["name"].lower() in h for h in have)
+                         and not any(set(re.findall(r"[a-z0-9]+", x["name"].lower())) <= w for w in words)]
 
 
 def store_url(v):
@@ -183,6 +222,7 @@ class Api:
         self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
         self._uex_amen = {}
         self._wikiapi = fleet.Wiki(HERE / "uex_cache")
+        self._part_images = {}               # wiki page title (lowercase) -> the wiki API's picture of that part
         self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
@@ -587,8 +627,11 @@ class Api:
                 "city": bool(anchor and classify(anchor.name, anchor.category) == "city")}
 
     def _match_services(self):
-        out = services.match(self._service_records, {**self._unplaced, **self._db.locations})
+        locs = {**self._unplaced, **self._db.locations}
+        out = services.match(self._service_records, locs)
         for name, amen in self._uex_amen.items():      # stations the wiki data has nothing for
+            if getattr(locs.get(name), "category", "") == "jump":
+                continue                                # Gateways (jump points) have no services
             if amen and (name not in out or not out[name]["amenities"]):
                 out[name] = dict(out.get(name) or {"name": name, "description": "", "jurisdiction": "",
                                                    "url": "", "version": ""}, amenities=amen, uex=True)
@@ -604,8 +647,8 @@ class Api:
             self._drop_hidden()
             return {}
         locs = self._db.locations
-        keys = {(services._key(n), l.system): n for n, l in locs.items()
-                if l.source == "db" and l.category not in ("lpoint", "om")}
+        keys = {(services._key(n), l.system): n for n, l in locs.items()     # a Gateway is never a UEX station
+                if l.source == "db" and l.category not in ("lpoint", "om", "jump")}
         renamed, aliases, amen = {}, {}, {}
         for st in rows:
             sysn, name = st.get("star_system_name"), (st.get("name") or "").strip()
@@ -683,7 +726,7 @@ class Api:
             l = learned.get(name)
             if l and l.get("system") == sysn and (l.get("local") or l.get("pos")):
                 if l.get("local") and l.get("body") in bodies:
-                    loc = Location(name, "surface", tuple(l["local"]), l["body"], source="db", system=sysn,
+                    loc = Location(name, "surface", learned_local(self._db, l), l["body"], source="db", system=sysn,
                                    qt=True, category="station" if station else "outpost",
                                    notes=f"From UEX{where}. Position from " + ("Quantum datarunners' /showlocation" if l.get("community") else "your /showlocation"))
                 else:
@@ -752,6 +795,7 @@ class Api:
     def withdraw_place(self, name):
         """You set a station's position by mistake: take your reading back from the Quantum server and
         off your map. (A position other datarunners agreed on stays on the map from their readings.)"""
+        name = gateways.learn_key(name)
         r = self._community.withdraw_place(name, self._dr_cfg().get("username"))
         if r.get("status") not in ("ok", "off"):
             return {"ok": False, "error": "That reading was sent from another connection, so it can't be withdrawn from here"
@@ -764,9 +808,11 @@ class Api:
             if name in unsent:
                 unsent.remove(name)
             self._community.place_results.pop(name, None)
-            placeable = gateways.system_of(name) or name in getattr(self, "_uex_pending", {})
-            if placeable and name in self._db.locations and self._db.locations[name].source == "db":
-                self._db.locations.pop(name)            # put back on "Not on the map yet" by the re-apply below
+            plain = name[len(gateways.JUMP_PREFIX):] if name.startswith(gateways.JUMP_PREFIX) else name
+            placeable = gateways.system_of(plain) or plain in getattr(self, "_uex_pending", {})
+            if placeable and plain in self._db.locations and self._db.locations[plain].source == "db" \
+                    and plain not in gateways.JUMP_POINTS and plain not in gateways.GATEWAYS:
+                self._db.locations.pop(plain)            # put back on "Not on the map yet" by the re-apply below
             ren, self._unplaced = gateways.apply(self._db, self._learned_places())
             self._renamed.update(ren)
             self._apply_uex_stations(offline=True)
@@ -823,8 +869,21 @@ class Api:
         self._tracker.stop()
 
     # ------------------------------------------------------------ static data
+    def _refresh_learned_locals(self):
+        """Places on a planet you (or other datarunners) placed with /showlocation: keep them where the
+        reading was when the planet's alignment changes (an alignment, a reset, the community's)."""
+        key = tuple(sorted((b.name, round(b.rotation_offset_deg, 6)) for b in self._db.bodies.values()))
+        if key == getattr(self, "_learned_key", None):
+            return
+        self._learned_key = key
+        for name, l in self._learned_places().items():
+            loc = self._db.locations.get(name)
+            if loc is not None and loc.kind == "surface" and l.get("body") == loc.body and l.get("local"):
+                loc.pos = learned_local(self._db, l)
+
     def get_static(self):
         with self._lock:
+            self._refresh_learned_locals()
             bodies = sorted(self._db.bodies.values(), key=lambda b: -b.radius_m)
             out_b = []
             for b in bodies:
@@ -838,11 +897,19 @@ class Api:
                               "alignable": can_align(b),
                               "parent": parent.name if parent and b.kind != "star" else None})
             hidden_keys = self._hidden_keys()
+            unverified = gateways.unverified(self._learned_places())     # "Check its position" jobs
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
                      "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
-                     "to": gateways.leads_to(l.name), "unplaced": l.pos is None,
+                     # "to" only on the jump points themselves, so the UI doesn't treat the gateway
+                     # station as a wormhole; the station gets "gate_to" and its jump point's name.
+                     "to": gateways.leads_to(l.name) if l.name in gateways.JUMP_POINTS
+                     or (l.name not in gateways.GATEWAYS and classify(l.name, l.category) == "jump") else None,
+                     "gate_to": gateways.leads_to(l.name) if l.name in gateways.GATEWAYS else None,
+                     "jump_point": gateways.jump_point_of(l.name), "station": gateways.station_of(l.name),
+                     "unplaced": l.pos is None,
                      "placeable": gateways.system_of(l.name) is not None or l.name in getattr(self, "_uex_pending", {}),
+                     "verify": l.pos is not None and l.name in unverified,
                      "near": gateways.near_body(l.name),
                      "pad_shared": (getattr(self, "_community_pads", None) or {}).get(l.name),
                      **({"amen": self._services[l.name]["amenities"],
@@ -1202,16 +1269,8 @@ class Api:
             tr = c.get("tracking")
             if not tr or c["status"] != "active":
                 continue
-            # Left the pickup with the cargo? Then it's out for delivery.
-            # (real /showlocation readings only: a position from the log is just the place's own spot)
-            if tr["stage"] == 1 and self._player and tr["times"][1] and (self._player_t or 0) > tr["times"][1]:
-                for o in c["objectives"]:
-                    if o["kind"] == "pickup":
-                        g, sysname, _ = self._objective_global(o, tc)
-                        if g and (sysname != self._player_sys or dist(g, self._player) > 3000):
-                            self._tracker.mark_departed(c["id"], self._player_t)
-                            tr["stage"], tr["times"][2] = 2, self._player_t
-                        break
+            # "Out for delivery" comes from you: a route set in game to the drop-off (Game.log), Guide on
+            # the drop-off here, or the "Out for delivery" button. Moving away from the elevator doesn't.
             # How far is the drop-off?
             drop = next((o for o in c["objectives"] if o["kind"] == "dropoff" and o["status"] == "active"), None)
             if drop:
@@ -1592,7 +1651,7 @@ class Api:
     def place_result(self, name):
         """What the server said about the station position you just sent: live for everyone (trusted, or a
         second reading agreed), waiting for a second reading, still sending, or unreachable."""
-        return self._community.place_results.get(name) or {"state": "none"}
+        return self._community.place_results.get(gateways.learn_key(name)) or {"state": "none"}
 
     PLACES_SYNC_EVERY = 10 * 60          # s: how often shared station positions are fetched again
 
@@ -1701,11 +1760,14 @@ class Api:
             if self._player_sys != system:
                 return {"ok": False, "error": f"Your last reading is in {self._player_sys}, not {system}"}
             body = self._db.body_near(self._player, system)
-            if body and name in gateways.GATEWAYS:            # gateways are far out; Wikelo's orbit planets
-                return {"ok": False, "error": f"That reading is near {body.name}, not at the gateway. "
-                                              "Take it while docked at the station"}
-            gateways.save_learned(PLACES_PATH, name, system, self._player)
-            self._share_place(name)
+            jump = name in gateways.JUMP_POINTS
+            if body and (name in gateways.GATEWAYS or jump):  # gateways are far out; Wikelo's orbit planets
+                return {"ok": False, "error": f"That reading is near {body.name}, not at the {'Gateway' if jump else 'station'}. "
+                                              + ("Take it right at the jump point, before you fly in" if jump
+                                                 else "Take it while docked at the station")}
+            key = gateways.learn_key(name)
+            gateways.save_learned(PLACES_PATH, key, system, self._player)
+            self._share_place(key)
             _, self._unplaced = gateways.apply(self._db, self._learned_places())
             self._apply_uex_stations(offline=True)          # keep the UEX-only places alongside
             self._db.save()
@@ -1726,7 +1788,10 @@ class Api:
             near = self._db.body_near(self._player, system)
             if not b or not near or near.name != b.name:
                 return {"ok": False, "error": f"That reading isn't on {cur.body}. Take it while you're at {name}"}
+            # The reading itself is kept too (global position and time): the spot on the planet is worked
+            # out from it with the planet's current alignment, so lining the planet up later doesn't move it.
             places[name] = {"system": system, "body": b.name, "local": list(b.to_local(self._player, self._player_t)),
+                            "offset": b.rotation_offset_deg, "reading": {"pos": list(self._player), "t": self._player_t},
                             "at": time.time()}
         else:
             places[name] = {"system": system, "pos": list(self._player), "at": time.time()}
@@ -3099,6 +3164,93 @@ class Api:
         self._save_settings()
         return out
 
+    def _align_target(self, body):
+        """For a /showlocation on `body`: the known place you're at, from what the log says (where you
+        landed or docked) or else from the reading's latitude and height, which don't depend on the
+        planet's rotation. -> (place, mode, lat_tol, alt_tol) or (None, why)."""
+        w = self._tracker.where or {}
+        anchor_name = self._tracker.place_for_code(w["code"]) if w.get("code") and \
+            abs((w.get("at") or 0) - (self._player_t or 0)) < 1800 else None
+        anchor = self._db.locations.get(anchor_name) if anchor_name else None
+        if anchor is not None and anchor.kind == "surface" and anchor.body == body.name:
+            kind = classify(anchor.name, anchor.category)
+            if kind == "city" or "spaceport" in anchor.name.lower():
+                city = next((c for c in CITY_ANCHOR if c.lower() in anchor.name.lower()
+                             or anchor.name == CITY_ANCHOR[c]), None)
+                return self._db.locations.get(CITY_ANCHOR.get(city, ""), anchor), "hangar", 0.5, 6_000
+            return anchor, "place", 0.3, 15_000
+        lat_p, _, alt_p = body.lat_lon_alt(body.to_local(self._player, self._player_t))
+        matches = []
+        for loc in self._db.locations.values():
+            if loc.source != "db" or loc.kind != "surface" or loc.body != body.name or loc.pos is None:
+                continue
+            lat, _, alt = body.lat_lon_alt(loc.pos)
+            score = max(abs(lat - lat_p) / 0.02, abs(alt - alt_p) / (3_000 if alt > 20_000 else 600))
+            if score < 1.0:
+                matches.append((score, loc))
+        if not matches:
+            return None, (f"Your reading isn't at any place Quantum knows on {body.name}. Land at an outpost, "
+                          "city or landing zone that's on the map, then take another /showlocation")
+        matches.sort(key=lambda m: m[0])
+        if any(dist(m[1].pos, matches[0][1].pos) > 5_000 for m in matches[1:]):
+            names = ", ".join(sorted({m[1].name for m in matches[:4]}))
+            return None, (f"That reading fits more than one place ({names}). Open the card of the place you're "
+                          "at on the map and use \"I'm here: calibrate\", or land somewhere else")
+        return matches[0][1], "place", 0.3, 15_000
+
+    def dr_align_reading(self, body_name, arrived_ms=0):
+        """Planet alignment job, steps 3 and 4: a /showlocation taken on that planet or moon after you
+        pressed "I've arrived", and the place it's at. -> {ok, place, age} or {ok: False, why}."""
+        with self._lock:
+            body = self._db.bodies.get(body_name)
+            if not body:
+                return {"ok": False, "why": "unknown"}
+            if not self._player or not self._player_t:
+                return {"ok": False, "why": "none"}
+            age = time.time() - self._player_t
+            if (arrived_ms and self._player_t * 1000 < arrived_ms - 2000) or age > 900:
+                return {"ok": False, "why": "old"}
+            if self._player_sys != body.system:
+                return {"ok": False, "why": f"That reading is in {self._player_sys}, not {body.system}."}
+            near = self._db.body_near(self._player, self._player_sys)
+            if near is not body:
+                return {"ok": False, "why": f"That reading isn't on {body.name}"
+                                            f"{f' (it is near {near.name})' if near else ''}. Take it once you've landed there."}
+            lat, _, alt = body.lat_lon_alt(body.to_local(self._player, self._player_t))
+            if alt > 3_000:
+                return {"ok": False, "why": f"You're {alt / 1000:.1f} km up. Land first, then take the /showlocation."}
+            tgt = self._align_target(body)
+            if tgt[0] is None:
+                return {"ok": False, "why": tgt[1]}
+            return {"ok": True, "place": tgt[0].name, "age": age}
+
+    def dr_align_submit(self, body_name, arrived_ms=0):
+        """Planet alignment job, step 5: line the planet up from your reading and send it, even if it was
+        lined up before (an earlier version, or by the community): this is the alignment for this build."""
+        with self._lock:
+            chk = self.dr_align_reading(body_name, arrived_ms)
+            if not chk.get("ok"):
+                why = chk.get("why")
+                return {"ok": False, "error": {"none": "Type /showlocation in game first", "old": "Take a new /showlocation: "
+                        "the last one is from before you arrived"}.get(why, why)}
+            if not self._tracker.build:
+                return {"ok": False, "error": "Quantum hasn't read the game version from Game.log yet. Give it a moment and try again"}
+            body = self._db.bodies[body_name]
+            target, mode, lat_tol, alt_tol = self._align_target(body)
+            res = self._db.auto_calibrate(body.name, target, self._player, self._player_t, lat_tol, alt_tol, mode)
+            if not res.get("ok"):
+                return {"ok": False, "error": f"Your reading doesn't line up with {target.name} (latitude or height is off). "
+                                              "Stand at the place itself and take another /showlocation"}
+            self._record_cal("manual", body.name, target.name, res["correction"])
+            self._calibration = {"body": body.name, "place": target.name, "correction": res["correction"],
+                                 "at": time.time(), "quality": mode}
+            self._settings["last_calibration"] = self._calibration
+            self._static_version += 1
+            self._save_settings()
+            user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+            return {"ok": True, "place": target.name, "correction": res["correction"], "shared": bool(user and self._community.url),
+                    "note": None if user else "Saved on your map. Add your UEX Secret Key in Settings so alignments are shared"}
+
     def dr_align_jobs(self):
         """Planet alignment jobs: every planet and moon you can land on, for this game build: agreed (live for
         everyone), waiting for a second alignment, aligned by you, or still to do."""
@@ -3146,7 +3298,7 @@ class Api:
             jobs = []
             vehicles, _ = self._uex.get("vehicles")
             for v in vehicles:
-                if v.get("is_concept") or v.get("is_addon") or v.get("url_photo"):
+                if is_concept(v) or v.get("is_addon") or v.get("url_photo"):
                     continue
                 name = v.get("name_full") or v.get("name")
                 if name and self._pic_key(name) not in mine:
@@ -3355,7 +3507,9 @@ class Api:
             wiki = self._wikiapi.vehicle_summary(wait=True)    # medical beds and cargo grid, from the wiki
             out = []
             for v in vehicles:
-                if not listed_vehicle(v):                # concepts, and add-on modules that aren't ships
+                # Concepts are shown too (flagged), so a ship you've pledged for, like a new Constellation
+                # Mk V, can be looked up; add-on modules that aren't ships stay out.
+                if not listed_vehicle(v) and not (is_concept(v) and not v.get("is_addon")):
                     continue
                 sp = spots.get(v["id"], {"buy": [], "rent": []})
                 for k in ("buy", "rent"):
@@ -3366,7 +3520,7 @@ class Api:
                     "pad": v.get("pad_type"), "ground": bool(v.get("is_ground_vehicle")),
                     "roles": self._vehicle_roles(v, wiki),
                     "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
-                    "addon": bool(v.get("is_addon")),
+                    "addon": bool(v.get("is_addon")), "concept": is_concept(v), "aka": vehicle_aka(v),
                     "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"]})
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
@@ -3396,7 +3550,8 @@ class Api:
         else one a Quantum user sent in and you approved."""
         key = self._pic_key(ref)
         over = self._community.photo_overrides().get(key)
-        return over or self._wiki_image(ref) or self._community.photos().get(key)
+        return over or self._wiki_image(ref) or self._community.photos().get(key) or \
+            self._part_images.get(str(ref or "").lower())
 
     def _wiki_image(self, ref):
         """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
@@ -3435,6 +3590,98 @@ class Api:
 
     # Categories UEX lists that hold no ship components (whole ships are on the Vehicles tab)
     COMPONENT_EMPTY = ("vehicle",)
+
+    # Parts UEX doesn't list yet (new ones like the RSI Discovery's cooler, power plants and radar, the
+    # Helix mining lasers, flight blades) come from the Star Citizen Wiki, which reads the game files:
+    # (words in a UEX category's name, the wiki's item type, a test on the part's class name or None).
+    # Kinds UEX has no category for at all get one of their own (WIKI_ONLY).
+    WIKI_KINDS = (("mining laser", "WeaponMining", None),
+                  ("flight blade", "FlightController", r"_blade_(spd|hnd)$|_flight_blade_(spd|hnd)$"),
+                  ("cooler", "Cooler", None), ("power plant", "PowerPlant", None), ("radar", "Radar", None),
+                  ("quantum drive", "QuantumDrive", None), ("shield", "Shield", None))
+    WIKI_ONLY = {"WeaponMining": ("Mining Lasers", "Mining"), "FlightController": ("Flight Blades", "Systems")}
+
+    @classmethod
+    def _wiki_kind(cls, category_name):
+        nm = (category_name or "").lower()
+        if any(k in nm for k in ("rack", "turret", "module", "gadget", "mount")) and "mining laser" not in nm:
+            return None
+        return next(((t, test) for words, t, test in cls.WIKI_KINDS if words in nm), None)
+
+    @staticmethod
+    def _blade_ship(class_name):
+        """'controller_flight_aegs_gladius_blade_spd' -> ('Aegis Gladius', 'Speed')."""
+        m = re.match(r"(?i)controller_flight_([a-z]{4})_(.+?)_(?:flight_)?blade_(spd|hnd)$", class_name or "")
+        if not m:
+            return None, None
+        maker = gamelog.MAKERS.get(m.group(1).upper(), m.group(1).upper())
+        ship = " ".join(w.capitalize() if not re.match(r"^[a-z]?\d", w) else w.upper() for w in m.group(2).split("_"))
+        return f"{maker} {ship}", {"spd": "Speed", "hnd": "Handling"}[m.group(3).lower()]
+
+    def _wiki_parts(self, wtype, test=None):
+        """The wiki's parts of one kind, as Components-tab rows (no UEX id; the uuid is the id)."""
+        try:
+            raw = self._wikiapi.items_of_type(wtype)
+        except Exception:
+            return []
+        terms = places = None
+        out = []
+        for d in raw:
+            if not d.get("name") or (test and not re.search(test, d.get("class_name") or "", re.I)):
+                continue
+            if wtype != "FlightController" and re.search(r"(?i)\b(test|template|placeholder)\b|_ai_|_npc", f"{d.get('class_name')} {d['name']}"):
+                continue
+            name, vehicle = d["name"], None
+            if wtype == "FlightController":
+                vehicle, kind = self._blade_ship(d.get("class_name"))
+                if vehicle and "blade" in name.lower() and vehicle.split(" ", 1)[-1].lower() not in name.lower():
+                    name = f"{vehicle.split(' ', 1)[-1]} {kind} Flight Blade"
+            buy = []
+            if d.get("prices"):
+                if terms is None:
+                    try:
+                        terms, places = self._uex.terminals(), self._uex.place_map(self._db.locations)
+                    except Exception:
+                        terms, places = {}, {}
+                for p in d["prices"]:
+                    t = terms.get(p.get("terminal_id"))
+                    place = places.get(p.get("terminal_id"))
+                    buy.append({"where": uex.where(t) if t else (p.get("where") or p.get("terminal") or ""),
+                                "shop": p.get("terminal"), "place": place, "system": p.get("system"),
+                                "price": p["price"], "dist": self._dist_from_you(place), "updated": p.get("updated")})
+                buy.sort(key=lambda x: x["price"])
+            size = d.get("size")
+            game = self._game_view(d.get("uuid"), d["name"], size)
+            ref = name                                         # its Star Citizen Wiki page title
+            if d.get("image"):
+                self._part_images[ref.lower()] = d["image"]     # the wiki API's own picture, if the page has none
+            out.append({"id": d.get("uuid") or name, "name": name, "maker": d.get("maker") or "",
+                        "size": None if str(size if size is not None else "").strip() in ("", "0") and wtype != "WeaponMining"
+                        else size, "grade": d.get("grade"), "category": None, "vehicle": vehicle,
+                        "wiki": ref, "web_url": d.get("web_url"), "store": None, "exclusive": False,
+                        "note": "From the Star Citizen Wiki (game files): UEX doesn't list it yet, so shop prices may be missing.",
+                        "buy": buy, "uuid": d.get("uuid"), "source": "wiki", "image": d.get("image"),
+                        "game": game or ({"maker": d.get("maker"), "grade": d.get("grade"), "class": d.get("class"),
+                                          "size": size, "stats": {}} if d.get("stats") else None),
+                        "extra": d.get("stats") or []})
+        return out
+
+    def _with_wiki_parts(self, rows, category_name, cat_id=None, index=False):
+        """UEX's parts for a category plus the wiki's ones UEX doesn't have (matched by uuid or name)."""
+        kind = self._wiki_kind(category_name)
+        if not kind:
+            return rows
+        have = {(r.get("uuid") or "").lower() for r in rows} | {(r.get("name") or "").lower() for r in rows}
+        for w in self._wiki_parts(*kind):
+            if (w.get("uuid") or "").lower() in have or w["name"].lower() in have:
+                continue
+            have.add(w["name"].lower())
+            if index:
+                rows.append({"id": w["id"], "name": w["name"], "maker": w["maker"], "size": w["size"], "grade": w["grade"],
+                             "cat": cat_id, "cat_name": category_name, "wiki": w["wiki"]})
+            else:
+                rows.append(w)
+        return rows
 
     @staticmethod
     def _slot_type_for(category):
@@ -3518,6 +3765,9 @@ class Api:
                     and (c.get("name") or "").strip().lower().rstrip("s") not in self.COMPONENT_EMPTY] or items
             out = [{"id": c["id"], "name": c.get("name"), "section": c.get("section") or "Other",
                     "slot": self._slot_type_for(c.get("name"))} for c in pick]
+            for wtype, (label, section) in self.WIKI_ONLY.items():      # kinds UEX has no category for
+                if not any((self._wiki_kind(c["name"]) or (None,))[0] == wtype for c in out):
+                    out.append({"id": f"wiki:{wtype}", "name": label, "section": section, "slot": None, "wiki": True})
             out.sort(key=lambda c: (c["section"], c["name"] or ""))
             return {"ok": True, "items": out}
         return self._uex_call(run)
@@ -3559,10 +3809,14 @@ class Api:
                 return cats
             out, at = [], None
             for c in cats["items"]:
-                try:
-                    rows, at = self._uex.get("items", {"id_category": int(c["id"])})
-                except uex.UexError:
-                    continue
+                if str(c["id"]).startswith("wiki:"):
+                    rows = []
+                else:
+                    try:
+                        rows, at = self._uex.get("items", {"id_category": int(c["id"])})
+                    except uex.UexError:
+                        continue
+                n0 = len(out)
                 for i in rows:
                     if i.get("is_commodity") or not i.get("name"):
                         continue
@@ -3577,6 +3831,13 @@ class Api:
                             sz = None
                         row["wtype"] = self.weapon_type(i.get("name"), self._game.find(i.get("uuid"), i.get("name"), sz))
                     out.append(row)
+                mine = out[n0:]
+                del out[n0:]
+                out.extend(self._with_wiki_parts(mine, c.get("name") if not str(c["id"]).startswith("wiki:")
+                                                 else ("flight blade" if "Flight" in c["id"] else "mining laser"),
+                                                 c["id"], index=True))
+                for r in out[n0:]:
+                    r["cat_name"] = c.get("name")
                 if c.get("slot") == "JumpDrive":           # jump modules UEX doesn't list
                     have = {(r.get("name") or "").lower() for r in out if r["cat"] == c["id"]}
                     for g in self._game.of_kind("JumpDrive", None):
@@ -3589,6 +3850,15 @@ class Api:
 
     def uex_components(self, id_category):
         """Items in one category with where to buy them and for how much."""
+        if str(id_category).startswith("wiki:"):            # a kind only the wiki has (flight blades...)
+            wtype = str(id_category)[5:]
+            test = next((t for _, w, t in self.WIKI_KINDS if w == wtype), None)
+            items = self._wiki_parts(wtype, test)
+            items.sort(key=lambda x: (x.get("vehicle") or "", str(x["size"] or ""), x["name"] or ""))
+            if not items:
+                return {"ok": False, "error": "Couldn't reach the Star Citizen Wiki for these parts. Try again in a minute"}
+            return {"ok": True, "items": items, "at": None, "types": None}
+
         def run():
             rows, at = self._uex.get("items", {"id_category": int(id_category)})
             spots = self._item_spots()
@@ -3606,8 +3876,10 @@ class Api:
                                               or i.get("is_exclusive_concierge")),
                             "note": (i.get("notification") or None), "buy": buy,
                             "uuid": i.get("uuid"), "game": self._game_view(i.get("uuid"), i.get("name"), size)})
-            slot = self._slot_type_for(next((c.get("name") for c in self._uex.get("categories")[0]
-                                             if str(c.get("id")) == str(id_category)), ""))
+            cat_name = next((c.get("name") for c in self._uex.get("categories")[0]
+                             if str(c.get("id")) == str(id_category)), "")
+            slot = self._slot_type_for(cat_name)
+            out = self._with_wiki_parts(out, cat_name)
             guns = slot == "WeaponGun"
             if slot == "JumpDrive":                       # every jump module, even ones UEX doesn't list (the Exfiltrate)
                 have = {(x.get("uuid") or "").lower() for x in out} | {(x["name"] or "").lower() for x in out}
@@ -3671,7 +3943,7 @@ class Api:
             "storage_scu": round(inv / 1e6, 2) if isinstance(inv, (int, float)) and inv else None,
             "lockers": g("weapon_storage", "slots_total"),
             "length": size.get("length"), "beam": size.get("beam") or size.get("width"), "height": size.get("height"),
-            "mass": d.get("mass_total") or d.get("mass"), "pad": v.get("pad_type"), "size_class": d.get("size_class"),
+            "mass": d.get("mass_total") or d.get("mass"), "pad": v.get("pad_type"), "size_class": d.get("size_class") or v.get("size"),
             "scm": g("speed", "scm"), "max": g("speed", "max"), "boost": g("speed", "boost_forward"),
             "pitch": g("agility", "pitch"), "yaw": g("agility", "yaw"), "roll": g("agility", "roll"),
             "qt_speed": g("quantum", "quantum_speed"), "qt_range": g("quantum", "quantum_range"),
@@ -3707,6 +3979,8 @@ class Api:
                 got[ref] = over[k]
             elif not got.get(ref) and mine.get(k):
                 got[ref] = mine[k]
+            elif not got.get(ref) and self._part_images.get(str(ref).lower()):
+                got[ref] = self._part_images[str(ref).lower()]   # parts from the wiki API (mining lasers, blades)
         return got
 
     def _vehicle_photo(self, v):
@@ -3868,7 +4142,8 @@ class Api:
         if not f:
             return {"ok": False, "error": "That ship isn't in your fleet"}
         return {"ok": True, "active": f["active_loadout"], "primary": f["primary_loadout"], "max": self.MAX_LOADOUTS,
-                "loadouts": [{"id": x["id"], "name": x["name"], "swaps": len(x["loadout"])} for x in f["loadouts"]]}
+                "loadouts": [{"id": x["id"], "name": x["name"], "swaps": len(x["loadout"]), "livery": (x.get("livery") or {}).get("name")}
+                             for x in f["loadouts"]]}
 
     def fleet_loadout_new(self, uid, name, copy=True):
         """A new loadout for this ship, named, starting as a copy of the one shown now (or stock), and
@@ -3887,7 +4162,8 @@ class Api:
             n += 1
         cur = self._loadout_of(f)
         L.append({"id": f"l{n}", "name": name, "loadout": json.loads(json.dumps(cur["loadout"])) if copy else {},
-                  "power": json.loads(json.dumps(cur["power"])) if copy else {}})
+                  "power": json.loads(json.dumps(cur["power"])) if copy else {},
+                  **({"livery": dict(cur["livery"])} if copy and cur.get("livery") else {})})
         f["active_loadout"] = f"l{n}"
         self._loadouts(f)
         self._save_settings()
@@ -4041,6 +4317,27 @@ class Api:
                        "cool_make": now["cool_make"], "pips_gen": now["pips_gen"], "pips_used": now["pips_used"]}
         for s_ in lo["slots"] + (lo.get("fixed") or []):
             s_["power"] = now["parts"].get(s_["port"])
+        # Flight blade: a slot of its own when aftermarket blades exist for this ship. Its power stays on
+        # the fixed "Thrusters" entry; picking a blade changes the ship's speeds where the wiki has them.
+        fc = next((x for x in lo.get("fixed") or [] if x["type"] == "FlightController"), None)
+        if fc and self._blades_for(fc.get("stock")):
+            fit = (f.get("loadout") or {}).get(fc["port"])
+            fit = {"name": fit} if isinstance(fit, str) else fit
+            blade = {"port": fc["port"], "type": "FlightController", "label": "Flight blade", "size": fc.get("size") or 1,
+                     "where": "", "stock": fc.get("stock"), "fitted": fit["name"] if fit else None}
+            if fit:
+                rec = self._wikiapi.item(fit.get("uuid"), None) if fit.get("uuid") else None
+                scm, mx = fleet.flight_speeds(rec)
+                blade["fitted_stats"] = {k: v for k, v in (("scm", scm), ("max", mx)) if v}
+                blade["fitted_grade"], blade["fitted_maker"] = (rec or {}).get("grade"), ((rec or {}).get("manufacturer") or {}).get("name")
+                fc["stock"] = dict(fc.get("stock") or {}, name=fit["name"])
+                for k, v in blade["fitted_stats"].items():          # the ship's speeds with this blade
+                    if lo["stats"].get(k):
+                        d = round(v - lo["stats"][k])
+                        lo["stats"][k] = v
+                        if d:
+                            lo["delta"][k] = d
+            lo["slots"].append(blade)
         if now.get("pool"):                               # the guns' shared power pool, shown as one bar
             guns = [x for x in lo["slots"] if x["type"] == "WeaponGun"]
             lo.setdefault("fixed", []).insert(0, {"port": fleet.WEAPONS, "type": fleet.WEAPONS, "label": "Weapons",
@@ -4052,14 +4349,179 @@ class Api:
                 "loadouts": self.fleet_loadouts(uid),
                 "game_data": self._game.generated, **lo}
 
+    # ------------------------------------------------------------ liveries (paints)
+    @staticmethod
+    def _paint_family(name):
+        """The ship family paints are made for: 'Cutlass Black' -> 'cutlass', 'Constellation Andromeda' ->
+        'constellation', 'Avenger Titan' -> 'avenger', 'C2 Hercules' -> 'hercules', 'F7C-M Super Hornet' -> 'hornet'."""
+        words = [w for w in re.findall(r"[a-z0-9\-]+", (name or "").lower()) if w not in ("mk", "ii", "iv", "v", "i")]
+        for w in words:
+            if re.search(r"[a-z]{4,}", w) and not re.match(r"^[a-z]?\d", w) and w not in ("super", "heavy", "star"):
+                return w
+        if words and re.match(r"^\d+", words[0]):        # '300i' -> '300' (paints say "300 Series")
+            return re.match(r"^\d+", words[0]).group(0)
+        return words[0] if words else ""
+
+    def _livery_options(self, v, ship_name):
+        """Every paint UEX (and the Star Citizen Wiki) has for this ship: [{id, name, source, buy, wiki}]."""
+        vid, name = v.get("id"), (v.get("name") or ship_name or "").lower()
+        fam = self._paint_family(v.get("name") or ship_name)
+        fam_rx = re.compile(rf"\b{re.escape(fam)}\b") if fam else None
+        out, seen = [], set()
+
+        def fits(pname, vname=None, pid_vehicle=None):
+            if vid and pid_vehicle and str(pid_vehicle) == str(vid):
+                return True
+            vname = (vname or "").lower()
+            if vname and (vname == name or vname in name or name in vname):
+                return True
+            return bool(fam_rx and fam_rx.search((pname or "").lower()))
+        try:
+            cats = [c for c in self._uex.get("categories")[0]
+                    if re.search(r"paint|livery|liveries", f"{c.get('section') or ''} {c.get('name') or ''}", re.I)]
+            spots = self._item_spots() if cats else {}
+            for c in cats:
+                for i in self._uex.get("items", {"id_category": int(c["id"])})[0]:
+                    nm = i.get("name")
+                    if not nm or nm.lower() in seen or not fits(nm, i.get("vehicle_name"), i.get("id_vehicle")):
+                        continue
+                    seen.add(nm.lower())
+                    out.append({"id": str(i["id"]), "name": nm, "source": "uex", "buy": spots.get(i["id"], [])[:3],
+                                "wiki": i.get("wiki") or nm, "store": i.get("url_store")})
+        except Exception:
+            pass
+        try:
+            for d in self._wikiapi.items_of_type("Paints"):
+                nm = d.get("name")
+                if not nm or nm.lower() in seen or re.search(r"(?i)\b(test|template|placeholder)\b|_ai_|_npc", f"{d.get('class_name')} {nm}"):
+                    continue
+                if not fits(nm) and not (fam and fam in (d.get("class_name") or "").lower()):
+                    continue
+                seen.add(nm.lower())
+                out.append({"id": d.get("uuid") or nm, "name": nm, "source": "wiki", "buy": [], "wiki": d.get("web_url") or nm,
+                            "image": d.get("image")})
+        except Exception:
+            pass
+        out.sort(key=lambda x: x["name"].lower())
+        return out
+
+    def fleet_liveries(self, uid):
+        """Paints available for a ship in My Fleet, and the one on the loadout being shown."""
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        v = self._vehicle_rows().get(f["vehicle_id"], {})
+        lo = self._loadout_of(f)
+        items = self._livery_options(v, f.get("name"))
+        return {"ok": True, "current": (lo or {}).get("livery"), "items": items,
+                "note": None if items else "No paints listed for this ship yet (UEX or the Star Citizen Wiki)"}
+
+    def fleet_set_livery(self, uid, livery=None):
+        """Put a paint on the loadout being shown (None: back to the stock paint)."""
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        lo = self._loadout_of(f)
+        if livery:
+            lv = livery if isinstance(livery, dict) else {"name": str(livery)}
+            lo["livery"] = {k: lv.get(k) for k in ("id", "name", "source", "wiki", "image") if lv.get(k)}
+        else:
+            lo.pop("livery", None)
+        self._save_settings()
+        return {"ok": True, "current": lo.get("livery")}
+
+    # ------------------------------------------------------------ flight blades
+    # A ship's flight controller is a flight blade in game; ships that have aftermarket ones (Speed and
+    # Handling blades) can swap it. The game files list them by class name next to the stock one:
+    # controller_flight_aegs_gladius -> controller_flight_aegs_gladius_blade_spd / _blade_hnd.
+    def _blades_for(self, stock):
+        """[(uuid, name, class)] of the flight blades that fit the ship whose stock controller is `stock`."""
+        cls = ((stock or {}).get("class_name") or "").lower()
+        if not cls:
+            g = self._game.find((stock or {}).get("uuid"), None, None)
+            cls = (g or {}).get("name", "").lower() if g and str(g.get("name", "")).startswith("controller_flight") else ""
+        if not cls:
+            return []
+        base = re.sub(r"_(?:flight_)?blade_(spd|hnd)$", "", cls)
+        out = []
+        for g in self._game.of_kind("FlightController", None):
+            n = (g.get("name") or "").lower()
+            if re.fullmatch(re.escape(base) + r"_(?:flight_)?blade_(spd|hnd)", n):
+                out.append((g["uuid"], n))
+        if not out:                                    # not in the game files yet: the wiki's list
+            for d in self._wiki_parts("FlightController", r"_blade_(spd|hnd)$"):
+                c = (self._wikiapi_class(d) or "").lower()
+                if c and re.fullmatch(re.escape(base) + r"_(?:flight_)?blade_(spd|hnd)", c):
+                    out.append((d["uuid"], c))
+        return [(u, self._blade_label(c), c) for u, c in out]
+
+    def _wikiapi_class(self, part):
+        try:
+            return next((d.get("class_name") for d in self._wikiapi.items_of_type("FlightController")
+                         if d.get("uuid") == part.get("uuid")), None)
+        except Exception:
+            return None
+
+    def _blade_label(self, cls):
+        ship, kind = self._blade_ship(cls)
+        return f"{ship.split(' ', 1)[-1]} {kind} Flight Blade" if ship else cls
+
+    def _blade_option(self, uuid, name, cls):
+        rec = self._wikiapi.item(uuid, None) if uuid else None
+        scm, mx = fleet.flight_speeds(rec)
+        st = {k: v for k, v in (("scm", scm), ("max", mx)) if v}
+        return {"id": uuid, "uuid": uuid, "name": name, "maker": ((rec or {}).get("manufacturer") or {}).get("name") or "",
+                "size": (rec or {}).get("size") or 1, "grade": (rec or {}).get("grade"), "stats": st, "price": None, "buy": [],
+                "extra": fleet.Wiki.stat_rows(rec) if rec else [], "class_name": cls}
+
+    def _flight_options(self, uid):
+        f = self._ship(uid) if uid else None
+        if not f:
+            return {"ok": False, "error": "Pick a ship first"}
+        lo = self.fleet_loadout(uid)
+        slot = next((x for x in (lo.get("slots") or []) if x.get("type") == "FlightController"), None) if lo.get("ok") else None
+        if not slot:
+            return {"ok": True, "items": [], "key": "scm"}
+        st = slot.get("stock") or {}
+        items = [dict(self._blade_option(st.get("uuid"), (st.get("name") or "Flight Blade") + " (stock)", st.get("class_name")),
+                      stock=True)]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            items += list(ex.map(lambda b: self._blade_option(*b), self._blades_for(st)))
+        return {"ok": True, "items": items, "key": "scm", "source": "game"}
+
+    def _wiki_options(self, slot_type, size, have):
+        """Parts of a slot's kind and size that only the Star Citizen Wiki has (Helix mining lasers, new RSI
+        parts), with their numbers, for My Fleet's options."""
+        kind = next(((t, test) for _, t, test in self.WIKI_KINDS if t == slot_type), None)
+        if not kind or slot_type == "FlightController":
+            return []
+        names = {(x.get("name") or "").lower() for x in have} | {(x.get("uuid") or "").lower() for x in have}
+        add = [w for w in self._wiki_parts(*kind) if (not size or str(w.get("size")) == str(size))
+               and w["name"].lower() not in names and (w.get("uuid") or "").lower() not in names]
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            recs = list(ex.map(lambda w: self._wikiapi.item(w.get("uuid"), w["name"]), add))
+        return [{"id": w["id"], "uuid": w.get("uuid"), "name": w["name"], "maker": w["maker"], "size": w["size"],
+                 "grade": w["grade"], "stats": fleet.item_stats(rec) if rec else {}, "extra": w.get("extra") or [],
+                 "price": w["buy"][0]["price"] if w["buy"] else None, "buy": w["buy"][:6], "wiki_only": True}
+                for w, rec in zip(add, recs)]
+
     def fleet_options(self, slot_type, size, uid=None):
         """Components that fit a slot (same kind and size), with where to buy them. From the game files
         when they cover this kind of slot (every part, exact numbers), else UEX's lists."""
+        if slot_type == "FlightController":
+            return self._flight_options(uid)
         f = next((x for x in self._fleet() if x["uid"] == uid), None) if uid else None
         ground = bool(self._vehicle_rows().get(f["vehicle_id"], {}).get("is_ground_vehicle")) if f else False
         game = self._game.of_kind(slot_type, size, ground)
         if game:
-            return self._uex_call(lambda: self._game_options(slot_type, game))
+            def with_wiki():
+                r = self._game_options(slot_type, game)
+                if r.get("ok") and not ground:
+                    r["items"] += self._wiki_options(slot_type, size, r["items"])
+                return r
+            return self._uex_call(with_wiki)
         def run():
             words = fleet.SLOT_TYPES.get(slot_type, ("", ()))[1]
             cats = [c for c in self._uex.get("categories")[0] if (c.get("type") or "item") == "item"
@@ -4085,6 +4547,7 @@ class Api:
                 recs = list(ex.map(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out))
             for i, rec in zip(out, recs):
                 i["stats"] = fleet.item_stats(rec) if rec else {}
+            out += self._wiki_options(slot_type, size, out)          # ones UEX doesn't list (the Helix lasers)
             return {"ok": True, "items": out, "key": fleet.KEY_STAT.get(slot_type)}
         return self._uex_call(run)
 
@@ -4166,6 +4629,8 @@ class Api:
         if not f:
             return {"ok": False, "error": "That ship isn't in your fleet"}
         lo = (self._loadout_of(f, loadout) or self._loadout_of(f))["loadout"]
+        if item_name and str(item_name).endswith(" (stock)"):    # the stock flight blade: no swap
+            item_name = None
         if item_name:
             lo[port] = {"name": item_name, "uuid": uuid}
         else:
@@ -4536,7 +5001,8 @@ class Api:
                 return loc.name
         cargo = contract_cargo(c.code)
         label = {"pickup": "Pickup", "dropoff": "Drop-off"}.get(o.kind, "Objective")
-        where = o.marker.get("body") or o.marker.get("lpoint") or (f"near {o.marker['near']}" if o.marker.get("near") else "space")
+        where = (f"near {o.marker['near_place']}, {o.marker['body']}" if o.marker.get("near_place") and o.marker.get("body")
+                 else o.marker.get("body") or o.marker.get("lpoint") or (f"near {o.marker['near']}" if o.marker.get("near") else "space"))
         name = self._db.unique_name(f"{label}{' ' + cargo if cargo else ''} ({where})")
         self._db.locations[name] = Location(name, "surface" if o.marker.get("body") else "space",
                                             tuple(o.marker["pos"]), o.marker.get("body"),
@@ -4567,7 +5033,16 @@ class Api:
                 return {"ok": False, "error": "The log didn't give a map position for this"}
             self._guide = n
             self._save_settings()
+            # Guiding to the drop-off with the cargo on board: you're on your way.
+            if o.kind == "dropoff" and self._tracker._collected(c):
+                self._tracker.mark_departed(cid, time.time(), "route")
             return {"ok": True, "name": n}
+
+    def contract_out_for_delivery(self, cid, on=True):
+        """The "Out for delivery" button on a contract's tracker (and its undo)."""
+        with self._lock:
+            ok = self._tracker.mark_departed(cid, time.time(), "manual") if on else self._tracker.unmark_departed(cid)
+            return {"ok": ok} if ok else {"ok": False, "error": "Nothing to change for that contract"}
 
     def set_objective_place(self, cid, oid, place):
         with self._lock:
@@ -4667,6 +5142,24 @@ def rename_raw_pois(db):
         db.locations[new] = db.locations.pop(name)
         out[name] = new
     return out
+
+
+def learned_local(db, entry):
+    """A place's spot on its planet or moon from a /showlocation entry, in the planet's current frame.
+    The local position saved with it was worked out with the alignment of that moment; if the planet has
+    been lined up differently since, the spot is turned to match (from the reading itself when it was
+    kept, else by the change in alignment), so the place stays where the reading really was."""
+    b = db.bodies.get(entry.get("body"))
+    local = tuple(entry["local"])
+    if b is None:
+        return local
+    rd = entry.get("reading")
+    if rd and rd.get("pos") and rd.get("t"):
+        return tuple(b.to_local(tuple(rd["pos"]), rd["t"]))
+    off = entry.get("offset")
+    if off is None or abs(off - b.rotation_offset_deg) < 1e-9:
+        return local
+    return nav_core.rot_z(local, math.radians(off - b.rotation_offset_deg))
 
 
 def rename_gateways(db):

@@ -354,7 +354,12 @@ class Community:
         if not self.url:
             return
         msg = {"name": name, "system": entry.get("system"), "username": username,
-               **({"body": entry["body"], "local": entry["local"]} if entry.get("local") else {"pos": entry.get("pos")})}
+               **({"body": entry["body"], "local": entry["local"],
+                   # the alignment the local spot was worked out with, and the reading itself, so other
+                   # users' maps can put it in their own planet's frame
+                   **({"offset": entry["offset"]} if entry.get("offset") is not None else {}),
+                   **({"reading": entry["reading"]} if entry.get("reading") else {})}
+                  if entry.get("local") else {"pos": entry.get("pos")})}
 
         self.place_results[name] = {"state": "sending", "at": time.time()}
 

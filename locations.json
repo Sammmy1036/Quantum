@@ -30,17 +30,17 @@
    ],
    "radius_m": 800000.0,
    "rotation_period_h": 3.1099999,
-   "rotation_offset_deg": 178.70632681770385,
+   "rotation_offset_deg": 178.807294,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1151453.0,
    "system": "Stanton",
    "internal": "Stanton3",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1791418889.0347793,
-   "calibrated_place": "Riker Memorial Spaceport",
+   "calibrated_at": 1791474468.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 178.53700624,
-   "calibration_quality": "hangar"
+   "calibration_quality": "community"
   },
   {
    "name": "Arial",
@@ -198,17 +198,17 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 2.48000002,
-   "rotation_offset_deg": 117.45860432919373,
+   "rotation_offset_deg": 117.849945,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1436815.0,
    "system": "Stanton",
    "internal": "Stanton1",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1791017664.0962946,
-   "calibrated_place": "HDMS Pinewood",
+   "calibrated_at": 1791620902.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 152.9598871,
-   "calibration_quality": "place"
+   "calibration_quality": "community"
   },
   {
    "name": "Ita",
@@ -402,9 +402,9 @@
   {
    "name": "Fuego",
    "center": [
-    -3780104297.52255,
-    274743928.340523,
-    0
+    -3780111838.0,
+    -42827195804.3,
+    0.0
    ],
    "radius_m": 465670,
    "rotation_period_h": 0,
@@ -528,9 +528,9 @@
   {
    "name": "Pyro4",
    "center": [
-    -3704129440.06321,
-    30280651.9067382,
-    0
+    -3704137009.2,
+    -43071659047.6,
+    0.0
    ],
    "radius_m": 321400,
    "rotation_period_h": 4.0900002,
@@ -539,7 +539,7 @@
    "om_radius_m": 475842,
    "system": "Pyro",
    "internal": "Pyro4",
-   "kind": "moon",
+   "kind": "planet",
    "calibrated": false,
    "calibrated_at": 0.0,
    "calibrated_place": "",
@@ -597,17 +597,17 @@
    ],
    "radius_m": 411700,
    "rotation_period_h": 2.4200001,
-   "rotation_offset_deg": 22.4002208,
+   "rotation_offset_deg": 346.950718,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 602993,
    "system": "Pyro",
    "internal": "Pyro1",
    "kind": "planet",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1791624001.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 22.4002208,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Pyrostar",
@@ -14523,60 +14523,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "Pyro Gateway",
-   "kind": "space",
-   "pos": [
-    3310484799.0,
-    -27979313941.0,
-    -2676300515.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station: jump point to Pyro",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Nyx Gateway",
-   "kind": "space",
-   "pos": [
-    -62284229191.6389,
-    23467598946.457104,
-    20198395415.087944
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station for the temporary link to Nyx (the old Magnus gate). The jump point itself is Nyx Jump Point, about 50 km away. Position from a /showlocation at the station",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Terra Gateway",
-   "kind": "space",
-   "pos": [
-    51118221616.9033,
-    -5269981303.11381,
-    -4339551619.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The jump point to Terra isn't open yet. Position is the jump point's; the station is close by",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
    "created": 0.0
   },
   {
@@ -34488,186 +34434,6 @@
    "created": 0.0
   },
   {
-   "name": "Nyx Jump Point",
-   "kind": "space",
-   "pos": [
-    -62284273860.7205,
-    23467618051.3957,
-    20198396608.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Nyx (temporary link through the old Magnus gate). Nyx Gateway station is about 50 km away",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Stanton Gateway (Pyro)",
-   "kind": "space",
-   "pos": [
-    -37609223453.0,
-    37435743642.0,
-    6728.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station: jump point to Stanton. Position from the game files (Star Citizen Wiki data)",
-   "source": "db",
-   "system": "Pyro",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Nyx Gateway (Pyro)",
-   "kind": "space",
-   "pos": [
-    32993982419.0,
-    -38151730073.0,
-    6728.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station: jump point to Nyx. Position from the game files (Star Citizen Wiki data)",
-   "source": "db",
-   "system": "Pyro",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Pyro Gateway (Nyx)",
-   "kind": "space",
-   "pos": [
-    -12000044530.0,
-    20784580529.0,
-    -38674.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station: jump point to Pyro. Position from the game files (Star Citizen Wiki data)",
-   "source": "db",
-   "system": "Nyx",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Stanton Gateway (Nyx)",
-   "kind": "space",
-   "pos": [
-    -13499931610.0,
-    -23382701964.0,
-    -36662.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "Gateway station: jump point to Stanton. Position from the game files (Star Citizen Wiki data)",
-   "source": "db",
-   "system": "Nyx",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
-   "name": "Pyro Jump Point",
-   "kind": "space",
-   "pos": [
-    3310491640.0,
-    -27979408221.0,
-    -2676285679.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Pyro. Pyro Gateway station is close by",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Stanton Jump Point (Pyro)",
-   "kind": "space",
-   "pos": [
-    -37609204291.0,
-    37435781484.0,
-    0.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Stanton. Stanton Gateway station is close by",
-   "source": "db",
-   "system": "Pyro",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Nyx Jump Point (Pyro)",
-   "kind": "space",
-   "pos": [
-    32994001581.0,
-    -38151692231.0,
-    0.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Nyx. Nyx Gateway station is close by",
-   "source": "db",
-   "system": "Pyro",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Pyro Jump Point (Nyx)",
-   "kind": "space",
-   "pos": [
-    -12000043845.0,
-    20784584131.0,
-    0.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Pyro. Pyro Gateway station is close by",
-   "source": "db",
-   "system": "Nyx",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
-   "name": "Stanton Jump Point (Nyx)",
-   "kind": "space",
-   "pos": [
-    -13499935650.0,
-    -23382715138.0,
-    0.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "The wormhole to Stanton (the game files call it the Castra jump point; it's the temporary Stanton link). Stanton Gateway station is close by",
-   "source": "db",
-   "system": "Nyx",
-   "qt": true,
-   "pinned": false,
-   "category": "jump",
-   "created": 0.0
-  },
-  {
    "name": "Wikelo Emporium Dasi Station",
    "kind": "space",
    "pos": [
@@ -34918,6 +34684,276 @@
    "pinned": false,
    "category": "station",
    "created": 1791272347.2502406
+  },
+  {
+   "name": "Stag's Rut",
+   "kind": "surface",
+   "pos": [
+    -247655.40233049283,
+    310590.3513971261,
+    -103650.091774
+   ],
+   "body": "Pyro1",
+   "pad": "unknown",
+   "notes": "From UEX on Pyro I. Position from Quantum datarunners' /showlocation",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "outpost",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway Station",
+   "kind": "space",
+   "pos": [
+    3310484799.0,
+    -27979313941.0,
+    -2676300515.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the jump to Pyro. Pyro Gateway, the jump point itself, is a short hop away",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway Station",
+   "kind": "space",
+   "pos": [
+    -62284229191.6389,
+    23467598946.457104,
+    20198395415.087944
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the temporary link to Nyx (the old Magnus gate). Position from a /showlocation at the station",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Terra Gateway Station",
+   "kind": "space",
+   "pos": [
+    51118210044.76286,
+    -5270029473.660545,
+    -4339552358.888522
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station. Terra Gateway isn't open yet",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway Station (Pyro)",
+   "kind": "space",
+   "pos": [
+    34178602716.245,
+    40592012681.86966,
+    5875.998474
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the jump to Stanton. Stanton Gateway (Pyro), the jump point itself, is a short hop away. Position from a /showlocation at the station",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway Station (Pyro)",
+   "kind": "space",
+   "pos": [
+    -35275901220.5,
+    -36052297797.3,
+    6727.8
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the jump to Nyx. Nyx Gateway (Pyro), the jump point itself, is a short hop away. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway Station (Nyx)",
+   "kind": "space",
+   "pos": [
+    -12000044530.0,
+    20784580529.0,
+    -38674.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the jump to Pyro. Pyro Gateway (Nyx), the jump point itself, is a short hop away. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway Station (Nyx)",
+   "kind": "space",
+   "pos": [
+    -13499931610.0,
+    -23382701964.0,
+    -36662.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "Gateway station for the jump to Stanton. Stanton Gateway (Nyx), the jump point itself, is a short hop away. Position from the game files (Star Citizen Wiki data)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "station",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway",
+   "kind": "space",
+   "pos": [
+    -62284273860.7205,
+    23467618051.3957,
+    20198396608.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Nyx (temporary link through the old Magnus gate). The station, Nyx Gateway Station, is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway",
+   "kind": "space",
+   "pos": [
+    3310491640.0,
+    -27979408221.0,
+    -2676285679.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Pyro. The station, Pyro Gateway Station, is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Terra Gateway",
+   "kind": "space",
+   "pos": [
+    51118221616.9033,
+    -5269981303.11381,
+    -4339551619.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Terra. Not open yet. The station, Terra Gateway Station, is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway (Pyro)",
+   "kind": "space",
+   "pos": [
+    34178615254.810284,
+    40591999809.31716,
+    10973.401248
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Stanton. Position from a /showlocation there. The station, Stanton Gateway Station (Pyro), is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Nyx Gateway (Pyro)",
+   "kind": "space",
+   "pos": [
+    -35275861916.0,
+    -36052313746.2,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Nyx. The station, Nyx Gateway Station (Pyro), is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Pyro",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Pyro Gateway (Nyx)",
+   "kind": "space",
+   "pos": [
+    -12000043845.0,
+    20784584131.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Pyro. The station, Pyro Gateway Station (Nyx), is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Stanton Gateway (Nyx)",
+   "kind": "space",
+   "pos": [
+    -13499935650.0,
+    -23382715138.0,
+    0.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "The jump point to Stanton (the game files call it the Castra jump point; it's the temporary Stanton link). The station, Stanton Gateway Station (Nyx), is a short hop away (shops, refuel, cargo)",
+   "source": "db",
+   "system": "Nyx",
+   "qt": true,
+   "pinned": false,
+   "category": "jump",
+   "created": 0.0
   }
  ]
 }
