@@ -198,14 +198,14 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 2.48000002,
-   "rotation_offset_deg": 117.849945,
+   "rotation_offset_deg": 117.837394,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1436815.0,
    "system": "Stanton",
    "internal": "Stanton1",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1791620902.0,
+   "calibrated_at": 1791695279.0,
    "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 152.9598871,
    "calibration_quality": "community"
@@ -1845,12 +1845,12 @@
    ],
    "body": "ArcCorp",
    "pad": "unknown",
-   "notes": "",
+   "notes": "Area 18's spaceport",
    "source": "db",
    "system": "Stanton",
    "qt": false,
    "pinned": false,
-   "category": "",
+   "category": "city",
    "created": 0.0
   },
   {
@@ -4032,24 +4032,6 @@
    "created": 0.0
   },
   {
-   "name": "Port Olisar",
-   "kind": "surface",
-   "pos": [
-    5965000.0,
-    -472142.0,
-    5667009.0
-   ],
-   "body": "Crusader",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
-   "created": 0.0
-  },
-  {
    "name": "Orison",
    "kind": "surface",
    "pos": [
@@ -4077,7 +4059,7 @@
    ],
    "body": "Crusader",
    "pad": "unknown",
-   "notes": "",
+   "notes": "Orison's spaceport",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -10166,7 +10148,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "city",
+   "category": "station",
    "created": 0.0
   },
   {
@@ -18549,7 +18531,7 @@
    ],
    "body": "microTech",
    "pad": "unknown",
-   "notes": "",
+   "notes": "New Babbage's spaceport",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -28515,9 +28497,9 @@
    "name": "Dunboro",
    "kind": "surface",
    "pos": [
-    -735874.9353221456,
-    678288.8216054281,
-    10808.630254
+    -735874.8776535166,
+    678288.7684535298,
+    10806.041145
    ],
    "body": "microTech",
    "pad": "unknown",
@@ -34707,13 +34689,13 @@
    "name": "Pyro Gateway Station",
    "kind": "space",
    "pos": [
-    3310484799.0,
-    -27979313941.0,
-    -2676300515.0
+    3310460098.40437,
+    -27979379866.332127,
+    -2676291190.094194
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Gateway station for the jump to Pyro. Pyro Gateway, the jump point itself, is a short hop away",
+   "notes": "Gateway station for the jump to Pyro. Pyro Gateway, the jump point itself, is a short hop away. Position from your /showlocation",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -34743,13 +34725,13 @@
    "name": "Terra Gateway Station",
    "kind": "space",
    "pos": [
-    51118210044.76286,
-    -5270029473.660545,
-    -4339552358.888522
+    51118167214.692024,
+    -5269990089.520522,
+    -4339545559.678229
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Gateway station. Terra Gateway isn't open yet",
+   "notes": "Gateway station. Terra Gateway isn't open yet. Position from a /showlocation at the station. Position from your /showlocation",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -34761,13 +34743,13 @@
    "name": "Stanton Gateway Station (Pyro)",
    "kind": "space",
    "pos": [
-    34178602716.245,
-    40592012681.86966,
-    5875.998474
+    34178604789.204773,
+    40592012261.957695,
+    6039.310521
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Gateway station for the jump to Stanton. Stanton Gateway (Pyro), the jump point itself, is a short hop away. Position from a /showlocation at the station",
+   "notes": "Gateway station for the jump to Stanton. Stanton Gateway (Pyro), the jump point itself, is a short hop away. Position from your /showlocation",
    "source": "db",
    "system": "Pyro",
    "qt": true,
@@ -34851,13 +34833,13 @@
    "name": "Pyro Gateway",
    "kind": "space",
    "pos": [
-    3310491640.0,
-    -27979408221.0,
-    -2676285679.0
+    3310464115.735857,
+    -27979424070.23815,
+    -2676328627.012927
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "The jump point to Pyro. The station, Pyro Gateway Station, is a short hop away (shops, refuel, cargo)",
+   "notes": "The jump point to Pyro. Position from a /showlocation there. The station, Pyro Gateway Station, is a short hop away (shops, refuel, cargo)",
    "source": "db",
    "system": "Stanton",
    "qt": true,
@@ -34887,9 +34869,9 @@
    "name": "Stanton Gateway (Pyro)",
    "kind": "space",
    "pos": [
-    34178615254.810284,
-    40591999809.31716,
-    10973.401248
+    34178627065.57136,
+    40591988596.22912,
+    14689.567443
    ],
    "body": null,
    "pad": "unknown",
@@ -34953,6 +34935,24 @@
    "qt": true,
    "pinned": false,
    "category": "jump",
+   "created": 0.0
+  },
+  {
+   "name": "Teasa Spaceport",
+   "kind": "surface",
+   "pos": [
+    -330889.8,
+    -756782.4,
+    565425.1
+   ],
+   "body": "Hurston",
+   "pad": "unknown",
+   "notes": "Lorville's spaceport. Position from a /showlocation there (approximate: within a few km)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "city",
    "created": 0.0
   }
  ]

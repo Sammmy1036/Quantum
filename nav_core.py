@@ -83,7 +83,7 @@ def great_circle(lat1, lon1, lat2, lon2, radius) -> tuple[float, float]:
 
 
 # ------------------------------------------------------------ categories ---
-CITIES = {"lorville", "area 18", "area18", "new babbage", "orison", "grimhex", "grim hex"}
+CITIES = {"lorville", "area 18", "area18", "new babbage", "orison"}
 
 # The game data lists Delamar as a planet, but it's a moon-sized asteroid in Nyx's Glaciem Ring.
 BODY_KIND = {"Delamar": "asteroid", "Pyro4": "planet"}
@@ -96,7 +96,10 @@ BODY_CENTER = {"Pyro4": (-3704137009.2, -43071659047.6, 0.0), "Fuego": (-3780111
 # there's no /showlocation to line them up from, so they get no alignment.
 NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
 # Places the data files as cities that are really stations (Levski is built into Delamar).
-STATION_NAMES = {"levski"}
+# Places taken out of the game that older map data still lists. Removed from the map on load (yours,
+# a waypoint you saved under the same name, is left alone).
+REMOVED_PLACES = {"port olisar"}      # removed from the game in Alpha 3.20.0 (Sept 2023)
+STATION_NAMES = {"levski", "grim hex", "grimhex"}   # data calls them landing zones; they're stations
 
 
 def can_align(body) -> bool:
@@ -120,6 +123,9 @@ def normalize(db) -> bool:
                 b.rotation_offset_deg = b.community_offset_deg
             b.calibrated, b.calibrated_at, b.calibrated_place, b.calibration_quality = False, 0.0, "", ""
             changed = True
+    for name in [n for n, l in db.locations.items() if n.split(" (")[0].lower() in REMOVED_PLACES and l.source == "db"]:
+        db.locations.pop(name)
+        changed = True
     for loc in db.locations.values():
         if loc.name.split(" (")[0].lower() in STATION_NAMES and loc.category != "station":
             loc.category, changed = "station", True

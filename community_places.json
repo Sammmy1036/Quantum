@@ -56,6 +56,61 @@
     310590.3513971261,
     -103650.091774
    ]
+  },
+  "Stanton Gateway Station (Pyro)": {
+   "system": "Pyro",
+   "reporters": 1,
+   "at": 1791684962,
+   "community": true,
+   "pos": [
+    34178604789.204773,
+    40592012261.957695,
+    6039.310521
+   ]
+  },
+  "Jump point: Stanton Gateway (Pyro)": {
+   "system": "Pyro",
+   "reporters": 1,
+   "at": 1791685323,
+   "community": true,
+   "pos": [
+    34178627065.57136,
+    40591988596.22912,
+    14689.567443
+   ]
+  },
+  "Jump point: Pyro Gateway": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791685658,
+   "community": true,
+   "pos": [
+    3310464115.735857,
+    -27979424070.23815,
+    -2676328627.012927
+   ]
+  },
+  "Pyro Gateway Station": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791685841,
+   "community": true,
+   "pos": [
+    3310460098.40437,
+    -27979379866.332127,
+    -2676291190.094194
+   ]
+  },
+  "Terra Gateway Station": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1791693903,
+   "community": true,
+   "pos": [
+    51118167214.692024,
+    -5269990089.520522,
+    -4339545559.678229
+   ]
   }
  },
  "missing": [

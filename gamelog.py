@@ -115,6 +115,29 @@ def log_time(line: str) -> float | None:
     return calendar.timegm((int(y), int(mo), int(d), int(h), int(mi), int(s))) + float("0." + (frac or "0"))
 
 
+# Coordinates written in a contract's or objective's text (the RSI Discovery event platforms give them):
+# "x:12850032093.79 y:-708225.47 z:565425.10", "X: 1.2, Y: -3.4, Z: 5.6", "Coordinates (1.2, -3.4, 5.6)".
+# Same frame as /showlocation: meters, relative to the system's star.
+_NUM = r"(-?\d[\d,]*(?:\.\d+)?(?:[eE][-+]?\d+)?)"
+RE_COORDS = (re.compile(rf"\bx\s*[:=]\s*{_NUM}\s*,?\s*y\s*[:=]\s*{_NUM}\s*,?\s*z\s*[:=]\s*{_NUM}", re.I),
+             re.compile(rf"coord(?:inate)?s?\s*[:\-]?\s*\(?\s*{_NUM}\s*[,;]\s*{_NUM}\s*[,;]\s*{_NUM}", re.I))
+
+
+def text_coords(text: str):
+    """[x, y, z] meters from coordinates written in the text, or None. Tiny numbers (a 1/3 SCU count
+    misread as a point) aren't coordinates: real ones are at least a few thousand km from the star."""
+    for rx in RE_COORDS:
+        m = rx.search(text or "")
+        if m:
+            try:
+                xyz = [float(g.replace(",", "")) for g in m.groups()]
+            except ValueError:
+                continue
+            if math.sqrt(sum(v * v for v in xyz)) > 1e6:
+                return xyz
+    return None
+
+
 def objective_key(text: str) -> str:
     return re.sub(r"\d+\s*/\s*\d+", "#/#", text.strip().lower())
 
@@ -144,6 +167,17 @@ TRACK_BOUNTY = False
 
 def is_bounty(c) -> bool:
     return "bounty" in f"{c.code} {c.name}".lower()
+
+
+COMBAT_WORDS = re.compile(r"(?i)\b(eliminate|kill|take out|takedown|defeat|neutrali[sz]e|assassinat|bounty|gang leader|"
+                          r"hostile leader|specific target|clear (?:the )?(?:area|outpost|hostiles)|defend|patrol)\b")
+
+
+def is_combat(c) -> bool:
+    """A job about fighting (a gang leader, a target, hostiles), not moving something."""
+    if any(o.kind in ("pickup", "dropoff") for o in c.objectives):
+        return False
+    return bool(COMBAT_WORDS.search(f"{c.name} {c.code}") or any(o.kind == "combat" for o in c.objectives))
 
 
 def is_tracked(c) -> bool:
@@ -230,6 +264,7 @@ class Contract:
     turn_in: str = ""                  # collection contracts: the emporium to hand the items in at
     turn_in_how: str = ""              # "nearest" (picked by Quantum) or "manual" (picked by you)
     tracking_no: str = ""              # Quantum's own parcel-style number: 1SC + 15 random digits
+    coords: list | None = None         # coordinates written in the contract's own text (see text_coords)
 
 # "Out for delivery" isn't guessed from time passing or from leaving the elevator: it starts when you set
 # your in-game route (quantum destination) to the drop-off, or press "Out for delivery" in Quantum.
@@ -336,6 +371,8 @@ class ContractTracker(threading.Thread):
         self.armistice = None      # (inside: bool, at)
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
+        self._build_read = False   # read from this log yet (it's read again for every new game session)
+        self.branch = ""           # release from the log ("4.10.0"; a hotfix like 4.10.2 can still say 4.10.0)
         self.zone_bodies = {}      # zoneHostId -> body name, learned per game session
         self.zone_places = {}      # zoneHostId -> place name (buildings/stations), learned per session
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
@@ -450,6 +487,13 @@ class ContractTracker(threading.Thread):
                         o["label"] = o["text"]
                 d["tracking"] = self._tracking(c)
                 d["collection"] = is_collection(c)
+                # The game's own id for the contract (MissionId in Game.log), shown as its Job ID. Quantum's
+                # parcel-style tracking number is only for contracts that move something (pickups and
+                # drop-offs): "take out a gang leader" and other combat jobs have no package to track.
+                d["job_id"] = c.id if re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", c.id or "") \
+                    and c.id != ZERO_ID else ""
+                if not d["tracking"] or is_combat(c):
+                    d["tracking_no"] = ""
                 for o in d["objectives"]:
                     o["need"] = need_item(o["text"])
                 out.append(d)
@@ -652,6 +696,77 @@ class ContractTracker(threading.Thread):
             self._tracking_no(c)
         return c
 
+    def _where_you_are(self, cands):
+        """Of several (contract, objective) pairs with the same text, the ones at the place you're at now:
+        same planet or moon as their marker, else same system, else close to your last /showlocation."""
+        here_body, here_sys = self.where.get("body"), self.where.get("system")
+        ref = None
+        try:
+            ref = self.player_ref() if self.player_ref else None
+        except Exception:
+            ref = None
+
+        def spot(o):
+            m = o.marker or {}
+            return m.get("body"), m.get("system") or (self.nav.locations[o.location].system
+                                                       if o.location in self.nav.locations else None), m
+
+        if ref and ref[0] is not None:
+            near = []
+            for c, o in cands:
+                b, sy, m = spot(o)
+                if m.get("pos") and not b and sy == ref[1] and not m.get("approx") \
+                        and math.dist(m["pos"], ref[0]) < 200_000:
+                    near.append((c, o))
+            if len(near) == 1:
+                return near
+        for test in ((lambda b, sy: here_body and b == here_body), (lambda b, sy: here_sys and sy == here_sys)):
+            hit = [(c, o) for c, o in cands if test(*spot(o)[:2])]
+            if len(hit) == 1:
+                return hit
+        return cands
+
+    def _place_from_coords(self, c, o, xyz=None):
+        """Put an objective at coordinates written in its text (or the contract's, for a pickup or drop-off
+        with nothing better): an exact spot, so you don't have to type where the contract sends you."""
+        xyz = xyz or (c.coords if o.kind in ("pickup", "dropoff") and not o.location and
+                      not (o.marker and not o.marker.get("approx")) else None)
+        if not xyz or o.found == "manual":
+            return False
+        system = c.system or self.where.get("system") or self.nav.guess_system(tuple(xyz))
+        near, nd = None, float("inf")             # what it's near, for its label: a planet or moon it's
+        for b in self.nav.bodies.values():        # over, else the closest station, gateway or L-point
+            if b.system == system and b.kind != "star":
+                d = math.dist(b.center, xyz) - 3 * (b.om_radius_m or b.radius_m)
+                if d < nd:
+                    near, nd = b.name, d
+        if nd > 0:
+            for loc in self.nav.locations.values():
+                if loc.system == system and loc.kind == "space" and loc.source == "db" and loc.pos is not None:
+                    d = math.dist(loc.pos, xyz)
+                    if d < nd:
+                        near, nd = loc.name, d
+        b = self.nav.body_near(tuple(xyz), system)
+        if b is not None and b.rotation_period_h:
+            # On (or over) a planet or moon: turn the point with it, taking the coordinates as of when the
+            # contract was accepted
+            o.marker = {"body": b.name, "system": system, "pos": list(b.to_local(tuple(xyz), c.accepted_at or time.time())),
+                        "from_text": True, "approx": True}
+            o.space = None
+            o.location = self._match_location(o) if o.found != "manual" else o.location
+            o.found = "coords"
+            return True
+        o.marker = {"body": None, "system": system, "pos": list(xyz), "near": near, "from_text": True}
+        o.space = None
+        best, bd = None, 5_000.0                    # a known station or platform right there
+        for loc in self.nav.locations.values():
+            if loc.kind == "space" and loc.system == system and loc.pos is not None and loc.source != "mission":
+                d = math.dist(loc.pos, xyz)
+                if d < bd:
+                    best, bd = loc.name, d
+        o.location, o.found = best, "coords"
+        return True
+
     def _tracking_no(self, c):
         """Give a contract a tracking number like a parcel's, never one already in use."""
         if not c.tracking_no:
@@ -814,6 +929,8 @@ class ContractTracker(threading.Thread):
 
     def _free_marker(self, o, zone, offset, system, ts):
         """Place an open-space marker; True if it could be placed."""
+        if o.marker and o.marker.get("from_text"):
+            return True                                # the contract gave its exact coordinates: keep those
         o.space = {"zone": zone, "offset": list(offset), "system": system, "at": ts}
         ref = self._reference(system, ts)
         if not ref:
@@ -1033,10 +1150,17 @@ class ContractTracker(threading.Thread):
                 self._pending = line          # text wrapped onto the next lines
                 return False
             return self._notification(line)
-        if not self.build and "Build(" in line:
+        # The build is read again at the top of every new log: a game update (4.10.1 -> 4.10.2) brings a new
+        # build number, and that's how Quantum knows the game changed (planet alignment starts over, and so
+        # on). Before, the first build ever seen was kept for good, so an update went unnoticed.
+        if not self._build_read and "Build(" in line:
             m = re.search(r"Build\((\d+)\)", line)
             if m:
-                self.build = m.group(1)
+                self.build, self._build_read = m.group(1), True
+        if not self.branch and "sc-alpha-" in line:
+            m = re.search(r"sc-alpha-(\d+\.\d+(?:\.\d+)?)", line)
+            if m:
+                self.branch = m.group(1)
         if "objective marker" in line:
             return self._marker(line)
         if "PHYSICS INSTANCE STATS" in line or (self._phys is not None and "planet cells:" in line):
@@ -1344,6 +1468,9 @@ class ContractTracker(threading.Thread):
             c.name, c.status = rest, "active"
             sysm = re.search(r"\b(Stanton|Pyro|Nyx)\b", rest, re.I)
             c.system = c.system or (sysm.group(1).capitalize() if sysm else self.where.get("system"))
+            c.coords = text_coords(full) or c.coords
+            for o in c.objectives:
+                self._place_from_coords(c, o)
             return True
         if kind == "New Objective":
             if c is None:
@@ -1354,19 +1481,32 @@ class ContractTracker(threading.Thread):
             else:
                 o = Objective(oid or f"t{len(c.objectives)}", rest, "active", objective_kind(rest, oid))
                 c.objectives.append(o)
-            if not o.location and not need_item(rest):   # item names aren't places ("Ermer Family Farms")
-                o.location = self._match_location(o)
+            if not self._place_from_coords(c, o, text_coords(full)) and not o.location and not need_item(rest):
+                o.location = self._match_location(o)       # item names aren't places ("Ermer Family Farms")
                 o.found = "text" if o.location else o.found
             c.updated_at = ts
             return True
         if kind in ("Objective Complete", "Objective Withdrawn", "Objective Failed"):
             status = {"Objective Complete": "done", "Objective Withdrawn": "withdrawn",
                       "Objective Failed": "failed"}[kind]
-            for cand in ([c] if c else []) + [x for x in self.contracts.values() if x is not c]:
-                o = self._objective(cand, oid, rest) if cand else None
+            if has_id and c:
+                o = self._objective(c, oid, rest)
                 if o and o.status == "active":
-                    self._set_status(cand, o, status, ts)
+                    self._set_status(c, o, status, ts)
                     return True
+                return False
+            # No MissionId on the notification: find the objective by its text. Two contracts can have the
+            # same one ("Collect Constellation MK V Cntr. Gold Box from RSI Event Platform") at platforms
+            # far apart, so with more than one open, only the one where you are counts. If that can't be
+            # told, none is marked here: the game's <ObjectiveUpserted> line names the contract's id and
+            # marks the right one.
+            cands = [(x, o) for x in ([c] if c else []) + [x for x in self.contracts.values() if x is not c]
+                     if x and (o := self._objective(x, oid, rest)) and o.status == "active"]
+            if len(cands) > 1:
+                cands = self._where_you_are(cands)
+            if len(cands) == 1:
+                self._set_status(cands[0][0], cands[0][1], status, ts)
+                return True
             return False
         if kind in ("Contract Complete", "Contract Failed", "Contract Abandoned"):
             if not has_id:  # old logs: match by name
@@ -1487,6 +1627,7 @@ class ContractTracker(threading.Thread):
                     if self._reopen or sig != self.log_sig or size < self.offset:
                         if sig != self.log_sig or size < self.offset:     # new game session
                             self.log_sig, self.offset, self.zone_bodies = sig, 0, {}
+                            self._build_read, self.branch = False, ""      # the game may have been updated
                             self.zone_places, self.atc = {}, {}
                             self.phys_systems, self._phys = [], None
                         self._reopen = False

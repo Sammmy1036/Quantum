@@ -25,8 +25,9 @@ GATEWAYS = {
     "Nyx Gateway Station": ("Stanton", "Nyx", (-62284229191.638901, 23467598946.457104, 20198395415.087944),
                             "Gateway station for the temporary link to Nyx (the old Magnus gate). "
                             "Position from a /showlocation at the station"),
-    "Terra Gateway Station": ("Stanton", "Terra", (51118210044.76286, -5270029473.660545, -4339552358.888522),
-                              "Gateway station. Terra Gateway isn't open yet"),
+    # Sam's /showlocation docked at the station (4.10.2)
+    "Terra Gateway Station": ("Stanton", "Terra", (51118167214.692024, -5269990089.520522, -4339545559.678229),
+                              "Gateway station. Terra Gateway isn't open yet. Position from a /showlocation at the station"),
     "Stanton Gateway Station (Pyro)": ("Pyro", "Stanton", None, ""),
     "Nyx Gateway Station (Pyro)": ("Pyro", "Nyx", None, ""),
     "Pyro Gateway Station (Nyx)": ("Nyx", "Pyro", None, ""),
@@ -132,7 +133,10 @@ def learn_key(name):
 # station and Gateway position is from the game files or older community data, and stays a "Check its
 # position" job until a datarunner confirms it with a /showlocation there.
 VERIFIED = {"Stanton Gateway Station (Pyro)", "Stanton Gateway (Pyro)", "Nyx Gateway Station",
-            "Stanton Gateway Station (Nyx)"}
+            "Stanton Gateway Station (Nyx)", "Terra Gateway Station"}
+# A Gateway and its station are never the same spot (the jump point is tens of km out). A Gateway
+# position closer than this to its station's is a reading taken at the station, filed under the Gateway.
+SAME_SPOT_M = 3_000
 
 
 def unverified(learned=None):
@@ -225,7 +229,15 @@ def apply(db, learned=None):
     for name, (system, to, pos, note) in JUMP_POINTS.items():
         st = station_of(name)
         l = learned.get(learn_key(name))
-        if l and l.get("system") == system and l.get("pos"):          # your (or datarunners') /showlocation
+        st_loc = db.locations.get(st) if st else None
+        st_pos = st_loc.pos if st_loc is not None and st_loc.pos is not None else None
+
+        def at_station(p):
+            return st_pos is not None and p is not None and \
+                sum((p[i] - st_pos[i]) ** 2 for i in range(3)) ** 0.5 < SAME_SPOT_M
+        if l and l.get("system") == system and l.get("pos") and not at_station(l["pos"]):
+            # your (or datarunners') /showlocation. One taken at the station isn't the Gateway's: setting a
+            # station's position never moves its Gateway.
             pos, note = tuple(l["pos"]), note.split(". Position from")[0] + ". Position from a /showlocation there"
         note = note + (f". The station, {st}, is a short hop away (shops, refuel, cargo)" if st else "")
         existing = db.locations.get(name)

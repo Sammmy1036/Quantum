@@ -94,6 +94,7 @@ button{cursor:pointer}
 .obj.done .txt,.obj.withdrawn .txt,.obj.failed .txt{color:var(--dim);text-decoration:line-through}
 .obj .where{color:#ffb3d6;font-size:12.5px;cursor:pointer}
 .obj .where:hover{text-decoration:underline}
+.trackids{display:flex;flex-wrap:wrap;gap:0 14px}.trackids .trackno b{overflow-wrap:anywhere}
 .trackno{font:500 12px ui-monospace,Consolas,monospace;color:var(--ink-2);margin:2px 0 6px;cursor:copy;letter-spacing:.04em}.trackno b{color:var(--ink);font-weight:600}
 .vh-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;margin-bottom:12px}.vh-filters .field{width:100%;min-width:0;padding-left:8px;padding-right:4px}
 .vh.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
@@ -243,7 +244,7 @@ em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}e
 .mk-h{display:flex;align-items:baseline;gap:8px;margin:14px 2px 6px;font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2)}
 .mk-row{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel-2)}
 .mk-row .w{font-weight:600}.mk-row .w a{color:inherit;cursor:pointer}.mk-row .w a:hover{text-decoration:underline}
-.mk-row .p{font:600 14px var(--text);text-align:right}.mk-row .m{grid-column:1/3;font-size:12px;color:var(--ink-2)}
+.mk-row .p{font:600 14px var(--text);text-align:right;white-space:nowrap}.mk-row .w{min-width:0;overflow-wrap:anywhere}.mk-row .m{grid-column:1/3;font-size:12px;color:var(--ink-2)}
 .mk-row .best{color:#57e39b}.mk-row .iconbtn{grid-row:1/3;grid-column:3}
 .tr-card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px;background:var(--panel-2)}
 .tr-card.hl{border-color:#57e39b;box-shadow:0 0 0 1px #57e39b}
@@ -578,6 +579,8 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .cm-pill{color:#7fe7ff;white-space:nowrap}
 #update-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;width:min(560px,92%);background:var(--panel);border:1px solid rgba(75,141,255,.6);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
 #update-bar .row{gap:8px;align-items:center}
+#game-update-bar{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:61;width:min(560px,92%);background:var(--panel);border:1px solid rgba(87,227,155,.55);border-radius:12px;padding:12px 14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px;line-height:1.5}
+#game-update-bar .row{gap:8px;align-items:center}
 /* Release notes (GitHub's HTML). Their own class, and reset to plain block layout, so styles meant for the rest of
    the app (.md, .row, .notes...) never reach them: a shared class name is what kept breaking this box. */
 #update-bar .notes.rel-notes{display:block;white-space:normal;line-height:1.5;overflow-wrap:anywhere;max-height:min(46vh,360px)}
@@ -813,6 +816,11 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .hd-hero.n4>div{padding:2px 14px}.hd-hero.n4>div:first-child{padding-left:0}
 .hd-hero.n4 b{font-size:clamp(16px,1.55vw,22px)}
 .hd-hero.n4 b small{font-size:12px;margin-left:4px}
+.hd-hero b .num{white-space:nowrap}
+.hd-hero b small{white-space:nowrap}
+.hd-hero b.fit1{font-size:clamp(17px,1.9vw,24px)}.hd-hero.n4 b.fit1{font-size:clamp(15px,1.4vw,20px)}
+.hd-hero b.fit2{font-size:clamp(15px,1.6vw,21px)}.hd-hero.n4 b.fit2{font-size:clamp(13px,1.2vw,17px)}
+.hd-hero b.fit3{font-size:clamp(13px,1.35vw,18px)}.hd-hero.n4 b.fit3{font-size:clamp(12px,1.05vw,15px)}
 @media (max-width:980px){.hd-hero.n4{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}.hd-hero.n4>div:nth-child(3){padding-left:0;border-left:0}}
 .hd-hero .good b{color:var(--ok)}.hd-hero .bad b{color:var(--danger)}
 .vd-flat .mk-note{text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim);margin-left:6px}
@@ -911,6 +919,9 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-ctl{display:flex;align-items:center;gap:6px;font-size:12.5px}
 .pf-own{font-size:12.5px;line-height:1.5;background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.35);border-radius:8px;padding:8px 10px}
 .mkp-img{position:relative}
+.mkp-img .pic-load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--panel);z-index:2;transition:opacity .25s}
+.mkp-img .pic-load .q-loader{transform:scale(.8)}
+.mkp-img.pic-wait img{opacity:0}.mkp-img img{transition:opacity .25s}
 .cp-nav.sub{padding-left:26px;font-size:12.5px}.cp-nav.sub .ic svg{width:16px;height:16px}
 .cp-nav.part .t{display:flex;flex-direction:column;min-width:0}.cp-nav.part .t small{color:var(--dim);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:0;padding:0;border-radius:0}
 .cp-tile.wt .ic svg,.cp-nav.sub .ic svg{stroke:#7fe7ff}
@@ -1085,6 +1096,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="tr-panel" class="side-panel"></div>
     <div id="dr-panel" class="pic-panel"></div>
     <div id="update-bar" hidden></div>
+    <div id="game-update-bar" hidden></div>
     <div id="dr-view" class="pic-panel" style="z-index:31"></div>
     <div id="cp-panel" class="pic-panel"></div>
     <div id="fl-panel" class="pic-panel"></div>
@@ -1595,7 +1607,11 @@ function place(obj,p){ obj.position.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]); }
 
 // =================================================================== camera
 function lockBodyOf(f){ return f.kind==="body" ? f.name : null; }   // orbit a planet in its rotating frame
-function surfaceBodyOf(f){ if(f.kind==="loc"){ const L=S.locMap[f.name]; return L&&L.kind==="surface"?L.body:null; }
+// A place stored on a planet or moon but well above it (Grim HEX, orbital markers, comm arrays, ship
+// graveyards): it turns with the body, but it isn't on the ground, so the map treats it like a station.
+function isOrbital(L){ const b=L&&L.kind==="surface"&&L.pos&&S.bodyMap[L.body]; if(!b) return false;
+  return Math.hypot(L.pos[0],L.pos[1],L.pos[2])-b.radius > Math.max(50000,b.radius*0.15); }
+function surfaceBodyOf(f){ if(f.kind==="loc"){ const L=S.locMap[f.name]; return L&&L.kind==="surface"&&!isOrbital(L)?L.body:null; }
   if(f.kind==="local") return f.body; if(f.kind==="player") return S.live?.player?.body||null; return null; }
 function focusPos(f,t){
   if(f.kind==="body") return S.bodyMap[f.name].center;
@@ -1676,7 +1692,7 @@ function fitSystem(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind!==
 function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(S.follow) setFollow(false); if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
 const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
 function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false); if(!L.pos) return;
-  if(L.kind==="surface"){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
+  if(L.kind==="surface"&&!isOrbital(L)){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
   else flyTo({kind:"loc",name}, close?60000:4e6); }
 // Follow: when your position changes (a /showlocation, a landing, a jump, a stop ticked off), the view
 // moves with you: you and your next stop if there's a route, otherwise just you. Dragging or zooming the
@@ -2092,8 +2108,9 @@ function renderDetail(){
           if(!S.drHasSecret) return connPill("none");
           if(k===undefined){ S.keyStat=null; api().uex_key_status().then(x=>{ S.keyStat=x; renderDetail(); }).catch(()=>{}); }
           return !k?connPill("checking"):k.ok?connPill("ok",`Connected · ${k.username}`):connPill("bad",k.error?"Not accepted":"Not connected",k.error); })()}</label>
-        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":""}" style="flex:1" autocomplete="off">
-          <button class="btn small" data-a="drsecret">Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
+        ${!lg.uex_token&&!S.drHasSecret?`<div class="muted" style="font-size:12px;margin:2px 0 6px;color:#ffd38a">Add and save your UEX Bearer Token above first. The Secret Key can't be saved until the token is in.</div>`:""}
+        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":!lg.uex_token?"Enter your Bearer Token first":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":!lg.uex_token?"Save your UEX Bearer Token first":""}" style="flex:1" autocomplete="off" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>
+          <button class="btn small" data-a="drsecret" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
         <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
         ${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); }
           const on=c?c.enabled!==false&&!!c.url:true, st=!c?"checking":!on?"off":c.ok?"ok":"offline";
@@ -2130,7 +2147,7 @@ function renderDetail(){
             <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
       <div class="sub">Help</div>
       <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
-        :!S.bugOpen?`<div class="row"><span>Found something broken?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Report a bug</button></div>`
+        :!S.bugOpen?`<div class="row"><span>Found something broken? Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
         :`<label class="k" for="s-bugmsg" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">What happened?</label>
           <textarea class="field" id="s-bugmsg" rows="5" maxlength="5000" style="width:100%;resize:vertical" placeholder="What you did, what you expected, and what happened instead" oninput="S.bugMsg=this.value">${esc(S.bugMsg||"")}</textarea>
           <label class="k" for="s-bugcontact" style="display:block;font-weight:600;font-size:12.5px;margin:10px 2px 5px">How can we reach you? <span class="muted" style="font-weight:400">(optional: Discord, email…)</span></label>
@@ -2262,8 +2279,9 @@ function renderDetail(){
       else { S.updNote=st.latest?.error?"Couldn't reach GitHub just now":`Up to date · checked ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
         toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); }
       renderDetail(); return; }
-    if(a==="drsecret"){ const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
-      const r=await api().dr_set_secret(v); S.drHasSecret=r.has_secret; S.drSecretDraft=""; S.bk=undefined; S.keyStat=undefined; S.ownerAsked=false; setTimeout(()=>ownerCheck().catch(()=>{}),3000); toast("Datarunner secret key saved"); renderDetail(); drRefreshAfterKey(); return; }
+    if(a==="drsecret"){ if(!S.live?.log?.uex_token){ toast("Enter your UEX Bearer Token first, then your Secret Key"); $("s-uex")?.focus(); return; }
+      const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
+      const r=await api().dr_set_secret(v); if(r.ok===false){ toast(r.error); if(r.need==="token") $("s-uex")?.focus(); return; } S.drHasSecret=r.has_secret; S.drSecretDraft=""; S.bk=undefined; S.keyStat=undefined; S.ownerAsked=false; setTimeout(()=>ownerCheck().catch(()=>{}),3000); toast("Datarunner secret key saved"); renderDetail(); drRefreshAfterKey(); return; }
     if(a==="bkdel"){ if(!S.bkDelAsk){ S.bkDelAsk=true; renderDetail(); setTimeout(()=>{ S.bkDelAsk=false; renderDetail(); },4000); return; }
       S.bkDelAsk=false; S.bkBusy="del"; renderDetail(); const r=await api().backup_delete(); S.bkBusy=null;
       toast(r.ok?"Backup deleted from the server. Backups are off for this PC":r.error); S.bk=await api().backup_status(); renderDetail(); return; }
@@ -2596,10 +2614,10 @@ function renderContracts(force){
           ${w.url?`<a data-url="${esc(w.url)}" style="cursor:pointer;text-decoration:underline">Open on api.star-citizen.wiki</a>`:""}</div></div></details>`; };
   const cwFetch=async id=>{ S.cw[id]={loading:true}; let r; try{ r=await api().contract_wiki(id); }catch(e){ r={ok:false,error:"Couldn't look it up"}; }
     S.cw[id]=r.ok?{info:r.info}:{error:r.error}; renderContracts(); };
-  const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you"};
+  const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you",coords:"from the coordinates in the contract"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
     const active=c.status==="active";
-    const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?(o.marker.near_place?`${o.marker.near_km} km from ${o.marker.near_place} (${o.marker.body}${o.marker.system&&o.marker.system!==S.system?", "+o.marker.system:""})`:`Marker on ${o.marker.body}`):`Marker near ${o.marker.lpoint||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
+    const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?(o.marker.near_place?`${o.marker.near_km} km from ${o.marker.near_place} (${o.marker.body}${o.marker.system&&o.marker.system!==S.system?", "+o.marker.system:""})`:`Marker on ${o.marker.body}`):o.marker.from_text?`Contract coordinates${o.marker.near?` near ${o.marker.near}`:""}`:`Marker near ${o.marker.lpoint||o.marker.near||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
       const inR=o.in_route;
       // Pickups don't state the amount; it's what the delivery objectives add up to for that cargo.
       const cg=c.tracking?.cargo||[], nm=x=>(x||"").toLowerCase().replace("aluminium","aluminum");
@@ -2629,7 +2647,7 @@ function renderContracts(force){
         ${tin?.unplaced?`<div class="unknown">Quantum doesn't know where ${esc(c.turn_in)} is yet, so it can't be a route stop. Fly there, type /showlocation, and press <b>I'm here: set position</b> on <a data-open="${esc(c.turn_in)}">its card</a>. Once is enough.</div>`:""}</div>` : "";
     return `<div class="contract ${active?"":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
       <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>
-      ${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
+      ${c.tracking_no||c.job_id?`<div class="trackids">${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${c.job_id?`<div class="trackno" title="The game's own id for this contract (from Game.log). Click to copy">Job ID <b>${esc(c.job_id)}</b></div>`:""}</div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
       <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
   $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
@@ -3071,9 +3089,26 @@ const makerLogo=m=>{ const c=brandOf(m); return (c&&S.brands?.[c])||S.brands?.["
 // Logos that ship with Quantum, used before the wiki's: makers whose wiki logo is missing or wrong. Embedded
 // as data, since a CSS mask won't load a separate local file (the page's own folder counts as another site).
 const LOCAL_BRANDS={"cmp:gnp":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGRhdGEtbmFtZT0iTGF5ZXIgMSIgdmlld0JveD0iMCAwIDgwMCA2MDAiPjxwYXRoIGQ9Ik0yMjguNSAzMzIuMWMtNTAuNSAwLTc4LjUtMjcuNy03OC41LTc5LjdzMjkuNi03OS41IDg0LjUtNzkuNWg2NC44djM0LjRoLTYwLjdjLTI5LjUgMC0zOC45IDE0LjItMzguOSA0NS4xIDAgMzEuNiA4IDQ2LjYgMzYuMyA0Ni42aDI3Ljd2LTI5aC0zMC4zdi0yOWg3Ni4ydjEzN2gtNDUuOXYtNDUuOGgtMzUuMnpNNTYzLjIgMjk3LjljMjcgMCAzNi41LTggMzYuNS00NHMtOC41LTQ2LjktMzYuNS00Ni45aC0yMS44djkwLjl6bS03MS4zLTEyNS4xaDc2LjJjNTIuMSAwIDgxLjkgMjQuMSA4MS45IDc5LjIgMCA1My42LTI5LjYgODAtODIuMiA4MGgtMjYuNHY0NS44aC00OS41ek00MzIuNSAxNzIuOHY5OS43bC01Ni05OS43aC01MS4zdjE1OS4zaDQyLjNWMjMxLjNsNTYuNyAxMDAuOGg1MC42VjE3Mi44aC00Mi4zek0yNjkuNyA0MTIuMUgyNjhWNDA5aDQuOHYxMy4yYTQuOCA0LjggMCAxMS05LjYgMHYtMjIuNWE0Ljc1NiA0Ljc1NiAwIDExOS41IDB2NS45aC0zLjJ2LTYuMWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNTI2IDEuNTI2IDAgMDAtMS41IDEuN3YyMi44YTEuNTg2IDEuNTg2IDAgMDAxLjUgMS43IDEuNTUgMS41NSAwIDAwMS42LTEuN3YtMTAuMnpNMjc5LjQgNDEwLjdoLjhjMS40IDAgMi0uNyAyLTIuNXYtNy40YzAtMS44LS42LTIuNi0yLTIuNmgtLjh6bTEgM2gtMXYxM2gtMy4ydi0zMS42aDQuM2MyLjcgMCA0LjggMS41IDQuOCA1LjN2Ny45YzAgMi41LS45IDQtMi4zIDQuN2wyLjUgMTMuNmgtMy4yek0yOTQuMSAzOTkuNWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNTI2IDEuNTI2IDAgMDAtMS41IDEuN3YyMi44YTEuNTg2IDEuNTg2IDAgMDAxLjUgMS43IDEuNTUgMS41NSAwIDAwMS42LTEuN3ptLTYuNCAyMi43di0yMi41YTQuNjUzIDQuNjUzIDAgMDE0LjctNSA0Ljc1MSA0Ljc1MSAwIDAxNC45IDV2MjIuNWE0Ljc1MyA0Ljc1MyAwIDAxLTQuOSA1IDQuNjUzIDQuNjUzIDAgMDEtNC43LTVNMzA3LjEgMzk1LjFoMy4ydjI3LjFhNC43ODggNC43ODggMCAwMS00LjggNSA0LjY1MyA0LjY1MyAwIDAxLTQuNy01di0yNy4xaDMuMnYyNy4yYTEuNiAxLjYgMCAwMDEuNiAxLjcgMS41NSAxLjU1IDAgMDAxLjYtMS43di0yNy4yek0zMTcuMSA0MTAuOWguN2MxLjQgMCAyLS44IDItMi41di03LjZjMC0xLjgtLjYtMi42LTItMi42aC0uN3ptMCAzdjEyLjloLTMuMnYtMzEuNmg0LjNjMi43IDAgNC44IDEuNSA0LjggNS4zdjguMWMwIDMuOC0yLjEgNS4zLTQuOCA1LjN6TTMyNS42IDM5NS4xaDcuNnYzLjFoLTQuNFY0MDloNC4zdjMuMWgtNC4zdjExLjZoNC40djMuMWgtNy42di0zMS43ek0zNDguOCA0MjYuOGMtMS4zLTkuNS0yLjEtMTguMi0zLjItMjcuNy4xIDkuNS40IDE4LjIuNSAyNy43SDM0M3YtMzEuNmg0LjdjMS4zIDkuNSAyLjEgMTguMiAzLjIgMjcuNy0uNC05LjUtLjQtMTguMi0uNi0yNy43aDMuMXYzMS42ek0zNjMuMiAzOTkuNWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNiAxLjYgMCAwMC0xLjYgMS43djIyLjhhMS42IDEuNiAwIDAwMS42IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd6bS02LjMgMjIuN3YtMjIuNWE0Ljc1NiA0Ljc1NiAwIDExOS41IDB2MjIuNWE0LjczIDQuNzMgMCAwMS00LjggNSA0LjY1MyA0LjY1MyAwIDAxLTQuNy01TTM3Ni4zIDM5NS4xaDMuMnYyNy4xYTQuNzg4IDQuNzg4IDAgMDEtNC44IDUgNC42NTMgNC42NTMgMCAwMS00LjctNXYtMjcuMWgzLjJ2MjcuMmExLjU4NiAxLjU4NiAwIDAwMS41IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd2LTI3LjJ6TTM4OS4zIDQyNi45aC00LjVsLTMuMy0zMS44aDMuNWMuNSA2LjMgMS41IDIxLjYgMi4xIDI3LjguNi02LjIgMS42LTIxLjYgMi4xLTI3LjhoMy41ek0zOTQuNiAzOTUuMWg3LjZ2My4xaC00LjRWNDA5aDQuM3YzLjFoLTQuM3YxMS42aDQuNHYzLjFoLTcuNnYtMzEuN3pNNDA3LjggNDE2LjFoMi44Yy0uNS01LjItMS4xLTEwLjctMS40LTE0LjJ6bTcuMiAxMC43aC0zLjVsLS43LTcuNmgtMy40bC0uNyA3LjZoLTMuNGw0LjItMzEuN2gzLjJ6TTQyMyAzOTUuMWgzLjJ2MjcuMWE0Ljc4OCA0Ljc4OCAwIDAxLTQuOCA1IDQuNjUzIDQuNjUzIDAgMDEtNC43LTV2LTI3LjFoMy4ydjI3LjJhMS41ODYgMS41ODYgMCAwMDEuNSAxLjcgMS41NSAxLjU1IDAgMDAxLjYtMS43ek00NDAuMSA0MTAuOWguN2MxLjQgMCAyLS44IDItMi41di03LjZjMC0xLjgtLjYtMi42LTItMi42aC0uN3ptMCAzdjEyLjloLTMuMnYtMzEuNmg0LjNjMi43IDAgNC44IDEuNSA0LjggNS4zdjguMWMwIDMuOC0yLjEgNS4zLTQuOCA1LjN6TTQ1MC42IDQxNi4xaDIuOGMtLjUtNS4yLTEuMS0xMC43LTEuNC0xNC4yem03LjIgMTAuN2gtMy41bC0uNy03LjZoLTMuNGwtLjcgNy42aC0zLjRsNC4yLTMxLjdoMy4yek00NjMgNDEwLjdoLjdjMS40IDAgMi0uNyAyLTIuNXYtNy40YzAtMS44LS42LTIuNi0yLTIuNmgtLjd6bTEgM2gtMXYxM2gtMy4ydi0zMS42aDQuM2MyLjcgMCA0LjggMS41IDQuOCA1LjN2Ny45YzAgMi41LS45IDQtMi4zIDQuN2wyLjUgMTMuNmgtMy4yek00NzQuNCA0MTYuMWgyLjhjLS41LTUuMi0xLjEtMTAuNy0xLjQtMTQuMnptNy4yIDEwLjdoLTMuNWwtLjctNy42SDQ3NGwtLjcgNy42aC0zLjRsNC4yLTMxLjdoMy4yek00ODYuOCA0MjMuN2gxYzEuNCAwIDItLjcgMi0yLjV2LTIwLjVjMC0xLjgtLjYtMi42LTItMi42aC0xem02LjEtMi4zYzAgMy44LTIuMSA1LjMtNC44IDUuM2gtNC41di0zMS42aDQuNWMyLjcgMCA0LjggMS41IDQuOCA1LjN6TTQ5Ni4zIDM5NS4xaDMuMnYzMS42aC0zLjJ6TTUwOS4xIDQxMi4xaC0xLjdWNDA5aDQuOHYxMy4yYTQuNjUzIDQuNjUzIDAgMDEtNC43IDUgNC43MyA0LjczIDAgMDEtNC44LTV2LTIyLjVhNC43NTYgNC43NTYgMCAxMTkuNSAwdjUuOUg1MDl2LTYuMWExLjU1IDEuNTUgMCAwMC0xLjYtMS43IDEuNiAxLjYgMCAwMC0xLjYgMS43djIyLjhhMS42IDEuNiAwIDAwMS42IDEuNyAxLjU1IDEuNTUgMCAwMDEuNi0xLjd2LTEwLjJ6TTUxOC4zIDM5OC4xYzAgOS41LjMgMTkuMi40IDI4LjdoLTMuMXYtMzEuNmg1LjRjLjggOS41IDEuMiAxNS43IDEuOCAyNS4yLjUtOS41LjktMTUuNyAxLjctMjUuMmg1LjV2MzEuNmgtMy4xYy4xLTkuNS40LTE5LjIuNC0yOC43LTEuMiA5LjUtMS44IDE5LjItMi42IDI4LjdINTIxYy0uOS05LjUtMS41LTE5LjItMi43LTI4LjdNNTMzLjYgMzk1LjFoNy41djMuMWgtNC4zVjQwOWg0LjJ2My4xaC00LjJ2MTEuNmg0LjN2My4xaC03LjV2LTMxLjd6TTMyNS4yIDM0OC45aDE0OS42djI5SDMyNS4yeiIvPjwvc3ZnPg=="};
-function loadBrands(redraw){ if(S.brands||S.brandsAsked) return; S.brandsAsked=true;
-  api().brand_logos().then(b=>{ const got=b?.logos||{}; S.brands={...got,...LOCAL_BRANDS}; if(!Object.keys(got).length) S.brandsAsked=false; redraw&&redraw(); })
-    .catch(()=>{ S.brandsAsked=false; S.brands={...LOCAL_BRANDS}; redraw&&redraw(); }); }
+// Manufacturer logos: asked for once (at startup, so they're in before any tab opens). Every tab that wants
+// them registers a redraw; when they arrive the galleries are drawn again (their cached key is cleared, or the
+// logos wouldn't show until something else changed, like clicking a vehicle).
+S.brandWaiters=S.brandWaiters||[];
+function brandsArrived(){ S.vehGalKey=null; S.cpGalKey=null; const w=S.brandWaiters.splice(0); for(const f of w){ try{ f(); }catch(e){ console.warn(e); } } }
+function loadBrands(redraw){ if(S.brands&&Object.keys(S.brands).length>Object.keys(LOCAL_BRANDS).length){ return; }
+  if(redraw){ S.brandWaiters.push(redraw); if(S.brandWaiters.length>8) S.brandWaiters.shift(); }
+  if(S.brandsAsked) return; S.brandsAsked=true;
+  api().brand_logos().then(b=>{ const got=b?.logos||{}; S.brands={...got,...LOCAL_BRANDS}; if(!Object.keys(got).length){ S.brandsAsked=false; setTimeout(()=>loadBrands(),20000); } brandsArrived(); })
+    .catch(()=>{ S.brandsAsked=false; S.brands={...LOCAL_BRANDS}; brandsArrived(); setTimeout(()=>loadBrands(),20000); }); }
+// First start with nothing cached: pull logos and vehicle pictures in the background right away, so the
+// Vehicles, My Fleet and Components tabs have them when they're opened.
+async function prefetchAssets(){
+  loadBrands(()=>{ if(S.tab==="vehicles") renderVehicles(); else if(S.tab==="fleet") renderFleet(); else if(S.tab==="components"&&S.cpDetail) renderComponents(); });
+  for(let i=0;i<20;i++){ await new Promise(r=>setTimeout(r,i?6000:8000));
+    let urls=[]; try{ urls=await api().prefetch_photos(); }catch(_){ return; }
+    if(urls.length){ S.prefetchImgs=[]; let k=0;
+      const next=()=>{ if(k>=urls.length) return; const im=new Image(); im.referrerPolicy="no-referrer"; im.onload=im.onerror=next; im.src=urls[k++]; S.prefetchImgs.push(im); };
+      for(let n=0;n<4;n++) next(); return; }
+    if(!S.live?.log?.uex_token) return; } }
 function titleLogo(maker,link,wide){ const u=makerLogo(maker); if(!u) return "";
   const ic=`<i class="brand-ic" style="-webkit-mask-image:url('${u}');mask-image:url('${u}')" aria-hidden="true"></i>`;
   if(wide) return `<span class="hd-logo wide" title="${esc(maker)}">${ic}</span>`;     // component makers: wide wordmarks
@@ -3083,8 +3118,12 @@ function titleLogo(maker,link,wide){ const u=makerLogo(maker); if(!u) return "";
 // Each stat is {label, value, delta (html, optional), changed (bool)}; empty values are left out.
 function statBlock(hero,rest){ const has=x=>x&&x.value!=null&&x.value!=="";
   hero=hero.filter(has); rest=rest.filter(has); if(!hero.length&&!rest.length) return "";
-  const big=v=>{ const m=String(v).match(/^([−\-+]?[\d.,]+)\s*([A-Za-z].*)$/); return m?`${esc(m[1])}<small>${esc(m[2])}</small>`:esc(v); };
-  return `<div class="hd-hero n${hero.length}">${hero.map(x=>`<div class="${x.changed?"chg":""} ${x.tone||""}"><span class="lab">${esc(x.label)}</span><b>${big(x.value)}</b>${x.delta?`<span class="dl">${x.delta}<small> from stock</small></span>`:""}</div>`).join("")}</div>`
+  // Numbers never split across lines ("1,149,12 / 0"): they stay whole, and long ones get a smaller size to fit their box
+  const big=v=>{ const m=String(v).match(/^([−\-+]?[\d.,]+)\s*([A-Za-z].*)$/); return m?`<span class="num">${esc(m[1])}</span><small>${esc(m[2])}</small>`:esc(v); };
+  const fit=v=>{ const m=String(v).match(/^[−\-+]?[\d.,]+/), n=m?m[0].length:0; return n>=11?"fit3":n>=9?"fit2":n>=7?"fit1":""; };
+  // One size for the whole row: the longest number decides it, so price, rent, crew and SCU all match
+  const rowFit=["","fit1","fit2","fit3"][Math.max(0,...hero.map(x=>["","fit1","fit2","fit3"].indexOf(fit(x.value))))];
+  return `<div class="hd-hero n${hero.length}">${hero.map(x=>`<div class="${x.changed?"chg":""} ${x.tone||""}"><span class="lab">${esc(x.label)}</span><b class="${rowFit}">${big(x.value)}</b>${x.delta?`<span class="dl">${x.delta}<small> from stock</small></span>`:""}</div>`).join("")}</div>`
     +(rest.length?`<div class="hd-read">${rest.map(x=>`<div class="r ${x.changed?"chg":""}"><span>${esc(x.label)}</span><b>${esc(x.value)}${x.delta?` ${x.delta}`:""}</b></div>`).join("")}</div>`:""); }
 // Which wiki brand icon a UEX manufacturer name goes with (Sc-icon-brand-<code>.svg)
 const BRAND_CODE=[[/aegis/i,"aegs"],[/anvil/i,"anvl"],[/aopoa|xi.?an/i,"xnaa"],[/\bargo\b/i,"argo"],[/banu/i,"banu"],[/consolidated/i,"cnou"],
@@ -3532,6 +3571,7 @@ async function renderShip(uid){
       return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
     <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
   if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size); }
+  watchPic($("fl-panel").querySelector(".mkp-img"));
   loadLiveries(uid); }
 // ---- Livery: any paint there is for the ship, per loadout ("Stock paint" when none is picked).
 S.flLiv=S.flLiv||{};
@@ -3543,20 +3583,20 @@ function liveryHtml(uid){ const L=S.flLiv[uid];
     <select class="field lv-sel" id="fl-liv">${[`<option value="">Stock paint</option>`,
       ...L.items.map(x=>`<option value="${esc(x.name)}" ${x.name===cur?"selected":""}>${esc(x.name)}${x.buy?.length?` · ${money(x.buy[0].price)}`:""}</option>`),
       ...(cur&&!it?[`<option value="${esc(cur)}" selected>${esc(cur)}</option>`]:[])].join("")}</select>
-    ${cur?`<span class="muted" style="font-size:12px">${buy?`From ${money(buy.price)} at ${esc(buy.where)}`:it?.source==="wiki"?"Not sold in shops as far as UEX knows (pledge, event or reward paint)":""}</span>
-      <button class="btn small ghost" data-livpic="${esc(it?.wiki||cur)}" title="See this paint">Picture</button>`
-      :`<span class="muted" style="font-size:12px">${L.items.length?`${L.items.length} paint${L.items.length===1?"":"s"} for this ship`:esc(L.note||"No paints listed for this ship yet")}</span>`}
-    <div id="fl-livpic" style="flex-basis:100%"></div>`; }
+    ${cur?`<span class="muted" style="font-size:12px">${buy?`From ${money(buy.price)} at ${esc(buy.where)}`:it?.source==="wiki"?"Not sold in shops as far as UEX knows (pledge, event or reward paint)":""}${S.flLoad?.ship&&!S.flLoad.ship.livery_photo?`${buy||it?.source==="wiki"?" · ":""}No photo of selected livery. Displaying stock image.`:""}</span>`
+      :`<span class="muted" style="font-size:12px">${L.items.length?`${L.items.length} paint${L.items.length===1?"":"s"} for this ship`:esc(L.note||"No paints listed for this ship yet")}</span>`}`; }
 async function loadLiveries(uid){ if(!S.flLiv[uid]){ try{ S.flLiv[uid]=await api().fleet_liveries(uid); }catch(e){ S.flLiv[uid]={ok:false}; } }
   const box=$("fl-livery"); if(box&&S.flSel===uid) box.innerHTML=liveryHtml(uid); }
 document.addEventListener("change",async e=>{ if(e.target.id!=="fl-liv") return; const uid=S.flSel, L=S.flLiv[uid]; if(!L) return;
   const it=L.items.find(x=>x.name===e.target.value)||(e.target.value?{name:e.target.value}:null);
-  const r=await api().fleet_set_livery(uid,it); if(!r.ok) return toast(r.error);
-  L.current=r.current; S.flLoad=null; toast(it?`${it.name} on this loadout`:"Back to the stock paint"); renderShip(uid); });
-document.addEventListener("click",async e=>{ const b=e.target.closest("[data-livpic]"); if(!b) return; const box=$("fl-livpic"); if(!box) return;
-  if(box.innerHTML){ box.innerHTML=""; return; } box.innerHTML=`<div class="muted" style="font-size:12px">Loading picture…</div>`;
-  const it=S.flLiv[S.flSel]?.items.find(x=>x.name===S.flLiv[S.flSel]?.current?.name);
-  const url=await api().wiki_image(b.dataset.livpic)||it?.image; box.innerHTML=url?`<img src="${esc(url)}" alt="" referrerpolicy="no-referrer" style="max-width:min(520px,100%);border-radius:10px;margin-top:6px">`:`<div class="muted" style="font-size:12px">No picture of this paint yet.</div>`; });
+  const box=document.querySelector("#fl-panel .mkp-img"), img=box?.querySelector("img"); picLoading(box,"Loading livery…");
+  const r=await api().fleet_set_livery(uid,it); if(!r.ok){ picLoaded(box); return toast(r.error); }
+  L.current=r.current;
+  if(img&&r.photo&&img.src!==r.photo){ img.addEventListener("load",()=>picLoaded(box),{once:true}); img.addEventListener("error",()=>picLoaded(box),{once:true}); img.src=r.photo; }
+  else picLoaded(box);
+  const fs=(S.fleet||[]).find(x=>x.uid===uid); if(fs&&r.photo&&fs.primary_name&&S.flLoad?.loadouts?.active===S.flLoad?.loadouts?.primary) fs.photo=r.photo;   // the fleet card shows the primary loadout's paint
+  toast(it?(r.photo&&r.photo!==r.stock_photo?`${it.name} on this loadout`:`${it.name} on this loadout · No photo of selected livery. Displaying stock image.`):"Back to the stock paint");
+  S.flLoad=null; renderShip(uid); });
 async function loadSlotOptions(type,size){
   const box=$("fl-opts"); if(!box) return; box.innerHTML=`<div class="muted" style="font-size:12px">Loading what fits, with each one's numbers…</div>`;
   const r=await api().fleet_options(type,size?+size:0,S.flSel); if(!$("fl-opts")) return;
@@ -3809,6 +3849,18 @@ $("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
 
 // ---- Updates: a newer release on GitHub is offered here; Quantum downloads it, checks its signature
 // and restarts into it.
+// Star Citizen was updated (a new build in Game.log): say so once. Planet alignment starts over for the new
+// version, and ships, parts and paints are fetched fresh, so what the update added shows up.
+function renderGameUpdate(){ const b=$("game-update-bar"), g=S.live?.game_update; if(!b) return;
+  if(!g){ b.hidden=true; return; }
+  b.hidden=false;
+  b.innerHTML=`<div class="row"><b>Star Citizen was updated${g.version?` to ${esc(g.version)}`:""}</b><span class="muted">build ${esc(g.build)}</span><span class="spacer"></span>
+      <button class="btn small primary" data-gup="align">Planet alignment</button><button class="btn small ghost" data-gup="ok">OK</button></div>
+    <div class="muted" style="font-size:12px;margin-top:4px">Planets and moons need lining up again for this version, so they're back in the alignment jobs. Ships, components and paints are being refreshed for anything new.</div>`; }
+document.addEventListener("click",async e=>{ const a=e.target.closest("[data-gup]")?.dataset.gup; if(!a) return;
+  await api().game_update_ack(); $("game-update-bar").hidden=true; S.gameUpdSeen=null; if(S.live) S.live.game_update=null;
+  S.veh=null; S.vehGalKey=null; S.cpCats=null; S.cpItems=null; S.cpGalKey=null; S.flLiv={};
+  if(a==="align"&&typeof openAlign==="function") await openAlign(); });
 async function renderUpdateBar(force){ const b=$("update-bar"), u=S.live?.update;
   if(!u&&!force){ b.hidden=true; return; }
   const st=await api().update_status(), L=st.latest, pr=st.progress||{};
@@ -3957,6 +4009,13 @@ function wikiDesc(t,url){ const ps=String(t).split(/\n\s*\n/).map(x=>x.trim()).f
   const first=`<p>${esc(ps[0])}</p>`, rest=ps.slice(1).map(p=>`<p>${esc(p)}</p>`).join("");
   return `${first}${rest?`<details><summary>More</summary>${rest}</details>`:""}<div class="src">From the Star Citizen Wiki</div>`; }
 function qPic(){ return `<div class="q-loader small" role="status" aria-label="Loading picture"><div class="bar"><i></i></div></div>`; }
+// A ship picture that's loading: the Quantum mark and a bar over it until it's in (no grey half-drawn image).
+function picLoading(box,text){ if(!box) return; box.classList.add("pic-wait");
+  if(!box.querySelector(".pic-load")) box.insertAdjacentHTML("beforeend",`<div class="pic-load">${qLoader(text||"Loading picture…")}</div>`); }
+function picLoaded(box){ if(!box) return; box.classList.remove("pic-wait"); box.querySelector(".pic-load")?.remove(); }
+function watchPic(box){ const img=box?.querySelector("img"); if(!img) return;
+  if(img.complete&&img.naturalWidth){ picLoaded(box); return; }
+  picLoading(box); img.addEventListener("load",()=>picLoaded(box),{once:true}); img.addEventListener("error",()=>picLoaded(box),{once:true}); }
 function qLoader(text){ return `<div class="q-loader" role="status" aria-live="polite"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/><path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/><path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>
   <div class="bar"><i></i></div><div class="txt">${esc(text)}</div></div>`; }
 
@@ -4998,6 +5057,7 @@ async function poll(){
   renderHud(); renderStatus(); renderCapture(); renderWaypoints(false);
   if(S.qVersion===undefined){ S.qVersion=""; api().update_status().then(st=>{ S.qVersion=st.current; if(st.just_updated) toast(`Quantum updated to ${st.current}`); }); }
   if((live.update?.version||null)!==(S.updSeen||null)){ S.updSeen=live.update?.version||null; renderUpdateBar(); }
+  if((live.game_update?.build||null)!==(S.gameUpdSeen||null)){ S.gameUpdSeen=live.game_update?.build||null; renderGameUpdate(); }
   S.drHasSecret=!!live.datarunner?.has_secret;
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
@@ -5025,6 +5085,7 @@ async function init(){
   await breathe();
   await poll(); renderContracts(); requestAnimationFrame(frame);
   setTimeout(()=>ownerCheck().catch(()=>{}),4000);                 // the server owner gets Replace buttons on pictures
+  setTimeout(()=>prefetchAssets().catch(()=>{}),1500);            // logos and pictures into the cache from the first start
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
   if(S.selected?.kind==="settings"){ if(!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);

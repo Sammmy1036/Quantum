@@ -99,7 +99,7 @@ STORE_FIX = {"pitbull": "https://robertsspaceindustries.com/en/pledge/ships/pitb
 
 # Add-ons UEX lists (cargo modules and the like) aren't ships, so they stay out of the lists, except ones
 # that fly on their own: the Drake Command Module comes with a Caterpillar or Ironclad and detaches.
-FLYING_ADDONS = ("command module",)
+FLYING_ADDONS = ("command module", "skylark")
 # Ships UEX doesn't list at all, added so they can be looked up and put in My Fleet. Dropped by itself
 # once UEX lists one with the same name. The id is far outside UEX's range, so it never clashes.
 EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake Command Module", "slug": "command-module",
@@ -110,13 +110,24 @@ EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake C
                   {"id": 990010, "name": "Constellation Mk V Andromeda", "name_full": "RSI Constellation Mk V Andromeda",
                    "slug": "constellation-mk-v-andromeda", "company_name": "Roberts Space Industries", "scu": 0,
                    "crew": "", "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "url_store": None,
-                   "url_photo": None, "quantum_extra": True},
+                   "url_photo": None, "quantum_extra": True, "wiki_page": "Constellation Mk V Andromeda"},
                   {"id": 990011, "name": "Constellation Mk V Centaurus", "name_full": "RSI Constellation Mk V Centaurus",
                    "slug": "constellation-mk-v-centaurus", "company_name": "Roberts Space Industries", "scu": 240,
                    "crew": "4", "size": 5, "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0,
-                   "url_store": None, "url_photo": None, "quantum_extra": True}]
-# Ships UEX still flags as concepts that are flying in game.
-IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"})
+                   "url_store": None, "url_photo": None, "quantum_extra": True,
+                   "wiki_page": "Constellation Mk V Centaurus",
+                   # From the Star Citizen Wiki page (4.10.2). Shown until the wiki's ship data has the full stats,
+                   # which then take over by themselves.
+                   "fallback": {"career": "Medium freight / Gunship", "length": 82.5, "beam": 47.5, "height": 20.25,
+                                "mass": 1240000, "crew_min": 4, "size_class": 5}},
+                  # RSI's snub fighter, flight ready since 4.10.2 (out with the Centaurus, as a rental in the
+                  # RSI Discovery event). Until UEX lists it.
+                  {"id": 990012, "name": "Skylark", "name_full": "RSI Skylark", "slug": "skylark",
+                   "company_name": "Roberts Space Industries", "scu": 0, "crew": "1", "pad_type": "XS",
+                   "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "is_military": 1, "url_store": None,
+                   "url_photo": None, "quantum_extra": True, "wiki_page": "Skylark"}]
+# Ships UEX still flags as concepts (or as add-ons, for a snub) that are flying in game.
+IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"}, {"skylark"})
 
 
 def is_concept(v):
@@ -176,7 +187,50 @@ VEHICLE_ROLES = [("is_cargo", "Cargo"), ("is_mining", "Mining"), ("is_salvage", 
                  ("is_construction", "Construction"), ("is_datarunner", "Data running"), ("is_qed", "Quantum snare")]      # gateway positions you measured with /showlocation; shareable
 # Where a hangar reading in each city is anchored its spaceport (or the city if the data has no spaceport).
 CITY_ANCHOR = {"New Babbage": "New Babbage Interstellar Spaceport", "Area 18": "Riker Memorial Spaceport",
-               "Orison": "August Dunlow Spaceport", "Lorville": "Lorville"}
+               "Orison": "August Dunlow Spaceport", "Lorville": "Lorville"}   # Teasa's spot is approximate: Lorville stays the anchor
+# Each landing zone's spaceport: the same place as its city for services, landing and contracts ("Teasa
+# Spaceport" is Lorville, "Riker Memorial Spaceport" is Area 18). name -> (city, planet, local position
+# on the planet or None to keep the one in the data, note).
+SPACEPORTS = {
+    # From Sam's /showlocation at the spaceport (4.10.2), turned to Hurston's frame. The reading's time
+    # isn't known, so it's placed at Lorville's longitude: within a few km.
+    "Teasa Spaceport": ("Lorville", "Hurston", (-330889.8, -756782.4, 565425.1),
+                        "Lorville's spaceport. Position from a /showlocation there (approximate: within a few km)"),
+    "Riker Memorial Spaceport": ("Area 18", "ArcCorp", None, "Area 18's spaceport"),
+    "New Babbage Interstellar Spaceport": ("New Babbage", "microTech", None, "New Babbage's spaceport"),
+    "August Dunlow Spaceport": ("Orison", "Crusader", None, "Orison's spaceport"),
+}
+
+
+def spaceport_city(name):
+    """'Teasa Spaceport' -> 'Lorville', or None."""
+    sp = SPACEPORTS.get(name)
+    return sp[0] if sp else None
+
+
+def ensure_spaceports(db):
+    """Put every city's spaceport on the map (a city place, with its city's services), adding any the
+    map data lacks (Teasa Spaceport at Lorville). Returns True if the map changed."""
+    changed = False
+    for name, (city, body, local, note) in SPACEPORTS.items():
+        loc = db.locations.get(name)
+        if loc is not None and loc.source != "db":
+            continue                                  # a waypoint of yours with that name: leave it alone
+        if loc is None:
+            if local is None or body not in db.bodies:
+                continue
+            c = db.locations.get(city)
+            db.locations[name] = Location(name, "surface", tuple(local), body, source="db", system="Stanton",
+                                          qt=True, category="city", notes=note)
+            if c is not None and c.pad and c.pad != "unknown":
+                db.locations[name].pad = c.pad
+            changed = True
+        else:
+            if loc.category != "city":
+                loc.category, changed = "city", True
+            if not loc.notes:
+                loc.notes, changed = note, True
+    return changed
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
 BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum  
 
@@ -202,6 +256,7 @@ class Api:
             watcher_mod.log_error("starmap import")
         threading.Thread(target=starmap_import.refresh, args=(self._starmap_cache,), daemon=True).start()
         nav_core.normalize(self._db)          # after every import: Delamar is an asteroid, Levski a station
+        ensure_spaceports(self._db)           # every city's spaceport (Teasa Spaceport at Lorville)
         self._db.save()
         for path in (BUILTIN_CAL_PATH, CAL_PATH):
             if not path.exists():
@@ -274,6 +329,7 @@ class Api:
         threading.Thread(target=self._sync_places, daemon=True).start()
         threading.Thread(target=self._backup_loop, daemon=True).start()
         threading.Thread(target=self._sync_photos, daemon=True).start()
+        threading.Thread(target=self._prefetch_assets, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
         self._update = None
@@ -987,6 +1043,7 @@ class Api:
                             "clear_on_start": bool(self._settings.get("clear_log_on_start", True)),
                             "uex_token": bool(self._uex.token),
                             "game_running": self._tracker.game_running, "note": self._tracker.log_note,
+                            "build": self._game_build() if self._tracker.build else self._settings.get("last_build"),
                             "cleared": self._log_cleared},
                     "where": self._tracker.where,
                     "travel": self._travel_view(cur, t) if game_on else None,
@@ -1026,6 +1083,9 @@ class Api:
             live["datarunner"] = {"shots": len(self._dr_shots), "seq": self._dr_seq, "job": self._dr_job.get("n"),
                                  "job_state": self._dr_job.get("state"),
                                  "has_secret": bool(self._dr_cfg().get("secret"))}
+            gu = getattr(self, "_game_update", None) or self._settings.get("game_update")
+            if gu:
+                live["game_update"] = gu
             live["calibration"] = self._calibration
             live["calib_suggest"] = self._calib_suggestion()
             live["at_place"] = ({"name": self._tracker.place_for_code(w["code"]), "code": w["code"], "at": w.get("at")}
@@ -1674,10 +1734,66 @@ class Api:
     def _game_build(self):
         """The game build (from Game.log), or the last one seen when the game isn't running."""
         b = str(self._tracker.build or "")
-        if b and b != self._settings.get("last_build"):
+        old = self._settings.get("last_build")
+        if b and b != old:
             self._settings["last_build"] = b
             self._save_settings()
+            if old:
+                self._on_new_build(old, b)
         return b or self._settings.get("last_build")
+
+    # Caches that hold what a game update changes: ships, parts, paints (the wiki's game-file data and UEX's
+    # lists). Dropped when a new game version is seen, so new ships and components (and their stats) come
+    # in as soon as the wiki and UEX have them, instead of after the caches run out days later.
+    WIKI_UPDATE_CACHES = ("wiki_type_*.json", "wiki_vehicle_*.json", "wiki_item2_*.json")
+    UEX_UPDATE_CACHES = ("vehicles.json", "vehicles_*.json", "items_*.json", "categories.json")
+
+    def _on_new_build(self, old, new):
+        """Star Citizen was updated (a new build number in Game.log): tell the user, start planet alignment
+        over for the new version, and refresh what an update changes."""
+        version = self._tracker.branch or ""
+        try:
+            version = self._dr_game_build()[0] or version
+        except Exception:
+            pass
+        self._game_update = {"build": new, "previous": old, "version": version, "at": time.time()}
+        self._settings["game_update"] = self._game_update
+        self._save_settings()
+        self._sender._event(f"New game version detected: build {new}{f' ({version})' if version else ''}, was {old}")
+        removed, d = 0, HERE / "uex_cache"
+        if d.exists():
+            for pat in self.WIKI_UPDATE_CACHES:            # the wiki's: fetched again when next needed
+                for f in d.glob(pat):
+                    try:
+                        f.unlink()
+                        removed += 1
+                    except OSError:
+                        pass
+            for pat in self.UEX_UPDATE_CACHES:             # UEX's: marked out of date, so they're fetched
+                for f in d.glob(pat):                      # again, but still used if UEX can't be reached
+                    try:
+                        c = json.loads(f.read_text(encoding="utf-8"))
+                        c["at"] = 0
+                        f.write_text(json.dumps(c), encoding="utf-8")
+                        removed += 1
+                    except Exception:
+                        pass
+            try:
+                self._uex._mem.clear()
+            except Exception:
+                pass
+        self.__dict__.pop("_livery_pics", None)
+        self._photo_jobs = None
+        self._static_version += 1
+        print(f"game update: build {old} -> {new}; {removed} cached files refreshed", flush=True)
+        threading.Thread(target=self._apply_community_alignments, daemon=True).start()
+
+    def game_update_ack(self):
+        """You've seen the "Star Citizen was updated" note."""
+        self._settings.pop("game_update", None)
+        self._game_update = None
+        self._save_settings()
+        return {"ok": True}
 
     def _apply_community_alignments(self):
         """Planet alignments datarunners agree on for this game build go live here: used for every planet
@@ -1761,6 +1877,10 @@ class Api:
                 return {"ok": False, "error": f"Your last reading is in {self._player_sys}, not {system}"}
             body = self._db.body_near(self._player, system)
             jump = name in gateways.JUMP_POINTS
+            if jump and (st := gateways.station_of(name)) and (sl := self._db.locations.get(st)) is not None \
+                    and sl.pos is not None and dist(sl.pos, self._player) < gateways.SAME_SPOT_M:
+                return {"ok": False, "error": f"That reading is at {st}, not at the Gateway. Take it right at the "
+                                              "jump point (tens of km from the station), before you fly in"}
             if body and (name in gateways.GATEWAYS or jump):  # gateways are far out; Wikelo's orbit planets
                 return {"ok": False, "error": f"That reading is near {body.name}, not at the {'Gateway' if jump else 'station'}. "
                                               + ("Take it right at the jump point, before you fly in" if jump
@@ -2182,6 +2302,10 @@ class Api:
 
     def dr_set_secret(self, secret):
         secret = (secret or "").strip()
+        if secret and not self._uex.token:
+            # The Secret Key is checked through UEX with the Bearer Token, so it can't work without one
+            return {"ok": False, "need": "token", "has_secret": bool(self._dr_cfg().get("secret")),
+                    "error": "Enter your UEX Bearer Token first, then your Secret Key"}
         cfg = self._dr_cfg()
         changed = secret != (cfg.get("secret") or "")
         if secret:
@@ -3311,9 +3435,18 @@ class Api:
                     refs.append(("commodity", co.get("wiki") or co.get("name"), co.get("name"), co.get("kind") or "Commodity"))
             cats = self.uex_component_categories()
             for cat in (cats.get("items") or []) if cats.get("ok") else []:
+                if str(cat["id"]).startswith("wiki:"):
+                    # A kind only the wiki has (mining lasers, flight blades): its parts are the wiki's own
+                    # pages, so a picture job is for one whose page has no picture
+                    wtype = str(cat["id"])[5:]
+                    test = next((t for _, w, t in self.WIKI_KINDS if w == wtype), None)
+                    for w in self._wiki_parts(wtype, test):
+                        if not w.get("image"):
+                            refs.append(("component", w.get("wiki") or w["name"], w["name"], cat.get("name") or "Component"))
+                    continue
                 try:
                     items, _ = self._uex.get("items", {"id_category": int(cat["id"])})
-                except uex.UexError:
+                except (uex.UexError, ValueError, TypeError):
                     continue
                 for i in items:
                     if not i.get("is_commodity") and i.get("name"):
@@ -3505,6 +3638,11 @@ class Api:
             add("rent", self._uex.get("vehicles_rentals_prices_all")[0], ("price_rent", "price", "price_buy"))
             roles = VEHICLE_ROLES
             wiki = self._wikiapi.vehicle_summary(wait=True)    # medical beds and cargo grid, from the wiki
+            try:                       # wiki pictures for ships UEX has none for, asked for in one go
+                self._wikiapi.pictures([r for v in vehicles if not v.get("url_photo")
+                                        for r in (v.get("wiki_page"), v.get("name_full"), v.get("name")) if r], size=720)
+            except Exception:
+                pass
             out = []
             for v in vehicles:
                 # Concepts are shown too (flagged), so a ship you've pledged for, like a new Constellation
@@ -3753,6 +3891,32 @@ class Api:
         return {"type": g.get("type"), "class": g.get("class"), "grade": g.get("grade"), "size": g.get("size"),
                 "maker": g.get("maker"), "stats": st}
 
+    # Game-file parts that aren't real, buyable components: AI and test parts, and ones with no proper name.
+    GAME_JUNK = re.compile(r"(?i)\b(test|template|placeholder|dummy|unused|npc|ai)\b|_|^\s*$")
+
+    def _game_only_parts(self, slot, have):
+        """Parts of one kind from the game files (component_stats.json) whose name or uuid isn't in have:
+        new parts (an event's rewards) show as soon as the game data has them, before UEX or the wiki do."""
+        def norm(n):                      # "RSI Medusa Cannon" / "Medusa" / "medusa-cannon" are one part
+            w = re.findall(r"[a-z0-9]+", str(n or "").lower())
+            return " ".join(x for x in w if x not in self.NAME_NOISE)
+        out, seen = [], {str(h).lower() for h in have if h}
+        seen |= {norm(h) for h in seen}
+        for g in self._game.of_kind(slot, None):
+            nm = (g.get("name") or "").strip()
+            if not nm or self.GAME_JUNK.search(nm) or not g.get("maker") or g.get("maker") == "Unknown":
+                continue
+            if nm.lower() in seen or norm(nm) in seen or str(g.get("uuid") or "").lower() in seen:
+                continue
+            seen |= {nm.lower(), norm(nm)}
+            out.append(g)
+        return out
+
+    # Words that don't tell two parts apart, for matching game-file names to UEX's and the wiki's.
+    NAME_NOISE = {"rsi", "cannon", "repeater", "gatling", "scattergun", "beam", "laser", "ballistic", "distortion",
+                  "neutron", "cooler", "shield", "generator", "power", "plant", "quantum", "drive", "radar", "s1",
+                  "s2", "s3", "s4", "s5", "s6", "s7", "s8", "the"}
+
     def uex_component_categories(self):
         """Ship upgrade categories: coolers, power plants, quantum drives, shields, weapons, mining…"""
         def run():
@@ -3823,7 +3987,7 @@ class Api:
                     size = i.get("size")
                     row = {"id": i["id"], "name": i.get("name"), "maker": i.get("company_name") or "",
                            "size": None if str(size or "").strip() in ("", "0") else size, "grade": i.get("quality"),
-                           "cat": c["id"], "cat_name": c.get("name"), "wiki": i.get("wiki")}
+                           "cat": c["id"], "cat_name": c.get("name"), "wiki": i.get("wiki"), "uuid": i.get("uuid")}
                     if c.get("slot") == "WeaponGun":
                         try:
                             sz = int(size) if str(size or "").strip() not in ("", "0") else None
@@ -3838,12 +4002,14 @@ class Api:
                                                  c["id"], index=True))
                 for r in out[n0:]:
                     r["cat_name"] = c.get("name")
-                if c.get("slot") == "JumpDrive":           # jump modules UEX doesn't list
-                    have = {(r.get("name") or "").lower() for r in out if r["cat"] == c["id"]}
-                    for g in self._game.of_kind("JumpDrive", None):
-                        if (g.get("name") or "").lower() not in have:
-                            out.append({"id": g["uuid"], "name": g["name"], "maker": g.get("maker") or "", "size": g.get("size"),
-                                        "grade": g.get("grade"), "cat": c["id"], "cat_name": c.get("name"), "wiki": g["name"]})
+                if c.get("slot"):                          # parts in the game files that UEX and the wiki don't list yet
+                    have = {str(r.get(k) or "").lower() for r in out if r["cat"] == c["id"] for k in ("name", "uuid", "id")}
+                    for g in self._game_only_parts(c["slot"], have):
+                        row = {"id": g["uuid"], "name": g["name"], "maker": g.get("maker") or "", "size": g.get("size"),
+                               "grade": g.get("grade"), "cat": c["id"], "cat_name": c.get("name"), "wiki": g["name"]}
+                        if c["slot"] == "WeaponGun":
+                            row["wtype"] = self.weapon_type(g["name"], g)
+                        out.append(row)
             return {"ok": True, "items": out, "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]],
                     "at": at}
         return self._uex_call(run)
@@ -3881,14 +4047,13 @@ class Api:
             slot = self._slot_type_for(cat_name)
             out = self._with_wiki_parts(out, cat_name)
             guns = slot == "WeaponGun"
-            if slot == "JumpDrive":                       # every jump module, even ones UEX doesn't list (the Exfiltrate)
+            if slot:                                      # every part in the game files, even ones UEX and the wiki
                 have = {(x.get("uuid") or "").lower() for x in out} | {(x["name"] or "").lower() for x in out}
-                for g in self._game.of_kind("JumpDrive", None):
-                    if g["uuid"].lower() in have or (g.get("name") or "").lower() in have:
-                        continue
+                for g in self._game_only_parts(slot, have):   # don't list yet (new event parts, the Exfiltrate)
                     out.append({"id": g["uuid"], "name": g["name"], "maker": g.get("maker") or "", "size": g.get("size"),
                                 "grade": g.get("grade"), "category": None, "vehicle": None, "wiki": g["name"], "store": None,
-                                "exclusive": False, "note": None, "buy": [], "uuid": g["uuid"],
+                                "exclusive": False, "buy": [], "uuid": g["uuid"], "source": "game",
+                                "note": "From the game files: UEX and the Star Citizen Wiki don't list it yet, so shop prices may be missing.",
                                 "game": self._game_view(g["uuid"], g["name"], g.get("size"))})
             if guns:
                 for x in out:
@@ -3925,14 +4090,21 @@ class Api:
             return {"ok": False, "error": "Vehicle not found"}
         name = v.get("name") or ""
         d = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
-                                   v.get("name_full")]) or {}
+                                   v.get("name_full"), v.get("wiki_page")]) or {}
+        fb = v.get("fallback") or {}                 # a just-released ship's known numbers, until the wiki has them
+        if fb:
+            d = {**{k: fb[k] for k in ("career", "mass", "size_class") if fb.get(k)}, **d}
+            if not (d.get("sizes") or d.get("dimension")):
+                d["sizes"] = {k: fb[k] for k in ("length", "beam", "height") if fb.get(k)}
+            if fb.get("crew_min") and not fleet._dig(d, "crew", "min"):
+                d["crew"] = {**(d.get("crew") or {}), "min": fb["crew_min"]}
         g = lambda *path: fleet._dig(d, *path)
         seat = d.get("seating") or {}
         size = d.get("sizes") or d.get("dimension") or {}
         inv = d.get("vehicle_inventory")
         out = {
             "ok": True, "id": v["id"], "name": v.get("name_full") or name, "maker": v.get("company_name") or "",
-            "photo": self._vehicle_photo(v), "store": store_url(v), "wiki": bool(d),
+            "photo": self._vehicle_photo(v), "store": store_url(v), "wiki": bool(d) and not (fb and set(d) <= {"career", "mass", "size_class", "sizes", "crew"}),
             "roles": self._vehicle_roles(v, self._wikiapi.vehicle_summary()),
             "career": d.get("career") or d.get("role"), "description": self._vehicle_desc(d, name),
             "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
@@ -3958,6 +4130,34 @@ class Api:
             "cs": d.get("cross_section_max"), "claim": g("insurance", "claim_time"), "expedite": g("insurance", "expedite_time"),
         }
         return out
+
+    def _prefetch_assets(self):
+        """Right from the first start: download what the Vehicles, My Fleet and Components tabs show into the
+        cache in the background (manufacturer logos, the wiki's ship data, UEX's vehicle list and its
+        pictures' addresses), so they're on screen as soon as a tab opens instead of after the first click."""
+        time.sleep(3)                                       # let the window and map come up first
+        for name, fn in (("logos", self._wikiapi.brand_logos),
+                         ("wiki vehicles", lambda: self._wikiapi.vehicle_summary(wait=True))):
+            try:
+                fn()
+            except Exception as e:
+                print(f"prefetch {name}:", e, flush=True)
+        if not self._uex.token:
+            return
+        try:
+            r = self.uex_vehicles()
+            refs = [v["photo"] for v in (r.get("vehicles") or []) if v.get("photo")]
+            self._prefetched_photos = refs                  # the page warms its own image cache with these
+        except Exception as e:
+            print("prefetch vehicles:", e, flush=True)
+        try:
+            self.uex_component_categories()
+        except Exception as e:
+            print("prefetch components:", e, flush=True)
+
+    def prefetch_photos(self):
+        """Vehicle pictures to download into the page's cache early (empty until the background prefetch is done)."""
+        return list(getattr(self, "_prefetched_photos", None) or [])
 
     def brand_logos(self):
         """The Star Citizen Wiki's manufacturer icons, for the Vehicles tab."""
@@ -3993,7 +4193,21 @@ class Api:
         if v.get("url_photo"):
             return v["url_photo"]
         mine = self._community.photos()
-        return next((mine[k] for k in (self._pic_key(v.get("name_full")), self._pic_key(v.get("name"))) if k and k in mine), None)
+        hit = next((mine[k] for k in (self._pic_key(v.get("name_full")), self._pic_key(v.get("name"))) if k and k in mine), None)
+        if hit:
+            return hit
+        # No UEX picture yet (a ship that's just come out, like the Constellation Mk V or the Skylark):
+        # the Star Citizen Wiki page's own picture, once it has one.
+        for ref in (v.get("wiki_page"), v.get("name_full"), v.get("name")):
+            if not ref:
+                continue
+            try:
+                pic = self._wikiapi.pictures([ref], size=720).get(ref)
+            except Exception:
+                pic = None
+            if pic:
+                return pic
+        return None
 
     # Approved pictures are checked for every PHOTOS_SYNC_EVERY; when the set changes, photos_version goes
     # up in the live state and the page swaps in the new pictures, without restarting Quantum.
@@ -4223,7 +4437,8 @@ class Api:
             prim = self._loadout_of(f, "primary")
             out.append(dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
                             full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
-                            scu=v.get("scu") or 0, photo=self._vehicle_photo(v), pad=v.get("pad_type"),
+                            scu=v.get("scu") or 0, pad=v.get("pad_type"),
+                            photo=self._livery_photo(prim.get("livery"), v, cached_only=True) or self._vehicle_photo(v),
                             swaps=len(prim["loadout"]), loadouts=len(f["loadouts"]), primary_name=prim["name"],
                             total_swaps=sum(len(x["loadout"]) for x in f["loadouts"])))
         return {"ok": True, "ships": out, "main": next((f["uid"] for f in self._fleet() if f.get("main")), None)}
@@ -4263,7 +4478,7 @@ class Api:
         v = self._vehicle_rows().get(f["vehicle_id"], {})
         name = v.get("name") or f["name"]
         data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
-                                   v.get("name_full")])
+                                   v.get("name_full"), v.get("wiki_page")])
         if not data:
             return {"ok": False, "error": f"The Star Citizen Wiki has no loadout for {f['name']} (or it can't be reached)"}
         lo = fleet.Wiki.loadout(data)
@@ -4344,7 +4559,10 @@ class Api:
                                                   "stock": {"name": f"{len(guns)} gun{'s' if len(guns) != 1 else ''}"},
                                                   "power": now["parts"].get(fleet.WEAPONS)})
         return {"ok": True, "uid": uid, "ship": dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
-                                                     full=v.get("name_full") or f["name"], photo=self._vehicle_photo(v),
+                                                     full=v.get("name_full") or f["name"],
+                                                     photo=self._livery_photo((self._loadout_of(f) or {}).get("livery"), v) or self._vehicle_photo(v),
+                                                     stock_photo=self._vehicle_photo(v),
+                                                     livery_photo=bool(self._livery_photo((self._loadout_of(f) or {}).get("livery"), v)),
                                                      scu=v.get("scu") or 0, maker=v.get("company_name") or ""),
                 "loadouts": self.fleet_loadouts(uid),
                 "game_data": self._game.generated, **lo}
@@ -4402,8 +4620,46 @@ class Api:
                             "image": d.get("image")})
         except Exception:
             pass
+        # Paints the ship's wiki Paints page pictures that neither list has (the Intrepid's Wavefront)
+        try:
+            ship = v.get("name") or ship_name or ""
+            Fam = next((w for w in re.findall(r"[A-Za-z0-9\-]+", ship) if w.lower() == fam), (fam or "").title())
+            ship_words = set(re.findall(r"[a-z0-9]+", f"{ship} {fam}".lower())) - {"mk", "series"}
+            have = [re.findall(r"[a-z0-9]+", x["name"].lower()) for x in out]
+            for paint, fl in self._wikiapi.paints_on_page([f"{Fam} series/Paints", f"{ship} series/Paints", f"{ship}/Paints"],
+                                                          ship_words):
+                pw = [w for w in re.findall(r"[a-z0-9]+", paint.lower())]
+                if any(all(any(self._wikiapi._near(a, b) for b in h) for a in pw) for h in have):
+                    continue                                 # already listed ("Altar" is the Altair)
+                nm = f"{Fam} {paint} Livery"
+                have.append(re.findall(r"[a-z0-9]+", nm.lower()))
+                out.append({"id": f"wikifile:{fl}", "name": nm, "source": "wiki", "buy": [], "wiki": nm, "file": fl})
+        except Exception as e:
+            print("paints page:", e, flush=True)
+        out = [x for x in out if not self._paint_not_for(x["name"], fam)]
         out.sort(key=lambda x: x["name"].lower())
         return out
+
+    # Paints listed somewhere that aren't in the game (reported by players)
+    PAINT_NOT_IN_GAME = {"spirit intrepid livery"}
+
+    def _paint_not_for(self, name, fam):
+        """A paint that doesn't belong in this ship's list: one known not to exist, or one named after another
+        ship as well ("Spirit Intrepid Livery": a paint named for two ships isn't this one's)."""
+        n = (name or "").strip().lower()
+        if n in self.PAINT_NOT_IN_GAME:
+            return True
+        if not fam:
+            return False
+        others = self.__dict__.get("_ship_families")
+        if others is None:
+            try:
+                others = {self._paint_family(v.get("name")) for v in self._vehicle_rows().values()} - {""}
+            except Exception:
+                others = set()
+            self._ship_families = others
+        words = re.findall(r"[a-z0-9]+", n)
+        return fam in words and any(w in others and w != fam for w in words)
 
     def fleet_liveries(self, uid):
         """Paints available for a ship in My Fleet, and the one on the loadout being shown."""
@@ -4424,11 +4680,84 @@ class Api:
         lo = self._loadout_of(f)
         if livery:
             lv = livery if isinstance(livery, dict) else {"name": str(livery)}
-            lo["livery"] = {k: lv.get(k) for k in ("id", "name", "source", "wiki", "image") if lv.get(k)}
+            lo["livery"] = {k: lv.get(k) for k in ("id", "name", "source", "wiki", "image", "file") if lv.get(k)}
         else:
             lo.pop("livery", None)
         self._save_settings()
-        return {"ok": True, "current": lo.get("livery")}
+        v = self._vehicle_rows().get(f["vehicle_id"], {})
+        stock = self._vehicle_photo(v)
+        return {"ok": True, "current": lo.get("livery"), "photo": self._livery_photo(lo.get("livery"), v) or stock,
+                "stock_photo": stock}
+
+    def _livery_photo(self, livery, v=None, cached_only=False):
+        """The picture of a ship in a paint, or None when there's none yet (the stock picture is shown then):
+        one you put in place or an approved Quantum user's, else the paint's picture on the ship's own wiki
+        pages (its page and its series' Paints page: "Intrepid_Oblivion_in_space_-_Isometric.jpg"), else the
+        paint's own wiki page. Looked up once per ship and paint, and kept. cached_only: don't go to the
+        network, just say what's known (a background lookup is started for the rest)."""
+        if not livery:
+            return None
+        lv = livery if isinstance(livery, dict) else {"name": str(livery)}
+        name = (lv.get("name") or "").strip()
+        if not name:
+            return None
+        v = v or {}
+        cache = self.__dict__.setdefault("_livery_pics", {})
+        key = f"{(v.get('name') or '').lower()}|{name.lower()}"
+        if key in cache:
+            return cache[key] or None
+        if cached_only:
+            def warm():
+                try:
+                    self._livery_photo(lv, v)
+                except Exception:
+                    pass
+            threading.Thread(target=warm, daemon=True).start()
+            return None
+        url = None
+        try:                                              # one you or an approved Quantum user put in place
+            k = self._pic_key(name)
+            url = self._community.photo_overrides().get(k) or self._community.photos().get(k)
+        except Exception:
+            url = None
+        if not url and lv.get("file"):
+            try:
+                url = self._wikiapi.file_urls([lv["file"]]).get(lv["file"])
+            except Exception:
+                url = None
+        if not url and v:
+            url = self._wiki_paint_picture(name, v)
+        if not url:
+            fam = self._paint_family(v.get("name") or "") if v else ""
+            # a bare paint name ("Nocturne") can be some other page's title: only names with the ship's in them
+            for ref in [lv.get("wiki")] + ([name, f"{name} Livery", f"{name} Paint"] if not fam or fam in name.lower() else []):
+                if not ref:
+                    continue
+                try:
+                    url = self._wiki_image(ref)
+                except Exception:
+                    url = None
+                if url:
+                    break
+        url = url or lv.get("image")
+        cache[key] = url or ""
+        return url
+
+    def _wiki_paint_picture(self, paint, v):
+        """The paint's picture from the ship's wiki pages, or None."""
+        ship = v.get("name") or ""
+        fam = self._paint_family(ship)
+        Fam = next((w for w in re.findall(r"[A-Za-z0-9\-]+", ship) if w.lower() == fam), fam.title())
+        pages = [v.get("wiki_page"), ship, v.get("name_full"), f"{Fam} series/Paints", f"{ship} series/Paints",
+                 f"{ship}/Paints"]
+        try:
+            files = self._wikiapi.page_files([p for p in pages if p])
+            ship_words = set(re.findall(r"[a-z0-9]+", f"{ship} {fam}".lower())) - {"mk", "series"}
+            fl = self._wikiapi.paint_file(paint, ship_words, files)
+            return self._wikiapi.file_urls([fl]).get(fl) if fl else None
+        except Exception as e:
+            print("paint picture:", e, flush=True)
+            return None
 
     # ------------------------------------------------------------ flight blades
     # A ship's flight controller is a flight blade in game; ships that have aftermarket ones (Speed and
@@ -5318,7 +5647,14 @@ def main():
     def started():
         overlay.set_window_icon(icon)
         tray_icon.start()
-    webview.start(func=started)
+    # Keep the page's browser cache between launches (pywebview's default private mode throws it away), so
+    # pictures and logos downloaded once show at once next time instead of loading again every start.
+    cache_dir = HERE / "webview_cache"
+    try:
+        cache_dir.mkdir(exist_ok=True)
+        webview.start(func=started, private_mode=False, storage_path=str(cache_dir))
+    except TypeError:                                      # an older pywebview without these options
+        webview.start(func=started)
 
 
 if __name__ == "__main__":

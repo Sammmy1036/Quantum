@@ -88,6 +88,8 @@ class Wiki:
     # ship part ("Citadel" is both a shield generator and an armour set), or a page listing several things.
     WRONG_PAGE = re.compile(r"armou?r|helmet|undersuit|clothing|backpack|personal|fps|disambiguation|set index", re.I)
     PIC_CACHE_V = 2                                          # bump to look every picture up again
+    MISS_RETRY = 2 * 86400                                   # look again for a page that had no picture
+    PLACEHOLDER = re.compile(r"placeholder|no[_\- ]?image|image[_\- ]?needed", re.I)
 
     def pictures(self, refs, size=480):
         """{ref: image url or None} for many pages, fetching only the ones not cached yet. A page in an
@@ -100,7 +102,12 @@ class Wiki:
             cache["_v"] = self.PIC_CACHE_V
         key = (lambda t: t) if size == 480 else (lambda t: f"{t}@{size}")
         titles = {ref: title_of(ref) for ref in refs if ref}
-        todo = sorted({t for t in titles.values() if t and key(t) not in cache})
+        # A page with no picture yet (a ship just added to the game, whose wiki page is still a stub) is
+        # asked about again after MISS_RETRY, so its picture shows up by itself once the wiki has one.
+        misses = cache.setdefault("_miss_at", {})
+        now = time.time()
+        todo = sorted({t for t in titles.values() if t and (key(t) not in cache or
+                       (cache.get(key(t)) == "" and now - misses.get(key(t), 0) > self.MISS_RETRY))})
         for i in range(0, len(todo), 50):
             batch = todo[i:i + 50]
             params = {"action": "query", "format": "json", "prop": "pageimages|categories",
@@ -130,11 +137,151 @@ class Wiki:
                     final = alias.get(final, final)
                 pg = pages.get(final) or {}
                 wrong = any(self.WRONG_PAGE.search(c) for c in pg.get("cats", []))
-                cache[key(t)] = "" if wrong else pg.get("pic", "")
+                pic = pg.get("pic", "")
+                if pic and self.PLACEHOLDER.search(pic):
+                    pic = ""                                # the wiki's "no picture yet" stand-in
+                cache[key(t)] = "" if wrong else pic
+                if not cache[key(t)]:
+                    misses[key(t)] = now
+                else:
+                    misses.pop(key(t), None)
         if todo:
             self.dir.mkdir(exist_ok=True)
             (self.dir / "wiki_images.json").write_text(json.dumps(cache), encoding="utf-8")
         return {ref: (cache.get(key(t)) or None) for ref, t in titles.items()}
+
+    # ------------------------------------------------------------ paint (livery) pictures
+    # A ship's paints are pictured on its wiki page and its series' Paints page ("Intrepid series/Paints"),
+    # one file per paint, named after the ship and the paint: "Intrepid_Oblivion_in_space_-_Isometric.jpg",
+    # "Intrepid_Epoque_landed_in_hangar_-_cropped.jpg". The files on those pages are listed once a week,
+    # and a paint is matched to the file whose name has the paint's own words in it.
+    PAINT_NOISE = {"livery", "liveries", "paint", "paints", "skin", "series", "mk", "the", "of", "and", "in", "edition"}
+    FILE_NOISE = {"jpg", "jpeg", "png", "webp", "file", "isometric", "cropped", "space", "flying", "landed", "hangar",
+                  "over", "in", "on", "at", "the", "with", "front", "rear", "side", "top", "view", "and"}
+
+    def page_files(self, titles):
+        """Every picture file on these wiki pages (missing pages are skipped). Cached for a week."""
+        titles = [t for t in dict.fromkeys(titles) if t]
+        if not titles:
+            return []
+        f = self.dir / "wiki_paint_files.json"
+        try:
+            cache = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            cache = {}
+        key = "|".join(sorted(titles))
+        hit = cache.get(key)
+        if hit and time.time() - hit.get("at", 0) < 7 * 86400:
+            return hit["files"]
+        files, cont = [], {}
+        try:
+            for _ in range(10):
+                q = {"action": "query", "format": "json", "prop": "images", "imlimit": "max", "redirects": 1,
+                     "titles": "|".join(titles), **cont}
+                data = _get(f"{PAGES_API}?{urllib.parse.urlencode(q)}")
+                for pg in (data.get("query", {}).get("pages") or {}).values():
+                    files += [i.get("title") for i in pg.get("images") or [] if i.get("title")]
+                cont = data.get("continue") or {}
+                if not cont:
+                    break
+        except Exception:
+            return hit["files"] if hit else []           # offline: what we had
+        files = list(dict.fromkeys(x for x in files if re.search(r"\.(jpe?g|png|webp)$", x, re.I)))
+        cache[key] = {"files": files, "at": int(time.time())}
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(cache), encoding="utf-8")
+        return files
+
+    @classmethod
+    def _words(cls, text, noise):
+        return [w for w in re.findall(r"[a-z0-9]+", str(text or "").lower()) if w not in noise]
+
+    @staticmethod
+    def _near(a, b):
+        """Same word, allowing one letter's difference in longer words (the wiki's "Altar" for Altair)."""
+        if a == b:
+            return True
+        s_, l_ = sorted((a, b), key=len)
+        if len(s_) >= 4 and l_.startswith(s_):             # a shortened word: "Fest" for Festival
+            return True
+        if min(len(a), len(b)) < 5 or abs(len(a) - len(b)) > 1:
+            return False
+        if len(a) == len(b):
+            return sum(x != y for x, y in zip(a, b)) <= 1
+        s, l = (a, b) if len(a) < len(b) else (b, a)
+        return any(l[:i] + l[i + 1:] == s for i in range(len(l)))
+
+    def paint_file(self, paint, ship_words, files):
+        """The file picturing this paint, from a ship's files, or None. Every word of the paint's own name
+        (its name without the ship's and "Livery") must be in the file's name; a picture in space
+        (isometric) beats one in a hangar."""
+        mine = [w for w in self._words(paint, self.PAINT_NOISE) if w not in ship_words]
+        if not mine:
+            return None
+        best, score = None, -1
+        for fl in files:
+            words = self._words(fl.split(":", 1)[-1].rsplit(".", 1)[0], set())
+            if not all(any(self._near(m, w) for w in words) for m in mine):
+                continue
+            if ship_words and not any(w in words for w in ship_words):
+                continue                                    # another ship's paint with the same name
+            sc = 3 * ("isometric" in words) + 2 * ("space" in words) + ("cropped" not in words) \
+                - 0.05 * len([w for w in words if w not in self.FILE_NOISE and w not in mine and w not in ship_words])
+            if sc > score:
+                best, score = fl, sc
+        return best
+
+    # Words in a paint picture's file name that describe the shot, not the paint: the paint's name is what
+    # comes between the ship's name and the first of these ("Intrepid Foundation Festival flying over ...").
+    SCENE_WORDS = {"in", "on", "at", "flying", "landed", "landing", "parked", "docked", "over", "near", "with",
+                   "taking", "hovering", "above", "inside", "isometric", "cropped", "front", "rear", "side", "top",
+                   "promo", "render", "screenshot", "concept", "ingame"}
+
+    def paints_on_page(self, titles, ship_words):
+        """Paint names pictured on a ship's Paints page(s) (the files' names, ship and scene words taken
+        out): "File:Intrepid_Wavefront_in_space_-_Isometric.jpg" -> "Wavefront". Returns [(paint, file)]."""
+        out = []
+        for fl in self.page_files(titles):
+            stem = fl.split(":", 1)[-1].rsplit(".", 1)[0].replace("_", " ")
+            words = re.findall(r"[A-Za-z0-9']+", stem.split(" - ")[0])
+            low = [w.lower() for w in words]
+            if not any(w in ship_words for w in low):
+                continue                                    # not a picture of this ship
+            name = []
+            for w, lw in zip(words, low):
+                if lw in self.SCENE_WORDS:
+                    break
+                if lw not in ship_words and lw not in self.PAINT_NOISE:
+                    name.append(w)
+            if name and not re.fullmatch(r"(?i)(sc|icon|brand|logo|\d+)", name[0]):
+                out.append((" ".join(name), fl))
+        return out
+
+    def file_urls(self, files, size=720):
+        """{file title: picture url at that width}, cached on disk."""
+        cache = self._pic_cache()
+        files = [x for x in files if x]
+        key = lambda x: f"{x}@file{size}"
+        todo = [x for x in dict.fromkeys(files) if key(x) not in cache]
+        for i in range(0, len(todo), 50):
+            batch = todo[i:i + 50]
+            try:
+                data = _get(f"{PAGES_API}?" + urllib.parse.urlencode(
+                    {"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url", "iiurlwidth": size,
+                     "titles": "|".join(batch)}))
+            except Exception:
+                break
+            alias = {m["from"]: m["to"] for m in data.get("query", {}).get("normalized", [])}
+            got = {}
+            for pg in (data.get("query", {}).get("pages") or {}).values():
+                ii = (pg.get("imageinfo") or [{}])[0]
+                got[pg.get("title")] = ii.get("thumburl") or ii.get("url") or ""
+            for x in batch:
+                cache[key(x)] = got.get(alias.get(x, x), "")
+        if todo:
+            self.dir.mkdir(exist_ok=True)
+            (self.dir / "wiki_images.json").write_text(json.dumps(cache), encoding="utf-8")
+        return {x: cache.get(key(x)) or None for x in files}
 
     # ------------------------------------------------------------ manufacturer logos
     # The Star Citizen Wiki's brand icons (File:Sc-icon-brand-<code>.svg), for the Vehicles tab's
