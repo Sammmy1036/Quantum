@@ -1624,16 +1624,24 @@ class Api:
             # A ship already here gets any loadout it's missing (by name), up to MAX_LOADOUTS; its own stay as they are
             mine = self._loadouts(have[f["uid"]])
             for lo in f.get("loadouts") or []:
-                if not isinstance(lo, dict) or len(mine) >= self.MAX_LOADOUTS:
+                if not isinstance(lo, dict):
                     continue
                 name = str(lo.get("name") or "").strip()
-                if not name or any(x["name"].lower() == name.lower() for x in mine):
+                lv = self._clean_livery(lo.get("livery"))
+                same = next((x for x in mine if name and x["name"].lower() == name.lower()), None)
+                if same is not None:
+                    if lv and not same.get("livery"):          # the paint is missing here: bring it back
+                        same["livery"] = lv
+                        added["loadouts"] += 1
+                    continue
+                if not name or len(mine) >= self.MAX_LOADOUTS:
                     continue
                 n = 1
                 while f"l{n}" in {x["id"] for x in mine}:
                     n += 1
                 mine.append({"id": f"l{n}", "name": name[:40], "loadout": lo.get("loadout") if isinstance(lo.get("loadout"), dict) else {},
-                             "power": lo.get("power") if isinstance(lo.get("power"), dict) else {}})
+                             "power": lo.get("power") if isinstance(lo.get("power"), dict) else {},
+                             **({"livery": lv} if lv else {})})
                 added["loadouts"] += 1
         if fleet and not any(f.get("main") for f in fleet):
             fleet[0]["main"] = True
@@ -4688,6 +4696,14 @@ class Api:
         stock = self._vehicle_photo(v)
         return {"ok": True, "current": lo.get("livery"), "photo": self._livery_photo(lo.get("livery"), v) or stock,
                 "stock_photo": stock}
+
+    @staticmethod
+    def _clean_livery(lv):
+        """A paint from a backup, only the fields a loadout keeps for it (or None)."""
+        if not isinstance(lv, dict) or not isinstance(lv.get("name"), str) or not lv["name"].strip():
+            return None
+        return {k: str(lv[k])[:500] for k in ("id", "name", "source", "wiki", "image", "file")
+                if isinstance(lv.get(k), (str, int)) and str(lv[k]).strip()}
 
     def _livery_photo(self, livery, v=None, cached_only=False):
         """The picture of a ship in a paint, or None when there's none yet (the stock picture is shown then):
