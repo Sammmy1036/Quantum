@@ -37,9 +37,45 @@
    "reading_utc": 1791418889.0,
    "build": "12660092",
    "session": "2097c887c1"
+  },
+  {
+   "kind": "auto-hangar",
+   "body": "Hurston",
+   "place": "Lorville",
+   "residual_deg": -0.3223,
+   "reading_utc": 1791767611.8,
+   "build": "12881860",
+   "session": "c481e24ab6"
+  },
+  {
+   "kind": "auto-delivery",
+   "body": "Magda",
+   "place": "dropoff marker",
+   "residual_deg": -0.0198,
+   "reading_utc": 1791768167.7,
+   "build": "12881860",
+   "session": "c481e24ab6"
+  },
+  {
+   "kind": "auto-delivery",
+   "body": "Magda",
+   "place": "dropoff marker",
+   "residual_deg": -0.0001,
+   "reading_utc": 1791768167.7,
+   "build": "12881860",
+   "session": "c481e24ab6"
+  },
+  {
+   "kind": "auto-delivery",
+   "body": "Magda",
+   "place": "dropoff marker",
+   "residual_deg": -0.0009,
+   "reading_utc": 1791768167.7,
+   "build": "12881860",
+   "session": "c481e24ab6"
   }
  ],
- "updated": "2026-10-07 17:21:29",
+ "updated": "2026-10-11 18:22:48",
  "bodies": {
   "Aberdeen": {
    "system": "Stanton",
@@ -49,15 +85,6 @@
    "calibrated_at": 1790630321.4696562,
    "place": "HDMS Anderson",
    "quality": "place"
-  },
-  "ArcCorp": {
-   "system": "Stanton",
-   "rotation_offset_deg": 178.706327,
-   "rotation_period_h": 3.1099999,
-   "epoch_utc": 1577836800.0,
-   "calibrated_at": 1791418889.0347793,
-   "place": "Riker Memorial Spaceport",
-   "quality": "hangar"
   },
   "Arial": {
    "system": "Stanton",
@@ -124,12 +151,12 @@
   },
   "Hurston": {
    "system": "Stanton",
-   "rotation_offset_deg": 117.458604,
+   "rotation_offset_deg": 117.751993,
    "rotation_period_h": 2.48000002,
    "epoch_utc": 1577836800.0,
-   "calibrated_at": 1791017664.0962946,
-   "place": "HDMS Pinewood",
-   "quality": "place"
+   "calibrated_at": 1791767611.8202667,
+   "place": "Lorville",
+   "quality": "hangar"
   },
   "Ita": {
    "system": "Stanton",
@@ -151,11 +178,11 @@
   },
   "Magda": {
    "system": "Stanton",
-   "rotation_offset_deg": 207.31672,
+   "rotation_offset_deg": 207.337641,
    "rotation_period_h": 1.94000006,
    "epoch_utc": 1577836800.0,
-   "calibrated_at": 1790631411.2157161,
-   "place": "HDMS Perlman",
+   "calibrated_at": 1791768167.724289,
+   "place": "dropoff marker",
    "quality": "place"
   },
   "microTech": {

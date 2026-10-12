@@ -1796,6 +1796,16 @@ class Api:
         print(f"game update: build {old} -> {new}; {removed} cached files refreshed", flush=True)
         threading.Thread(target=self._apply_community_alignments, daemon=True).start()
 
+    def js_error(self, where, message):
+        """An error in the page (the map's drawing, say), so it shows up in the console and Settings > Log."""
+        text = f"Page error ({str(where)[:40]}): {str(message)[:1500]}"
+        print(text, flush=True)
+        try:
+            self._sender._event(text.splitlines()[0][:300])
+        except Exception:
+            pass
+        return {"ok": True}
+
     def game_update_ack(self):
         """You've seen the "Star Citizen was updated" note."""
         self._settings.pop("game_update", None)

@@ -38,6 +38,12 @@ RE_NOTE = re.compile(r'Added notification "(.*?)"\s*\[\d+\](?:.*?MissionId: \[([
 RE_MARKER = re.compile(r"Creating objective marker: missionId \[([0-9a-f-]+)\].*?contract \[([^\]]*)\].*?"
                        r"objectiveId \[([^\]]+)\].*?zoneHostId \[(\d+)\], position \[x: ([-\d.eE]+), "
                        r"y: ([-\d.eE]+), z: ([-\d.eE]+)\]")
+# When the game makes a contract (offered, or accepted) it logs the places it picked for it, by name:
+#   <GenerateLocationProperty> Generated Locations - variablename: DropoffLocation_BP[Destination],
+#   locations: (Wikelo Emporium Selo Station [1615454559] [TheCollectorsAsteriod_Stanton2])(...) contract: X
+# A list of one is where that contract's pickup or drop-off is; a list of several is a choice (any of them).
+RE_GEN_LOC = re.compile(r"variablename:\s*(\S+)\s*,\s*locations:\s*(.*?)\s*contract:\s*(\S+)")
+RE_GEN_ONE = re.compile(r"\(([^\[\)]+?)\s*\[\d+\]\s*(?:\[([^\]]*)\])?\)")
 RE_OBJ_STATE = re.compile(r"<ObjectiveUpserted>.*?mission_id ([0-9a-f-]+) - objective_id (\S+) - state (\w+)")
 RE_MISSION_ENDED = re.compile(r"<MissionEnded>.*?mission_id ([0-9a-f-]+) - mission_state (\w+)")
 RE_END_MISSION = re.compile(r"<EndMission>.*?MissionId\[([0-9a-f-]+)\].*?CompletionType\[(\w+)\]")
@@ -375,6 +381,8 @@ class ContractTracker(threading.Thread):
         self.branch = ""           # release from the log ("4.10.0"; a hotfix like 4.10.2 can still say 4.10.0)
         self.zone_bodies = {}      # zoneHostId -> body name, learned per game session
         self.zone_places = {}      # zoneHostId -> place name (buildings/stations), learned per session
+        self.code_places = {}      # contract type + objective -> place you set (kept across sessions)
+        self.gen_places = {}       # contract type + pickup/dropoff -> places the game logged for it
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
         self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
         self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
@@ -407,6 +415,8 @@ class ContractTracker(threading.Thread):
         self.loc_ids, self.cur = raw.get("loc_ids", {}), raw.get("cur", {})
         self.dest_ids, self.qt = raw.get("dest_ids", {}), raw.get("qt", {})
         self.zone_places, self.atc = raw.get("zone_places", {}), {int(k): v for k, v in raw.get("atc", {}).items()}
+        self.code_places = raw.get("code_places", {}) if isinstance(raw.get("code_places"), dict) else {}
+        self.gen_places = raw.get("gen_places", {}) if isinstance(raw.get("gen_places"), dict) else {}
         for c in raw.get("contracts", []):
             if "id" not in (c.get("objectives") or [{}])[0] and c.get("objectives"):
                 continue  # file from the older text-only tracker
@@ -418,7 +428,7 @@ class ContractTracker(threading.Thread):
     def _save(self):
         data = {"log_path": self.log_path, "log_sig": self.log_sig, "offset": self.offset,
                 "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build,
-                "loc_ids": self.loc_ids, "cur": self.cur, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places,
+                "loc_ids": self.loc_ids, "cur": self.cur, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places, "code_places": self.code_places, "gen_places": self.gen_places,
                 "phys_systems": self.phys_systems,
                 "atc": {str(k): v for k, v in self.atc.items()},
                 "contracts": [asdict(c) for c in self.contracts.values()]}
@@ -467,6 +477,7 @@ class ContractTracker(threading.Thread):
         """Contracts for the UI, newest first, with readable labels filled in. The game only
         announces some objectives in text; the rest are described from the contract code."""
         with self.lock:
+            self.apply_code_places()
             out = []
             for c in sorted(self.contracts.values(), key=lambda c: -c.accepted_at):
                 if not is_tracked(c):
@@ -677,8 +688,72 @@ class ContractTracker(threading.Thread):
             if o.zone:
                 self.zone_places[o.zone] = place
                 self._propagate_zones()
+            k = self._code_key(c, o)
+            if k:                                  # the same kind of contract next time: same place
+                self.code_places[k] = place
+                self.apply_code_places()
             self._changed()
             return True
+
+    # The game's id for a station's interior changes every session, so a place you set for a pickup "inside
+    # a station" is also remembered by the contract's type and objective (its code, like
+    # "HaulCargo_..._Stanton_..." and "pickup_0"). The next contract of that type with that objective in a
+    # spot the log can't name gets the same place.
+    def _generated_locations(self, line):
+        """Remember the places the game picked for a contract type (newest wins), for pickups and drop-offs
+        the log otherwise only puts "inside a station"."""
+        m = RE_GEN_LOC.search(line)
+        if not m:
+            return False
+        var, locs, code = m.group(1).lower(), m.group(2), m.group(3)
+        names = [n.strip() for n, _ in RE_GEN_ONE.findall(locs)]
+        if not names:
+            return False
+        kind = "pickup" if re.search(r"pick|source|origin|from|start", var) else \
+            "dropoff" if re.search(r"drop|destination|deliver|to\b|end", var) else None
+        if not kind:
+            return False
+        self.gen_places[f"{code}|{kind}"] = {"names": names[:8], "at": log_time(line) or time.time()}
+        if len(self.gen_places) > 400:                   # keep the newest few hundred
+            for k in sorted(self.gen_places, key=lambda k: self.gen_places[k]["at"])[:100]:
+                self.gen_places.pop(k, None)
+        return self.apply_code_places()
+
+    def _generated_place(self, c, o):
+        """The one place the game logged for this contract's pickup or drop-off, if it's on the map."""
+        g = self.gen_places.get(f"{c.code}|{o.kind}") if c.code else None
+        if not g or len(g["names"]) != 1:
+            return None
+        name = g["names"][0]
+        if name in self.nav.locations:
+            return name
+        return self.matcher.match(name)
+
+    @staticmethod
+    def _code_key(c, o):
+        if not c.code or not o.id or o.kind not in ("pickup", "dropoff"):
+            return None
+        oid = re.sub(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}|[0-9a-f]{12,}|_?\d+$", "", o.id.lower())
+        code = re.sub(r"_?\d+$", "", c.code)
+        return f"{code}|{oid}"
+
+    def apply_code_places(self):
+        """Fill in places you've set before for this type of contract. True if anything changed."""
+        changed = False
+        for c in self.contracts.values():
+            if c.status != "active":
+                continue
+            for o in c.objectives:
+                if o.status != "active" or o.location or (o.marker and not o.marker.get("approx")):
+                    continue
+                gen = self._generated_place(c, o)
+                if gen:
+                    o.location, o.found, changed = gen, "contract", True
+                    continue
+                place = self.code_places.get(self._code_key(c, o) or "")
+                if place and place in self.nav.locations:
+                    o.location, o.found, changed = place, "learned", True
+        return changed
 
     def get(self, cid):
         with self.lock:
@@ -1161,6 +1236,8 @@ class ContractTracker(threading.Thread):
             m = re.search(r"sc-alpha-(\d+\.\d+(?:\.\d+)?)", line)
             if m:
                 self.branch = m.group(1)
+        if "<GenerateLocationProperty>" in line:
+            return self._generated_locations(line)
         if "objective marker" in line:
             return self._marker(line)
         if "PHYSICS INSTANCE STATS" in line or (self._phys is not None and "planet cells:" in line):
