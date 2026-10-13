@@ -346,6 +346,7 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .ty.wreck{background:linear-gradient(45deg,transparent 42%,#b98cf0 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#b98cf0 42% 58%,transparent 58%)}
 .ty.field{border:2px dotted #8fb3d9;border-radius:50%}
 .ty.comm{border:2px solid #7fc6d9;border-radius:2px}
+.lt-chip{margin-left:8px;padding:1px 8px;border-radius:10px;border:1px solid rgba(127,231,255,.35);color:#cfe9ff;font-size:12px;white-space:nowrap}
 .ty.om,.ty.lpoint{border:1.5px solid var(--dim);border-radius:50%}
 .ty.jump{border:2px solid #c9a7ff;border-radius:50%;box-shadow:inset 0 0 0 2px var(--panel)}
 .ty.poi{background:var(--ink-2);border-radius:50%;transform:scale(.6)}
@@ -1126,7 +1127,7 @@ const TYPES = {
   outpost:{label:"Outposts",one:"Outpost",color:"#7fd18b",def:true}, cave:{label:"Caves",one:"Cave",color:"#c9a27a",def:false},
   wreck:{label:"Wrecks",one:"Wreck",color:"#b98cf0",def:false}, field:{label:"Mining & clouds",one:"Mining area",color:"#8fb3d9",def:false},
   comm:{label:"Comm arrays",one:"Comm array",color:"#7fc6d9",def:false}, jump:{label:"Gateways",one:"Gateway (jump point)",color:"#c9a7ff",def:true},
-  poi:{label:"Other",one:"Point of interest",color:"#a9b6cc",def:false}, om:{label:"Orbital markers",one:"Orbital marker",color:"#7684a0",def:false},
+  poi:{label:"Other",one:"Point of interest",color:"#a9b6cc",def:false}, om:{label:"Orbital markers",one:"Orbital marker",color:"#9db3dc",def:false},
   lpoint:{label:"Lagrange points",one:"Lagrange point",color:"#7684a0",def:true},
 };
 const PADS = ["unknown","none","vehicle","small","medium","large","xl","hangar"];
@@ -1143,12 +1144,18 @@ const S = {
   bodies:[], bodyMap:{}, locs:[], locMap:{}, systems:["Stanton","Pyro","Nyx"], staticVersion:0, live:null,
   system:"Stanton", routeKey:"", contractsVersion:-1, wpKey:"",
   layers:Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])),
-  show:{missions:true, waypoints:true, orbits:true, grid:true, sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
+  show:{missions:true, waypoints:true, orbits:true, grid:true, rings:(()=>{ try{ return localStorage.getItem("q-rings")!=="0"; }catch{ return true; } })(), sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
   cam:{target:[0,0,0], dist:1e11, yaw:-1.2, pitch:0.9, lock:null}, focus:{kind:"system"}, anim:null,
   selected:null, picks:[], search:"", typeFilter:null, tab:"route", editing:null, autoSystem:true,
 };
 const $ = id => document.getElementById(id);
 const api = () => window.pywebview.api;
+// 3D cities: each one is its own optional file in ui/ (NewBabbage.js, ...) that registers itself here.
+// A missing file just means no 3D for that city; nothing else depends on them.
+const CITIES3D=[];
+window.registerCity3D=c=>{ if(c&&!CITIES3D.includes(c)) CITIES3D.push(c); };
+const city3dDown=()=>CITIES3D.some(c=>c.active);                    // down in one of them, at ground level
+const city3dFor=name=>CITIES3D.find(c=>c.has(name))||null;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const now = () => Date.now()/1000;
 
@@ -1162,6 +1169,35 @@ function bodyAngle(b,t){ let d=b.offset; if(b.period>0) d+=360*((t-b.epoch)/3600
 function toGlobal(b,p,t){ const a=bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a); return [b.center[0]+p[0]*c-p[1]*s, b.center[1]+p[0]*s+p[1]*c, b.center[2]+p[2]]; }
 function toLocal(b,g,t){ const a=-bodyAngle(b,t),c=Math.cos(a),s=Math.sin(a),x=g[0]-b.center[0],y=g[1]-b.center[1]; return [x*c-y*s,x*s+y*c,g[2]-b.center[2]]; }
 function globalPos(L,t){ if(!L.pos) return null; if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(b) return toGlobal(b,L.pos,t); } return L.pos; }
+// Local solar time at a place on a planet or moon, from the same rotation the map uses: noon when the
+// system's star is due overhead, a 24-hour clock per rotation (so "2 PM" means the same sun angle on
+// every planet; the real minutes differ with each one's day length). Bodies spin about their z axis;
+// Stanton's star sits ~12° off that plane, so sunrise and sunset shift with latitude like on Earth.
+// Only as good as the planet's rotation alignment (community offset, or yours once calibrated).
+function localTime(L,t){
+  if(!L||L.kind!=="surface"||!L.pos) return null; const b=S.bodyMap[L.body]; if(!b||!(b.period>0)) return null;
+  const star=S.bodies.find(x=>x.system===b.system&&x.kind==="star"); if(!star) return null;
+  const g=globalPos(L,t), n=[g[0]-b.center[0],g[1]-b.center[1],g[2]-b.center[2]], s=[star.center[0]-b.center[0],star.center[1]-b.center[1],star.center[2]-b.center[2]];
+  if(Math.hypot(n[0],n[1])<Math.hypot(...n)*0.02) return null;                // at a pole the clock means nothing
+  let h=12+(Math.atan2(n[1],n[0])-Math.atan2(s[1],s[0]))/(2*Math.PI)*24; h=((h%24)+24)%24;
+  const lat=Math.asin(n[2]/Math.hypot(...n)), dec=Math.asin(s[2]/Math.hypot(...s));
+  const c=-Math.tan(lat)*Math.tan(dec), half=c>=1?0:c<=-1?12:Math.acos(c)*12/Math.PI;   // hours from noon to sunset
+  const rise=12-half, set=12+half, day=half>=12||(h>=rise&&h<set);
+  const next=half<=0||half>=12?null:day?set-h:(h<rise?rise-h:24-h+rise);       // local hours to sunset / sunrise
+  return {h, day, polar:half<=0?"night":half>=12?"day":null, mins:next==null?null:next/24*b.period*60,
+    period:b.period, calibrated:!!b.calibrated}; }
+function fmtClock(h){ let m=Math.floor(h*60)%1440; const hh=Math.floor(m/60), mm=m%60;      // to the minute
+  return `${(hh%12)||12}:${String(mm).padStart(2,"0")} ${hh<12?"AM":"PM"}`; }
+const ltChip=lt=>`${lt.day?"☀":"☾"} ${fmtClock(lt.h)}`;
+const ltRow=lt=>`≈ <b>${fmtClock(lt.h)}</b> <span class="muted">· ${lt.polar?(lt.polar==="day"?"sun never sets here":"sun never rises here"):`${lt.day?"sunset":"sunrise"} in ~${fmtMins(lt.mins)}`}</span>`;
+// The card's clock ticks on its own, every second, whatever has focus. (The whole card is only redrawn
+// every 2 s, and not while you're using something in it, so the time used to freeze after a click there.)
+setInterval(()=>{ const sel=S.selected; if(sel?.kind!=="loc") return; const L=S.locMap[sel.name];
+  const c=document.querySelector("#detail [data-lt-chip]"), r=document.querySelector("#detail [data-lt-row]"); if(!L||(!c&&!r)) return;
+  const lt=localTime(L,now()); if(!lt) return;
+  if(c){ const v=ltChip(lt); if(c.textContent!==v) c.textContent=v; }
+  if(r){ const v=ltRow(lt); if(r.innerHTML!==v) r.innerHTML=v; } },1000);
+function fmtMins(m){ m=Math.max(1,Math.round(m)); return m<60?`${m} min`:`${Math.floor(m/60)} h ${String(m%60).padStart(2,"0")} min`; }
 function latLon(p){ const r=Math.hypot(p[0],p[1],p[2])||1e-9; return {lat:Math.asin(Math.max(-1,Math.min(1,p[2]/r)))*180/Math.PI, lon:-Math.atan2(p[0],p[1])*180/Math.PI}; }
 const d3 = (a,b) => Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]);
 function slerpLocal(a,b,f,R){ // great-circle point between two body-local vectors, at radius R
@@ -1509,7 +1545,7 @@ function buildSystem(){
     const mat= isStar ? sunMaterial(BODY_HSL[b.name]?.[0]??45) : look ? planetMaterial(look,citiesOf(b.name))
                       : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:isRock?1:0.95, metalness:0, flatShading:isRock});
     const mesh=new THREE.Mesh(geo,mat); mesh.scale.setScalar(b.radius); spin.add(mesh);
-    let grid=null, atmo=null;
+    let grid=null, atmo=null, clouds=null;
     if(isRock){ /* no lat/lon grid or atmosphere on a rock */ }
     else if(!isStar){
       grid=new THREE.LineSegments(GRAT,new THREE.LineBasicMaterial({color:0xa9c3ff,transparent:true,opacity:0.16,depthWrite:false}));
@@ -1517,13 +1553,13 @@ function buildSystem(){
       const [h]=BODY_HSL[b.name]||[210];
       if(look){
         atmo=new THREE.Mesh(new THREE.SphereGeometry(1,96,64), atmosphereMaterial(look)); atmo.scale.setScalar(b.radius*1.05); group.add(atmo);
-        if(look.clouds>0){ const cl=new THREE.Mesh(geo, cloudMaterial(look)); cl.scale.setScalar(b.radius*1.008); spin.add(cl); }
+        if(look.clouds>0){ const cl=new THREE.Mesh(geo, cloudMaterial(look)); cl.scale.setScalar(b.radius*1.008); spin.add(cl); clouds=cl; }
       } else {
       atmo=new THREE.Mesh(new THREE.SphereGeometry(1,48,32), new THREE.MeshBasicMaterial({color:new THREE.Color(`hsl(${h},60%,70%)`),transparent:true,opacity:0.08,side:THREE.BackSide,depthWrite:false}));
       atmo.scale.setScalar(b.radius*1.035); group.add(atmo); }
     } else {
       const rgb=b.name==="Pyrostar"?"255,138,72":b.system==="Nyx"?"255,214,170":"255,218,150";
-      const add=(map,opts)=>new THREE.Sprite(new THREE.SpriteMaterial({map,depthWrite:false,transparent:true,blending:THREE.AdditiveBlending,...opts}));
+      const add=(map,opts)=>new THREE.Sprite(new THREE.SpriteMaterial({map,depthWrite:false,transparent:true,blending:THREE.AdditiveBlending,fog:false,...opts}));
       const corona=add(coronaTexture(rgb)); corona.scale.setScalar(b.radius*7.5); group.add(corona);
       const halo=add(glowTexture(`rgba(${rgb},0.55)`),{opacity:0.32}); halo.scale.setScalar(b.radius*15); group.add(halo);
       // glare: a fixed share of the screen, so the sun still shines when the whole system is in view
@@ -1536,7 +1572,7 @@ function buildSystem(){
       for(let i=0;i<=256;i++){ const a=i/256*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
       orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x4fb6e0,transparent:true,opacity:par.kind==="star"?0.42:0.24,depthWrite:false}));
       scene.add(orbit); }
-    sysObjs.push({b,group,spin,mesh,grid,atmo,orbit,par,orbitZ:b.center[2],orbitR:par?Math.hypot(b.center[0]-par.center[0],b.center[1]-par.center[1]):0});
+    sysObjs.push({b,group,spin,mesh,grid,atmo,clouds,orbit,par,orbitZ:b.center[2],orbitR:par?Math.hypot(b.center[0]-par.center[0],b.center[1]-par.center[1]):0});
   }
   sysObjs.group=null;
   buildStations();
@@ -1641,7 +1677,11 @@ function viewFrame(t,goal){
   if(sb && S.bodyMap[sb]){ const up=norm3([goal[0]-S.bodyMap[sb].center[0],goal[1]-S.bodyMap[sb].center[1],goal[2]-S.bodyMap[sb].center[2]]);
     let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
     const cp=Math.cos(c.pitch), dir=[0,1,2].map(i=>cp*(Math.cos(c.yaw)*east[i]+Math.sin(c.yaw)*north[i])+Math.sin(c.pitch)*up[i]);
-    return {dir,up:north}; }   // north at the top of the screen
+    // An orbit camera: "up" on screen is the way you're facing over the ground (tilted toward the sky as
+    // you look at the horizon), so right-drag turns the view round. Holding north at the top made it stick
+    // and wobble instead. The default top-down heading still has north at the top.
+    const h=[0,1,2].map(i=>Math.cos(c.yaw)*east[i]+Math.sin(c.yaw)*north[i]);
+    return {dir,up:norm3([0,1,2].map(i=>Math.cos(c.pitch)*up[i]-Math.sin(c.pitch)*h[i]))}; }
   const yaw=c.yaw+(c.lock&&S.bodyMap[c.lock]?bodyAngle(S.bodyMap[c.lock],t):0);
   return {dir:[Math.cos(c.pitch)*Math.cos(yaw),Math.cos(c.pitch)*Math.sin(yaw),Math.sin(c.pitch)], up:[0,0,1]};
 }
@@ -1671,6 +1711,7 @@ function flyTo(focus,dist,{pitch=null,yaw=null,dur=null,key=null}={}){
   S.focus=focus;
 }
 function updateCamera(t){
+  S.camT=t;                                            // the moment the camera was last placed for (see the wheel)
   const c=S.cam, goal=focusPos(S.focus,t); let e=1;
   if(S.anim){ const a=S.anim, u=Math.min(1,(performance.now()-a.t0)/a.dur);
     e=(1-Math.cos(Math.PI*u))/2;                       // gentle start and finish, no plateaus
@@ -1720,7 +1761,11 @@ function prepOcclusion(){ camW=[camera.position.x+O[0],camera.position.y+O[1],ca
 function visible(p, ownBody){ // is world point p hidden behind a planet?
   for(const b of occluders){ const c=b.center;
     if(b.name===ownBody){ const n=[p[0]-c[0],p[1]-c[1],p[2]-c[2]], v=[camW[0]-p[0],camW[1]-p[1],camW[2]-p[2]];
-      const ln=Math.hypot(...n)||1, lv=Math.hypot(...v)||1; if((n[0]*v[0]+n[1]*v[1]+n[2]*v[2])/(ln*lv) < -0.03) return false; continue; }
+      const ln=Math.hypot(...n)||1, lv=Math.hypot(...v)||1;
+      // On the ground: hidden once it's past the horizon. High above it (an orbital marker sits at about
+      // 1.5x the radius) it can be seen well past that, beside the planet, so it gets the line-of-sight
+      // test below instead; the horizon test used to hide most OMs.
+      if(ln<b.radius*1.05){ if((n[0]*v[0]+n[1]*v[1]+n[2]*v[2])/(ln*lv) < -0.03) return false; continue; } }
     const dx=p[0]-camW[0],dy=p[1]-camW[1],dz=p[2]-camW[2], L=Math.hypot(dx,dy,dz)||1, ux=dx/L,uy=dy/L,uz=dz/L;
     const ox=c[0]-camW[0],oy=c[1]-camW[1],oz=c[2]-camW[2], tc=ox*ux+oy*uy+oz*uz; if(tc<0||tc>L) continue;
     const d2=ox*ox+oy*oy+oz*oz-tc*tc, r=b.radius*0.998; if(d2<r*r && tc-Math.sqrt(r*r-d2)<L) return false; }
@@ -1787,6 +1832,7 @@ function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
 
 // Distance rings on the ground around the view point (only when close to a surface).
 function drawRangeRings(t){
+  if(!S.show.rings) return;                                                    // Layers > Distance rings
   const sb=surfaceBodyOf(S.focus); if(!sb) return; const B=S.bodyMap[sb]; if(S.cam.dist>B.radius*0.4) return;
   const c=toLocal(B,S.cam.target,t), R=Math.hypot(...c), up=norm3(c); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
   const target=S.cam.dist*0.35, p10=Math.pow(10,Math.floor(Math.log10(target))); let step=p10; for(const m of [1,2,5]) if(m*p10<=target) step=m*p10;
@@ -1837,6 +1883,7 @@ function drawOverlay(t){
   // ---- bodies: dots and labels when small, labels always
   const bodyLabels=[];
   for(const o of sysObjs){ const b=o.b, q=proj(b.center); if(!q) continue; const pr=o.pr;
+    if(city3dDown()&&!visible(b.center,null)) continue;   // below the city's horizon
     if(pr<3){ ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); }
     S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),depth:q[2]});
     bodyLabels.push([b,q,pr]); }
@@ -1846,9 +1893,12 @@ function drawOverlay(t){
   for(const L of S.locs){ if(L.system!==S.system||!L.pos) continue;
     const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name || S.preview?.includes(L.name) || S.mapMarks?.some(m=>m.name===L.name);
     const isWp = L.source==="user" || L.source==="mission";
-    if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue; }
-    let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:70) && !special) continue; }
+    if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue;
+      if(L.mergedInto && S.layers[S.locMap[L.mergedInto]?.type]) continue; }   // shown as its station
+    // Orbital markers float well clear of the planet, so they show from further out than ground places.
+    let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:L.type==="om"?14:70) && !special) continue; }
     const g=globalPos(L,t), q=proj(g); if(!q||q[0]<-40||q[0]>W+40||q[1]<-40||q[1]>H+40) continue;
+    if(city3dDown() && !special && L.kind==="space" && q[2]>5e5) continue;   // in the 3D city, far stations don't fill its sky
     if(!visible(g, L.kind==="surface"?L.body:null)) continue;
     drawn.push({L,q,bodyPx,isWp}); }
   for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; glyph(L.type,q[0],q[1],L.type==="city"?4.5:3.6,TYPES[L.type]?.color||"#aab"); S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:9,depth:q[2]}); }
@@ -1894,8 +1944,11 @@ function drawOverlay(t){
   for(const d of drawn){ if(!d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; label(d.L.name,d.q[0]+14,d.q[1]-8,{color:d.L.source==="mission"?"#ffb3d6":"#c9ffb3",font:"600 12px 'Inter',sans-serif"}); }
   bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
   for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
+    if(city3dDown()) continue;               // down in a 3D city: other worlds' names don't float over the ground
     label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"}); }
-  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue; if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city"&&!(d.L.type==="station"&&S.bodyMap[d.L.body]?.kind==="asteroid")) continue;
+  for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue;
+    if(d.L.type==="om"){ if(d.bodyPx>=40) label(d.L.name.replace(/\s*\(.*\)$/,""),d.q[0]+8,d.q[1]+4,{color:TYPES.om.color}); continue; }
+    if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city"&&!(d.L.type==="station"&&S.bodyMap[d.L.body]?.kind==="asteroid")) continue;
     label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined}); }
   // ---- off-screen pointers for the guide target and next stop
   if(gnode) edgeArrow(gnode.g,"#7fe7ff",`${guide.name}${guide.ground!=null?" · "+fmtDist(guide.ground):guide.distance!=null?" · "+fmtDist(guide.distance):""}`);
@@ -1905,7 +1958,7 @@ function drawOverlay(t){
 
 // =================================================================== frame
 let frame=function(){
-  const t=now(); updateCamera(t);
+  const t=now()+(S.timeShift||0); updateCamera(t);     // timeShift: the 3D city's time-of-day preview
   for(const o of sysObjs){ place(o.group,o.b.center); o.spin.rotation.z=bodyAngle(o.b,t);
     if(o.grid) o.grid.visible=S.show.grid && o.pr>40;
     if(o.orbit){ o.orbit.visible=S.show.orbits && S.cam.dist>o.orbitR*0.04; o.orbit.position.set(o.par.center[0]-O[0],o.par.center[1]-O[1],o.orbitZ-O[2]); } }
@@ -1915,6 +1968,7 @@ let frame=function(){
   starfield.position.copy(camera.position); starfield.material.uniforms.T.value=performance.now()/1000; starfield.material.uniforms.PR.value=DPR;
   if(star) star.mesh.material.uniforms.T.value=performance.now()/1000;
   for(const m of PLANET_MATS){ m.uniforms.SUN.value.set(sp[0]-O[0],sp[1]-O[1],sp[2]-O[2]); if(m.uniforms.T) m.uniforms.T.value=performance.now()/1000; }
+  for(const c of CITIES3D){ try{ c.update(t); }catch(e){ reportFrameError(e); } }   // 3D cities (NewBabbage.js, ...)
   renderer.render(scene,camera);
   drawOverlay(t);
 }
@@ -1933,6 +1987,17 @@ function reportFrameError(e){ const msg=String(e&&e.stack||e).slice(0,1500), k=m
 let drag=null, moved=false;
 const ov=$("overlay");
 ov.addEventListener("contextmenu",e=>e.preventDefault());
+// The view's centre is a free point in space (after panning, say) but sits on or just above a planet:
+// make it a place on that planet instead, so the view turns with the planet (a fixed point in space has
+// the planet rotating away under it, and the view drifts) and dragging works the ground's way. The
+// camera keeps looking the same way.
+function attachToGround(){ if(S.focus.kind!=="point") return; const t=now(), G=S.cam.target;
+  const B=S.bodies.find(b=>b.system===S.system&&b.kind!=="star"&&b.kind!=="asteroid"&&d3(G,b.center)<b.radius*1.15); if(!B) return;
+  const up=norm3([G[0]-B.center[0],G[1]-B.center[1],G[2]-B.center[2]]); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
+  const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
+  S.cam.lock=null; S.cam.pitch=Math.max(0.12,Math.min(1.55,Math.asin(Math.max(-1,Math.min(1,d[0]*up[0]+d[1]*up[1]+d[2]*up[2])))));
+  S.cam.yaw=Math.atan2(d[0]*north[0]+d[1]*north[1]+d[2]*north[2], d[0]*east[0]+d[1]*east[1]+d[2]*east[2]);
+  S.anim=null; S.focus={kind:"local",body:B.name,pos:toLocal(B,G,t)}; }
 // Drag the planet under the cursor: the point you look at slides across the globe, so you can
 // roam freely instead of circling one fixed spot. Works from ground level up to orbit.
 function grabGlobe(dx,dy){
@@ -1958,8 +2023,9 @@ window.addEventListener("pointerup",endDrag); window.addEventListener("pointerca
 window.addEventListener("pointermove",e=>{
   const r=ov.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
   if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>2) moved=true; drag.x=e.clientX; drag.y=e.clientY;
+    if(!surfaceBodyOf(S.focus)) attachToGround();                    // a free point just above a planet: back onto its ground
     const surf=!!surfaceBodyOf(S.focus);
-    if(surf && !drag.pan && !drag.turn){ grabGlobe(dx,dy); }          // near a planet: drag the ground itself
+    if(surf && !drag.turn){ grabGlobe(dx,dy); }                       // near a planet: drag (or middle-drag) the ground itself
     else if(surf && drag.turn){ S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
     else if(drag.turn){ S.cam.yaw-=dx*0.006; S.cam.pitch=Math.max(-1.5,Math.min(1.5,S.cam.pitch+dy*0.006)); } // right-drag: turn the view, never move the system
     else if(drag.pan){ // move the view point in the camera plane
@@ -1971,7 +2037,40 @@ window.addEventListener("pointermove",e=>{
     hideTip(); return; }
   if(e.target!==ov){ hideTip(); return; }
   const hit=pick(mx,my); if(hit) showTip(hit,mx,my); else hideTip(); });
+// Zooming in goes toward what's under the mouse: if that's a planet or moon, the view slides toward that
+// spot as it closes in (the spot stays under the cursor) and then belongs to that ground, so you can
+// scroll from a station in orbit straight down into a city below. Over empty space, and zooming out,
+// it zooms on the view's centre as before.
+const _ray=new THREE.Raycaster();
+function groundUnderMouse(e){ const r=ov.getBoundingClientRect();
+  _ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1, -((e.clientY-r.top)/r.height*2-1)), camera);
+  const o=_ray.ray.origin, dv=_ray.ray.direction; let best=null;
+  for(const b of S.bodies){ if(b.system!==S.system||b.kind==="star") continue;
+    const c=[b.center[0]-O[0],b.center[1]-O[1],b.center[2]-O[2]], oc=[o.x-c[0],o.y-c[1],o.z-c[2]];
+    const bq=oc[0]*dv.x+oc[1]*dv.y+oc[2]*dv.z, cq=oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-b.radius*b.radius, disc=bq*bq-cq;
+    if(disc<0) continue; const tt=-bq-Math.sqrt(disc); if(tt<=0) continue;
+    if(!best||tt<best.t) best={b,t:tt,g:[O[0]+o.x+dv.x*tt, O[1]+o.y+dv.y*tt, O[2]+o.z+dv.z*tt]}; }
+  return best; }
 ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim(); if(S.follow) setFollow(false);
+  const hit=k<1?groundUnderMouse(e):null;
+  if(hit){ const t=now()+(S.timeShift||0), B=hit.b;
+    // The mouse ray used the camera as last drawn; the planet has turned a little since. Carry the spot
+    // and the view's centre forward with it, so the aim is exact even when frames are slow.
+    const t0=S.camT??t, da=bodyAngle(B,t)-bodyAngle(B,t0), ca=Math.cos(da), sa=Math.sin(da);
+    hit.g=toGlobal(B,toLocal(B,hit.g,t0),t); const T=focusPos(S.focus,t);
+    const rotz=v=>[v[0]*ca-v[1]*sa, v[0]*sa+v[1]*ca, v[2]];
+    // scale about the spot under the cursor: the view's centre moves toward it as the camera closes in
+    const T2=[0,1,2].map(i=>T[i]+(hit.g[i]-T[i])*(1-k));
+    const d=norm3(rotz([camera.position.x,camera.position.y,camera.position.z]));
+    {                                                               // the view turns with that planet from now on (a fixed point in space has it rotate away underneath)
+      const up=norm3([T2[0]-B.center[0],T2[1]-B.center[1],T2[2]-B.center[2]]); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
+      S.cam.lock=null; S.cam.pitch=Math.max(0.12,Math.min(1.55,Math.asin(Math.max(-1,Math.min(1,d[0]*up[0]+d[1]*up[1]+d[2]*up[2])))));
+      S.cam.yaw=Math.atan2(d[0]*north[0]+d[1]*north[1]+d[2]*north[2], d[0]*east[0]+d[1]*east[1]+d[2]*east[2]);
+      S.focus={kind:"local",body:B.name,pos:toLocal(B,T2,t)}; S.cam.dist=Math.max(20,S.cam.dist*k);
+      // the ground's own frame turns the view a touch; slide the ground so the spot stays under the mouse
+      updateCamera(t); const q=proj(hit.g), r=ov.getBoundingClientRect();
+      if(q) grabGlobe((e.clientX-r.left)-q[0], (e.clientY-r.top)-q[1]);
+      return; } }
   let min=20; if(S.focus.kind==="body"&&S.bodyMap[S.focus.name]){ min=S.bodyMap[S.focus.name].radius*1.05; }
   S.cam.dist=Math.min(4e12,Math.max(min,S.cam.dist*k)); },{passive:false});
 function jumpTarget(L){ if(L?.to) return L.to; const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)(?:\s*\([^)]*\))?$/i); return m?m[1]:null; }
@@ -2026,6 +2125,7 @@ function buildLayers(){
   for(const [k,v] of Object.entries(TYPES)) mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
   el.appendChild(document.createElement("hr"));
   mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>S.show.grid=v);
+  mk("Distance rings",S.show.rings,"",v=>{ S.show.rings=v; try{ localStorage.setItem("q-rings",v?"1":"0"); }catch{} });
   mk("Galaxy background",S.show.sky,"",v=>{ S.show.sky=v; try{ localStorage.setItem("q-sky",v?"1":"0"); }catch{} scene.background=v?sky.texture:null; });
   $("layers-hdr").onclick=()=>{ el.hidden=!el.hidden; $("layers-caret").textContent=el.hidden?"▸":"▾"; };
   el.hidden=true; $("layers-caret").textContent="▸";
@@ -2055,10 +2155,10 @@ function svcIcon(name){ const n=name.toLowerCase();
   const s=n.includes("weapon")&&(n.includes("ship")||n.includes("vehicle"))?"turret":n.includes("weapon")?"pistol":n.includes("vehicle services")?"utility":null;
   if(s) return `<svg class="solid" viewBox="${SVC_SOLID[s][0]}" aria-hidden="true"><path d="${SVC_SOLID[s][1]}"/></svg>`;
   const k=n.includes("landing pad")?"pad":n.includes("hangar")||n.includes("garage")?"hangar":n.includes("vehicle services")||n.includes("repair")?"wrench":n.includes("docking")?"dock"
-    :n.includes("loading dock")||n.includes("commodity")||n.includes("cargo")?"cargo":n.includes("refinery")?"refine":n.includes("clinic")||n.includes("hospital")||n.includes("medical")?"med"
+    :n.includes("loading dock")||n.includes("freight elevator")||n.includes("commodity")||n.includes("cargo")?"cargo":n.includes("refinery")?"refine":n.includes("clinic")||n.includes("hospital")||n.includes("medical")?"med"
     :n.includes("food")?"food":n.includes("vehicle")||n.includes("ship")&&n.includes("rent")?"ship":n.includes("buy")||n.includes("rent")||n.includes("shop")?"shop":"dot";
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${SVC_ICONS[k]}</svg>`; }
-const SVC_ORDER=["landing pad","hangar","docking","loading dock","vehicle services","commodity","refinery","clinic","hospital","rent","buy","food"];
+const SVC_ORDER=["landing pad","hangar","docking","loading dock","freight elevator","vehicle services","commodity","refinery","clinic","hospital","rent","buy","food"];
 function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.includes(k)); return i<0?99:i; }
 function servicesHtml(r){
   if(!r) return "";
@@ -2160,7 +2260,7 @@ function renderDetail(){
             <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
       <div class="sub">Help</div>
       <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
-        :!S.bugOpen?`<div class="row"><span>Found something broken? Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
+        :!S.bugOpen?`<div class="row"><span>Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
         :`<label class="k" for="s-bugmsg" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">What happened?</label>
           <textarea class="field" id="s-bugmsg" rows="5" maxlength="5000" style="width:100%;resize:vertical" placeholder="What you did, what you expected, and what happened instead" oninput="S.bugMsg=this.value">${esc(S.bugMsg||"")}</textarea>
           <label class="k" for="s-bugcontact" style="display:block;font-weight:600;font-size:12.5px;margin:10px 2px 5px">How can we reach you? <span class="muted" style="font-weight:400">(optional: Discord, email…)</span></label>
@@ -2231,7 +2331,7 @@ function renderDetail(){
     const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
-      <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}</div>
+      <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
       ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
         return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
@@ -2240,6 +2340,9 @@ function renderDetail(){
         return `<div class="kv">${L.gate_to?`<span class="k">For the jump to</span><span><b>${esc(L.gate_to)}</b></span>`:""}
           ${other?`<span class="k">${L.station?"Station":"Gateway"}</span><span><a class="lnk" data-golink="${esc(other)}">${esc(other)}</a>${dk?` <span class="muted">· ${dk} away</span>`:""}</span>`:""}</div>`; })():""}
       <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
+        ${L.atLpoint?`<span class="k">Lagrange point</span><span>${esc(L.atLpoint)} <span class="muted">· the QT marker for this L-point</span></span>`:""}
+        ${(()=>{ const lt=localTime(L,t); if(!lt) return "";
+          return `<span class="k">Local time</span><span title="Worked out from ${esc(L.body)}'s rotation (one day = ${lt.period.toFixed(2)} real hours)${lt.calibrated?"":", using the community alignment"}"><span data-lt-row>${ltRow(lt)}</span></span>`; })()}
         ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
         ${L.verify?`<span class="k">Position</span><span style="color:#f2c14e">Not confirmed in game yet${L.placeable?`: ${L.type==="jump"?"stop at the jump point":"dock here"}, type /showlocation and press <b>I'm here: set position</b>, or take the job in Datarunner &gt; Jobs`:""}</span>`:""}
         ${L.unplaced||L.type==="jump"?(L.type==="jump"?`<span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`:""):`<span class="k">Landing pad</span><span><select class="field" id="d-pad" title="The largest pad here">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"?(L.pad_shared?`Unknown (Quantum users: ${padLabel(L.pad_shared)})`:L.pad_auto?`Unknown (game data: ${padLabel(L.pad_auto)})`:"Unknown"):padLabel(p)}</option>`).join("")}</select>
@@ -2249,6 +2352,7 @@ function renderDetail(){
       `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
         ${inRoute?`<button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
+        ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
         ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
         ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}`;
@@ -2316,6 +2420,7 @@ function renderDetail(){
     if(a==="route") addStops([sel.name]);
     if(a==="unroute"){ await api().remove_place(sel.name); await poll(); renderDetail(); }
     if(a==="focus") focusLoc(sel.name,true);
+    if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
     if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
@@ -2502,10 +2607,13 @@ function rsCandidates(q){
     if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; return x.includes(q)?3:9; };
   const out=[];
   for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
-  for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; let sc=score(L.name);
-    let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q)); if(via) sc=4; }
+  for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; if(L.mergedInto) continue;   // found as its station
+    let sc=score(L.name), lp=null; if(L.atLpoint){ const s2=score(L.atLpoint); if(s2<sc){ sc=s2; lp=L.atLpoint; } }
+    // "commodity"/"trading" still finds places whose freight elevator or loading dock is their trade point
+    let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q))
+      ||("commodity trading".includes(q)||q.startsWith("commod")?L.amen.find(a=>/freight elevator|loading dock/i.test(a)):null); if(via) sc=4; }
     if(sc<9) out.push({kind:"loc",name:L.name,via,
-    sub:`${L.unplaced?"Position not known yet · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
+    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
   out.sort((a,b)=>a.sc-b.sc||(a.sys!==S.system)-(b.sys!==S.system)||a.r-b.r||a.name.localeCompare(b.name));
   return out.slice(0,q.length>=3&&out.some(o=>o.via)?30:12);
 }
@@ -2740,7 +2848,7 @@ function buildFilters(){ const types=["city","station","outpost","cave","wreck",
   $("filters").onclick=e=>{ const b=e.target.closest(".fchip"); if(!b) return; S.typeFilter=b.dataset.t||null; for(const x of $("filters").children) x.setAttribute("aria-pressed",String(x===b)); renderResults(); }; }
 function renderResults(){
   const q=S.search.trim().toLowerCase(), route=S.live?.route||[];
-  let list=S.locs.filter(L=>L.source==="db" && (!S.typeFilter||L.type===S.typeFilter) && (q ? (L.name.toLowerCase().includes(q)||(L.body||"").toLowerCase().includes(q)) : L.system===S.system));
+  let list=S.locs.filter(L=>L.source==="db" && !L.mergedInto && (!S.typeFilter||L.type===S.typeFilter) && (q ? (L.name.toLowerCase().includes(q)||(L.body||"").toLowerCase().includes(q)||(L.atLpoint||"").toLowerCase().includes(q)) : L.system===S.system));
   if(!q&&!S.typeFilter) list=list.filter(L=>L.type!=="om");
   list.sort((a,b)=>((a.system!==S.system)-(b.system!==S.system)) || ((a.name.toLowerCase().startsWith(q)?0:1)-(b.name.toLowerCase().startsWith(q)?0:1)) || a.name.localeCompare(b.name));
   const shown=list.slice(0,250);
@@ -5042,9 +5150,22 @@ $("dr-view").onclick=async e=>{ const a=e.target.closest("[data-dv]")?.dataset.d
   $("dr-view").classList.remove("show"); $("dr-view").className="pic-panel"; };
 
 // =================================================================== data sync
+// A Lagrange point in the data is only the zone's centre (it has no QT marker); the place you actually
+// quantum to is the station built there. Stanton's R&R stations sit 1,000-23,000 km off their L-point's
+// centre, and most of Pyro's are pinned right on it, so the map showed two markers for one place.
+// Each station gets its L-point (L.atLpoint) and the L-point is folded into it (L.mergedInto): its marker
+// is hidden and searching "CRU-L1" finds the station. L-points with no station (CRU-L2, CRU-L3, ...) stay.
+function linkLpoints(){
+  const lps=S.locs.filter(L=>L.type==="lpoint"&&L.pos);
+  const sts=S.locs.filter(L=>L.kind==="space"&&L.pos&&L.source==="db"&&L.type==="station");   // not clouds or mining claims
+  for(const P of lps){ const code=P.name.toLowerCase(), word=new RegExp(`(^|[^a-z0-9])${code.replace(/[-]/g,"\\-")}([^a-z0-9]|$)`,"i");
+    const at=sts.filter(T=>T.system===P.system&&(()=>{ const d=d3(T.pos,P.pos); return d<1e6||(word.test(T.name)&&d<5e7); })());
+    if(!at.length) continue;
+    at.sort((a,b)=>d3(a.pos,P.pos)-d3(b.pos,P.pos));
+    P.mergedInto=at[0].name; for(const T of at) T.atLpoint=P.name; } }
 async function loadStatic(){
   const st=await api().get_static(); S.staticVersion=st.version; S.systems=st.systems||S.systems; S.wiki=st.wiki;
-  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l])); renderOffmap();
+  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l])); linkLpoints(); S.svcCache={}; renderOffmap();
   $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.pos&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
 // The UEX tabs only appear once a UEX token is saved; removing it hides them again.
@@ -5108,6 +5229,10 @@ window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); 
   setTimeout(()=>{ S.splashUp=false; $("splash").classList.add("hide"); }, Math.max(0,1400-(performance.now()-t0))); } });
 </script>
 <!-- The self-running feature tour, for screen recording: Ctrl+Shift+D, or launch with --demo -->
+<!-- 3D cities (optional). city3d-core.js is the shared engine and goes first; then one file per city.
+     Delete a city's file and that city is simply flat again; delete the core and none are 3D. -->
+<script src="city3d-core.js"></script>
+<script src="NewBabbage.js"></script>
 <script src="demo.js"></script>
 </body>
 </html>

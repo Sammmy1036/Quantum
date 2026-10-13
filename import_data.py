@@ -19,7 +19,7 @@ import urllib.request
 from pathlib import Path
 
 import gateways
-from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi, normalize
+from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi, normalize, same_place
 
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 DB_PATH = HERE / "locations.json"
@@ -67,6 +67,9 @@ def main():
 
     def add_loc(loc: Location):
         name = loc.name
+        have = db.locations.get(name)
+        if have is not None and have.source == "db" and same_place(have, loc):
+            return                      # the same place, listed again by the second dataset
         if name in keep or name in db.locations:
             name = f"{loc.name} ({loc.body or loc.system})"
         if name in keep or name in db.locations:

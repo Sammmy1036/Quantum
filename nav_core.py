@@ -129,7 +129,43 @@ def normalize(db) -> bool:
     for loc in db.locations.values():
         if loc.name.split(" (")[0].lower() in STATION_NAMES and loc.category != "station":
             loc.category, changed = "station", True
+    if merge_duplicates(db):
+        changed = True
     return changed
+
+
+def same_place(a, b, within=3000.0) -> bool:
+    """Two records of the same place: same kind and body, within a few km of each other."""
+    if a.kind != b.kind or a.body != b.body or a.system != b.system or a.pos is None or b.pos is None:
+        return False
+    return dist(tuple(a.pos), tuple(b.pos)) < within
+
+
+def merge_duplicates(db) -> dict:
+    """Places listed twice: "Port Tressler" and "Port Tressler (microTech)" a few hundred metres apart.
+    The import gave a place it had already seen its body's name when a second dataset listed it again;
+    those are the same place. The plain name is kept, with anything the copy adds (its category, a QT
+    marker, a pad size, notes), and the copy goes. Same-named places that really are elsewhere keep
+    their " (Body)" names. Returns {removed name: kept name} (also kept in db.merged, for routes)."""
+    merged = {}
+    for name, loc in list(db.locations.items()):
+        m = re.match(r"^(.*) \(([^)]*)\)$", name)
+        if not m or loc.source != "db" or m.group(2) not in (loc.body or loc.system or ""):
+            continue
+        keep = db.locations.get(m.group(1))
+        if keep is None or keep.source != "db" or not same_place(keep, loc):
+            continue
+        if not keep.category and loc.category:
+            keep.category = loc.category
+        keep.qt = keep.qt or loc.qt
+        if (keep.pad or "unknown") == "unknown" and loc.pad and loc.pad != "unknown":
+            keep.pad = loc.pad
+        if not keep.notes and loc.notes:
+            keep.notes = loc.notes
+        db.locations.pop(name)
+        merged[name] = m.group(1)
+    db.merged = {**getattr(db, "merged", {}), **merged}
+    return merged
 CATEGORY_MAP = {  # community poi_type -> map category
     "Cave": "cave", "Wreck": "wreck", "LandingZone": "city", "Spaceport": "city",
     "OrbitalStation": "station", "CommArray": "comm", "AsteroidBelt": "field", "JumpPoint": "jump",

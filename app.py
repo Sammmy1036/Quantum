@@ -281,6 +281,7 @@ class Api:
         self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
+        self._renamed.update(getattr(self._db, "merged", {}))   # places listed twice, merged (Port Tressler)
         self._renamed.update(self._apply_uex_stations(offline=True))
         ren = self._renamed
         for st in self._settings.get("route_tasks") or []:
@@ -330,6 +331,7 @@ class Api:
         threading.Thread(target=self._backup_loop, daemon=True).start()
         threading.Thread(target=self._sync_photos, daemon=True).start()
         threading.Thread(target=self._prefetch_assets, daemon=True).start()
+        threading.Thread(target=self._refresh_services, daemon=True).start()
         self._updater = updater.Updater()
         self._updater.cleanup()
         self._update = None
@@ -1795,6 +1797,41 @@ class Api:
         self._static_version += 1
         print(f"game update: build {old} -> {new}; {removed} cached files refreshed", flush=True)
         threading.Thread(target=self._apply_community_alignments, daemon=True).start()
+        threading.Thread(target=self._refresh_services, kwargs={"force": True}, daemon=True).start()
+
+    SERVICES_MAX_AGE = 2 * 86400      # services.json older than this is downloaded again on start
+    SERVICES_RETRY = 6 * 3600         # ...but the wiki is asked at most this often
+
+    def _refresh_services(self, force=False):
+        """Download location services again from the Star Citizen Wiki API when services.json is a few
+        days old or the game was updated, so the place cards follow the current patch (the shipped file
+        is a snapshot of one game version). Runs in the background; the old data stays in use meanwhile
+        and if the download fails."""
+        if getattr(self, "_svc_refreshing", False):
+            return
+        now = time.time()
+        if not force and now - services.fetched_at(SERVICES_PATH) < self.SERVICES_MAX_AGE:
+            return
+        if now - float(self._settings.get("services_checked") or 0) < (1800 if force else self.SERVICES_RETRY):
+            return
+        self._svc_refreshing = True
+        try:
+            self._settings["services_checked"] = now
+            self._save_settings()
+            recs = services.fetch_all(log=lambda *a: None, delay=0.6)
+            if len(recs) < 0.8 * len(self._service_records or []):    # cut short: keep what we have
+                print(f"services: only {len(recs)} records came back; kept the current data", flush=True)
+                return
+            services.save(recs, SERVICES_PATH)
+            self._service_records = recs
+            self._services = self._match_services()
+            self._static_version += 1                                 # the page reloads the place cards
+            versions = sorted({r["version"].split("-")[0] for r in recs if r.get("version")})
+            print(f"services: updated from the Star Citizen Wiki API (game {', '.join(versions) or '?'})", flush=True)
+        except Exception as e:
+            print(f"services: couldn't refresh ({e}); using the saved data", flush=True)
+        finally:
+            self._svc_refreshing = False
 
     def js_error(self, where, message):
         """An error in the page (the map's drawing, say), so it shows up in the console and Settings > Log."""

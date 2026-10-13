@@ -2678,7 +2678,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -2696,7 +2696,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -4532,7 +4532,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -4550,7 +4550,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -4568,7 +4568,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -4586,7 +4586,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -4622,7 +4622,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7502,7 +7502,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7520,7 +7520,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7574,7 +7574,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7592,7 +7592,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7628,7 +7628,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -7682,7 +7682,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -8546,7 +8546,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "station",
    "created": 0.0
   },
   {
@@ -8690,7 +8690,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -8744,7 +8744,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -8780,7 +8780,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -9804,9 +9804,9 @@
    "notes": "",
    "source": "db",
    "system": "Stanton",
-   "qt": false,
+   "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -10508,7 +10508,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -10544,7 +10544,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -10562,7 +10562,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -10598,7 +10598,7 @@
    "system": "Stanton",
    "qt": true,
    "pinned": false,
-   "category": "",
+   "category": "outpost",
    "created": 0.0
   },
   {
@@ -16866,24 +16866,6 @@
    "created": 0.0
   },
   {
-   "name": "Sketto Rock (Magda)",
-   "kind": "surface",
-   "pos": [
-    -334600.0,
-    45704.0,
-    50231.0
-   ],
-   "body": "Magda",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "Orison - Brushwood Platform",
    "kind": "surface",
    "pos": [
@@ -16971,24 +16953,6 @@
    "qt": false,
    "pinned": false,
    "category": "",
-   "created": 0.0
-  },
-  {
-   "name": "Port Tressler (microTech)",
-   "kind": "surface",
-   "pos": [
-    561471.0,
-    545471.0,
-    808832.0
-   ],
-   "body": "microTech",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "station",
    "created": 0.0
   },
   {
@@ -18450,78 +18414,6 @@
    "created": 0.0
   },
   {
-   "name": "Security Post Prashad (Daymar)",
-   "kind": "surface",
-   "pos": [
-    -223887.404405,
-    65622.608817,
-    180748.712154
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Security Post Thaquray (Daymar)",
-   "kind": "surface",
-   "pos": [
-    -6981.267833000001,
-    -89665.412035,
-    281360.037909
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "TPF (Daymar)",
-   "kind": "surface",
-   "pos": [
-    37248.23997,
-    203876.55616,
-    -209981.12253599998
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "The Garden (Daymar)",
-   "kind": "surface",
-   "pos": [
-    -175970.114604,
-    146722.503657,
-    186025.525633
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
    "name": "New Babbage Interstellar Spaceport",
    "kind": "surface",
    "pos": [
@@ -18537,78 +18429,6 @@
    "qt": true,
    "pinned": false,
    "category": "city",
-   "created": 0.0
-  },
-  {
-   "name": "NT-999-XVI (Daymar)",
-   "kind": "surface",
-   "pos": [
-    250895.143123,
-    154055.329269,
-    -24262.749506
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "MT DataCenter 4HJ-LVE-A (microTech)",
-   "kind": "surface",
-   "pos": [
-    -100841.420527,
-    962406.628046,
-    -255721.361148
-   ],
-   "body": "microTech",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "MT DataCenter D79-ECG-R (microTech)",
-   "kind": "surface",
-   "pos": [
-    200928.137781,
-    308739.605015,
-    -929820.080088
-   ],
-   "body": "microTech",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "MT DataCenter QVX-J88-J (microTech)",
-   "kind": "surface",
-   "pos": [
-    -247944.54191099998,
-    892698.62661,
-    -379677.86392699997
-   ],
-   "body": "microTech",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
    "created": 0.0
   },
   {
@@ -18654,114 +18474,6 @@
     -147803.807107,
     -17445.260706999998,
     167339.60725200002
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Elsewhere (Lyria)",
-   "kind": "surface",
-   "pos": [
-    207832.365486,
-    -67343.946058,
-    -50272.809073
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Shubin Processing Facility SPAL-3 (Lyria)",
-   "kind": "surface",
-   "pos": [
-    -208404.129518,
-    11275.208056,
-    -81322.103623
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Shubin Processing Facility SPAL-12 (Lyria)",
-   "kind": "surface",
-   "pos": [
-    -173502.83581299998,
-    124810.37673999999,
-    66783.927285
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Shubin Processing Facility SPAL-21 (Lyria)",
-   "kind": "surface",
-   "pos": [
-    -19526.859217999998,
-    13461.724096,
-    222715.912419
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Teddy's Playhouse (Lyria)",
-   "kind": "surface",
-   "pos": [
-    95428.899223,
-    160939.726246,
-    -122845.590215
-   ],
-   "body": "Lyria",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Wheeler's (Lyria)",
-   "kind": "surface",
-   "pos": [
-    -53369.535053,
-    -209899.723563,
-    -57123.427778
    ],
    "body": "Lyria",
    "pad": "unknown",
@@ -18879,132 +18591,6 @@
    "qt": false,
    "pinned": false,
    "category": "",
-   "created": 0.0
-  },
-  {
-   "name": "Lost and Found (Wala)",
-   "kind": "surface",
-   "pos": [
-    62556.055113,
-    114329.512423,
-    251558.728612
-   ],
-   "body": "Wala",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Afterlife (Yela)",
-   "kind": "surface",
-   "pos": [
-    -254263.453205,
-    -153389.924825,
-    99057.962111
-   ],
-   "body": "Yela",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Connor's (Yela)",
-   "kind": "surface",
-   "pos": [
-    -139770.339362,
-    -254309.590184,
-    118129.294514
-   ],
-   "body": "Yela",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Security Post Opal (Yela)",
-   "kind": "surface",
-   "pos": [
-    241072.886134,
-    96291.28052500001,
-    -175019.176981
-   ],
-   "body": "Yela",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Utopia (Yela)",
-   "kind": "surface",
-   "pos": [
-    -172.582603,
-    -1850.7072520000002,
-    -313079.82619299996
-   ],
-   "body": "Yela",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Shubin Processing Facility SPMC-10 (Calliope)",
-   "kind": "surface",
-   "pos": [
-    -222947.307221,
-    -74155.035081,
-    -48946.056788
-   ],
-   "body": "Calliope",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Shubin Processing Facility SPMC-11 (Calliope)",
-   "kind": "surface",
-   "pos": [
-    72651.900267,
-    -187770.018499,
-    131024.502718
-   ],
-   "body": "Calliope",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "outpost",
    "created": 0.0
   },
   {
@@ -22776,42 +22362,6 @@
     -165447.302517,
     134814.32484699998,
     -4199.984929
-   ],
-   "body": "Euterpe",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Brio's Breaker Yard (Daymar)",
-   "kind": "surface",
-   "pos": [
-    -176973.5365,
-    -160953.157833,
-    173849.36689099998
-   ],
-   "body": "Daymar",
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": false,
-   "pinned": false,
-   "category": "outpost",
-   "created": 0.0
-  },
-  {
-   "name": "Devlin Scrap & Salvage (Euterpe)",
-   "kind": "surface",
-   "pos": [
-    14886.527369,
-    211191.570705,
-    25984.633517
    ],
    "body": "Euterpe",
    "pad": "unknown",

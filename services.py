@@ -75,6 +75,15 @@ def load(path):
         return []
 
 
+def fetched_at(path):
+    """When services.json was downloaded (seconds since the epoch), 0 if unknown."""
+    try:
+        day = json.loads(Path(path).read_text(encoding="utf-8")).get("fetched") or ""
+        return time.mktime(time.strptime(day, "%Y-%m-%d"))
+    except Exception:
+        return 0.0
+
+
 # ------------------------------------------------------------------ matching
 def _key(name):
     n = name.lower().replace("&", " and ")
@@ -93,8 +102,7 @@ def _body_key(name):
 
 # Services players have seen where the game data lists none (the Wiki API has the Wikelo stations
 # with an empty amenity list). Used only when the data has nothing for that place.
-REPORTED = {n: ["Hangar XL", "Commodity Trading - Freight Elevator", "Wikelo's Shop",
-                "Vehicle Services (refuel, repair)"]
+REPORTED = {n: ["Hangar XL", "Freight Elevator", "Wikelo's Shop", "Vehicle Services"]
             for n in ("Wikelo Emporium Dasi Station", "Wikelo Emporium Selo Station",
                       "Wikelo Emporium Kinga Station")}
 
@@ -109,8 +117,35 @@ def _with_reported(out, locations):
     return out
 
 
+# Shorter names in the services panel. The data spells some out ("Commodity Trading - Freight Elevator",
+# "Vehicle Services (Refuel, Repair)"); a plain "Commodity Trading" is kept as it is.
+AMENITY_LABELS = [(re.compile(r"^vehicle services\b.*$", re.I), "Vehicle Services"),
+                  (re.compile(r"^commodity trading\s*[-–—:]\s*freight elevators?$", re.I), "Freight Elevator"),
+                  (re.compile(r"^commodity trading\s*[-–—:]\s*loading docks?$", re.I), "Loading Dock")]
+
+
+def clean_amenity(name):
+    n = (name or "").strip()
+    for rx, label in AMENITY_LABELS:
+        if rx.match(n):
+            return label
+    return n
+
+
+def _clean_labels(out):
+    for name, r in out.items():
+        seen, amen = set(), []
+        for a in r.get("amenities") or []:
+            a = clean_amenity(a)
+            if a and a not in seen:
+                seen.add(a)
+                amen.append(a)
+        out[name] = dict(r, amenities=amen)
+    return out
+
+
 def match(records, locations):
-    return _with_reported(_match(records, locations), locations)
+    return _clean_labels(_with_reported(_match(records, locations), locations))
 
 
 def _match(records, locations):

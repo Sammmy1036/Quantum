@@ -248,6 +248,10 @@ def lpoint_name(st):
 
 def amenities(st):
     out = [label for flag, label in FLAG_AMENITIES if st.get(flag)]
+    if "Refuel" in out or "Repair" in out:          # one "Vehicle Services" tile, like the game data's
+        i = min(out.index(x) for x in ("Refuel", "Repair") if x in out)
+        out = [x for x in out if x not in ("Refuel", "Repair")]
+        out.insert(i, "Vehicle Services")
     pads = [p.strip().upper() for p in (st.get("pad_types") or "").replace(";", ",").split(",") if p.strip()]
     size = next((s for s in ("XL", "L", "M", "S", "XS") if s in pads), None)
     if size:
