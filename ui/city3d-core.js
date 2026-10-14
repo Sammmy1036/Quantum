@@ -407,14 +407,19 @@ function define(spec){
     } catch(e){ st.building=false; reportErr(C.file||C.city,e); }
   }
 
-  // fly to a view: a point in model coordinates, turned into a place on the planet
-  function go(k){ const v=st.model?.views?.[k], F=st.F; if(!v||!F) return;
+  // a point in model coordinates (x, z and its height y), as a place on the planet (planet-fixed)
+  function spot(v){ const F=st.F; if(!F) return null;
     const [x,z]=v.t, s=Math.hypot(x,z), th=s/F.Rb, r=F.Rb+v.y, kk=s>1e-3?r*Math.sin(th)/s:1;
-    const lp=new THREE.Vector3(x*kk, s>1e-3?r*Math.cos(th)-F.Rb:v.y, z*kk);
-    const e=new THREE.Vector3(...F.east), u=new THREE.Vector3(...F.up), sth=new THREE.Vector3(...F.north).negate();
-    const b=new THREE.Vector3(...F.A).addScaledVector(e,lp.x).addScaledVector(u,lp.y).addScaledVector(sth,lp.z);
+    const lx=x*kk, ly=s>1e-3?r*Math.cos(th)-F.Rb:v.y, lz=z*kk;
+    return [0,1,2].map(i=>F.A[i]+F.east[i]*lx+F.up[i]*ly-F.north[i]*lz); }
+  // fly to a view: {t:[x,z], y, d, yaw, p} in model terms (or the name of one of the city's views)
+  function go(k,{dur=null}={}){ const v=typeof k==="string"?st.model?.views?.[k]:k, b=v&&spot(v); if(!b) return;
     if(S.follow) setFollow(false);
-    flyTo({kind:"local",body:C.body,pos:[b.x,b.y,b.z]}, v.d, {pitch:v.p, yaw:v.yaw-Math.PI/2, key:"city3d:"+C.city+":"+k}); }
+    flyTo({kind:"local",body:C.body,pos:b}, v.d, {pitch:v.p, yaw:v.yaw-Math.PI/2, dur, key:"city3d:"+C.city+":"+(typeof k==="string"?k:JSON.stringify(v))}); }
+  // put the camera on a view at once, no glide (for moving it along a path frame by frame)
+  function aim(v){ const b=spot(v); if(!b) return;
+    S.anim=null; if(S.cam.lock) setLock(null);
+    S.focus={kind:"local",body:C.body,pos:b}; S.cam.yaw=v.yaw-Math.PI/2; S.cam.pitch=v.p; S.cam.dist=v.d; S.cam.roll=0; }
   function open(place){ const B=S.bodyMap[C.body]; if(!B) return; const view=C.openView?.[place]||"overview";
     if(S.system!==B.system&&typeof setSystem==="function") setSystem(B.system,false);
     if(st.built){ go(view); return; }
@@ -449,7 +454,7 @@ function define(spec){
   // where the clock is read: the city, or (for a planet's terrain) the ground it was built round
   const loc=()=>C.anchorAt?(st.F?{kind:"surface",body:C.body,pos:st.F.up.map(v=>v*st.F.B.radius)}:null):S.locMap[C.city];
 
-  Object.assign(st,{SKY,ZEN,W,measure,go,open,build,loc});
+  Object.assign(st,{SKY,ZEN,W,measure,go,aim,spot,open,build,loc});
   cities.push(st); return st;
 }
 
@@ -629,9 +634,45 @@ const ui=(()=>{
   return {show,tick,views};
 })();
 
+// ------------------------------------------------------------------ getting a city ready ahead of time
+// Everything that would otherwise happen on the way down (and make the glide stutter): the city's model
+// and its close-up versions, the planet's ground round it, the shaders for the city's light and haze,
+// and its geometry sent to the graphics card. Used by the demo, behind its title card.
+const until=(ok,ms=90000)=>new Promise(r=>{ const t0=performance.now(), f=()=>ok()||performance.now()-t0>ms?r():setTimeout(f,150); f(); });
+const prepared={};
+function prepare(name){
+  return prepared[name]||(prepared[name]=(async()=>{
+    const st=cities.find(c=>!c.C.world&&c.C.city===name); if(!st) return null;
+    const B=S.bodyMap[st.C.body], L=S.locMap[st.C.city];
+    if(!st.built){ if(!st.building) st.build(); await until(()=>st.built||!st.building); }
+    if(!st.built) return null;
+    if(st.model?.ready) await Promise.race([st.model.ready, new Promise(r=>setTimeout(r,60000))]);
+    // the planet's own ground, built round the city (as it would be once you're looking at it)
+    if(B&&L?.pos&&terrainIndex?.includes(B.name)){ const w=worldFor(B.name);
+      if(!w.built&&!w.building){ const r=Math.hypot(...L.pos); w.want=L.pos.map(v=>v/r*B.radius); w.build(); }
+      await until(()=>w.built||!w.building); }
+    warm(); return st; })());
+}
+// Compile every city's shaders for how they'll be drawn (sky light, haze, sun shadows on and off) and
+// upload their geometry, by drawing them once now. The screen is covered (the demo's title card) while
+// this runs; the next frame draws over it.
+function warm(){
+  const shown=[], culled=[], fog0=scene.fog, hadHemi=!!hemi.parent, sh=sun.castShadow;
+  for(const st of cities) if(st.root){ shown.push([st.root,st.root.visible]); st.root.visible=true;
+    st.root.traverse(o=>{ if(o.isMesh&&o.frustumCulled){ o.frustumCulled=false; culled.push(o); } }); }
+  try{ scene.fog=fog; if(!hadHemi) scene.add(hemi);
+    for(const s of [false,true]){ sun.castShadow=s; renderer.compile(scene,camera); renderer.render(scene,camera); } }
+  catch(e){ console.warn("3D city warm-up",e); }
+  finally{ scene.fog=fog0; if(!hadHemi) scene.remove(hemi); sun.castShadow=sh;
+    for(const [r,v] of shown) r.visible=v; for(const o of culled) o.frustumCulled=true; }
+}
+
 // ------------------------------------------------------------------ hook up with the map
 // One entry in index.html's 3D-city registry stands for all of them.
-window.City3D={define, get cities(){ return cities.map(c=>c.C.city); }};
+const cityNamed=name=>cities.find(c=>!c.C.world&&c.C.city===name);
+window.City3D={define, get cities(){ return cities.map(c=>c.C.city); }, prepare,
+  model:name=>cityNamed(name)?.model||null,                  // what the city's file returned (views, tour...)
+  go:(name,v,o)=>cityNamed(name)?.go(v,o), aim:(name,v)=>cityNamed(name)?.aim(v)};
 const forPlace=name=>cities.find(st=>!st.C.world&&st.C.places.includes(name));
 window.registerCity3D({name:"3D cities", update,
   has:name=>!!forPlace(name), titleFor:name=>forPlace(name)?.C.city, open:name=>forPlace(name)?.open(name),
