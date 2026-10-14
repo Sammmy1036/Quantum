@@ -163,7 +163,41 @@ City3D.define({
     const inPort=(x,z)=>{ const [lx,lz]=portLocal(x,z); return Math.abs(lx)<1600&&Math.abs(lz)<1100; };
     const hasMesh=re=>!!LAY&&LAY.meshes.some(m=>re.test(m.name));
     const realHQ=hasMesh(/city_main_\d+_megalod|hab_tower/), realPort=hasMesh(/sp_ext_hull|sp_ext_side/);
-    let cityMat=null, glassMat=null, LIT=null;
+    let cityMat=null, glassMat=null, LIT=null, nearReady=null;
+    const LANDMARK={};                    // where the HQ spire and the spaceport's hall really are (the game's layout)
+    const LOD={};                         // per model: its far and close-up instanced meshes, and every placement
+    let lodDirty=true, lodAt=0; const lodCam=new THREE.Vector3(1e12,0,0), camL=new THREE.Vector3();
+    // Which copies get their close-up version: the ones that look big on screen. A copy qualifies when its
+    // size is more than 1/NEAR_K of its distance (a 1 km platform from ~48 km, a 300 m tower from ~14 km,
+    // a railing within a couple of km), or it's within NEAR_MIN of the camera. If that comes to more than
+    // NEAR_TRIS close-up triangles in all, the biggest-looking copies get them first.
+    const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=14e6;
+    let lodS=null, lodE=null, lodI=null, lodOrd=null, lodPick=null;
+    // every so often, move each placement to the close-up or the far version
+    const updateLod=now=>{
+      if(now-lodAt<300) return; lodAt=now;
+      camera.getWorldPosition(camL); inner.worldToLocal(camL);
+      if(!lodDirty&&lodCam.distanceToSquared(camL)<Math.max(40,0.02*camL.length())**2) return;   // moved enough to matter (more, the further out)
+      lodCam.copy(camL); lodDirty=false;
+      const ents=Object.values(LOD).filter(e=>e.near);
+      if(!ents.length) return;
+      const tot=ents.reduce((a,e)=>a+e.n,0);              // (more close-up models arrive as the file loads)
+      if(!lodS||lodS.length!==tot){ lodS=new Float32Array(tot); lodE=new Int32Array(tot); lodI=new Int32Array(tot); lodPick=new Uint8Array(tot); }
+      let c=0;
+      ents.forEach((e,ei)=>{ e.nt=e.nt||e.near.geometry.attributes.position.count/3;
+        for(let i=0;i<e.n;i++){ const dx=e.cen[i*3]-camL.x, dy=e.cen[i*3+1]-camL.y, dz=e.cen[i*3+2]-camL.z;
+          const gap=Math.max(1,Math.sqrt(dx*dx+dy*dy+dz*dz)-e.rad[i]);
+          lodS[c]=gap<NEAR_MIN?1e9-gap:e.rad[i]*2/gap; lodE[c]=ei; lodI[c]=i; c++; } });
+      // the qualifying copies, biggest-looking first, while the triangle budget lasts
+      lodOrd=lodOrd&&lodOrd.length===c?lodOrd:new Uint32Array(c); let m=0;
+      for(let k=0;k<c;k++) if(lodS[k]>1/NEAR_K) lodOrd[m++]=k;
+      const ord=Array.from(lodOrd.subarray(0,m)).sort((a,b)=>lodS[b]-lodS[a]);
+      lodPick.fill(0); let tris=0;
+      for(const k of ord){ const t=ents[lodE[k]].nt; if(tris+t>NEAR_TRIS) continue; tris+=t; lodPick[k]=1; }
+      c=0;
+      for(const e of ents){ const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
+        for(let i=0;i<e.n;i++,c++){ const mm=e.mats.subarray(i*16,i*16+16); if(lodPick[c]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
+        if(e.far.count!==nf||e.near.count!==nn||nn){ e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; } } };
     if(LAY){
       // both sides drawn: some of the game's pieces are placed mirrored, which turns their faces inside out
       // At night each kind of model gives the light it really would (LIGHT_CLASS below; the same rules as
@@ -185,14 +219,17 @@ City3D.define({
       // towers' glass walls and the domes green.
       const GLASS_C=[0.075,0.095,0.125];
       const KC=[[0.6,0.64,0.7],[0.52,0.56,0.6],[0.78,0.86,0.94],[0.58,0.62,0.68],[0.6,0.64,0.7],[0.36,0.45,0.56]], SNOW=[0.9,0.93,0.97];
-      const geos=LAY.meshes.map((m,mi)=>{
-        const bin=atob(m.v), q=new Int16Array(new Uint8Array([...bin].map(ch=>ch.charCodeAt(0))).buffer);
-        const ib=atob(m.i), iu=new Uint8Array(ib.length); for(let k=0;k<ib.length;k++) iu[k]=ib.charCodeAt(k);
-        const idx=m.i32?new Uint32Array(iu.buffer):new Uint16Array(iu.buffer), b=MB[mi];
+      // A model's triangles, coloured: the game's own colours part by part ([first triangle, count, r, g, b,
+      // look]) when the layout has them; shaded smooth across gentle bends (curved hulls, domes, tunnels) and
+      // sharp at real edges, so a curve doesn't show every facet.
+      const makeGeo=(m,b)=>{
+        const bin=atob(m.v), q=new Int16Array(nbytes(bin).buffer);
+        const iu=nbytes(atob(m.i)), idx=m.i32?new Uint32Array(iu.buffer):new Uint16Array(iu.buffer);
         const nt=Math.floor(idx.length/3), pos=new Float32Array(nt*9), col=new Float32Array(nt*9), kc=KC[m.kind]||KC[0];
         const P=k=>[b.c[0]+q[k*3]/32767*b.h[0], b.c[1]+q[k*3+1]/32767*b.h[1], b.c[2]+q[k*3+2]/32767*b.h[2]];
-        // the game's own colours, part by part ([first triangle, count, r, g, b, look]), when the layout has them
         const runs=m.parts||null, lite=runs?new Float32Array(nt*3):null, lampTop=/plate|port/.test(lightClass(m));
+        const keys=new Float64Array(nt*3);                // each corner's exact stored position, as one number
+        for(let v=0;v<nt*3;v++){ const w=idx[v]; keys[v]=(q[w*3]+32768)*4294967296+(q[w*3+1]+32768)*65536+(q[w*3+2]+32768); }
         let ri=0;
         for(let t=0;t<nt;t++){ const A=P(idx[t*3]), B_=P(idx[t*3+1]), C_=P(idx[t*3+2]);
           const ux=B_[0]-A[0], uy=B_[1]-A[1], uz=B_[2]-A[2], vx=C_[0]-A[0], vy=C_[1]-A[1], vz=C_[2]-A[2];
@@ -206,24 +243,49 @@ City3D.define({
           [A,B_,C_].forEach((v,k)=>{ pos.set(v,t*9+k*3); col.set(c,t*9+k*3); if(lite) lite[t*3+k]=L; }); }
         const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
         if(lite) g.setAttribute("lite",new THREE.BufferAttribute(lite,1));
-        g.computeVertexNormals(); return g; });
+        g.setAttribute("normal",new THREE.BufferAttribute(creaseNormals(pos,nt,keys),3)); return g; };
+      const boxOf=m=>({c:m.lo.map((v,i)=>(v+m.hi[i])/2), h:m.lo.map((v,i)=>(m.hi[i]-v)/2)});
+      const geos=LAY.meshes.map((m,mi)=>makeGeo(m,MB[mi]));
       const byMesh=new Map();
       for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
-      const Mx=new THREE.Matrix4(), Q=new THREE.Quaternion(), Y=new THREE.Vector3(0,1,0), U=new THREE.Vector3(), Rq=new THREE.Matrix4(), Tm=new THREE.Matrix4();
+      const Mx=new THREE.Matrix4(), Q=new THREE.Quaternion(), Y=new THREE.Vector3(0,1,0), U=new THREE.Vector3(), Rq=new THREE.Matrix4(), Tm=new THREE.Matrix4(), Cv=new THREE.Vector3();
       let done=0;
       for(const [k,list] of byMesh){
-        const im=new THREE.InstancedMesh(geos[k],LAY.meshes[k].parts?LIT.city:LIT[lightClass(LAY.meshes[k])],list.length); let n=0;
+        const mat=LAY.meshes[k].parts?LIT.city:LIT[lightClass(LAY.meshes[k])];
+        const im=new THREE.InstancedMesh(geos[k],mat,list.length); let n=0;
+        const mats=new Float32Array(list.length*16), cen=new Float32Array(list.length*3), rad=new Float32Array(list.length), bx=MB[k];
         for(const i of list){ const o=i*13+1;
           const x=IN[o+3], z=IN[o+11]; if(!realPort&&inPort(x,z)) continue;   // the hand-made port's spot
           const y=IN[o+7]+lift+(x*x+z*z)/(2*R0);                              // a flat layout rises off the curved planet
           const p=curve(x,y,z); U.set(p[0],p[1]+F.Rb,p[2]).normalize(); Q.setFromUnitVectors(Y,U);
           Mx.set(IN[o],IN[o+1],IN[o+2],0, IN[o+4],IN[o+5],IN[o+6],0, IN[o+8],IN[o+9],IN[o+10],0, 0,0,0,1);
           Tm.makeRotationFromQuaternion(Q).multiply(Mx).setPosition(p[0],p[1],p[2]);
-          im.setMatrixAt(n++,Tm);
+          im.setMatrixAt(n,Tm); Tm.toArray(mats,n*16);
+          Cv.set(bx.c[0],bx.c[1],bx.c[2]).applyMatrix4(Tm); cen.set([Cv.x,Cv.y,Cv.z],n*3);
+          rad[n]=Math.hypot(bx.h[0],bx.h[1],bx.h[2])*Math.max(Math.hypot(IN[o],IN[o+4],IN[o+8]),Math.hypot(IN[o+1],IN[o+5],IN[o+9]),Math.hypot(IN[o+2],IN[o+6],IN[o+10]));
+          n++;
           const top=MB[k].hi[2]*Math.hypot(IN[o+2],IN[o+6],IN[o+10]);
           if(LAY.meshes[k].kind===0&&top>250) blockers.push([x,z,y+top]); }
+        { const nm=LAY.meshes[k].name;                                        // landmarks, for the camera views below
+          if(/^newbab_hab_tower_a$|^sp_ext_hull$/.test(nm)&&list.length){ const o=list[0]*13+1, b=MB[k];
+            const at=(a,bb,c)=>[IN[o]*a+IN[o+1]*bb+IN[o+2]*c+IN[o+3], IN[o+4]*a+IN[o+5]*bb+IN[o+6]*c+IN[o+7], IN[o+8]*a+IN[o+9]*bb+IN[o+10]*c+IN[o+11]];
+            let lo=1e9, hi=-1e9; for(let c=0;c<8;c++){ const y=at(b.c[0]+(c&1?1:-1)*b.h[0], b.c[1]+(c&2?1:-1)*b.h[1], b.c[2]+(c&4?1:-1)*b.h[2])[1]; lo=Math.min(lo,y); hi=Math.max(hi,y); }
+            const m=at(...b.c), up=lift+(m[0]**2+m[2]**2)/(2*R0);
+            LANDMARK[nm.startsWith("sp_")?"port":"spire"]={t:[m[0],m[2]], y:m[1]+up, base:lo+up, top:hi+up}; } }
         im.count=n; im.castShadow=true; im.receiveShadow=true; im.frustumCulled=false; inner.add(im);
-        if(++done%40===0) await tick(); } }
+        LOD[k]={far:im, near:null, mat, n, mats, cen, rad};
+        if(++done%40===0) await tick(); }
+      // The close-up versions (ui/cities/NewBabbage.near.js, written by build_city.py): loaded once the city
+      // is up, and drawn for the copies near the camera (see updateLod below).
+      nearReady=(async()=>{
+        if(!window.QCITYNEAR?.[CITY]) await new Promise(r=>{ const sc=document.createElement("script"); sc.src="cities/NewBabbage.near.js"; sc.async=true; sc.onload=sc.onerror=r; document.head.appendChild(sc); });
+        const NM=window.QCITYNEAR?.[CITY]?.meshes; if(!NM) return;
+        let c=0;
+        for(const [ks,m] of Object.entries(NM)){ const e=LOD[+ks]; if(!e||!e.n) continue;
+          try{ const near=new THREE.InstancedMesh(makeGeo(m,boxOf(m)),e.mat,e.n); near.count=0;
+            near.castShadow=true; near.receiveShadow=true; near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near; }catch(err){ console.warn("near",m.name,err); }
+          if(++c%12===0) await new Promise(r=>setTimeout(r,0)); }
+        delete window.QCITYNEAR[CITY]; lodDirty=true; })(); }
     // without it: the districts, dense blocks on a street grid along the city's axis, tallest at each one's middle
     if(!LAY) for(const d of DISTRICTS){ const step=d.name==="core"?105:135;
       for(let lx=d.cx-d.rx; lx<=d.cx+d.rx; lx+=step){ for(let lz=d.cz-d.rz; lz<=d.cz+d.rz; lz+=step){
@@ -365,19 +427,32 @@ City3D.define({
     { const bc=new THREE.InstancedMesh(new THREE.SphereGeometry(3.5,8,6),M.beacon,blockers.length);
       blockers.forEach(([x,z,h],i)=>bc.setMatrixAt(i,new THREE.Matrix4().makeTranslation(...curve(x,h+8,z)))); bc.frustumCulled=false; inner.add(bc); }
 
-    // ---------------- what the engine needs back
+    // ---------------- the tour: the HQ spire, the main tram line out of downtown and across the lake, and
+    // the spaceport (the demo flies this; the views below use the same spots)
+    const SPIRE=LANDMARK.spire||{t:[0,0], y:hgt(0,0)+420, base:hgt(0,0), top:hgt(0,0)+900};
+    const HALL=LANDMARK.port||{t:[PORT.x,PORT.z], y:portE};
+    // the game's main line, as laid out (model x, z, height of the track): from the hub under the HQ, down
+    // past the waterfront, straight across the ice, and into the spaceport's station
+    const REAL_LINE=[[-357,-411,377],[105,121,366],[522,600,264],[853,981,176],[1184,1362,90],[1604,1846,2],[2129,2450,2],
+      [8884,9098,5],[9606,9683,39],[10302,10247,76],[11149,10933,76],[11735,11836,76]];
+    const LINE=(LAY&&hasMesh(/^transit_tunnel_open_straight_512/)?REAL_LINE.map(([x,z,y])=>[x,z,y+lift+(x*x+z*z)/(2*R0)])
+      :TRAMS[0].map(p=>{ const [x,z]=toW(...IL(...p)); return [x,z,Math.max(30,hgt(x,z)+14)]; }));
     return {
       hgt,                       // ground height, to keep the camera above it
+      ready:nearReady||Promise.resolve(),          // the close-up versions are in
+      tour:{AX, spire:SPIRE, port:HALL, line:LINE},
       // camera views: t = point looked at (model x,z), y = its height, d = distance, yaw/p = direction
       views:{
         overview:{label:"Overview",t:toW(0,portDist*0.45),y:300,d:42000,yaw:AX+Math.PI+0.5,p:0.62},
         above:{label:"From above",t:toW(-1500,portDist*0.42),y:0,d:34000,yaw:AX,p:0.74},         // high over the lake, the spaceport at the bottom (steeper and the map turns north up)
         lake:{label:"From the lake",t:[0,0],y:200,d:6500,yaw:AX,p:0.09},
-        downtown:{label:"The HQ",t:[0,0],y:300,d:1350,yaw:AX+0.08,p:0.06},          // from down the boulevard
-        port:{label:"Spaceport",t:[PORT.x,PORT.z],y:portE,d:2900,yaw:AX-2.553,p:0.3},
+        downtown:LANDMARK.spire?{label:"The HQ",t:SPIRE.t,y:SPIRE.base+(SPIRE.top-SPIRE.base)*0.45,d:3300,yaw:AX+0.08,p:0.1}   // the spire, from down the boulevard
+                               :{label:"The HQ",t:[0,0],y:300,d:1350,yaw:AX+0.08,p:0.06},
+        port:{label:"Spaceport",t:HALL.t,y:HALL.y,d:2900,yaw:AX-2.553,p:0.3},
         fromport:{label:"From the port",t:[0,0],y:260,d:portDist+300,yaw:AX,p:0.072}},
       // every frame: windows, light strips, domes, the HQ's trim and beacons light up after sunset
       onFrame({night,now}){
+        updateLod(now);
         M.facade.emissiveIntensity=0.03+0.62*night; M.strip.emissiveIntensity=0.25+1.6*night; M.glass.emissiveIntensity=0.05+0.7*night;
         M.accent.emissiveIntensity=0.45+1.2*night; M.hqglass.emissiveIntensity=0.45+0.9*night;
         if(LIT){ LIT.tower.emissiveIntensity=1.4*night; LIT.base.emissiveIntensity=1.3*night; LIT.glass.emissiveIntensity=1.6*night;
@@ -387,6 +462,24 @@ City3D.define({
     };
   },
 });
+
+// base64 -> bytes
+function nbytes(bin){ const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
+// Normals for unshared triangles (3 corners each): where corners meet, the faces whose directions are within
+// about 40 degrees of each other are shaded as one smooth surface; sharper edges stay crisp.
+function creaseNormals(pos,nt,keys,cosMax=0.766){
+  const fn=new Float32Array(nt*3), fu=new Float32Array(nt*3);
+  for(let t=0;t<nt;t++){ const o=t*9;
+    const ux=pos[o+3]-pos[o], uy=pos[o+4]-pos[o+1], uz=pos[o+5]-pos[o+2], vx=pos[o+6]-pos[o], vy=pos[o+7]-pos[o+1], vz=pos[o+8]-pos[o+2];
+    const x=uy*vz-uz*vy, y=uz*vx-ux*vz, z=ux*vy-uy*vx, l=Math.hypot(x,y,z)||1;
+    fn[t*3]=x; fn[t*3+1]=y; fn[t*3+2]=z; fu[t*3]=x/l; fu[t*3+1]=y/l; fu[t*3+2]=z/l; }
+  const at=new Map();                               // corner position -> the corners there
+  for(let v=0;v<nt*3;v++){ const k=keys[v]; let L=at.get(k); if(!L) at.set(k,L=[]); L.push(v); }
+  const out=new Float32Array(nt*9);
+  for(const L of at.values()) for(const v of L){ const t=(v/3)|0; let x=0,y=0,z=0;
+    for(const w of L){ const s=(w/3)|0; if(fu[s*3]*fu[t*3]+fu[s*3+1]*fu[t*3+1]+fu[s*3+2]*fu[t*3+2]>=cosMax){ x+=fn[s*3]; y+=fn[s*3+1]; z+=fn[s*3+2]; } }
+    const l=Math.hypot(x,y,z)||1; out[v*3]=x/l; out[v*3+1]=y/l; out[v*3+2]=z/l; }
+  return out; }
 
 // What gives light at night, by the model's name (the same rules as RULES in tools/city_lights.py). First match wins.
 const LIGHT_RULES=[["none",/addon_|dressing|pillar|support|antenna|tank|strut|fence|railing|rail_|barrier|pipe|vent|cable|angular_layered|_terrain|ht_rooftop_(floor|entrance|doorway)/],
