@@ -30,7 +30,7 @@ City3D.define({
     precip:{label:"Snowfall", color:0xffffff, size:1.2, opacity:0.9, fall:[9,15], drift:0.6, maxAlt:8000},
   },
 
-  async build({F, inner, curve, parts, terrain, pinned, heights, layout, tick, fbm, sstep, hash, rnd, THREE}){
+  async build({F, inner, curve, parts, terrain, pinned, heights, layout, tick, fbm, sstep, hash, rnd, THREE, litWindows, litLamps, litCity}){
     const P=F.places[PORT_NAME]||{x:12510,z:12074,alt:1037};
     const PORT={x:P.x, z:P.z, plat:P.alt-6-40};
     // The city's frame: D points from the microTech HQ (the model's origin, New Babbage's position in
@@ -163,11 +163,27 @@ City3D.define({
     const inPort=(x,z)=>{ const [lx,lz]=portLocal(x,z); return Math.abs(lx)<1600&&Math.abs(lz)<1100; };
     const hasMesh=re=>!!LAY&&LAY.meshes.some(m=>re.test(m.name));
     const realHQ=hasMesh(/city_main_\d+_megalod|hab_tower/), realPort=hasMesh(/sp_ext_hull|sp_ext_side/);
-    let cityMat=null, glassMat=null;
+    let cityMat=null, glassMat=null, LIT=null;
     if(LAY){
       // both sides drawn: some of the game's pieces are placed mirrored, which turns their faces inside out
-      cityMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.78,metalness:0.18,emissive:0xffc98a,emissiveIntensity:0,side:THREE.DoubleSide,shadowSide:THREE.BackSide});
-      glassMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.2,metalness:0.55,emissive:0xffd9a0,emissiveIntensity:0,side:THREE.DoubleSide,shadowSide:THREE.BackSide});
+      // At night each kind of model gives the light it really would (LIGHT_CLASS below; the same rules as
+      // tools/city_lights.py, which bakes the city's lights for the planet): towers their windows, podiums a
+      // few, plates, tram decks and pads street lamps, the domes a glow; tanks, antennas, struts, railings,
+      // rock and the distant scenery stay dark. See litWindows / litLamps in city3d-core.js.
+      const std=(o={})=>new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.78,metalness:0.18,emissive:0xffffff,emissiveIntensity:0,side:THREE.DoubleSide,shadowSide:THREE.BackSide,...o});
+      cityMat=std(); glassMat=std({roughness:0.2,metalness:0.55});
+      LIT={none:cityMat, glass:glassMat, tower:std(), base:std(), plate:std(), port:std(), dome:std({emissive:0xffe2b8})};
+      if(litWindows){ litWindows(LIT.tower,{floor:4.2,col:3.4,lit:0.3}); litWindows(LIT.base,{floor:5.0,col:4.0,lit:0.16});
+        litWindows(glassMat,{floor:4.0,col:2.2,lit:0.5,glass:true}); }
+      if(litLamps){ litLamps(LIT.plate,{spacing:36,warm:true}); litLamps(LIT.port,{spacing:24,warm:false,pool:0.5}); }
+      // models coloured from the game's materials (build_city.py writes 'parts'): one material, each triangle
+      // saying what it is (window, light strip, glass, street-lamp top) in a 'lite' attribute
+      LIT.city=std(); if(litCity) litCity(LIT.city,{lit:0.3,spacing:36});
+      const LINEAR=k=>{ const c=k/255; return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4; };
+      // Glass is drawn as dark, cool glass with the pale sky in it. Its material's colour is the tint light
+      // takes on passing through (mint or teal in New Babbage), not paint: drawn as paint, it turned the
+      // towers' glass walls and the domes green.
+      const GLASS_C=[0.075,0.095,0.125];
       const KC=[[0.6,0.64,0.7],[0.52,0.56,0.6],[0.78,0.86,0.94],[0.58,0.62,0.68],[0.6,0.64,0.7],[0.36,0.45,0.56]], SNOW=[0.9,0.93,0.97];
       const geos=LAY.meshes.map((m,mi)=>{
         const bin=atob(m.v), q=new Int16Array(new Uint8Array([...bin].map(ch=>ch.charCodeAt(0))).buffer);
@@ -175,19 +191,28 @@ City3D.define({
         const idx=m.i32?new Uint32Array(iu.buffer):new Uint16Array(iu.buffer), b=MB[mi];
         const nt=Math.floor(idx.length/3), pos=new Float32Array(nt*9), col=new Float32Array(nt*9), kc=KC[m.kind]||KC[0];
         const P=k=>[b.c[0]+q[k*3]/32767*b.h[0], b.c[1]+q[k*3+1]/32767*b.h[1], b.c[2]+q[k*3+2]/32767*b.h[2]];
+        // the game's own colours, part by part ([first triangle, count, r, g, b, look]), when the layout has them
+        const runs=m.parts||null, lite=runs?new Float32Array(nt*3):null, lampTop=/plate|port/.test(lightClass(m));
+        let ri=0;
         for(let t=0;t<nt;t++){ const A=P(idx[t*3]), B_=P(idx[t*3+1]), C_=P(idx[t*3+2]);
           const ux=B_[0]-A[0], uy=B_[1]-A[1], uz=B_[2]-A[2], vx=C_[0]-A[0], vy=C_[1]-A[1], vz=C_[2]-A[2];
-          const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx, nl=Math.hypot(nx,ny,nz)||1;
-          const c=m.kind!==5&&Math.abs(nz/nl)>0.8?SNOW:kc;                      // the game's models are z-up: roofs take snow
-          [A,B_,C_].forEach((v,k)=>{ pos.set(v,t*9+k*3); col.set(c,t*9+k*3); }); }
+          const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx, nl=Math.hypot(nx,ny,nz)||1, up=Math.abs(nz/nl)>0.8;
+          let c, L=0;
+          if(runs){ while(ri<runs.length-1&&t>=runs[ri][0]+runs[ri][1]) ri++;
+            const r=runs[ri], look=r[5]; c=look===3?GLASS_C:[LINEAR(r[2]),LINEAR(r[3]),LINEAR(r[4])];   // glass: see GLASS_C
+            L=look===1||look===2||look===3?look:0;
+            if(up&&look===0){ c=SNOW; if(lampTop) L=5; } }                       // flat tops: snow (and street lamps on plates)
+          else c=m.kind!==5&&up?SNOW:kc;                                         // the game's models are z-up: roofs take snow
+          [A,B_,C_].forEach((v,k)=>{ pos.set(v,t*9+k*3); col.set(c,t*9+k*3); if(lite) lite[t*3+k]=L; }); }
         const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
+        if(lite) g.setAttribute("lite",new THREE.BufferAttribute(lite,1));
         g.computeVertexNormals(); return g; });
       const byMesh=new Map();
       for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
       const Mx=new THREE.Matrix4(), Q=new THREE.Quaternion(), Y=new THREE.Vector3(0,1,0), U=new THREE.Vector3(), Rq=new THREE.Matrix4(), Tm=new THREE.Matrix4();
       let done=0;
       for(const [k,list] of byMesh){
-        const im=new THREE.InstancedMesh(geos[k],LAY.meshes[k].kind===5?glassMat:cityMat,list.length); let n=0;
+        const im=new THREE.InstancedMesh(geos[k],LAY.meshes[k].parts?LIT.city:LIT[lightClass(LAY.meshes[k])],list.length); let n=0;
         for(const i of list){ const o=i*13+1;
           const x=IN[o+3], z=IN[o+11]; if(!realPort&&inPort(x,z)) continue;   // the hand-made port's spot
           const y=IN[o+7]+lift+(x*x+z*z)/(2*R0);                              // a flat layout rises off the curved planet
@@ -355,11 +380,22 @@ City3D.define({
       onFrame({night,now}){
         M.facade.emissiveIntensity=0.03+0.62*night; M.strip.emissiveIntensity=0.25+1.6*night; M.glass.emissiveIntensity=0.05+0.7*night;
         M.accent.emissiveIntensity=0.45+1.2*night; M.hqglass.emissiveIntensity=0.45+0.9*night;
-        if(cityMat){ cityMat.emissiveIntensity=0.08*night; glassMat.emissiveIntensity=0.55*night; }
+        if(LIT){ LIT.tower.emissiveIntensity=1.4*night; LIT.base.emissiveIntensity=1.3*night; LIT.glass.emissiveIntensity=1.6*night;
+          LIT.plate.emissiveIntensity=1.2*night; LIT.port.emissiveIntensity=1.5*night; LIT.dome.emissiveIntensity=0.14*night;
+          LIT.city.emissiveIntensity=1.4*night; }
         M.beacon.opacity=(Math.sin(now*0.004)>0.2?1:0.15)*(night>0.4?1:0.55); },
     };
   },
 });
+
+// What gives light at night, by the model's name (the same rules as RULES in tools/city_lights.py). First match wins.
+const LIGHT_RULES=[["none",/addon_|dressing|pillar|support|antenna|tank|strut|fence|railing|rail_|barrier|pipe|vent|cable|angular_layered|_terrain|ht_rooftop_(floor|entrance|doorway)/],
+  ["glass",null], ["tower",/^building_\d+m_|^building_cluster_|hab_tower|city_main_|city_cluster_|rooftop_megalod/],
+  ["base",/^building_base|^plate_base/], ["port",/^sp_|hangar|landing|_pad/], ["dome",/dome/],
+  ["plate",/plate|transit|walkway|bridge|street|plaza|platform|deck/]];
+function lightClass(m){ const n=(m.name||"").toLowerCase();
+  for(const [c,rx] of LIGHT_RULES){ if(c==="glass"){ if(m.kind===5) return c; } else if(rx.test(n)) return c; }
+  return "none"; }
 
 function windowTextures(rnd){ const W=256,Hh=384, a=document.createElement("canvas"), b=document.createElement("canvas"); a.width=b.width=W; a.height=b.height=Hh;
   const g=a.getContext("2d"), e=b.getContext("2d"); g.fillStyle="#c3ccd6"; g.fillRect(0,0,W,Hh); e.fillStyle="#000"; e.fillRect(0,0,W,Hh);

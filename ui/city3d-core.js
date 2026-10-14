@@ -81,12 +81,120 @@ function vnoise3(x,y,z){ const xi=Math.floor(x), yi=Math.floor(y), zi=Math.floor
   return l(f(0),f(1),w); }
 function fbm3(x,y,z,oct=5){ let s=0,a=0.5,f=1; for(let i=0;i<oct;i++){ s+=a*vnoise3(x*f,y*f,z*f); f*=2.03; a*=0.5; } return s; }
 
+// ------------------------------------------------------------------ lit windows and street lamps
+// litWindows(material, {floor, col, lit, glass}): the material's emissive light (its colour times
+// emissiveIntensity, which the city turns up after dark) shows only in windows: floors 'floor' metres apart,
+// panes 'col' metres wide, on walls (not roofs), from the second floor up. Each building has its own way of
+// being lit, picked from where it stands: an office lit a block of windows at a time, a building lit whole
+// floor by floor, or scattered flats; and its own light (warm, neutral or cool white). 'lit' is how much of
+// a typical building is on. Once windows are smaller than a pixel they turn into their average glow, so a
+// lit city doesn't shimmer from afar. For the game's models, which are z-up and placed by instancing; set
+// the material's emissive colour to white.
+const WIN_VERT=`
+        { vec3 wsc=vec3(1.0); vWinSeed=0.37;
+          #ifdef USE_INSTANCING
+            wsc=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));
+            vec3 it=instanceMatrix[3].xyz; vWinSeed=fract(sin(dot(floor(it*0.5),vec3(0.0123,0.0457,0.0789)))*43758.5453);
+          #endif
+          vec3 wp=transformed*wsc; vec3 on=normalize(objectNormal+1e-6);
+          vec2 t=normalize(vec2(-on.y,on.x)+1e-6);
+          vWin=vec3(dot(wp.xy,t), wp.z, abs(on.z)); vWinXY=wp.xy; }`;
+function shaderHook(m,key,vert,frag){
+  const prev=m.onBeforeCompile, prevKey=m.customProgramCacheKey.bind(m);
+  m.customProgramCacheKey=()=>prevKey()+"|"+key;
+  m.onBeforeCompile=(sh,r)=>{ prev.call(m,sh,r);
+    const dec="\nvarying vec3 vWin; varying vec2 vWinXY; varying float vWinSeed;";
+    sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>"+dec).replace("#include <begin_vertex>","#include <begin_vertex>"+vert);
+    sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>"+dec+"\nfloat wHash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }")
+      .replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n"+frag); };
+  m.needsUpdate=true; return m; }
+function litWindows(m,{floor=4.2,col=3.4,lit=0.3,glass=false}={}){
+  const f=v=>(+v).toFixed(3);
+  return shaderHook(m,`win${f(floor)},${f(col)},${f(lit)},${glass}`,WIN_VERT,`
+        { vec2 q=vWin.xy/vec2(${f(col)},${f(floor)}), id=floor(q), w=fract(q);
+          float sd=vWinSeed*311.0, style=fract(vWinSeed*13.7), tone=fract(vWinSeed*5.31);
+          // the building's way of being lit: blocks of windows (offices), whole floors, or single windows (flats)
+          vec2 gs=${glass?"vec2(3.0,2.0)":"style<0.45?vec2(4.0,3.0):style<0.75?vec2(64.0,1.0):vec2(1.0,1.0)"};
+          vec2 gq=q/gs, gid=floor(gq);
+          float hg=wHash(gid+vec2(sd,sd*0.57)), h=wHash(id+vec2(sd*1.31,sd*0.71));
+          float busy=${f(lit)}*(0.2+1.6*vWinSeed*vWinSeed);                     // a few busy buildings, many quiet ones
+          float onG=step(1.0-busy,hg);
+          float onW=onG*step(0.12,h)+(1.0-onG)*step(0.965,h);                   // most of a lit group; a few strays elsewhere
+          float pane=${glass?"step(0.06,w.x)*step(w.x,0.94)*step(0.12,w.y)*step(w.y,0.92)":"step(0.16,w.x)*step(w.x,0.84)*step(0.24,w.y)*step(w.y,0.84)"};
+          float fill=${glass?"0.79":"0.46"};
+          float pxW=length(fwidth(q)), pxG=length(fwidth(gq));
+          float near=onW*pane, mid=(onG*0.88+(1.0-onG)*0.035)*fill, far=(busy*0.88+(1.0-busy)*0.035)*fill*0.28;
+          far*=1.0+2.2*smoothstep(2.0,7.0,pxG);                                   // tens of km out: glow again
+          float lvl=mix(mix(near,mid,smoothstep(0.5,1.1,pxW)),far,smoothstep(0.55,1.2,max(pxG,pxW*0.25)));
+          lvl*=(1.0-smoothstep(0.35,0.6,vWin.z))*step(5.5,vWin.y);              // walls only, from the second floor
+          vec3 wc=tone<0.55?vec3(1.0,0.73,0.45):tone<0.86?vec3(1.0,0.88,0.72):vec3(0.80,0.88,1.0);   // the building's own light
+          totalEmissiveRadiance*=lvl*wc*(0.75+0.5*h); }`); }
+// litLamps(material, {spacing, warm}): street lamps on whatever faces up (plates, decks, pads): a lamp in
+// most cells of a 'spacing' metre grid, each a bright point with a pool of light round it on the ground.
+function litLamps(m,{spacing=34,warm=true,pool=0.35}={}){
+  const f=v=>(+v).toFixed(3);
+  return shaderHook(m,`lamp${f(spacing)},${warm},${f(pool)}`,WIN_VERT,`
+        { vec2 q=vWinXY/${f(spacing)}, id=floor(q), w=fract(q);
+          float h=wHash(id+vWinSeed*91.0), on=step(0.3,h);
+          vec2 o=vec2(wHash(id+1.7),wHash(id+3.1))*0.5+0.25; float d=length(w-o)*${f(spacing)};
+          float pix=length(fwidth(q));
+          float near=on*(smoothstep(1.6,0.0,d)*1.4+exp(-d*d/${f(spacing*spacing*0.04)})*${f(pool)});
+          float avg=0.7*${f(pool)}*0.13;
+          float lvl=mix(near,avg,smoothstep(0.35,0.8,pix))*smoothstep(0.75,0.9,vWin.z);
+          vec3 lc=${warm?"vec3(1.0,0.68,0.36)":"vec3(0.92,0.95,1.0)"};
+          totalEmissiveRadiance*=lvl*lc; }`); }
+
+// litCity(material, {lit, spacing}): for models coloured from the game's materials (build_city.py), whose
+// triangles carry a 'lite' attribute saying what each one is: 1 a window (the game's own window faces: lit
+// floor by floor, block by block or flat by flat, as litWindows), 2 a light strip or lit sign (glows its own
+// colour), 3 glass (a faint glow from inside), 5 the top of a plate, deck or pad (street lamps, as litLamps);
+// anything else stays dark. The material's emissive colour should be white; the city scales
+// emissiveIntensity with the night.
+function litCity(m,{lit=0.3,spacing=36}={}){
+  const f=v=>(+v).toFixed(3);
+  const prev=m.onBeforeCompile, prevKey=m.customProgramCacheKey.bind(m);
+  m.customProgramCacheKey=()=>prevKey()+`|city${f(lit)},${f(spacing)}`;
+  m.onBeforeCompile=(sh,r)=>{ prev.call(m,sh,r);
+    const dec="\nvarying vec3 vWin; varying vec2 vWinXY; varying float vWinSeed; varying float vLite;";
+    sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>"+dec+"\nattribute float lite;")
+      .replace("#include <begin_vertex>","#include <begin_vertex>"+WIN_VERT+"\nvLite=lite;");
+    sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>"+dec+"\nfloat wHash(vec2 p){ return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453); }")
+      .replace("#include <emissivemap_fragment>",`#include <emissivemap_fragment>
+        { float L=floor(vLite+0.5); vec3 em=vec3(0.0);
+          if(L==1.0){                                                        // a window face
+            vec2 q=vWin.xy/vec2(3.4,4.2), id=floor(q), w=fract(q);
+            float sd=vWinSeed*311.0, style=fract(vWinSeed*13.7), tone=fract(vWinSeed*5.31);
+            vec2 gs=style<0.45?vec2(4.0,3.0):style<0.75?vec2(64.0,1.0):vec2(1.0,1.0), gq=q/gs, gid=floor(gq);
+            float hg=wHash(gid+vec2(sd,sd*0.57)), h=wHash(id+vec2(sd*1.31,sd*0.71));
+            float busy=${f(lit)}*(0.2+1.6*vWinSeed*vWinSeed), onG=step(1.0-busy,hg);
+            float onW=onG*step(0.12,h)+(1.0-onG)*step(0.965,h);
+            float pane=step(0.08,w.x)*step(w.x,0.92)*step(0.14,w.y)*step(w.y,0.9), fill=0.7;
+            float pxW=length(fwidth(q)), pxG=length(fwidth(gq));
+            float near=onW*pane, mid=(onG*0.88+(1.0-onG)*0.035)*fill, far=(busy*0.88+(1.0-busy)*0.035)*fill*0.3;
+            far*=1.0+2.2*smoothstep(2.0,7.0,pxG);
+            float lvl=mix(mix(near,mid,smoothstep(0.5,1.1,pxW)),far,smoothstep(0.55,1.2,max(pxG,pxW*0.25)));
+            vec3 wc=tone<0.55?vec3(1.0,0.73,0.45):tone<0.86?vec3(1.0,0.88,0.72):vec3(0.80,0.88,1.0);
+            em=lvl*wc*(0.75+0.5*h); }
+          else if(L==2.0) em=(vColor.rgb*0.7+vec3(0.3))*0.9;                // light strips and signs: their own colour
+          else if(L==3.0) em=vec3(1.0,0.86,0.66)*0.07;                      // glass: lit from inside
+          else if(L==5.0){                                                  // street lamps on the tops of plates and decks
+            vec2 q=vWinXY/${f(spacing)}, id=floor(q), w=fract(q);
+            float h=wHash(id+vWinSeed*91.0), on=step(0.3,h);
+            vec2 o=vec2(wHash(id+1.7),wHash(id+3.1))*0.5+0.25; float d=length(w-o)*${f(spacing)};
+            float pix=length(fwidth(q));
+            float near=on*(smoothstep(1.6,0.0,d)*1.4+exp(-d*d/${f(spacing*spacing*0.04)})*0.35);
+            em=vec3(1.0,0.68,0.36)*mix(near,0.03,smoothstep(0.35,0.8,pix))*smoothstep(0.75,0.9,vWin.z); }
+          totalEmissiveRadiance*=em; }`); };
+  m.needsUpdate=true; return m; }
+
 // ------------------------------------------------------------------ the fade every city material takes part in
 // Its alpha is multiplied by FADE (0-1, from altitude) and by a circular edge set per city (by default 1
 // out to 24 km, 0 by 66 km), so the square of terrain never shows. Materials stay "transparent" so the
 // planet beneath shows through while they fade; at full strength they draw opaque as before.
-function fadeable(m,FADE,edge){ if(!m||m.userData.fade) return m; m.userData.fade=true; m.transparent=true; if(m.depthWrite!==false) m.depthWrite=true;
-  m.onBeforeCompile=sh=>{ sh.uniforms.FADE=FADE;
+function fadeable(m,FADE,edge,SUNLIT){ if(!m||m.userData.fade) return m; m.userData.fade=true; m.transparent=true; if(m.depthWrite!==false) m.depthWrite=true;
+  const prev=m.onBeforeCompile, prevKey=m.customProgramCacheKey.bind(m);      // keep any shader changes the city made (lit windows)
+  m.customProgramCacheKey=()=>prevKey()+"|fade"+edge.join(",");
+  m.onBeforeCompile=(sh,r)=>{ prev.call(m,sh,r); sh.uniforms.FADE=FADE; sh.uniforms.SUNLIT=SUNLIT||{value:1};
     sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nvarying float vEdge;")
       .replace("#include <begin_vertex>",`#include <begin_vertex>
         vec3 fp=transformed;
@@ -94,7 +202,10 @@ function fadeable(m,FADE,edge){ if(!m||m.userData.fade) return m; m.userData.fad
           fp=(instanceMatrix*vec4(fp,1.0)).xyz;
         #endif
         vEdge=1.0-smoothstep(${edge[0].toFixed(1)},${edge[1].toFixed(1)},length(fp.xz));`);
-    sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nvarying float vEdge; uniform float FADE;")
+    // direct sunlight only while the sun is above the city's horizon: on the way down the scene's sun
+    // is still part planet-lit, and it was lighting the city's walls from below the ground at night
+    sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nvarying float vEdge; uniform float FADE; uniform float SUNLIT;")
+      .replace("#include <lights_fragment_end>","#include <lights_fragment_end>\nreflectedLight.directDiffuse*=SUNLIT; reflectedLight.directSpecular*=SUNLIT;")
       .replace("#include <dithering_fragment>","#include <dithering_fragment>\ngl_FragColor.a*=FADE*vEdge;"); };
   m.needsUpdate=true; return m; }
 
@@ -176,7 +287,7 @@ function define(spec){
   const C=merge(DEFAULTS,spec); C.places=[C.city,...(C.alsoAt||[])];
   const W=C.weather;
   const SKY={day:col(W.sky.day),dusk:col(W.sky.dusk),night:col(W.sky.night)}, ZEN={day:col(W.zenith.day),dusk:col(W.zenith.dusk),night:col(W.zenith.night)};
-  const st={C, F:null, FR:null, FRv:-1, built:false, building:false, root:null, inner:null, model:null, FADE:{value:0}, r:0, g:0, frame:null};
+  const st={C, F:null, FR:null, FRv:-1, built:false, building:false, root:null, inner:null, model:null, FADE:{value:0}, SUNLIT:{value:1}, r:0, g:0, frame:null};
 
   // Model coordinates: x east, z south, y up (metres), origin on the ground at the city. Read from
   // Quantum's data: the city's saved position, and every surveyed place within reach as a "pin" with
@@ -211,7 +322,7 @@ function define(spec){
       { const e=new THREE.Vector3(...F.east), u=new THREE.Vector3(...F.up), sth=new THREE.Vector3(...F.north).negate();
         inner.matrix.makeBasis(e,u,sth).setPosition(F.A[0],F.A[1],F.A[2]); }
       scene.add(root);
-      const fade=m=>fadeable(m,FADE,C.edge);
+      const fade=m=>fadeable(m,FADE,C.edge,st.SUNLIT);
 
       // Merged geometry, one draw call per material (as Quantum does for its stations). add() takes any
       // geometry with a transform; roofs facing up can go to another material (snow on a roof, say).
@@ -285,7 +396,7 @@ function define(spec){
         const th=s/Rb, c=Math.cos(th), k=Math.sin(th)/s, e=F.east, n=F.north;
         return [up[0]*c+(e[0]*x-n[0]*z)*k, up[1]*c+(e[1]*x-n[1]*z)*k, up[2]*c+(e[2]*x-n[2]*z)*k]; }
 
-      const ctx={F, C, inner, curve, fade, parts, terrain, pinned, heights, dirAt, layout, tick, fbm, fbm3, sstep, hash, rnd:seeded(C.seed||20251), THREE};
+      const ctx={F, C, inner, curve, fade, litWindows, litLamps, litCity, parts, terrain, pinned, heights, dirAt, layout, tick, fbm, fbm3, sstep, hash, rnd:seeded(C.seed||20251), THREE};
       const model=await C.build(ctx);
       inner.traverse(o=>{ if(o.material) fade(o.material); });      // everything the city added fades with it
       // swap in the new model (a planet's terrain is rebuilt as you travel; the old one stays up meanwhile)
@@ -414,7 +525,7 @@ function update(t){
   // the sun as seen from the city
   const star=sysObjs.find(o=>o.b.kind==="star"); const stp=star?star.b.center:[0,0,0];
   const sunDir=nrm([stp[0]-Ag[0],stp[1]-Ag[1],stp[2]-Ag[2]]), sinEl=dot3(sunDir,upG);
-  const day=sstep(-0.06,0.12,sinEl), night=1-day, low=1-sstep(0.05,0.35,sinEl);
+  const day=sstep(-0.06,0.12,sinEl), night=1-day, low=1-sstep(0.05,0.35,sinEl); st.SUNLIT.value=sstep(-0.03,0.06,sinEl);
   // the map's lights blend to the city's as you come down (from orbit the planet keeps its own lighting)
   sun.intensity=SUN0*(1-r+r*day); sun.color.copy(SUNCOL0).lerp(new THREE.Color(1,0.94-0.3*low,0.86-0.5*low),r);
   if(ambient) ambient.intensity=AMB0*(1-r)+(0.12+0.25*day)*r;

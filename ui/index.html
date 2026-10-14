@@ -1362,7 +1362,15 @@ const PLANET_V=`#include <common>
 const PLANET_F=`#include <common>
   #include <logdepthbuf_pars_fragment>
   varying vec3 vP, vW, vN, vL; uniform vec3 SUN, ATMO, HAZEC; uniform float T, SEED, HAZE, CITYR; uniform int TYPE;
-  uniform vec4 CITY[4];${NOISE_GLSL}
+  uniform sampler2D CLT0, CLT1; uniform vec4 CLD[2]; uniform vec4 CLE[2]; uniform sampler2D MAP; uniform float HASMAP; uniform vec2 MAPOFF;${NOISE_GLSL}
+  // The game's own colour map of the planet (ui/planets/<Body>.js): longitude 0 at the left, north at the
+  // top. Read with the derivatives of whichever of two longitude ranges is smooth here, so the line where
+  // the map's ends meet doesn't show.
+  vec3 mapColor(vec3 p){
+    float lon=atan(p.y,p.x)/6.28318531, v=asin(clamp(p.z,-1.0,1.0))/3.14159265+0.5+MAPOFF.y;
+    float u1=fract(lon+MAPOFF.x), u2=fract(lon+MAPOFF.x+0.5)-0.5;
+    vec2 a1=vec2(dFdx(u1),dFdy(u1)), a2=vec2(dFdx(u2),dFdy(u2)); bool b=dot(a2,a2)<dot(a1,a1);
+    vec2 a=b?a2:a1; return textureGrad(MAP,vec2(b?u2:u1,v),vec2(a.x,dFdx(v)),vec2(a.y,dFdy(v))).rgb; }
   float h1(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
   float ridge(vec3 p){ return 1.0-abs(fbm(p)*2.0); }
   // Lights scattered like a city seen from orbit: many small points in clusters. Up close they're points;
@@ -1375,6 +1383,26 @@ const PLANET_F=`#include <common>
     vec3 o=vec3(h1(c+1.3),h1(c+2.7),h1(c+5.1))*0.5+0.25; float pix=length(fwidth(q));
     float r=max(0.16,pix*0.9), d=step(th,h)*smoothstep(r,r*0.35,length(f-o))*(0.6+0.8*h1(c+9.7));
     return mix((1.0-th)*0.08,d,1.0-smoothstep(0.35,0.7,pix)); }
+  // A city's night lights, from its real buildings (ui/citylights/<City>.js): t holds how much light each
+  // patch gives; d = the city's direction (planet-local), w = planet radius / the grid's size; e = east
+  // there, w = planet radius / 45 m. Up close they're separate points of light about 45 m apart, more of
+  // them where it's busier; once they're smaller than a pixel they become their average glow, with a soft
+  // halo round the brightest districts. -> (light, how busy: whiter light in the core)
+  float hash13(vec3 p){ p=fract(p*0.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
+  vec2 cityLights(sampler2D t, vec4 d, vec4 e){
+    if(d.w<=0.0) return vec2(0.0); float c=dot(vP,d.xyz); if(c<0.9) return vec2(0.0);
+    vec3 n=cross(d.xyz,e.xyz); vec2 uv=vec2(0.5+dot(vP,e.xyz)/c*d.w, 0.5-dot(vP,n)/c*d.w);
+    if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0)))) return vec2(0.0);
+    float L=texture(t,uv,-0.8).r, halo=texture(t,uv,3.0).r;                 // sharper than the screen would pick, and a wide halo
+    float Lc=L*L*(1.6-0.6*L);                                              // contrast: quiet streets drop away, busy districts stand out
+    if(L<0.003&&halo<0.003) return vec2(0.0);
+    vec3 q=vP*e.w; vec3 cl=floor(q), f=fract(q);
+    float h=hash13(cl), pix=length(fwidth(q));
+    vec3 o=vec3(hash13(cl+1.3),hash13(cl+2.7),hash13(cl+5.1))*0.6+0.2;
+    float r=max(0.2,pix*0.9), pt=step(1.0-L,h)*smoothstep(r,r*0.25,length(f-o))*(0.6+0.9*hash13(cl+9.7));
+    float pts=mix(pt, Lc*0.3, smoothstep(0.4,0.9,pix));               // far off: the points' average
+    float glow=Lc*mix(0.06,0.55,smoothstep(1.0,6.0,pix));                  // seen from orbit, a block is a fraction of a pixel: let it shine
+    return vec2((glow+pts*1.7+halo*halo*0.35)*2.4, L); }
   // ArcCorp: rose-grey city crust under a teal haze, the whole planet built up, lights everywhere at night
   vec3 arccorp(vec3 p, out float lights){ vec3 s=vec3(SEED);
     float big=fbm(p*1.8+s), mid=fbm(p*6.0-s), fine=fbm(p*40.0+s), grain=fbm(p*160.0);
@@ -1425,6 +1453,7 @@ const PLANET_F=`#include <common>
     vec3 N=normalize(vN), L=normalize(SUN-vW), V=normalize(cameraPosition-vW);
     float lights=0.0; vec3 em=vec3(0.0), alb;
     if(TYPE==1) alb=arccorp(vP,lights); else if(TYPE==2) alb=hurston(vP,em); else if(TYPE==3) alb=crusader(vP); else alb=microtech(vP);
+    if(HASMAP>0.5){ alb=mapColor(vP)*(0.95+0.10*fbm(vP*160.0)); em=vec3(0.0); }   // the real map (and no made-up lava)
     alb=pow(alb,vec3(2.2));
     float nl=dot(N,L), day=smoothstep(-0.12,0.18,nl), diff=max(nl,0.0), nv=max(dot(N,V),0.0);
     vec3 c=alb*(0.0025+1.0*diff);
@@ -1432,21 +1461,19 @@ const PLANET_F=`#include <common>
     float hz=HAZE*(0.35+0.65*pow(1.0-nv,1.4)), hl=smoothstep(-0.15,0.6,nl);
     c=mix(c,pow(HAZEC,vec3(2.2))*(0.02+0.95*hl),hz);
     c=mix(c,pow(ATMO,vec3(2.2))*(0.15+0.9*diff),pow(1.0-nv,3.5)*0.6*day);
-    // the planet's real cities: a bright core of many lights, and a wider glow round it
-    float cities=0.0;
-    for(int i=0;i<4;i++){ if(CITY[i].w<=0.0) continue;
-      float a=acos(clamp(dot(vP,CITY[i].xyz),-1.0,1.0))/(CITYR*CITY[i].w);
-      cities+=exp(-a*a)*(0.12+3.0*dots(vP,120.0,0.30)+2.0*dots(vP,300.0,0.45))+exp(-a*a*0.3)*0.07; }
-    c+=vec3(1.0,0.56,0.22)*(lights*0.6+cities)*(1.0-day)*(1.0-hz*0.4);
+    // the cities' night lights, where their real buildings are
+    vec2 c0=cityLights(CLT0,CLD[0],CLE[0]), c1=cityLights(CLT1,CLD[1],CLE[1]);
+    vec3 cityCol=mix(vec3(1.0,0.52,0.18),vec3(1.0,0.86,0.62),smoothstep(0.3,0.85,max(c0.y,c1.y)));   // sodium-orange streets, whiter centre
+    c+=(vec3(1.0,0.56,0.22)*lights*0.6+cityCol*(c0.x+c1.x))*(1.0-day)*(1.0-hz*0.4);
     c+=em*(1.0-hz*0.6);
     gl_FragColor=vec4(c,1.0);
     #include <colorspace_fragment>
   }`;
-// cities: up to four {dir:[x,y,z] (planet-local), size}
-function planetMaterial(look,cities=[]){
-  const C=[0,1,2,3].map(i=>{ const c=cities[i]; if(!c) return new THREE.Vector4(0,0,1,0); const d=new THREE.Vector3(...c.dir).normalize(); return new THREE.Vector4(d.x,d.y,d.z,c.size||1); });
+function planetMaterial(look){
   const m=new THREE.ShaderMaterial({uniforms:{SUN:{value:new THREE.Vector3()},T:{value:0},SEED:{value:look.seed},TYPE:{value:look.type},
-    ATMO:{value:new THREE.Vector3(...look.atmo)},HAZE:{value:look.haze},HAZEC:{value:new THREE.Vector3(...look.hazeCol)},CITYR:{value:look.cityR},CITY:{value:C}},
+    ATMO:{value:new THREE.Vector3(...look.atmo)},HAZE:{value:look.haze},HAZEC:{value:new THREE.Vector3(...look.hazeCol)},CITYR:{value:look.cityR},
+    CLT0:{value:null},CLT1:{value:null},CLD:{value:[new THREE.Vector4(),new THREE.Vector4()]},CLE:{value:[new THREE.Vector4(1,0,0,0),new THREE.Vector4(1,0,0,0)]},
+    MAP:{value:null},HASMAP:{value:0},MAPOFF:{value:new THREE.Vector2()}},
     vertexShader:PLANET_V, fragmentShader:PLANET_F});
   PLANET_MATS.push(m); return m; }
 // The glow around the planet: a bright rim along the lit edge fading out into space
@@ -1488,10 +1515,48 @@ function cloudMaterial(look){
         #include <colorspace_fragment>
       }`});
   PLANET_MATS.push(m); return m; }
-// The cities whose lights each planet shows: its real ones, from the map (positions are planet-local)
-const PLANET_CITIES={ArcCorp:[["Area 18",1.0]], Hurston:[["Lorville",1.15]], Crusader:[["Orison",1.0]], microTech:[["New Babbage",1.0]]};
-function citiesOf(name){ return (PLANET_CITIES[name]||[]).map(([n,size])=>{ const L=S.locMap?.[n]; return L&&L.pos&&L.body===name?{dir:L.pos,size}:null; }).filter(Boolean); }
+// Night lights: only where a city's real buildings are (ui/citylights/<City>.js, baked by tools/city_lights.py
+// from ui/cities), up to two per planet. A city without a 3D layout yet shows none.
+const CITYLIGHT={};
+const cityLightIndex=addScript("citylights/index.js").then(()=>Array.isArray(window.QCITYLIGHTS_INDEX)?window.QCITYLIGHTS_INDEX:[]);
+async function applyCityLights(b,mat){ if(!mat?.uniforms?.CLD) return;
+  const list=(await cityLightIndex); let slot=0;
+  for(const {city,file} of list){ if(slot>1) break;
+    if(!window.QCITYLIGHTS?.[city]) await addScript(`citylights/${encodeURIComponent(file)}.js`);
+    const G=window.QCITYLIGHTS?.[city], L=S.locMap?.[city]; if(!G||G.body!==b.name||!L?.pos) continue;
+    let tex=CITYLIGHT[city];
+    if(!tex){
+      if(G.png){ const img=new Image(); img.src="data:image/png;base64,"+G.png;              // the grid, as a greyscale PNG
+        try{ await img.decode(); }catch(e){ console.warn(`citylights/${file}.js`,e); continue; }
+        tex=new THREE.Texture(img); tex.flipY=false; }
+      else { const bin=atob(G.b64), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+        tex=new THREE.DataTexture(u8,G.n,G.n,THREE.RedFormat,THREE.UnsignedByteType); }
+      tex.minFilter=THREE.LinearMipmapLinearFilter; tex.magFilter=THREE.LinearFilter; tex.generateMipmaps=true; tex.anisotropy=8; tex.needsUpdate=true;
+      CITYLIGHT[city]=tex; }
+    const up=new THREE.Vector3(...L.pos).normalize(), east=new THREE.Vector3(0,0,1).cross(up).normalize();   // as tools/build_city.py lines the city up
+    mat.uniforms["CLT"+slot].value=tex; mat.uniforms.CLD.value[slot].set(up.x,up.y,up.z,b.radius/G.size); mat.uniforms.CLE.value[slot].set(east.x,east.y,east.z,b.radius/45); slot++; } }
 
+// The game's own colour maps (ui/planets/<Body>.js, made by tools/build_planet_textures.py), listed in
+// ui/planets/index.js. A body without one keeps the look drawn here.
+const PLANET_IMG={};
+function addScript(src){ return new Promise(res=>{ const s=document.createElement("script"); s.src=src; s.async=true;
+  s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }); }
+const planetIndex=addScript("planets/index.js").then(()=>Array.isArray(window.QPLANET_INDEX)?window.QPLANET_INDEX:[]);
+function planetImage(name){
+  return PLANET_IMG[name]||(PLANET_IMG[name]=(async()=>{
+    if(!(await planetIndex).includes(name)) return null;
+    if(!window.QPLANET?.[name]) await addScript(`planets/${encodeURIComponent(name)}.js`);
+    const P=window.QPLANET?.[name]; if(!P?.jpg) return null;
+    const img=new Image(); img.src="data:image/jpeg;base64,"+P.jpg;
+    try{ await img.decode(); }catch(e){ console.warn(`planets/${name}.js`,e); return null; }
+    delete P.jpg; return {img,du:P.du||0,dv:P.dv||0}; })()); }
+async function applyPlanetMap(b,mat){
+  const m=await planetImage(b.name); if(!m||!mat) return;
+  const tex=new THREE.Texture(m.img); tex.wrapS=THREE.RepeatWrapping; tex.anisotropy=8; tex.needsUpdate=true;
+  if(mat.uniforms?.MAP){ mat.uniforms.MAP.value=tex; mat.uniforms.HASMAP.value=1; mat.uniforms.MAPOFF.value.set(m.du,m.dv); return; }
+  // a plain sphere (rotated so its own u=0 is at longitude 180): turn the map half-way round
+  tex.colorSpace=THREE.SRGBColorSpace; tex.offset.set(0.5+m.du,m.dv);
+  mat.map?.dispose?.(); mat.map=tex; mat.color?.set(0xffffff); mat.needsUpdate=true; }
 function seededRand(name){ let h=2166136261; for(const c of name){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return ()=>{ h^=h<<13; h^=h>>>17; h^=h<<5; return ((h>>>0)%100000)/100000; }; }
 const KIND_LABEL={star:"Star",planet:"Planet",moon:"Moon",asteroid:"Asteroid"};
 function kindLabel(b){ return KIND_LABEL[b.kind]||"Planet"; }
@@ -1542,9 +1607,10 @@ function buildSystem(){
     const isStar=b.kind==="star", isRock=b.kind==="asteroid";
     let geo; if(isRock) geo=asteroidGeometry(b.name); else { geo=new THREE.SphereGeometry(1,96,64); geo.rotateX(Math.PI/2); }
     const look=!isStar&&PLANET_LOOK[b.name];
-    const mat= isStar ? sunMaterial(BODY_HSL[b.name]?.[0]??45) : look ? planetMaterial(look,citiesOf(b.name))
+    const mat= isStar ? sunMaterial(BODY_HSL[b.name]?.[0]??45) : look ? planetMaterial(look)
                       : new THREE.MeshStandardMaterial({map:bodyTexture(b), roughness:isRock?1:0.95, metalness:0, flatShading:isRock});
     const mesh=new THREE.Mesh(geo,mat); mesh.scale.setScalar(b.radius); spin.add(mesh);
+    if(!isStar&&!isRock){ applyPlanetMap(b,mat); applyCityLights(b,mat); }
     let grid=null, atmo=null, clouds=null;
     if(isRock){ /* no lat/lon grid or atmosphere on a rock */ }
     else if(!isStar){
@@ -1646,8 +1712,10 @@ function place(obj,p){ obj.position.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]); }
 function lockBodyOf(f){ return f.kind==="body" ? f.name : null; }   // orbit a planet in its rotating frame
 // A place stored on a planet or moon but well above it (Grim HEX, orbital markers, comm arrays, ship
 // graveyards): it turns with the body, but it isn't on the ground, so the map treats it like a station.
+// A station counts as soon as it's clear of the ground (Port Tressler is only ~130 km over microTech).
 function isOrbital(L){ const b=L&&L.kind==="surface"&&L.pos&&S.bodyMap[L.body]; if(!b) return false;
-  return Math.hypot(L.pos[0],L.pos[1],L.pos[2])-b.radius > Math.max(50000,b.radius*0.15); }
+  const alt=Math.hypot(L.pos[0],L.pos[1],L.pos[2])-b.radius;
+  return alt > Math.max(50000,b.radius*0.15) || (L.type==="station" && alt > b.radius*0.02); }
 function surfaceBodyOf(f){ if(f.kind==="loc"){ const L=S.locMap[f.name]; return L&&L.kind==="surface"&&!isOrbital(L)?L.body:null; }
   if(f.kind==="local") return f.body; if(f.kind==="player") return S.live?.player?.body||null; return null; }
 function focusPos(f,t){
@@ -1674,17 +1742,23 @@ const cross3=(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[
 // horizon (east/north/up) so you look down at the ground with north at the top of the screen.
 function viewFrame(t,goal){
   const c=S.cam, sb=surfaceBodyOf(S.focus);
-  if(sb && S.bodyMap[sb]){ const up=norm3([goal[0]-S.bodyMap[sb].center[0],goal[1]-S.bodyMap[sb].center[1],goal[2]-S.bodyMap[sb].center[2]]);
-    let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
-    const cp=Math.cos(c.pitch), dir=[0,1,2].map(i=>cp*(Math.cos(c.yaw)*east[i]+Math.sin(c.yaw)*north[i])+Math.sin(c.pitch)*up[i]);
-    // An orbit camera: "up" on screen is the way you're facing over the ground (tilted toward the sky as
-    // you look at the horizon), so right-drag turns the view round. Holding north at the top made it stick
-    // and wobble instead. The default top-down heading still has north at the top.
-    const h=[0,1,2].map(i=>Math.cos(c.yaw)*east[i]+Math.sin(c.yaw)*north[i]);
-    return {dir,up:norm3([0,1,2].map(i=>Math.cos(c.pitch)*up[i]-Math.sin(c.pitch)*h[i]))}; }
+  if(sb && S.bodyMap[sb]) return groundFrame(S.bodyMap[sb],goal,c.pitch,c.yaw,c.roll||0);
   const yaw=c.yaw+(c.lock&&S.bodyMap[c.lock]?bodyAngle(S.bodyMap[c.lock],t):0);
   return {dir:[Math.cos(c.pitch)*Math.cos(yaw),Math.cos(c.pitch)*Math.sin(yaw),Math.sin(c.pitch)], up:[0,0,1]};
 }
+// The ground camera at G over B. An orbit camera: "up" on screen is the way you're facing over the ground
+// (tilted toward the sky as you look at the horizon), so right-drag turns the view round. Holding north at
+// the top made it stick and wobble instead. The default top-down heading still has north at the top.
+// roll turns the picture about the view direction: it is what keeps the screen exactly as it was when the
+// view moves onto a planet's ground (scroll-zooming in), instead of the planet visibly turning.
+function groundAxes(B,G){ const up=norm3([G[0]-B.center[0],G[1]-B.center[1],G[2]-B.center[2]]);
+  let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); return {up,east,north:cross3(up,east)}; }
+function groundFrame(B,G,pitch,yaw,roll){ const {up,east,north}=groundAxes(B,G);
+  const h=[0,1,2].map(i=>Math.cos(yaw)*east[i]+Math.sin(yaw)*north[i]);
+  const dir=[0,1,2].map(i=>Math.cos(pitch)*h[i]+Math.sin(pitch)*up[i]);
+  let u=[0,1,2].map(i=>Math.cos(pitch)*up[i]-Math.sin(pitch)*h[i]);
+  if(roll){ const x=cross3(dir,u), cr=Math.cos(roll), sr=Math.sin(roll); u=[0,1,2].map(i=>u[i]*cr+x[i]*sr); }
+  return {dir,up:norm3(u)}; }
 function setLock(name){ const t=now(); const old=S.cam.lock&&S.bodyMap[S.cam.lock];
   if(old) S.cam.yaw+=bodyAngle(old,t); const nb=name&&S.bodyMap[name]; if(nb) S.cam.yaw-=bodyAngle(nb,t); S.cam.lock=nb?name:null; }
 // Zoom-and-pan along the path from van Wijk & Nuij ("Smooth and efficient zooming and panning"):
@@ -1708,7 +1782,7 @@ function flyTo(focus,dist,{pitch=null,yaw=null,dur=null,key=null}={}){
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   S.anim={key, from, fromDist:S.cam.dist, toDist:dist, k, path, fromPitch:S.cam.pitch, toPitch:pitch??S.cam.pitch, fromDir, fromUp,
           t0:performance.now(), dur:reduce?1:(dur??Math.max(900,Math.min(2600,Math.abs(path.S)*620)))};
-  S.focus=focus;
+  S.focus=focus; S.cam.roll=0;
 }
 function updateCamera(t){
   S.camT=t;                                            // the moment the camera was last placed for (see the wheel)
@@ -1736,10 +1810,13 @@ function fitSystem(){ const bs=S.bodies.filter(b=>b.system===S.system&&b.kind!==
   if(bs.length===1&&!far) return flyTo({kind:"body",name:bs[0].name}, bs[0].radius*5, {pitch:0.9});
   flyTo({kind:"system"}, systemExtent()*2.4, {pitch:1.0}); }
 function focusBody(name){ const b=S.bodyMap[name]; if(!b) return; if(S.follow) setFollow(false); if(b.system!==S.system) setSystem(b.system,false); flyTo({kind:"body",name}, b.radius*(b.kind==="star"?12:3.2)); }
-const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};  // looking down, slightly from the south: north is up
+const TOPDOWN={pitch:1.25,yaw:-Math.PI/2};
+const STATION_VIEW=45000, STATION_MIN=10;     // open a station 45 km out; the wheel can close in to 10 m
+const isStation=L=>!!L&&L.type==="station"&&!(L.kind==="surface"&&!isOrbital(L));
+function stationFocus(){ const f=S.focus; return f&&f.kind==="loc"&&isStation(S.locMap[f.name])?S.locMap[f.name]:null; }  // looking down, slightly from the south: north is up
 function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false); if(!L.pos) return;
   if(L.kind==="surface"&&!isOrbital(L)){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
-  else flyTo({kind:"loc",name}, close?60000:4e6); }
+  else flyTo({kind:"loc",name}, isStation(L)?STATION_VIEW:(close?60000:4e6)); }
 // Follow: when your position changes (a /showlocation, a landing, a jump, a stop ticked off), the view
 // moves with you: you and your next stop if there's a route, otherwise just you. Dragging or zooming the
 // map yourself pauses it; ◎ (or Y) turns it back on.
@@ -1991,12 +2068,32 @@ ov.addEventListener("contextmenu",e=>e.preventDefault());
 // make it a place on that planet instead, so the view turns with the planet (a fixed point in space has
 // the planet rotating away under it, and the view drifts) and dragging works the ground's way. The
 // camera keeps looking the same way.
+// Put the camera on B's ground at G without the picture moving at all: same view direction d (centre to
+// camera) and same screen up u. Pitch and heading come from d (from u when looking straight down, where d
+// has no heading); the roll takes up whatever is left, so the planet doesn't turn as you scroll in.
+function enterGround(B,G,d,u){ const {up,east,north}=groundAxes(B,G);
+  const du=d[0]*up[0]+d[1]*up[1]+d[2]*up[2], uu=u[0]*up[0]+u[1]*up[1]+u[2]*up[2];
+  let h=[0,1,2].map(i=>d[i]-du*up[i]); if(Math.hypot(...h)<1e-4) h=[0,1,2].map(i=>-(u[i]-uu*up[i]));
+  const he=h[0]*east[0]+h[1]*east[1]+h[2]*east[2], hn=h[0]*north[0]+h[1]*north[1]+h[2]*north[2];
+  S.cam.lock=null; S.cam.pitch=Math.max(-1.5707,Math.min(1.5707,Math.asin(Math.max(-1,Math.min(1,du)))));
+  if(Math.hypot(he,hn)>1e-12) S.cam.yaw=Math.atan2(hn,he);
+  const f=groundFrame(B,G,S.cam.pitch,S.cam.yaw,0), x=cross3(f.up,u);
+  S.cam.roll=Math.atan2(x[0]*f.dir[0]+x[1]*f.dir[1]+x[2]*f.dir[2], f.up[0]*u[0]+f.up[1]*u[1]+f.up[2]*u[2]); }
+// Scrolling onto the ground keeps the picture still with a roll, but right-drag turns and tilts about the
+// ground's own heading: with a roll left in, dragging down tilted the view sideways (it looked stuck and
+// wobbly). So a right-drag first hands the roll over to the heading, over a few moves: the screen's up
+// stays where it is and the turning follows the mouse again.
+function unroll(){ const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb], r=S.cam.roll||0; if(!B||!r) return;
+  const G=S.cam.target, f=groundFrame(B,G,S.cam.pitch,S.cam.yaw,r), {up,east,north}=groundAxes(B,G);
+  const uu=f.up[0]*up[0]+f.up[1]*up[1]+f.up[2]*up[2], h=[0,1,2].map(i=>-(f.up[i]-uu*up[i]));   // the heading that has this screen up
+  const he=h[0]*east[0]+h[1]*east[1]+h[2]*east[2], hn=h[0]*north[0]+h[1]*north[1]+h[2]*north[2];
+  if(Math.hypot(he,hn)<1e-9||Math.abs(r)<0.01){ S.cam.roll=0; return; }
+  const want=Math.atan2(hn,he), dy=Math.atan2(Math.sin(want-S.cam.yaw),Math.cos(want-S.cam.yaw));
+  const k=Math.abs(r)<0.05?1:0.35; S.cam.yaw+=dy*k; S.cam.roll=r*(1-k); }
+function screenUp(){ const v=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1); return norm3([v.x,v.y,v.z]); }
 function attachToGround(){ if(S.focus.kind!=="point") return; const t=now(), G=S.cam.target;
   const B=S.bodies.find(b=>b.system===S.system&&b.kind!=="star"&&b.kind!=="asteroid"&&d3(G,b.center)<b.radius*1.15); if(!B) return;
-  const up=norm3([G[0]-B.center[0],G[1]-B.center[1],G[2]-B.center[2]]); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
-  const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
-  S.cam.lock=null; S.cam.pitch=Math.max(0.12,Math.min(1.55,Math.asin(Math.max(-1,Math.min(1,d[0]*up[0]+d[1]*up[1]+d[2]*up[2])))));
-  S.cam.yaw=Math.atan2(d[0]*north[0]+d[1]*north[1]+d[2]*north[2], d[0]*east[0]+d[1]*east[1]+d[2]*east[2]);
+  enterGround(B,G,norm3([camera.position.x,camera.position.y,camera.position.z]),screenUp());
   S.anim=null; S.focus={kind:"local",body:B.name,pos:toLocal(B,G,t)}; }
 // Drag the planet under the cursor: the point you look at slides across the globe, so you can
 // roam freely instead of circling one fixed spot. Works from ground level up to orbit.
@@ -2026,7 +2123,7 @@ window.addEventListener("pointermove",e=>{
     if(!surfaceBodyOf(S.focus)) attachToGround();                    // a free point just above a planet: back onto its ground
     const surf=!!surfaceBodyOf(S.focus);
     if(surf && !drag.turn){ grabGlobe(dx,dy); }                       // near a planet: drag (or middle-drag) the ground itself
-    else if(surf && drag.turn){ S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
+    else if(surf && drag.turn){ unroll(); S.cam.yaw+=dx*0.006; S.cam.pitch=Math.max(0.12,Math.min(1.55,S.cam.pitch+dy*0.006)); } // tilt & turn
     else if(drag.turn){ S.cam.yaw-=dx*0.006; S.cam.pitch=Math.max(-1.5,Math.min(1.5,S.cam.pitch+dy*0.006)); } // right-drag: turn the view, never move the system
     else if(drag.pan){ // move the view point in the camera plane
       const k=S.cam.dist*2*Math.tan(camera.fov*Math.PI/360)/H; const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
@@ -2051,7 +2148,21 @@ function groundUnderMouse(e){ const r=ov.getBoundingClientRect();
     if(disc<0) continue; const tt=-bq-Math.sqrt(disc); if(tt<=0) continue;
     if(!best||tt<best.t) best={b,t:tt,g:[O[0]+o.x+dv.x*tt, O[1]+o.y+dv.y*tt, O[2]+o.z+dv.z*tt]}; }
   return best; }
-ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; stopAnim(); if(S.follow) setFollow(false);
+ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1.25; if(S.follow) setFollow(false);
+  // Looking at a station: the wheel zooms on the station only (never on the planet behind it) and stops
+  // short of flying through it. Pan or pick something else to let go.
+  let st=stationFocus();
+  // A station picked on the map (clicked, not flown to yet): scrolling in zooms onto it, wherever the mouse is.
+  const sel=S.selected?.kind==="loc"&&S.locMap[S.selected.name];
+  if(!st && k<1 && isStation(sel) && sel.system===S.system && sel.pos){
+    stopAnim(); const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
+    flyTo({kind:"loc",name:sel.name}, Math.max(STATION_MIN,Math.min(S.cam.dist*k, STATION_VIEW*4)),
+          {yaw:Math.atan2(d[1],d[0]), pitch:Math.asin(Math.max(-1,Math.min(1,d[2]))), dur:650});
+    return; }
+  if(st){ if(S.anim){ const to=Math.min(4e12,Math.max(STATION_MIN,S.anim.toDist*k));             // mid fly-in: carry on to the new distance
+      S.anim=null; flyTo(S.focus,to,{dur:700,key:"wheel:"+st.name+":"+to}); return; }
+    S.cam.dist=Math.min(4e12,Math.max(STATION_MIN,S.cam.dist*k)); return; }
+  stopAnim();
   const hit=k<1?groundUnderMouse(e):null;
   if(hit){ const t=now()+(S.timeShift||0), B=hit.b;
     // The mouse ray used the camera as last drawn; the planet has turned a little since. Carry the spot
@@ -2059,18 +2170,26 @@ ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1
     const t0=S.camT??t, da=bodyAngle(B,t)-bodyAngle(B,t0), ca=Math.cos(da), sa=Math.sin(da);
     hit.g=toGlobal(B,toLocal(B,hit.g,t0),t); const T=focusPos(S.focus,t);
     const rotz=v=>[v[0]*ca-v[1]*sa, v[0]*sa+v[1]*ca, v[2]];
-    // scale about the spot under the cursor: the view's centre moves toward it as the camera closes in
-    const T2=[0,1,2].map(i=>T[i]+(hit.g[i]-T[i])*(1-k));
-    const d=norm3(rotz([camera.position.x,camera.position.y,camera.position.z]));
-    {                                                               // the view turns with that planet from now on (a fixed point in space has it rotate away underneath)
-      const up=norm3([T2[0]-B.center[0],T2[1]-B.center[1],T2[2]-B.center[2]]); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
-      S.cam.lock=null; S.cam.pitch=Math.max(0.12,Math.min(1.55,Math.asin(Math.max(-1,Math.min(1,d[0]*up[0]+d[1]*up[1]+d[2]*up[2])))));
-      S.cam.yaw=Math.atan2(d[0]*north[0]+d[1]*north[1]+d[2]*north[2], d[0]*east[0]+d[1]*east[1]+d[2]*east[2]);
-      S.focus={kind:"local",body:B.name,pos:toLocal(B,T2,t)}; S.cam.dist=Math.max(20,S.cam.dist*k);
-      // the ground's own frame turns the view a touch; slide the ground so the spot stays under the mouse
-      updateCamera(t); const q=proj(hit.g), r=ov.getBoundingClientRect();
-      if(q) grabGlobe((e.clientX-r.left)-q[0], (e.clientY-r.top)-q[1]);
-      return; } }
+    const d=norm3(rotz([camera.position.x,camera.position.y,camera.position.z])), u=norm3(rotz(screenUp()));
+    // The camera keeps exactly the way it faces and moves straight in. Far out it heads for the middle of
+    // the view, so the planet just grows where it is; closer in it heads more and more for the spot under
+    // the mouse (all the way from 0.4 radii up), so you can still scroll down into a city. Heading for a
+    // spot near the planet's edge from far away is what swung the camera round the planet with every
+    // notch, so the planet looked like it was turning.
+    const P=[0,1,2].map(i=>T[i]+d[i]*S.cam.dist), alt=d3(P,B.center)-B.radius;
+    const w=Math.max(0,Math.min(1,(1.6*B.radius-alt)/(1.2*B.radius)));
+    const A=[0,1,2].map(i=>T[i]+(hit.g[i]-T[i])*w);                 // the point the zoom closes in on
+    const P2=[0,1,2].map(i=>A[i]+(P[i]-A[i])*k);                    // where the camera goes
+    // The view's centre goes where the line of sight meets the ground, so the camera then belongs to that
+    // ground (a point in the planet's core made it jump as soon as you dragged or scrolled again).
+    const oc=[0,1,2].map(i=>P2[i]-B.center[i]), bq=oc[0]*d[0]+oc[1]*d[1]+oc[2]*d[2], disc=bq*bq-(oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-B.radius*B.radius);
+    let T2, dist;
+    if(disc>=0&&bq-Math.sqrt(disc)>20){ dist=bq-Math.sqrt(disc); T2=[0,1,2].map(i=>P2[i]-d[i]*dist); }
+    else { T2=[0,1,2].map(i=>A[i]+(T[i]-A[i])*k); dist=Math.max(20,d3(P2,T2)); }
+    // the view turns with that planet from now on (a fixed point in space has it rotate away underneath)
+    enterGround(B,T2,d,u);
+    S.focus={kind:"local",body:B.name,pos:toLocal(B,T2,t)}; S.cam.dist=dist;
+    return; }
   let min=20; if(S.focus.kind==="body"&&S.bodyMap[S.focus.name]){ min=S.bodyMap[S.focus.name].radius*1.05; }
   S.cam.dist=Math.min(4e12,Math.max(min,S.cam.dist*k)); },{passive:false});
 function jumpTarget(L){ if(L?.to) return L.to; const m=L&&L.type==="jump"&&L.name.match(/^(.+?)\s+(?:Gateway|Jump\s*Point)(?:\s*\([^)]*\))?$/i); return m?m[1]:null; }
