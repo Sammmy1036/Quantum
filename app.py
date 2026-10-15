@@ -1052,8 +1052,10 @@ class Api:
                 if L is not None:
                     p, psys, ptime, approx = self._db.global_pos(L, t), wsys, t, L.name
                     spot_at = w.get("at") or t
-                else:
-                    p, psys = None, wsys
+                # No gateway known between the two: keep the last reading on the map rather than dropping
+                # you off it entirely. The log's system hints can be wrong (a contract or shop naming another
+                # system), and a /showlocation you just typed must never make you disappear; if you really
+                # did change systems, the next /showlocation (or the system picker) puts you right.
             if game_on:
                 self._auto_arrive(cur)
             self._prune_finished_tasks()
@@ -2502,6 +2504,14 @@ class Api:
             if listed == release or listed.startswith(release + "."):
                 version = listed
         return version, env, running
+
+    def dr_game_status(self):
+        """Just the game-version line of the report form, so the page can refresh it when the game starts."""
+        try:
+            version, env, running = self._dr_game_build()
+            return {"ok": True, "game_running": running, "game_version": version, "env": env}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def _dr_game_version(self):
         """LIVE or PTU version for the report: from UEX's version list, picked by which Game.log is read."""

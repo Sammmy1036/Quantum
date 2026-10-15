@@ -4373,6 +4373,15 @@ const drAge=(ts,long)=>{ if(!ts) return {t:"new",c:"a1",tip:"Not on UEX yet"}; c
 const drNum=v=>{ if(v==null||v==="") return null; const m=String(v).trim().toLowerCase().replace(/,/g,"").match(/^(\d+(?:\.\d+)?)\s*([km])?$/);
   return m?Math.round(parseFloat(m[1])*({k:1e3,m:1e6}[m[2]]||1)*100)/100:NaN; };
 const drFmt=v=>v==null||isNaN(v)?"":Number(v).toLocaleString();
+function drShowVer(r){
+  const k=`${r.game_running}|${r.game_version}|${r.env}`; if(S.drVerKey===k) return; S.drVerKey=k;
+  if(S.dr?.pf) Object.assign(S.dr.pf,{game_running:r.game_running,game_version:r.game_version,env:r.env});
+  $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
+  $("dr-ver").textContent=!r.game_running?"Star Citizen Not Running":r.game_version?`${r.game_version} ${r.env}`:"Couldn't read it from Game.log"; }
+// while the Datarunner tab is open, re-check the game version every few seconds, so starting (or closing)
+// Star Citizen shows up without leaving the tab and coming back
+setInterval(()=>{ if(S.tab!=="datarunner"||document.hidden||S.drVerBusy) return; S.drVerBusy=true;
+  api().dr_game_status().then(r=>{ if(r?.ok) drShowVer(r); }).catch(()=>{}).finally(()=>{ S.drVerBusy=false; }); },5000);
 async function openDatarunner(id){
   if(!S.dr){ $("dr-panel").innerHTML=qLoader("Loading the terminal…"); drSyncInputs(); }
   const r=await api().dr_prefill(id||null);
@@ -4391,8 +4400,7 @@ async function openDatarunner(id){
   $("dr-term-q").value=cur?`${cur.where} · ${cur.name}`:""; $("dr-term-q").dataset.label=$("dr-term-q").value;
   $("dr-here").textContent=r.you_are_at?(r.terminals.some(t=>t.here)?`You're at ${r.you_are_at} (from the game log).`:`You're at ${r.you_are_at}, which has no commodity terminal on UEX.`)
     :"Land or dock somewhere and the terminal there is picked for you.";
-  $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
-  $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env}`:"Couldn't read it from Game.log";
+  drShowVer(r);
   renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs();
   if(!S.drProf||Date.now()-(S.drProfAt||0)>60000) api().dr_profile(false).then(p=>{ if(p?.ok){ S.drProf=p; S.drProfAt=Date.now();
     if(S.dr) renderDrStats(S.dr.pf.stats); } }).catch(()=>{}); }
@@ -4880,18 +4888,19 @@ function drSyncInputs(){ const term=!!S.dr?.pf?.id_terminal, game=!S.live?.game_
 function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?.shot_hotkey;
   const steps=[
     ["Go to a commodity kiosk","Any terminal that buys or sells cargo. Not sure where? <a data-drview=\"jobs\" style=\"cursor:pointer;text-decoration:underline\">Jobs</a> lists the ones with the oldest prices."],
-    ["Pick the terminal","Land or dock and Quantum picks it from the game log. Or type it on the left, like “New Babbage”. Its commodities load with UEX's current numbers."],
-    ["Take a screenshot",`Open the kiosk's list in game and press ${k?`<b>${esc(k)}</b>`:"your screenshot key (set it in Settings)"}, or use Take screenshot on the left. It must show every item you report; for a long list, scroll and take another.`],
-    ["Check each row","Matches the kiosk: <b>No Changes</b> (or Space). Different: type the stock and price, set the inventory bar. Gone from the kiosk: <b>Not Sold Here</b>."],
-    ["Submit Report","Look it over, confirm the screenshot shows everything, and send. It goes to UEX under your account and shows up for Quantum users straight away."],
+    ["Pick the terminal","Land or dock and Quantum picks it from the game log. Or type it in the Terminal Search Bar. For example: “New Babbage”. Its commodities load with UEX and Quantum data."],
+    ["Take a screenshot",`Open the kiosk's list in game and press ${k?`<b>${esc(k)}</b>`:"your screenshot key (set it in Settings)"}, or use Take screenshot on the left. It must clearly show a direct view of the item(s) you report; for a long list, scroll the list down and take another screenshot. Quantum will automatically have all pictures viewable for you to assign which item each screenshot contains.`],
+    ["Data entry","At the kiosk verify and/or update the data in the list."],
+    ["Submit Report","Confirm all data entered is correct and that the screenshot is clear and shows any and all items being reported on. Once confirmed, select that you have reviewed and confirm and submit the report. It goes to UEX under your account and shows up for Quantum users straight away."],
     ["Follow it in My Reports",`See when UEX approves it, climb the ranks and keep your star rating up. <a data-drview="faq" style="cursor:pointer;text-decoration:underline">How ratings work</a>`]];
   return `<div class="dr-guide">
     <h2>Report Prices, step by step</h2>
     <div class="muted" style="margin:-4px 0 14px;font-size:13px">Every report keeps trade data fresh for everyone on UEX and Quantum.</div>
     <ol>${steps.map(([t,d],i)=>`<li><span class="n">${i+1}</span><div><b>${t}</b><div>${d}</div></div></li>`).join("")}</ol>
-    <div class="tips"><b>Keep your reports approved</b>
+    <div class="tips"><b>Please note</b>
       <ul><li>Only report what the kiosk shows right now: never guess.</li>
-        <li>Double-check prices more than 25% away from UEX's average; they're held for manual review.</li>
+        <li>Double-check prices! If there is more than a 25% variance from existing values from UEX's average; they may be held for manual review by both Quantum and UEX.</li>
+        <li>False and innaccurate reports can result in losing your trusted status, suspensions, or permanent bans.</li>
         <li>You can report the same item at the same terminal once every 5 minutes.</li></ul></div>
     <div class="row" style="gap:8px;margin-top:16px"><button class="btn primary" data-drview="jobs">Find a terminal to update</button><button class="btn" data-drview="mine">My Reports</button></div></div>`; }
 

@@ -32,7 +32,7 @@ City3D.define({
     // the city, drawn from the game's layout
     const G=ctx.gameLayout({lightClass, lift:layout.a0-C.alt0, roofs:null, nearFile:"cities/Lorville.near.js", lampTops:/port/,     // its streets are 500 m plates: lamps on them read as solid bands from afar
      
-      landmarks:{port:/landingpad|lpad|teasa|_sp_/, tower:/bldg_uniq_med|ctybloc_comm_lge|bldg_slim_med|tower/}});
+      landmarks:{port:/teasa/, tower:/bldg_uniq_med|ctybloc_comm_lge|bldg_slim_med|tower/}});
     await G.build();
     const FOOT=G.footprint(), WIDE=G.footprint({reach:8});   // the floor right here, and over ~1.2 km round it
 
@@ -55,17 +55,18 @@ City3D.define({
 
     // ---------------- views
     const PT=G.landmarks.port, TW=G.landmarks.tower;
-    const portT=PT?.t||(F.places[PORT_NAME]?[F.places[PORT_NAME].x,F.places[PORT_NAME].z]:[3000,3000]);
-    const portY=PT?.y??hgt(...portT)+40, toPort=Math.atan2(portT[0],-portT[1]);
+    // Teasa's own pin (the game's spot for it) comes first: the first pad-like model in the layout was often some
+    // other landing pad across town, which left the camera looking at the wrong place
+    const PIN=F.places[PORT_NAME];
+    const portT=PIN?[PIN.x,PIN.z]:(PT?.t||[3000,3000]);
+    const portY=PIN?hgt(...portT)+60:(PT?.y??hgt(...portT)+40), toPort=Math.atan2(portT[0],-portT[1]);
     const towerT=TW?.t||[0,0], towerY=TW?(TW.base+(TW.top-TW.base)*0.45):hgt(0,0)+200;
     return {
       hgt, ready:G.loadNear(),
       views:{
         overview:{label:"Overview",t:[portT[0]*0.4,portT[1]*0.4],y:hgt(0,0)+200,d:26000,yaw:toPort+Math.PI+0.5,p:0.6},
-        above:{label:"From above",t:[portT[0]*0.4,portT[1]*0.4],y:0,d:22000,yaw:0,p:1.2},
         city:{label:"The city",t:towerT,y:towerY,d:3600,yaw:toPort+0.3,p:0.12},
-        port:{label:"Teasa Spaceport",t:portT,y:portY,d:2600,yaw:toPort-0.6,p:0.3},
-        street:{label:"Street level",t:towerT,y:hgt(...towerT)+40,d:900,yaw:toPort+Math.PI*0.75,p:0.05}},
+        port:{label:"Teasa Spaceport",t:portT,y:portY,d:3000,yaw:toPort-0.6,p:0.32}},
       onFrame({night,now}){ G.update(now); G.onNight(night); },
     };
   },
