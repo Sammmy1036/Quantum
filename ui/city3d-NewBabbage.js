@@ -1,5 +1,8 @@
 "use strict";
-// =================================================================== New Babbage in 3D  (ui/NewBabbage.js)
+// =================================================================== New Babbage in 3D  (ui/city3d-NewBabbage.js)
+// The hand-written half of New Babbage: what it looks like and how it's built. Its generated halves live
+// elsewhere and aren't edited by hand: ui/cities/NewBabbage.js (the real building layout, from
+// tools/build_city.py) and ui/citylights/NewBabbage.js (its night lights, from tools/city_lights.py).
 // Downtown around the microTech HQ spire, the lakeside domes, the tram across the frozen lake, and New
 // Babbage Interstellar Spaceport with its landing towers on a forested plateau, in snowy mountains.
 //
@@ -17,7 +20,7 @@ if(!window.City3D) return;
 const CITY="New Babbage", PORT_NAME="New Babbage Interstellar Spaceport";
 
 City3D.define({
-  city:CITY, body:"microTech", alsoAt:[PORT_NAME], file:"NewBabbage.js",
+  city:CITY, body:"microTech", alsoAt:[PORT_NAME], file:"city3d-NewBabbage.js",
   openView:{[PORT_NAME]:"port"},          // the spaceport's "3D city" button opens on the spaceport
   alt0:6,                                  // ground zero is the lake ice (Lakeside Chairs is at 9 m)
   extent:70000,

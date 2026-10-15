@@ -31,12 +31,15 @@ button{cursor:pointer}
 .brand h1{margin:0;font:400 19px/1 var(--wordmark);letter-spacing:.34em;color:#f2f7ff}
 .brand .by{margin-top:5px;font:500 10.5px/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
 .brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:12px}
-.tabs{display:flex;flex-wrap:wrap;column-gap:6px;padding:0 8px;border-bottom:1px solid var(--line)}
+.side{container-type:inline-size;container-name:side}
+/* Tabs size to the sidebar (which grows with the window, up to 560px): bigger text and wider spacing on a big
+   screen instead of three short rows huddled in the corner. Each row spreads across the full width. */
+.tabs{display:flex;flex-wrap:wrap;column-gap:clamp(4px,1.6cqi,14px);padding:0 clamp(8px,2.4cqi,18px);border-bottom:1px solid var(--line)}
 .tab-break{flex-basis:100%;height:0}
-.tab{background:none;border:0;padding:12px 5px 11px;color:var(--dim);font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
+.tab{background:none;border:0;padding:clamp(11px,2.9cqi,16px) clamp(5px,1.3cqi,10px) clamp(10px,2.7cqi,15px);color:var(--dim);font:600 clamp(11px,2.55cqi,14.5px) var(--text);letter-spacing:.09em;flex:1 1 auto;justify-content:center;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
 .tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--route);text-shadow:0 0 12px rgba(75,141,255,.5)}
 .tab[hidden]{display:none}
-.tab .count{font:600 11px var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
+.tab .count{font:600 clamp(10.5px,2.3cqi,13px) var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
 .tab .count.hot{background:var(--mission);color:#1a0612}
 .pane{flex:1;overflow:auto;padding:14px 14px 20px;display:none;min-height:0}
 .pane.active{display:block}
@@ -935,6 +938,30 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-modal{position:fixed;inset:0;z-index:9000;background:rgba(3,6,12,.72);display:flex;align-items:center;justify-content:center;padding:16px}
 .pf-box{width:min(680px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:12px;padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .pf-head{display:flex;align-items:center;gap:10px}.pf-head .btn{margin-left:auto}
+/* Detail panels (Commodities, Vehicles, Components, My Fleet) size to the panel, not the window: the panel
+   is the window minus the sidebar, so a window-width @media rule kept two columns long after they stopped
+   fitting and the big numbers ran into each other. */
+.pic-panel{container-type:inline-size;container-name:pic}
+.pic-panel .hd-hero>div{overflow:hidden}
+.pic-panel .hd-hero b{white-space:nowrap}
+@container pic (max-width:1050px){
+  .mkp-head,.mkp-head.vd-head{grid-template-columns:minmax(180px,36%) minmax(0,1fr);gap:18px}
+  .vd-brand{display:none}
+  .hd-hero b{font-size:clamp(16px,2.3cqi,24px)}.hd-hero b.fit1{font-size:clamp(15px,2cqi,21px)}
+  .hd-hero b.fit2{font-size:clamp(14px,1.8cqi,19px)}.hd-hero b.fit3{font-size:clamp(12px,1.55cqi,16px)}
+  .hd-hero>div{padding:2px 12px}.hd-hero>div:first-child{padding-left:0}}
+@container pic (max-width:860px){
+  .mkp-head,.mkp-head.vd-head,.mkp-cols{grid-template-columns:minmax(0,1fr)}
+  .mkp-head .mkp-img{max-width:min(100%,520px)}
+  .hd-hero b{font-size:clamp(16px,3.4cqi,26px)}.hd-hero b.fit1{font-size:clamp(15px,3cqi,23px)}
+  .hd-hero b.fit2{font-size:clamp(14px,2.6cqi,20px)}.hd-hero b.fit3{font-size:clamp(12px,2.2cqi,17px)}}
+@container pic (max-width:600px){
+  .hd-hero.n4{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}.hd-hero.n4>div:nth-child(3){padding-left:0;border-left:0}
+  .hd-read{grid-template-columns:minmax(0,1fr)}}
+@container pic (max-width:440px){
+  .hd-hero,.hd-hero.n4{grid-template-columns:minmax(0,1fr)}.hd-hero>div,.hd-hero.n4>div{padding:8px 0}
+  .hd-hero>div+div{border-left:0;border-top:1px solid var(--line-2)}}
+.mk-row,.mkp-cols>*{min-width:0}
 </style>
 </head>
 <body>
@@ -1018,6 +1045,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
         <span class="k">Systems</span><select class="field" id="tr-sys"><option value="">Any</option><option value="one">Don't cross systems</option>
           <option value="stay:Stanton">Stay in Stanton</option><option value="stay:Pyro">Stay in Pyro</option><option value="stay:Nyx">Stay in Nyx</option>
           <option value="avoid:Pyro">Avoid Pyro</option><option value="avoid:Nyx">Avoid Nyx</option><option value="avoid:Stanton">Avoid Stanton</option></select>
+        <span class="k">Loading</span><select class="field" id="tr-auto" title="Auto-loading: the terminal loads and unloads your ship for you"><option value="">Any terminal</option>
+          <option value="buy">Auto-load where I buy</option><option value="both">Auto-load at both ends</option></select>
         <span class="k">Cargo</span><div class="row" style="gap:6px"><input class="field" id="tr-scu" type="number" min="1" placeholder="SCU your ship holds" style="flex:1"><span class="muted">SCU</span></div>
         <span class="k">Budget</span><div class="row" style="gap:6px"><input class="field" id="tr-budget" type="number" min="0" placeholder="No limit" style="flex:1"><span class="muted">aUEC</span></div>
       </div>
@@ -1144,13 +1173,13 @@ const S = {
   bodies:[], bodyMap:{}, locs:[], locMap:{}, systems:["Stanton","Pyro","Nyx"], staticVersion:0, live:null,
   system:"Stanton", routeKey:"", contractsVersion:-1, wpKey:"",
   layers:Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])),
-  show:{missions:true, waypoints:true, orbits:true, grid:true, rings:(()=>{ try{ return localStorage.getItem("q-rings")!=="0"; }catch{ return true; } })(), sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
+  show:{missions:true, waypoints:true, orbits:true, grid:(()=>{ try{ return localStorage.getItem("q-grid")==="1"; }catch{ return false; } })(), rings:(()=>{ try{ return localStorage.getItem("q-rings")!=="0"; }catch{ return true; } })(), sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
   cam:{target:[0,0,0], dist:1e11, yaw:-1.2, pitch:0.9, lock:null}, focus:{kind:"system"}, anim:null,
   selected:null, picks:[], search:"", typeFilter:null, tab:"route", editing:null, autoSystem:true,
 };
 const $ = id => document.getElementById(id);
 const api = () => window.pywebview.api;
-// 3D cities: each one is its own optional file in ui/ (NewBabbage.js, ...) that registers itself here.
+// 3D cities: each one is its own optional file in ui/ (city3d-NewBabbage.js, ...) that registers itself here.
 // A missing file just means no 3D for that city; nothing else depends on them.
 const CITIES3D=[];
 window.registerCity3D=c=>{ if(c&&!CITIES3D.includes(c)) CITIES3D.push(c); };
@@ -1158,6 +1187,11 @@ const city3dDown=()=>CITIES3D.some(c=>c.active);                    // down in o
 const city3dFor=name=>CITIES3D.find(c=>c.has(name))||null;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const now = () => Date.now()/1000;
+// The time the view was last drawn for: the clock plus the 3D city's time-of-day preview. Anything that turns
+// the camera's target (where it was drawn) back into a spot on a planet must use this same time: with the live
+// clock instead, a preview hours away turned the spot half-way round the planet (a click in Lorville while
+// previewing the morning flew to the far side of Hurston), and even a slow frame moved it a few km.
+const viewT = () => S.frameT ?? (now()+(S.timeShift||0));
 
 // =================================================================== math
 function fmtDist(m){
@@ -1383,26 +1417,63 @@ const PLANET_F=`#include <common>
     vec3 o=vec3(h1(c+1.3),h1(c+2.7),h1(c+5.1))*0.5+0.25; float pix=length(fwidth(q));
     float r=max(0.16,pix*0.9), d=step(th,h)*smoothstep(r,r*0.35,length(f-o))*(0.6+0.8*h1(c+9.7));
     return mix((1.0-th)*0.08,d,1.0-smoothstep(0.35,0.7,pix)); }
-  // A city's night lights, from its real buildings (ui/citylights/<City>.js): t holds how much light each
-  // patch gives; d = the city's direction (planet-local), w = planet radius / the grid's size; e = east
-  // there, w = planet radius / 45 m. Up close they're separate points of light about 45 m apart, more of
-  // them where it's busier; once they're smaller than a pixel they become their average glow, with a soft
-  // halo round the brightest districts. -> (light, how busy: whiter light in the core)
-  float hash13(vec3 p){ p=fract(p*0.1031); p+=dot(p,p.zyx+31.32); return fract((p.x+p.y)*p.z); }
-  vec2 cityLights(sampler2D t, vec4 d, vec4 e){
-    if(d.w<=0.0) return vec2(0.0); float c=dot(vP,d.xyz); if(c<0.9) return vec2(0.0);
+  // A city's night lights, from its real buildings (ui/citylights/<City>.js): t holds how much is built at
+  // each spot (about 65 m a texel); d = the city's direction (planet-local), d.w = planet radius / the grid's
+  // size; e = east there, e.w = planet radius / 45 m.
+  // Like the game seen from above: crisp separate points, not lit blocks. Windows in clusters over the
+  // buildings, rows of street lamps along the roads, and an even scatter of lamps over the ground between
+  // the districts. Each point decides once (at its own spot) whether it's lit, so points never get cut by a
+  // building's edge, and points stay about a pixel or two across: further out, the lattice gets coarser
+  // (fewer, merged lights) instead of smearing into a glow. From orbit they become the city's soft glow.
+  // -> the light's colour (linear)
+  float hash12(vec2 p){ vec3 p3=fract(vec3(p.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+  // One lattice of possible lights: spacing S metres, jitter j (0 = a perfect grid). kind 0 windows,
+  // 1 road lamps, 2 lamps between districts. pm = metres per pixel. -> (brightness, colour pick)
+  vec2 lampLattice(sampler2D t, vec2 x, float size, float S, float j, float pm, int kind, float salt){
+    vec2 q=x/S, c=floor(q), f=fract(q);
+    vec2 o=0.5+(vec2(hash12(c+salt),hash12(c+salt+17.13))-0.5)*j;
+    vec2 puv=(c+o)*S/size+0.5;                                   // where this cell's light stands
+    float Lp=textureLod(t,puv,0.0).r, p;
+    if(kind==0){ vec2 bl=floor(puv*vec2(textureSize(t,0))/2.0);   // windows: busier buildings, more of them,
+      p=smoothstep(0.035,0.30,Lp)*0.3*(0.2+1.3*hash12(bl+salt)); } // and some blocks lit up more than others
+    else if(kind==1){ float Lr=textureLod(t,puv,1.0).r, L3=textureLod(t,puv,3.0).r, Lb=textureLod(t,puv,4.0).r;
+      // A road: a line one texel wide. Blurring a line 4x thins it about 4x; a lone building (a blob)
+      // thins far more, a district hardly at all. So lamps only where it thins like a line, near this
+      // lamp's own spot, with not much built around.
+      float k=Lr/max(L3,1e-4), line=smoothstep(1.4,2.2,k)*(1.0-smoothstep(9.0,13.0,k));
+      p=smoothstep(0.006,0.02,Lr)*line*(1.0-smoothstep(0.022,0.045,Lb))*0.95; }
+    else { float area=textureLod(t,puv,6.0).r;                   // inside the city, between the buildings
+      p=0.32*smoothstep(0.02,0.08,area)*(1.0-smoothstep(0.015,0.06,Lp)); }
+    float h=hash12(c+salt+5.71); if(h>=p) return vec2(0.0);
+    float dpx=length((f-o)*S)/pm;                                  // distance from the light, in pixels
+    float b=(0.55+0.9*hash12(c+salt+9.3))*(kind==0?0.5:1.0);
+    return vec2(b*(exp(-dpx*dpx/1.1)+0.10*exp(-dpx*dpx/9.0)), hash12(c+salt+3.3)); }
+  // The lattice at the right coarseness for this distance: cells at least ~4 pixels, the two nearest
+  // coarseness levels crossfaded so nothing pops while you zoom.
+  vec2 lampLevels(sampler2D t, vec2 x, float size, float s, float j, float pm, float minPx, int kind, float salt){
+    float lv=max(0.0,log2(minPx*pm/s)), k=floor(lv), w=lv-k;
+    vec2 a=lampLattice(t,x,size,s*exp2(k),j,pm,kind,salt+k*31.0), b=lampLattice(t,x,size,s*exp2(k+1.0),j,pm,kind,salt+(k+1.0)*31.0);
+    return vec2(mix(a.x,b.x,smoothstep(0.0,1.0,w)), a.x>b.x?a.y:b.y); }
+  vec3 cityLights(sampler2D t, vec4 d, vec4 e){
+    if(d.w<=0.0) return vec3(0.0); float c=dot(vP,d.xyz); if(c<0.9) return vec3(0.0);
     vec3 n=cross(d.xyz,e.xyz); vec2 uv=vec2(0.5+dot(vP,e.xyz)/c*d.w, 0.5-dot(vP,n)/c*d.w);
-    if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0)))) return vec2(0.0);
-    float L=texture(t,uv,-0.8).r, halo=texture(t,uv,3.0).r;                 // sharper than the screen would pick, and a wide halo
-    float Lc=L*L*(1.6-0.6*L);                                              // contrast: quiet streets drop away, busy districts stand out
-    if(L<0.003&&halo<0.003) return vec2(0.0);
-    vec3 q=vP*e.w; vec3 cl=floor(q), f=fract(q);
-    float h=hash13(cl), pix=length(fwidth(q));
-    vec3 o=vec3(hash13(cl+1.3),hash13(cl+2.7),hash13(cl+5.1))*0.6+0.2;
-    float r=max(0.2,pix*0.9), pt=step(1.0-L,h)*smoothstep(r,r*0.25,length(f-o))*(0.6+0.9*hash13(cl+9.7));
-    float pts=mix(pt, Lc*0.3, smoothstep(0.4,0.9,pix));               // far off: the points' average
-    float glow=Lc*mix(0.06,0.55,smoothstep(1.0,6.0,pix));                  // seen from orbit, a block is a fraction of a pixel: let it shine
-    return vec2((glow+pts*1.7+halo*halo*0.35)*2.4, L); }
+    if(any(lessThan(uv,vec2(0.0)))||any(greaterThan(uv,vec2(1.0)))) return vec3(0.0);
+    if(textureLod(t,uv,7.0).r<0.002) return vec3(0.0);            // nowhere near the city
+    float size=45.0*e.w/d.w;                                         // the grid's size in metres
+    vec2 x=(uv-0.5)*size; float pm=max(length(fwidth(x)),0.05);
+    vec2 w=lampLevels(t,x,size,22.0,0.75,pm,2.6,0,0.0);                  // windows
+    vec2 r=lampLevels(t,x,size,40.0,0.12,pm,8.0,1,101.0);               // road lamps, evenly spaced
+    vec2 s=lampLevels(t,x,size,360.0,0.45,pm,11.0,2,211.0);              // lamps between the districts
+    vec3 cream=vec3(1.0,0.86,0.64), white=vec3(0.92,0.95,1.0), cyan=vec3(0.35,0.85,1.0), red=vec3(1.0,0.28,0.2);
+    vec3 wc=w.y<0.03?cyan:w.y<0.045?red:w.y<0.4?white:cream;         // the odd sign or beacon among the windows
+    vec3 col=wc*w.x*1.5+cream*r.x*1.3+mix(cream,white,s.y)*s.x*1.2;
+    // The buildings themselves, faintly lit: the districts' shapes show between their lights
+    float Lf=textureLod(t,uv,max(0.0,log2(pm/65.0))).r;
+    col+=vec3(0.75,0.70,0.62)*Lf*0.10;
+    // From far off the points are too few to show the city: its soft glow takes over.
+    float far=smoothstep(40.0,300.0,pm), g=textureLod(t,uv,clamp(log2(pm/65.0),0.0,8.0)).r;
+    col+=cream*g*g*far*2.2;
+    return col; }
   // ArcCorp: rose-grey city crust under a teal haze, the whole planet built up, lights everywhere at night
   vec3 arccorp(vec3 p, out float lights){ vec3 s=vec3(SEED);
     float big=fbm(p*1.8+s), mid=fbm(p*6.0-s), fine=fbm(p*40.0+s), grain=fbm(p*160.0);
@@ -1462,9 +1533,8 @@ const PLANET_F=`#include <common>
     c=mix(c,pow(HAZEC,vec3(2.2))*(0.02+0.95*hl),hz);
     c=mix(c,pow(ATMO,vec3(2.2))*(0.15+0.9*diff),pow(1.0-nv,3.5)*0.6*day);
     // the cities' night lights, where their real buildings are
-    vec2 c0=cityLights(CLT0,CLD[0],CLE[0]), c1=cityLights(CLT1,CLD[1],CLE[1]);
-    vec3 cityCol=mix(vec3(1.0,0.52,0.18),vec3(1.0,0.86,0.62),smoothstep(0.3,0.85,max(c0.y,c1.y)));   // sodium-orange streets, whiter centre
-    c+=(vec3(1.0,0.56,0.22)*lights*0.6+cityCol*(c0.x+c1.x))*(1.0-day)*(1.0-hz*0.4);
+    vec3 cityCol=cityLights(CLT0,CLD[0],CLE[0])+cityLights(CLT1,CLD[1],CLE[1]);   // each city's own lights, coloured
+    c+=(vec3(1.0,0.56,0.22)*lights*0.6+cityCol)*(1.0-day)*(1.0-hz*0.4);
     c+=em*(1.0-hz*0.6);
     gl_FragColor=vec4(c,1.0);
     #include <colorspace_fragment>
@@ -1759,7 +1829,7 @@ function groundFrame(B,G,pitch,yaw,roll){ const {up,east,north}=groundAxes(B,G);
   let u=[0,1,2].map(i=>Math.cos(pitch)*up[i]-Math.sin(pitch)*h[i]);
   if(roll){ const x=cross3(dir,u), cr=Math.cos(roll), sr=Math.sin(roll); u=[0,1,2].map(i=>u[i]*cr+x[i]*sr); }
   return {dir,up:norm3(u)}; }
-function setLock(name){ const t=now(); const old=S.cam.lock&&S.bodyMap[S.cam.lock];
+function setLock(name){ const t=viewT(); const old=S.cam.lock&&S.bodyMap[S.cam.lock];
   if(old) S.cam.yaw+=bodyAngle(old,t); const nb=name&&S.bodyMap[name]; if(nb) S.cam.yaw-=bodyAngle(nb,t); S.cam.lock=nb?name:null; }
 // Zoom-and-pan along the path from van Wijk & Nuij ("Smooth and efficient zooming and panning"):
 // it zooms out just enough to keep both ends in view and moves at an even perceived speed, so a long
@@ -1777,7 +1847,7 @@ function flyTo(focus,dist,{pitch=null,yaw=null,dur=null,key=null}={}){
   if(S.anim&&S.anim.key===key&&Math.abs(Math.log(dist/S.anim.toDist))<0.6){ S.focus=focus; return; }
   const fromDir=norm3([camera.position.x,camera.position.y,camera.position.z]), fromUp=[camera.up.x,camera.up.y,camera.up.z];
   setLock(lockBodyOf(focus)); if(yaw!=null) S.cam.yaw=yaw;
-  const from=[...S.cam.target], goal=focusPos(focus,now()), k=2*Math.tan(camera.fov*Math.PI/360);
+  const from=[...S.cam.target], goal=focusPos(focus,viewT()), k=2*Math.tan(camera.fov*Math.PI/360);
   const path=zoomPath(d3(from,goal), S.cam.dist*k, dist*k);
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   S.anim={key, from, fromDist:S.cam.dist, toDist:dist, k, path, fromPitch:S.cam.pitch, toPitch:pitch??S.cam.pitch, fromDir, fromUp,
@@ -1851,6 +1921,26 @@ function visible(p, ownBody){ // is world point p hidden behind a planet?
 // =================================================================== overlay drawing
 let labelBoxes=[];
 function labelFree(x,y,w,h){ for(const b of labelBoxes) if(x<b[2]&&x+w>b[0]&&y<b[3]&&y+h>b[1]) return false; labelBoxes.push([x,y,x+w,y+h]); return true; }
+// A commodity's terminals on the map. Places close together (the stations and outposts round one planet)
+// would print their prices on top of each other, so each label that would overlap one already placed moves
+// down a row, and a thin line runs back from it to its place: a little list beside the cluster.
+function drawMarkLabels(t){
+  const font="600 12px 'Inter',sans-serif", rowH=17, pts=[];
+  for(const m of S.mapMarks){ const nd=nodeOf(m.name,t), q=nd&&proj(nd.g); if(!q) continue;
+    ctx.beginPath(); ctx.arc(q[0],q[1],8,0,Math.PI*2); ctx.strokeStyle=m.color; ctx.lineWidth=2; ctx.stroke(); pts.push({m,q}); }
+  pts.sort((a,b)=>a.q[1]-b.q[1]||a.q[0]-b.q[0]);
+  const placed=[]; ctx.font=font;
+  const hits=(x0,y0,x1,y1)=>placed.some(b=>x0<b[2]&&x1>b[0]&&y0<b[3]&&y1>b[1]);
+  for(const {m,q} of pts){ const text=`${m.name} · ${m.label}`, w=ctx.measureText(text).width;
+    // first choice right of the ring; when that's taken, the first free row below it
+    let x=q[0]+13, y=q[1]+16, n=0; while(hits(x-2,y-13,x+w+2,y+5)&&n<60){ y+=rowH; n++; }
+    // a long way down: try the left side too, and keep whichever is nearer its place
+    if(n>3){ const xl=q[0]-13-w; let yl=q[1]+16, k=0; while(hits(xl-2,yl-13,xl+w+2,yl+5)&&k<60){ yl+=rowH; k++; } if(k<n){ x=xl; y=yl; n=k; } }
+    placed.push([x-2,y-13,x+w+2,y+5]);
+    if(n){ const toLeft=x<q[0], ex=toLeft?x+w+4:x-4;
+      ctx.save(); ctx.globalAlpha=.55; ctx.strokeStyle=m.color; ctx.lineWidth=1; ctx.beginPath();
+      ctx.moveTo(q[0]+(toLeft?-6:6),q[1]+6); ctx.lineTo(ex,y-4); ctx.stroke(); ctx.restore(); }
+    label(text,x,y,{color:m.color,font,force:true}); } }
 function label(text,x,y,{color="#c3cee0",font="500 12px 'Inter',Segoe UI,sans-serif",force=false,align="left"}={}){
   ctx.font=font; const w=ctx.measureText(text).width, h=14, lx=align==="center"?x-w/2:x;
   if(!force && !labelFree(lx-2,y-h+3,w+4,h+2)) return false; if(force) labelBoxes.push([lx-2,y-h+3,lx+w+2,y+5]);
@@ -2012,9 +2102,7 @@ function drawOverlay(t){
   if(selName){ const p=S.picks.find(p=>p.kind==="loc"&&p.name===selName); if(p){ ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,14,0,7); ctx.stroke();
     labelBoxes.push([p.x-14,p.y-14,p.x+14,p.y+14]); if(!stopIdx[selName]) label(selName,p.x+17,p.y+4,{color:"#7fe7ff",font:"600 13px 'Inter',sans-serif",force:true}); } }
   // ---- labels, by priority
-  if(S.mapMarks) for(const m of S.mapMarks){ const nd=nodeOf(m.name,t), q=nd&&proj(nd.g); if(!q) continue;
-    ctx.beginPath(); ctx.arc(q[0],q[1],8,0,Math.PI*2); ctx.strokeStyle=m.color; ctx.lineWidth=2; ctx.stroke();
-    label(`${m.name} · ${m.label}`,q[0]+13,q[1]+16,{color:m.color,font:"600 12px 'Inter',sans-serif",force:true}); }
+  if(S.mapMarks) drawMarkLabels(t);
   if(S.preview) for(const n of S.preview){ const nd=nodeOf(n,t), q=nd&&proj(nd.g); if(!q) continue;
     ctx.beginPath(); ctx.arc(q[0],q[1],9,0,Math.PI*2); ctx.strokeStyle="#57e39b"; ctx.lineWidth=2; ctx.stroke();
     label(`${S.previewLabels?.[n]||""} · ${n}`,q[0]+14,q[1]+18,{color:"#8ff0bd",font:"600 12.5px 'Inter',sans-serif",force:true}); }
@@ -2035,7 +2123,7 @@ function drawOverlay(t){
 
 // =================================================================== frame
 let frame=function(){
-  const t=now()+(S.timeShift||0); updateCamera(t);     // timeShift: the 3D city's time-of-day preview
+  const t=now()+(S.timeShift||0); S.frameT=t; updateCamera(t);     // timeShift: the 3D city's time-of-day preview
   for(const o of sysObjs){ place(o.group,o.b.center); o.spin.rotation.z=bodyAngle(o.b,t);
     if(o.grid) o.grid.visible=S.show.grid && o.pr>40;
     if(o.orbit){ o.orbit.visible=S.show.orbits && S.cam.dist>o.orbitR*0.04; o.orbit.position.set(o.par.center[0]-O[0],o.par.center[1]-O[1],o.orbitZ-O[2]); } }
@@ -2045,7 +2133,7 @@ let frame=function(){
   starfield.position.copy(camera.position); starfield.material.uniforms.T.value=performance.now()/1000; starfield.material.uniforms.PR.value=DPR;
   if(star) star.mesh.material.uniforms.T.value=performance.now()/1000;
   for(const m of PLANET_MATS){ m.uniforms.SUN.value.set(sp[0]-O[0],sp[1]-O[1],sp[2]-O[2]); if(m.uniforms.T) m.uniforms.T.value=performance.now()/1000; }
-  for(const c of CITIES3D){ try{ c.update(t); }catch(e){ reportFrameError(e); } }   // 3D cities (NewBabbage.js, ...)
+  for(const c of CITIES3D){ try{ c.update(t); }catch(e){ reportFrameError(e); } }   // 3D cities (city3d-NewBabbage.js, ...)
   renderer.render(scene,camera);
   drawOverlay(t);
 }
@@ -2091,14 +2179,14 @@ function unroll(){ const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb], r=S.cam.rol
   const want=Math.atan2(hn,he), dy=Math.atan2(Math.sin(want-S.cam.yaw),Math.cos(want-S.cam.yaw));
   const k=Math.abs(r)<0.05?1:0.35; S.cam.yaw+=dy*k; S.cam.roll=r*(1-k); }
 function screenUp(){ const v=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1); return norm3([v.x,v.y,v.z]); }
-function attachToGround(){ if(S.focus.kind!=="point") return; const t=now(), G=S.cam.target;
+function attachToGround(){ if(S.focus.kind!=="point") return; const t=viewT(), G=S.cam.target;
   const B=S.bodies.find(b=>b.system===S.system&&b.kind!=="star"&&b.kind!=="asteroid"&&d3(G,b.center)<b.radius*1.15); if(!B) return;
   enterGround(B,G,norm3([camera.position.x,camera.position.y,camera.position.z]),screenUp());
   S.anim=null; S.focus={kind:"local",body:B.name,pos:toLocal(B,G,t)}; }
 // Drag the planet under the cursor: the point you look at slides across the globe, so you can
 // roam freely instead of circling one fixed spot. Works from ground level up to orbit.
 function grabGlobe(dx,dy){
-  const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb]; if(!B) return; const t=now();
+  const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb]; if(!B) return; const t=viewT();
   const G=S.cam.target, C=B.center, R0=Math.max(d3(G,C),B.radius*0.5);
   const k=Math.min(S.cam.dist,B.radius*3)*2*Math.tan(camera.fov*Math.PI/360)/H;   // metres per pixel at the ground
   const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
@@ -2110,7 +2198,7 @@ function grabGlobe(dx,dy){
 // Grabbing the map always wins: an unfinished fly-in stops where it is.
 function stopAnim(){ if(!S.anim) return;
   const sb=surfaceBodyOf(S.focus);
-  if(sb&&S.bodyMap[sb]){ S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(S.bodyMap[sb],S.cam.target,now())}; return; }  // stay on the globe
+  if(sb&&S.bodyMap[sb]){ S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(S.bodyMap[sb],S.cam.target,viewT())}; return; }  // stay on the globe
   const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
   S.anim=null; S.focus={kind:"point",pos:[...S.cam.target]}; setLock(null); S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
 ov.addEventListener("pointerdown",e=>{ stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
@@ -2243,7 +2331,7 @@ function buildLayers(){
   mk("My waypoints (pinned)",S.show.waypoints,"wp",v=>S.show.waypoints=v);
   for(const [k,v] of Object.entries(TYPES)) mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
   el.appendChild(document.createElement("hr"));
-  mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>S.show.grid=v);
+  mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>{ S.show.grid=v; try{ localStorage.setItem("q-grid",v?"1":"0"); }catch{} });
   mk("Distance rings",S.show.rings,"",v=>{ S.show.rings=v; try{ localStorage.setItem("q-rings",v?"1":"0"); }catch{} });
   mk("Galaxy background",S.show.sky,"",v=>{ S.show.sky=v; try{ localStorage.setItem("q-sky",v?"1":"0"); }catch{} scene.background=v?sky.texture:null; });
   $("layers-hdr").onclick=()=>{ el.hidden=!el.hidden; $("layers-caret").textContent=el.hidden?"▸":"▾"; };
@@ -2469,7 +2557,7 @@ function renderDetail(){
         <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`}</div>
       ${L.unplaced?`<div class="acts"><button class="btn primary" data-a="placehere" ${readingHere?"":`disabled title="Needs a /showlocation taken at this station in the last 15 minutes"`}>I'm here: set position</button></div>`:
       `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
-        ${inRoute?`<button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
+        ${inRoute?`<button class="btn" data-a="route" title="Visit it again later in the trip">Add again</button><button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
         ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
@@ -2610,7 +2698,12 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- route
-async function addStops(names){ await api().add_stops(names); await poll(); toast(names.length===1?`Added ${names[0]} to route`:`Added ${names.length} stops to route`); renderDetail(); }
+// Adding one place by hand may repeat a stop already in the route (A > B > C > B); a stop straight after
+// itself is the same stop, so the server skips that.
+async function addStops(names,repeat=true){ const had=new Set(S.live?.route||[]); const r=await api().add_stops(names,repeat); await poll();
+  const added=r?.added||names;
+  if(!added.length) toast(names.length===1?`${names[0]} is already the last stop`:"Those are already in your route");
+  else toast(added.length===1?`Added ${added[0]} to route${had.has(added[0])?" again":""}`:`Added ${added.length} stops to route`); renderDetail(); }
 function roleTags(roles){ return (roles||[]).map(r=>r.kind==="gate"?`<span class="role gate">Gateway${r.to?" · jump to "+esc(r.to):""}</span>`
   :r.kind==="gate-in"?`<span class="role gate">Gateway${r.from?" · arrive from "+esc(r.from):""}</span>`
   :`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
@@ -2743,14 +2836,14 @@ function rsRender(){
   const hl=n=>{ const i=n.toLowerCase().indexOf(q.trim().toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.trim().length))+"</mark>"+esc(n.slice(i+q.trim().length)); };
   list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" class="${i===RS.on?"on":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
       <div style="min-width:0"><div class="n">${hl(it.name)}</div><div class="b">${esc(it.sub)}</div></div>
-      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="fly" title="Already in your route">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
+      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="add" title="In your route: click to add it again">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
     :`<li class="empty">No match for “${esc(q)}”</li>`;
   list.hidden=false; $("rsearch").setAttribute("aria-expanded","true");
 }
 async function rsPick(i,act){
   const it=RS.items[i]; if(!it) return;
   if(it.kind==="body"){ focusBody(it.name); select({kind:"body",name:it.name}); }
-  else if(act==="add" && !(S.live?.route||[]).includes(it.name)){ await addStops([it.name]); select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
+  else if(act==="add"){ await addStops([it.name]); select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
   else { select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
   $("rsearch").value=""; rsRender(); $("rsearch").blur();
 }
@@ -2973,11 +3066,11 @@ function renderResults(){
   const shown=list.slice(0,250);
   $("results").innerHTML = shown.length ? shown.map(L=>`<li class="res${S.selected?.name===L.name?" sel":""}" data-name="${esc(L.name)}"><span class="ty ${L.type}"></span>
       <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padLabel(padOf(L))):""}</div></div>
-      ${L.unplaced?`<span class="muted" title="Position not known yet: open it to set it">?</span>`:`<button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button>`}</li>`).join("")
+      ${L.unplaced?`<span class="muted" title="Position not known yet: open it to set it">?</span>`:`<button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route: click to add it again":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button>`}</li>`).join("")
       +(list.length>shown.length?`<li class="muted" style="padding:8px">${list.length-shown.length} more. Narrow your search.</li>`:"")
     : `<div class="empty"><strong>Nothing matches “${esc(S.search)}”</strong>Try part of the name, like “tressler” or “sm0”.</div>`; }
 $("results").onclick=e=>{ const li=e.target.closest(".res"); if(!li) return; const n=li.dataset.name;
-  if(e.target.closest(".iconbtn")){ if(!(S.live?.route||[]).includes(n)) addStops([n]); return; } select({kind:"loc",name:n}); focusLoc(n,true); };
+  if(e.target.closest(".iconbtn")){ addStops([n]); return; } select({kind:"loc",name:n}); focusLoc(n,true); };
 function highlightResult(){ for(const li of $("results").children) li.classList?.toggle("sel",li.dataset?.name===S.selected?.name); }
 $("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
 
@@ -3043,8 +3136,8 @@ function markAdded(name){ for(const b of document.querySelectorAll("[data-add]")
 async function tradeClick(e){
   const op=e.target.closest("[data-open]"); if(op){ select({kind:"loc",name:op.dataset.open}); focusLoc(op.dataset.open,false); return true; }
   const ad=e.target.closest("[data-add]"); if(ad){ const name=ad.dataset.add, had=S.live?.route?.includes(name);
-    if(!had) await api().add_stops([name]); await poll(); markAdded(name);
-    toast(had?`${name} is already in your route`:`Added ${name} to your route (stop ${S.live?.route?.indexOf(name)+1||"?"} of ${S.live?.route?.length||1})`); return true; }
+    const r=await api().add_stops([name],true); await poll(); markAdded(name); const n=S.live?.route?.length||1;
+    toast(!r?.added?.length?`${name} is already the last stop`:`Added ${name} to your route${had?" again":""} (stop ${n} of ${n})`); return true; }
   const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return true; }
   if(e.target.closest("[data-act=opensettings]")){ select({kind:"settings"}); return true; }
   return false; }
@@ -3091,8 +3184,9 @@ async function renderMarket(){
       ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`):`<span></span>`}
       <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.community?` · <span class="cm-pill" title="Reported by a Quantum datarunner and checked against UEX's copy of the report. UEX hasn't finished reviewing it yet.">⚡ ${agoTs(x.community.at)}, awaiting UEX review</span>`:x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
   const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
+  if(!mkOnMap(r,sys)&&S.mkMap){ S.mkMap=false; S.mapMarks=null; }     // nothing left to mark (another system picked)
   $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
-    <div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>
+    ${mkOnMap(r,sys)?`<div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>`:""}
     <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
     <div class="mk-h">Sell at <span class="muted" style="text-transform:none;letter-spacing:0">best price first, per SCU</span></div>${rows(r.sell,"sell")}${uexCredit(r.at)}`;
   S.mkData={c,r,rows}; renderMarketPanel(); }
@@ -3110,7 +3204,7 @@ async function renderMarketPanel(){
           [{label:"Sold at",value:plural(r.buy.length,"terminal")},{label:"Bought at",value:plural(r.sell.length,"terminal")},
            {label:"Average buy",value:ab!=null?money(ab):null},{label:"Average sell",value:av!=null?money(av):null}]); })()}
       <div class="desc" id="mkp-desc" style="margin-top:12px"></div>
-      <div class="row" style="gap:8px"><button class="btn primary" data-act="mkmap">See on map</button>${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px">${mkOnMap(r,$("mk-sys").value)?`<button class="btn primary" data-act="mkmap">See on map</button>`:""}${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
     <div class="mkp-cols vd-flat"><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
       <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
   syncMarketPanel();
@@ -3119,7 +3213,9 @@ async function renderMarketPanel(){
   const box=$("mkp-img"); if(box) box.innerHTML=picShown(img,"commodity",c.wiki||c.name); }
 function syncMarketPanel(){ const on=S.tab==="market";
   $("mk-panel").classList.toggle("show",on&&!S.mkMap&&!!S.mk); $("map-back").classList.toggle("show",on&&!!S.mkMap); }
-function toggleMarketMap(){ const d=S.mkData; if(!d) return;
+// Does anywhere that buys or sells it have a place on the map (in the system picked)? No: no "See on map".
+const mkOnMap=(r,sys)=>[...(r?.buy||[]),...(r?.sell||[])].some(x=>x.place&&S.locMap?.[x.place]&&(!sys||x.system===sys));
+function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnMap(d.r,$("mk-sys").value)) return;
   S.mkMap=!S.mkMap;
   if(S.mkMap){ const sys=$("mk-sys").value, keep=L=>L.filter(x=>x.place&&(!sys||x.system===sys)).slice(0,10);
     const marks=[...keep(d.r.buy).map(x=>({name:x.place,label:`Buy ${shortMoney(x.price)}`,color:"#57e39b"})),
@@ -3154,7 +3250,7 @@ async function openTrade(){
   S.trOrigins=r.items;
   $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur;
   trFillAt(trPref("at"));
-  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-sys").dataset.init=1; }
+  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sys").dataset.init=1; }
   trSysFit();
   if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
   const fl=await api().fleet_list(), keep=S.trShip?.key||trPref("ship"); S.trFleet=fl.ships;
@@ -3183,16 +3279,16 @@ async function runTrade(){
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
   trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
   $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">${wide?`Comparing every terminal${kind==="system"?` in ${esc(id)}`:""}…`:"Finding routes…"}</div>`;
-  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"); trPref("sys",sv); trPref("ship",S.trShip?.key||"");
-  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one"); S.trDone=true;
+  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"), au=$("tr-auto").value; trPref("sys",sv); trPref("auto",au); trPref("ship",S.trShip?.key||"");
+  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one",au); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>${wide?"Nothing":"Nothing from here"} makes a profit with that cargo space and budget.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
+  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>${wide?"Nothing":"Nothing from here"} makes a profit with that cargo space and budget${au?` at ${au==="both"?"terminals that auto-load at both ends":"a terminal that auto-loads"}`:""}.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
   $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"}${r.wide?` · best ${r.routes.length} shown, a few per commodity`:""} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
     `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
-      <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
+      <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.autoload_from||x.autoload_to?`<span style="color:var(--ok)" title="The terminal loads and unloads your ship for you">Auto-load ${x.autoload_from&&x.autoload_to?"both ends":x.autoload_from?"at buy":"at sell"}</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
       <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
         <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
   S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; renderSharedRoutes(); }
@@ -3205,9 +3301,12 @@ function trShipFind(key){ if(!key) return null; if(!key.includes(":")) key=`f:${
   if(key[0]==="f"){ const x=(S.trFleet||[]).find(x=>String(x.uid)===id); return x&&x.scu>0?{key,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}:null; }
   const v=(S.veh||[]).find(v=>String(v.id)===id); return v&&v.scu>0?{key,label:`${v.full} · ${v.scu} SCU`,scu:v.scu}:null; }
 function trShipSet(p){ S.trShip=p||null; $("tr-ship").value=p?p.label:""; trPref("ship",p?p.key:""); }
-function trShipOptions(q){ q=q.trim().toLowerCase(); const has=t=>!q||t.toLowerCase().includes(q), own=new Set(), mine=[], rest=[];
+function trShipOptions(q){ q=q.trim().toLowerCase(); const qw=q.split(/[^a-z0-9]+/).filter(Boolean);
+  // every word typed, in any order: "mk v", "centaurus mk v" and "rsi const" all find the Constellation Mk V
+  const has=t=>{ if(!q) return true; t=t.toLowerCase(); const tw=t.split(/[^a-z0-9]+/);
+    return t.includes(q)||qw.every(w=>tw.some(x=>x.startsWith(w))); }, own=new Set(), mine=[], rest=[];
   for(const x of S.trFleet||[]){ own.add(x.vehicle_id); if(x.scu>0&&has(`${x.full} ${x.maker||""}`)) mine.push({key:`f:${x.uid}`,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}); }
-  for(const v of S.veh||[]) if(v.scu>0&&!v.concept&&!own.has(v.id)&&has(`${v.full} ${v.maker||""}`)) rest.push({key:`v:${v.id}`,label:`${v.full} · ${v.scu} SCU`,scu:v.scu});
+  for(const v of S.veh||[]) if(v.scu>0&&!v.concept&&!own.has(v.id)&&has(`${v.full} ${v.maker||""} ${v.aka||""}`)) rest.push({key:`v:${v.id}`,label:`${v.full} · ${v.scu} SCU`,scu:v.scu});
   rest.sort((a,b)=>a.label.localeCompare(b.label)); return {mine, rest:rest.slice(0,80), more:Math.max(0,rest.length-80)}; }
 function trShipList(){ const box=$("tr-ship-list"), inp=$("tr-ship");
   const q=S.trShip&&inp.value===S.trShip.label?"":inp.value, {mine,rest,more}=trShipOptions(q); S.trShipOpts=[...mine,...rest];
@@ -3784,8 +3883,10 @@ async function renderShip(uid){
       delta:dl[k]?deltaTxt(dl[k],fmt,lb):""});
   const HERO=["dps","shield","qt_speed"], heroKeys=HERO.filter(k=>st[k]!=null&&st[k]!=="");
   for(const k of ["hull","scm","max"]) if(heroKeys.length<3&&!heroKeys.includes(k)&&st[k]!=null) heroKeys.push(k);   // ground vehicles, unarmed ships
-  const stats=statBlock(heroKeys.map(k=>statOf(SHIP_STATS.find(x=>x[0]===k))),
-    [...SHIP_STATS.filter(([k])=>!heroKeys.includes(k)).map(statOf),{label:"Cargo",value:r.ship.scu?`${r.ship.scu} SCU`:null}]);
+  // Cargo sits in the top row with DPS, shield and quantum, when the ship carries any
+  const cargo={label:"Cargo",value:r.ship.scu?`${Number(r.ship.scu).toLocaleString()} SCU`:null};
+  const stats=statBlock([...heroKeys.map(k=>statOf(SHIP_STATS.find(x=>x[0]===k))),cargo],
+    SHIP_STATS.filter(([k])=>!heroKeys.includes(k)).map(statOf));
   const changed=r.slots.filter(sl=>sl.fitted).length;
   const groups={}; for(const sl of r.slots) (groups[sl.label]=groups[sl.label]||[]).push(sl);
   const card=sl=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
@@ -5351,7 +5452,8 @@ window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); 
 <!-- 3D cities (optional). city3d-core.js is the shared engine and goes first; then one file per city.
      Delete a city's file and that city is simply flat again; delete the core and none are 3D. -->
 <script src="city3d-core.js"></script>
-<script src="NewBabbage.js"></script>
+<script src="city3d-NewBabbage.js"></script>
+<script src="city3d-Lorville.js"></script>
 <script src="demo.js"></script>
 </body>
 </html>
