@@ -161,13 +161,35 @@ def vehicle_aka(v):
     return ""
 
 
+# What a UEX entry may leave blank (0 or empty) for a brand-new ship, filled in from EXTRA_VEHICLES
+EXTRA_FILL = ("scu", "crew", "size", "pad_type")
+
+
+def _same_ship(extra, v):
+    """Is UEX's row v the ship in EXTRA_VEHICLES entry extra? Word order doesn't matter ("Constellation
+    Centaurus Mk V" is "Constellation Mk V Centaurus")."""
+    want = set(re.findall(r"[a-z0-9]+", extra["name"].lower()))
+    for k in ("name", "name_full"):
+        h = str(v.get(k) or "").strip().lower()
+        if h and (h in (extra["name"].lower(), extra["name_full"].lower()) or extra["name"].lower() in h
+                  or want <= set(re.findall(r"[a-z0-9]+", h))):
+            return True
+    return False
+
+
 def with_extra_vehicles(rows):
-    """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet."""
-    have = {str(v.get(k) or "").strip().lower() for v in rows for k in ("name", "name_full")}
-    words = [set(re.findall(r"[a-z0-9]+", h)) for h in have]
-    return list(rows) + [dict(x) for x in EXTRA_VEHICLES if x["name"].lower() not in have and x["name_full"].lower() not in have
-                         and not any(x["name"].lower() in h for h in have)
-                         and not any(set(re.findall(r"[a-z0-9]+", x["name"].lower())) <= w for w in words)]
+    """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet. When UEX does list one but with blanks
+    (a new ship often comes in with 0 SCU, which hid the Mk V Centaurus from the trade route ship list
+    and its cargo from My Fleet), the blanks are filled from our entry."""
+    out, used = [], set()
+    for v in rows:
+        x = next((x for x in EXTRA_VEHICLES if _same_ship(x, v)), None)
+        if x is not None:
+            used.add(x["id"])
+            if any(not v.get(k) and x.get(k) for k in EXTRA_FILL):
+                v = dict(v, **{k: x[k] for k in EXTRA_FILL if not v.get(k) and x.get(k)})
+        out.append(v)
+    return out + [dict(x) for x in EXTRA_VEHICLES if x["id"] not in used]
 
 
 def store_url(v):
@@ -1380,15 +1402,27 @@ class Api:
         return names, legs
 
     # ------------------------------------------------------------ route
-    def add_stops(self, names):
+    def add_stops(self, names, repeat=False):
+        """Add places to the end of the route. With repeat, a place already in the route is added again
+        (Area 18 > Baijini Point > New Babbage > Baijini Point), unless it would come straight after
+        itself, which is the same stop. Without it (trade-route and contract buttons), places already in
+        the route are left where they are. -> {ok, added, skipped}"""
         with self._lock:
             have = {t["place"] for t in self._route}
+            added, skipped = [], []
             for n in names:
-                if n in self._db.locations and n not in have:
-                    self._route.append({"place": n, "task": "visit"})
-                    have.add(n)
+                if n not in self._db.locations:
+                    continue
+                last = next((t["place"] for t in reversed(self._route) if t["task"] not in self.GATES), None)
+                if (n in have and not repeat) or n == last:
+                    skipped.append(n)
+                    continue
+                self._route.append({"place": n, "task": "visit"})
+                have.add(n)
+                added.append(n)
             self._ensure_gates(self._player_sys)
             self._save_settings()
+            return {"ok": True, "added": added, "skipped": skipped}
 
     def set_route(self, names):
         with self._lock:
@@ -5170,10 +5204,14 @@ class Api:
                                         "is_space_station", "is_on_ground", "is_monitored")}})
         return out, at
 
-    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False):
+    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload=""):
         """Best runs from a planet/orbit/terminal for your cargo space and budget, most profit first.
-        kind "all" searches every system at once, kind "system" one whole system (origin_id is its name)."""
+        kind "all" searches every system at once, kind "system" one whole system (origin_id is its name).
+        autoload: "" any terminal, "buy" only where the buy terminal loads your ship for you, "both" only
+        where both ends do (UEX's is_auto_load on the terminal)."""
         def run():
+            terms = self._uex.terminals()
+            auto = lambda tid: bool((terms.get(tid) or {}).get("is_auto_load"))
             wide = kind in ("all", "system")
             if wide:
                 rows, at = self._price_routes(str(origin_id) if kind == "system" else None, stay, avoid, one_system)
@@ -5191,6 +5229,9 @@ class Api:
                     continue
                 pb, ps = r.get("price_origin") or 0, r.get("price_destination") or 0
                 if pb <= 0 or ps <= pb:
+                    continue
+                al_from, al_to = auto(r.get("id_terminal_origin")), auto(r.get("id_terminal_destination"))
+                if (autoload == "buy" and not al_from) or (autoload == "both" and not (al_from and al_to)):
                     continue
                 cap = [x for x in (scu, r.get("scu_origin"), r.get("scu_destination")) if x and x > 0]
                 if budget and budget > 0:
@@ -5225,6 +5266,7 @@ class Api:
                     "refuel_to": bool(r.get("has_refuel_destination")), "dock_from": bool(r.get("has_docking_port_origin")),
                     "refuel_from": bool(r.get("has_refuel_origin")), "dock_to": bool(r.get("has_docking_port_destination")),
                     "elevator_from": bool(r.get("has_freight_elevator_origin") or r.get("has_loading_dock_origin")),
+                    "autoload_from": al_from, "autoload_to": al_to,
                     "faction_from": r.get("origin_faction_name") or r.get("faction_origin"),
                     "faction_to": r.get("destination_faction_name") or r.get("faction_destination")})
             out.sort(key=lambda x: -x["profit"])

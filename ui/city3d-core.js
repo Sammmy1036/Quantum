@@ -1,7 +1,7 @@
 "use strict";
 // =================================================================== 3D cities: the shared engine  (ui/city3d-core.js)
-// Everything a 3D city needs that isn't the city itself. Each city is its own small file (NewBabbage.js,
-// later Lorville.js, Area18.js, Orison.js...) that calls City3D.define({...}) with its places, its
+// Everything a 3D city needs that isn't the city itself. Each city is its own small file (city3d-NewBabbage.js,
+// city3d-Lorville.js, later Area 18 and Orison) that calls City3D.define({...}) with its places, its
 // weather and a build() that makes its terrain and buildings. This file does the rest:
 //   - places the model on the planet's real curved surface from Quantum's data, turning with it
 //   - fades it in as you descend from orbit, its edge dissolving into the planet in a circle
@@ -257,6 +257,134 @@ const opt={precip:true,haze:true};
 const reduceMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Defaults a city can override in its define({...}).
+// ------------------------------------------------------------------ a city drawn from the game's own layout
+// gameLayout(ctx, opts): every model in ui/cities/<City>.js (made by tools/build_city.py) placed where the
+// game places it, instanced, coloured from the game's materials, with close-up versions (<City>.near.js)
+// swapped in near the camera. For the cities after New Babbage (whose own file still draws its layout its
+// own way). opts:
+//   lightClass(mesh) -> "none"|"tower"|"base"|"plate"|"port"|"dome"|"glass": what a model gives at night
+//   lift   metres from the layout's origin to the model's ground zero (layout.a0 - C.alt0)
+//   roofs  colour for faces that point up on plain models (snow, dust), or null for their own colour
+//   nearFile  the close-up file to load, or null for none
+//   landmarks {key: /model name/}: where the first copy of each stands (for camera views)
+//   lampTops  which light classes get street lamps on their flat tops (default plate and port)
+// -> {LIT, landmarks, footprint({reach}), update(now), onNight(night), ready}
+function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={},lampTops=/plate|port/}={}){
+  const {layout:LAY, F, inner, curve}=ctx, R0=F.B.radius;
+  const IN=LAY.inst, NI=IN.length/13;
+  const bytes=s=>{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
+  const boxOf=m=>({c:m.lo.map((v,i)=>(v+m.hi[i])/2), h:m.lo.map((v,i)=>(m.hi[i]-v)/2)});
+  const MB=LAY.meshes.map(boxOf);
+  const std=(o={})=>new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.8,metalness:0.15,emissive:0xffffff,emissiveIntensity:0,side:THREE.DoubleSide,shadowSide:THREE.BackSide,...o});
+  const LIT={none:std(), glass:std({roughness:0.2,metalness:0.55}), tower:std(), base:std(), plate:std(), port:std(), dome:std({emissive:0xffe2b8}), city:std()};
+  litWindows(LIT.tower,{floor:4.2,col:3.4,lit:0.3}); litWindows(LIT.base,{floor:5.0,col:4.0,lit:0.16});
+  litWindows(LIT.glass,{floor:4.0,col:2.2,lit:0.5,glass:true});
+  litLamps(LIT.plate,{spacing:36,warm:true}); litLamps(LIT.port,{spacing:24,warm:false,pool:0.5});
+  litCity(LIT.city,{lit:0.3,spacing:36});
+  const LIN=k=>{ const c=k/255; return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4; };
+  const GLASS_C=[0.075,0.095,0.125], ROAD_C=[0.028,0.026,0.024], KC=[[0.5,0.48,0.45],[0.46,0.44,0.42],[0.62,0.6,0.56],[0.5,0.5,0.5],[0.5,0.48,0.45],[0.36,0.42,0.5]];
+  // sharp at real edges, smooth across gentle bends (as New Babbage does)
+  const crease=(pos,nt,keys,cosMax=0.766)=>{ const fn=new Float32Array(nt*3), out=new Float32Array(nt*9);
+    for(let t=0;t<nt;t++){ const o=t*9, ux=pos[o+3]-pos[o], uy=pos[o+4]-pos[o+1], uz=pos[o+5]-pos[o+2], vx=pos[o+6]-pos[o], vy=pos[o+7]-pos[o+1], vz=pos[o+8]-pos[o+2];
+      const x=uy*vz-uz*vy, y=uz*vx-ux*vz, z=ux*vy-uy*vx, l=Math.hypot(x,y,z)||1; fn[t*3]=x/l; fn[t*3+1]=y/l; fn[t*3+2]=z/l; }
+    const at=new Map(); for(let v=0;v<nt*3;v++){ let L=at.get(keys[v]); if(!L) at.set(keys[v],L=[]); L.push(v); }
+    for(const L of at.values()) for(const v of L){ const t=(v/3)|0; let x=0,y=0,z=0;
+      for(const w of L){ const u=(w/3)|0; if(fn[t*3]*fn[u*3]+fn[t*3+1]*fn[u*3+1]+fn[t*3+2]*fn[u*3+2]>=cosMax){ x+=fn[u*3]; y+=fn[u*3+1]; z+=fn[u*3+2]; } }
+      const l=Math.hypot(x,y,z)||1; out[v*3]=x/l; out[v*3+1]=y/l; out[v*3+2]=z/l; }
+    return out; };
+  const makeGeo=(m,b)=>{ const q=new Int16Array(bytes(m.v).buffer), iu=bytes(m.i), idx=m.i32?new Uint32Array(iu.buffer):new Uint16Array(iu.buffer);
+    const nt=Math.floor(idx.length/3), pos=new Float32Array(nt*9), col=new Float32Array(nt*9), kc=KC[m.kind]||KC[0];
+    const P=k=>[b.c[0]+q[k*3]/32767*b.h[0], b.c[1]+q[k*3+1]/32767*b.h[1], b.c[2]+q[k*3+2]/32767*b.h[2]];
+    const runs=m.parts||null, lite=runs?new Float32Array(nt*3):null, lampTop=lampTops.test(lightClass(m)), keys=new Float64Array(nt*3);
+    for(let v=0;v<nt*3;v++){ const w=idx[v]; keys[v]=(q[w*3]+32768)*4294967296+(q[w*3+1]+32768)*65536+(q[w*3+2]+32768); }
+    let ri=0;
+    for(let t=0;t<nt;t++){ const A=P(idx[t*3]), B_=P(idx[t*3+1]), C_=P(idx[t*3+2]);
+      const ux=B_[0]-A[0], uy=B_[1]-A[1], uz=B_[2]-A[2], vx=C_[0]-A[0], vy=C_[1]-A[1], vz=C_[2]-A[2];
+      const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx, up=Math.abs(nz/(Math.hypot(nx,ny,nz)||1))>0.8;
+      let c, L=0;
+      if(runs){ while(ri<runs.length-1&&t>=runs[ri][0]+runs[ri][1]) ri++;
+        const r=runs[ri], look=r[5]; c=look===3?GLASS_C:look===4&&roofs?roofs:[LIN(r[2]),LIN(r[3]),LIN(r[4])];
+        L=look===1||look===2||look===3?look:0; if(up&&look===0&&lampTop) L=5;
+        // A glowing material laid flat is a road or deck with the game's scrolling traffic lights on it (Lorville's
+        // streets and trench floors): its colour is the light's, near white, which in daylight read as white paint.
+        // By day it's dark asphalt; at night its lights show as points along it.
+        if(up&&look===2){ c=ROAD_C; L=5; } }
+      else c=roofs&&m.kind!==5&&up?roofs:kc;                 // the game's models are z-up
+      for(let k=0;k<3;k++){ const v=[A,B_,C_][k]; pos.set(v,t*9+k*3); col.set(c,t*9+k*3); if(lite) lite[t*3+k]=L; } }
+    const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
+    if(lite) g.setAttribute("lite",new THREE.BufferAttribute(lite,1));
+    g.setAttribute("normal",new THREE.BufferAttribute(crease(pos,nt,keys),3)); return g; };
+  const LOD={}, LM={}, foot=[];
+  const byMesh=new Map(); for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
+  const Mx=new THREE.Matrix4(), Q=new THREE.Quaternion(), Y=new THREE.Vector3(0,1,0), U=new THREE.Vector3(), Tm=new THREE.Matrix4(), Cv=new THREE.Vector3();
+  const place=o=>{ const x=IN[o+3], z=IN[o+11], y=IN[o+7]+lift+(x*x+z*z)/(2*R0); return [x,y,z]; };
+  async function build(){ let done=0;
+    for(const [k,list] of byMesh){ const m=LAY.meshes[k], cls=lightClass(m), mat=m.parts?LIT.city:LIT[cls]||LIT.none, b=MB[k];
+      const im=new THREE.InstancedMesh(makeGeo(m,b),mat,list.length);
+      const mats=new Float32Array(list.length*16), cen=new Float32Array(list.length*3), rad=new Float32Array(list.length); let n=0;
+      for(const i of list){ const o=i*13+1, [x,y,z]=place(o);
+        const p=curve(x,y,z); U.set(p[0],p[1]+F.Rb,p[2]).normalize(); Q.setFromUnitVectors(Y,U);
+        Mx.set(IN[o],IN[o+1],IN[o+2],0, IN[o+4],IN[o+5],IN[o+6],0, IN[o+8],IN[o+9],IN[o+10],0, 0,0,0,1);
+        Tm.makeRotationFromQuaternion(Q).multiply(Mx).setPosition(p[0],p[1],p[2]);
+        im.setMatrixAt(n,Tm); Tm.toArray(mats,n*16);
+        Cv.set(b.c[0],b.c[1],b.c[2]).applyMatrix4(Tm); cen.set([Cv.x,Cv.y,Cv.z],n*3);
+        const s=Math.max(Math.hypot(IN[o],IN[o+4],IN[o+8]),Math.hypot(IN[o+1],IN[o+5],IN[o+9]),Math.hypot(IN[o+2],IN[o+6],IN[o+10]));
+        rad[n]=Math.hypot(b.h[0],b.h[1],b.h[2])*s;
+        // its footprint and the height its base sits at (for fitting the ground under the city)
+        const at=(a,bb,c)=>[IN[o]*a+IN[o+1]*bb+IN[o+2]*c+IN[o+3], IN[o+4]*a+IN[o+5]*bb+IN[o+6]*c+IN[o+7], IN[o+8]*a+IN[o+9]*bb+IN[o+10]*c+IN[o+11]];
+        let lo=1e9, hi=-1e9; for(let c=0;c<8;c++){ const yy=at(b.c[0]+(c&1?1:-1)*b.h[0], b.c[1]+(c&2?1:-1)*b.h[1], b.c[2]+(c&4?1:-1)*b.h[2])[1]; lo=Math.min(lo,yy); hi=Math.max(hi,yy); }
+        const rise=y-IN[o+7];
+        if(rad[n]>12&&rad[n]<1500) foot.push([x,z,Math.hypot(b.h[0],b.h[1])*s,lo+rise]);
+        for(const [key,rx] of Object.entries(landmarks)) if(!LM[key]&&rx.test(m.name)){ const c=at(...b.c); LM[key]={t:[c[0],c[2]], y:c[1]+rise, base:lo+rise, top:hi+rise}; }
+        n++; }
+      im.count=n; im.castShadow=true; im.receiveShadow=true; im.frustumCulled=false; inner.add(im);
+      LOD[k]={far:im, near:null, mat, n, mats, cen, rad, b};
+      if(++done%40===0) await ctx.tick(); } }
+  // close-up versions near the camera (the biggest-looking copies first, within a triangle budget)
+  const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=12e6; let dirty=true, at=0; const camAt=new THREE.Vector3(1e12,0,0), camL=new THREE.Vector3();
+  function update(now){ if(now-at<300) return; at=now;
+    camera.getWorldPosition(camL); inner.worldToLocal(camL);
+    if(!dirty&&camAt.distanceToSquared(camL)<Math.max(40,0.02*camL.length())**2) return; camAt.copy(camL); dirty=false;
+    const ents=Object.values(LOD).filter(e=>e.near); if(!ents.length) return;
+    const all=[]; ents.forEach((e,ei)=>{ e.nt=e.nt||e.near.geometry.attributes.position.count/3;
+      for(let i=0;i<e.n;i++){ const dx=e.cen[i*3]-camL.x, dy=e.cen[i*3+1]-camL.y, dz=e.cen[i*3+2]-camL.z, gap=Math.max(1,Math.sqrt(dx*dx+dy*dy+dz*dz)-e.rad[i]);
+        const sc=gap<NEAR_MIN?1e9-gap:e.rad[i]*2/gap; if(sc>1/NEAR_K) all.push([sc,ei,i]); } });
+    all.sort((a,b)=>b[0]-a[0]); const pick=ents.map(e=>new Uint8Array(e.n)); let tris=0;
+    for(const [,ei,i] of all){ const t=ents[ei].nt; if(tris+t>NEAR_TRIS) continue; tris+=t; pick[ei][i]=1; }
+    ents.forEach((e,ei)=>{ const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
+      for(let i=0;i<e.n;i++){ const mm=e.mats.subarray(i*16,i*16+16); if(pick[ei][i]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
+      e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; }); }
+  const loadNear=async()=>{ if(!nearFile) return; const city=LAY.city;
+    if(!window.QCITYNEAR?.[city]) await loadScript(nearFile);
+    const NM=window.QCITYNEAR?.[city]?.meshes; if(!NM) return; let c=0;
+    for(const [ks,m] of Object.entries(NM)){ const e=LOD[+ks]; if(!e||!e.n) continue;
+      try{ const near=new THREE.InstancedMesh(makeGeo(m,boxOf(m)),e.mat,e.n); near.count=0; near.castShadow=true; near.receiveShadow=true;
+        near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near; }catch(err){ console.warn("near",m.name,err); }
+      if(++c%12===0) await ctx.tick(); }
+    delete window.QCITYNEAR[city]; dirty=true; };
+  // The ground the city stands on: the lowest base of the pieces in each 150 m cell, filled out from the
+  // cells around it and smoothed, so the ground can be fitted under the city's real floor. -> (x,z) =>
+  // {floor, w} (w: 1 inside the city, falling to 0 a few hundred metres outside), or null far from it.
+  function footprint({reach=3}={}){ const CELL=150, half=Math.ceil(Math.max(2000,...foot.map(f=>Math.max(Math.abs(f[0]),Math.abs(f[1]))+f[2]))/CELL)+4, N=half*2;
+    const lo=new Float32Array(N*N).fill(Infinity);
+    for(const [x,z,r,b] of foot){ const rr=Math.min(r,600);
+      for(let gz=Math.floor((z-rr)/CELL)+half; gz<=Math.floor((z+rr)/CELL)+half; gz++) for(let gx=Math.floor((x-rr)/CELL)+half; gx<=Math.floor((x+rr)/CELL)+half; gx++){
+        if(gx<0||gz<0||gx>=N||gz>=N) continue; const k=gz*N+gx; if(b<lo[k]) lo[k]=b; } }
+    const w=new Float32Array(N*N), fl=new Float32Array(N*N);
+    for(let gz=0;gz<N;gz++) for(let gx=0;gx<N;gx++){ let s=0, sw=0, m=0;            // fill and soften over ~3 cells
+      const R2=reach*reach, sg=Math.max(4,R2/2.25);
+      for(let dz=-reach;dz<=reach;dz++) for(let dx=-reach;dx<=reach;dx++){ if(dx*dx+dz*dz>R2) continue; const x=gx+dx, z=gz+dz; if(x<0||z<0||x>=N||z>=N) continue; const v=lo[z*N+x]; if(!isFinite(v)) continue;
+        const ww=Math.exp(-(dx*dx+dz*dz)/sg); s+=v*ww; sw+=ww; if(dx*dx+dz*dz<=2) m=1; }
+      fl[gz*N+gx]=sw?s/sw:0; w[gz*N+gx]=sw?Math.min(1,sw/3)*(m||reach>3?1:0.6):0; }
+    return (x,z)=>{ const fx=x/CELL+half-0.5, fz=z/CELL+half-0.5, x0=Math.floor(fx), z0=Math.floor(fz), tx=fx-x0, tz=fz-z0;
+      if(x0<0||z0<0||x0>=N-1||z0>=N-1) return null;
+      const g=(a,k)=>a[k]; let W=0, Fl=0;
+      for(const [dx,dz,ww] of [[0,0,(1-tx)*(1-tz)],[1,0,tx*(1-tz)],[0,1,(1-tx)*tz],[1,1,tx*tz]]){ const k=(z0+dz)*N+x0+dx; W+=g(w,k)*ww; Fl+=g(fl,k)*g(w,k)*ww; }
+      return W>0.001?{floor:Fl/W, w:W}:null; }; }
+  return {LIT, landmarks:LM, build, footprint, update, loadNear,
+    onNight(night){ LIT.tower.emissiveIntensity=1.4*night; LIT.base.emissiveIntensity=1.3*night; LIT.glass.emissiveIntensity=1.6*night;
+      LIT.plate.emissiveIntensity=1.2*night; LIT.port.emissiveIntensity=1.5*night; LIT.dome.emissiveIntensity=0.14*night; LIT.city.emissiveIntensity=1.4*night; } }; }
+
 const DEFAULTS={
   alt0:0,                     // altitude (m) of the model's ground zero
   extent:70000,               // terrain reaches this far out from the city each way (m)
@@ -397,6 +525,7 @@ function define(spec){
         return [up[0]*c+(e[0]*x-n[0]*z)*k, up[1]*c+(e[1]*x-n[1]*z)*k, up[2]*c+(e[2]*x-n[2]*z)*k]; }
 
       const ctx={F, C, inner, curve, fade, litWindows, litLamps, litCity, parts, terrain, pinned, heights, dirAt, layout, tick, fbm, fbm3, sstep, hash, rnd:seeded(C.seed||20251), THREE};
+      ctx.gameLayout=opts=>gameLayout(ctx,opts);         // a city drawn from the game's own layout (see above)
       const model=await C.build(ctx);
       inner.traverse(o=>{ if(o.material) fade(o.material); });      // everything the city added fades with it
       // swap in the new model (a planet's terrain is rebuilt as you travel; the old one stays up meanwhile)
