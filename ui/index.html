@@ -4392,7 +4392,7 @@ async function openDatarunner(id){
   $("dr-here").textContent=r.you_are_at?(r.terminals.some(t=>t.here)?`You're at ${r.you_are_at} (from the game log).`:`You're at ${r.you_are_at}, which has no commodity terminal on UEX.`)
     :"Land or dock somewhere and the terminal there is picked for you.";
   $("dr-ver").className="dr-ver"+(r.game_running&&r.game_version?"":" bad");
-  $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env} (from Game.log)`:"Couldn't read it from Game.log";
+  $("dr-ver").textContent=!r.game_running?"Start Star Citizen to report":r.game_version?`${r.game_version} ${r.env}`:"Couldn't read it from Game.log";
   renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs();
   if(!S.drProf||Date.now()-(S.drProfAt||0)>60000) api().dr_profile(false).then(p=>{ if(p?.ok){ S.drProf=p; S.drProfAt=Date.now();
     if(S.dr) renderDrStats(S.dr.pf.stats); } }).catch(()=>{}); }
