@@ -281,7 +281,7 @@ City3D.define({
       // The close-up versions (ui/cities/NewBabbage.near.js, written by build_city.py): loaded once the city
       // is up, and drawn for the copies near the camera (see updateLod below).
       nearReady=(async()=>{
-        if(!window.QCITYNEAR?.[CITY]) await new Promise(r=>{ const sc=document.createElement("script"); sc.src="cities/NewBabbage.near.js"; sc.async=true; sc.onload=sc.onerror=r; document.head.appendChild(sc); });
+        if(!window.QCITYNEAR?.[CITY]) await window.qLoadAsset("cities/NewBabbage.near.js");
         const NM=window.QCITYNEAR?.[CITY]?.meshes; if(!NM) return;
         let c=0;
         for(const [ks,m] of Object.entries(NM)){ const e=LOD[+ks]; if(!e||!e.n) continue;

@@ -43,8 +43,7 @@ function gridSampler(G){ const W=G.cols, H=G.rows, m=G.data, wrap=!!G.wrap;
     return cr(row(r0-1),row(r0),row(r0+1),row(r0+2),tr); }; }
 const TERRAIN={};
 let terrainIndex=null;                                       // bodies with a height file, once index.js has loaded
-function loadScript(src){ return new Promise(res=>{ const s=document.createElement("script"); s.src=src; s.async=true;
-  s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }); }
+function loadScript(src){ return window.qLoadAsset(src); }   // server-hosted map data (see qLoadAsset in index.html)
 loadScript("terrain/index.js").then(()=>{ terrainIndex=Array.isArray(window.QTERRAIN_INDEX)?window.QTERRAIN_INDEX:[]; });
 const hasTerrain=body=>!!terrainIndex&&terrainIndex.includes(body);
 // -> {state:"loading"|"ok"|"missing", sample:(lat,lon)=>metres, ready:Promise}

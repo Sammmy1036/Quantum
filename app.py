@@ -33,6 +33,7 @@ import tray
 import services
 import uex
 import updater
+import assets
 import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
@@ -315,6 +316,8 @@ class Api:
         self._route = [t for t in saved if t.get("place") in self._db.locations]
         self._guide = self._settings.get("guide") if self._settings.get("guide") in self._db.locations else None
         self._player = self._player_t = self._player_sys = None
+        # Map data (cities, citylights, planets, terrain) comes from the Quantum server, cached here
+        self._assets = assets.AssetCache(HERE / "asset_cache", log=lambda m: watcher_mod.log_error(m))
         self._last_cal_key = None
         self._arrive_seen = None
         self._arrived_note = None
@@ -5583,6 +5586,17 @@ class Api:
 
     def dismiss_contract(self, cid):
         self._tracker.dismiss(cid)
+
+    def assets_base(self):
+        """Where the map loads server-hosted data files from (a local server that checks them)."""
+        try:
+            return self._assets.base_url()
+        except Exception:
+            watcher_mod.log_error("asset server")
+            return ""
+
+    def assets_progress(self):
+        return self._assets.progress()
 
     def close_out_contract(self, cid):
         self._tracker.close_out(cid)
