@@ -6,8 +6,8 @@
 
 ---
 
-<a href="https://quantumsc.ddnsgeek.com/assets/Quantum-Demo.mp4">
-  <img src="https://quantumsc.ddnsgeek.com/assets/Quantum-Demo.jpg" width="1000" alt="Watch the Quantum demo">
+<a href="https://quantumsc.ddnsgeek.com/media/Quantum-Demo.mp4">
+  <img src="https://quantumsc.ddnsgeek.com/media/Quantum-Demo.jpg" width="1000" alt="Watch the Quantum demo">
 </a>
 
 <p align="center">
