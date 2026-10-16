@@ -481,6 +481,24 @@ class Api:
                         self._sys_override = {"system": to, "log_sys": hint, "how": "wormhole", "at": t}
                         self._sys_how = ("wormhole", loc.name, pt)
                         return to
+        # A quantum jump never changes system: if one was made since the last place the log named, the
+        # system it started from (or the place it went to) beats the log's hint, which can be stale or
+        # come from a contract/shop line naming another system. Without this a /showlocation after a
+        # jump to an unlearned spot (Baijini Point, say) could land in the wrong system and vanish
+        # from the map.
+        q = self._tracker.qt or {}
+        if q.get("selected") and q["selected"] >= (w.get("at") or 0):
+            qsys = None
+            dest = q.get("place")
+            if dest and dest in self._db.locations:
+                qsys = self._db.locations[dest].system
+            elif q.get("start_body") and q["start_body"] in self._db.bodies:
+                qsys = self._db.bodies[q["start_body"]].system
+            elif last and 0 < t - last[1] < 3 * 3600 and (q.get("selected") or 0) > last[1]:
+                qsys = last[2]
+            if qsys in nav_core.SYSTEMS and qsys != hint:
+                self._sys_how = ("log", "quantum jump", q["selected"])
+                return qsys
         return hint
 
     def set_my_system(self, system):
@@ -1058,6 +1076,7 @@ class Api:
                 # did change systems, the next /showlocation (or the system picker) puts you right.
             if game_on:
                 self._auto_arrive(cur)
+                self._auto_trade_transit()
             self._prune_finished_tasks()
             self._ensure_gates(psys)
             stops = self._stops()
@@ -1073,7 +1092,8 @@ class Api:
                             "cleared": self._log_cleared},
                     "where": self._tracker.where,
                     "travel": self._travel_view(cur, t) if game_on else None,
-                    "arrived": self._arrived_note if game_on else None, "game_off": not game_on}
+                    "arrived": self._arrived_note if game_on else None, "game_off": not game_on,
+                    "trade_ver": getattr(self, "_trade_changed", 0)}
             if p:
                 body = self._db.body_near(p, psys)
                 how = getattr(self, "_sys_how", None) or ("log", "", None)
@@ -5124,6 +5144,32 @@ class Api:
         self._save_settings()
         return {"ok": True}
 
+    def _auto_trade_transit(self):
+        """Smart departure for trade runs, like contracts: setting your in-game route (quantum
+        destination) to a bought run's sell place, or its planet/moon, puts the run in transit."""
+        q = self._tracker.qt or {}
+        sel, dest = q.get("selected"), q.get("place") or q.get("dest")
+        if not sel or not dest or sel == getattr(self, "_trade_qt_seen", None):
+            return
+        self._trade_qt_seen = sel
+        comp = lambda x: "".join(ch for ch in (x or "").lower() if ch.isalnum())
+        L = self._db.locations.get(dest)
+        names = {comp(dest)} | ({comp(L.name), comp(L.body)} if L else set())
+        names.discard("")
+        changed = False
+        for r in self._runs():
+            if r.get("stage") != "bought" or (r.get("times") or {}).get("bought", 0) > sel + 5:
+                continue
+            targets = {comp(r.get("to_place")), comp(r.get("to_terminal"))} - {""}
+            if any(n == t or (len(n) > 5 and (n in t or t in n)) for n in names for t in targets):
+                r["stage"] = "transit"
+                r.setdefault("times", {})["transit"] = sel
+                r["transit_how"] = "route"
+                changed = True
+        if changed:
+            self._save_settings()
+            self._trade_changed = getattr(self, "_trade_changed", 0) + 1
+
     def trade_run_delete(self, rid):
         self._settings["trade_runs"] = [x for x in self._runs() if x["id"] != rid]
         self._save_settings()
@@ -5537,6 +5583,9 @@ class Api:
 
     def dismiss_contract(self, cid):
         self._tracker.dismiss(cid)
+
+    def close_out_contract(self, cid):
+        self._tracker.close_out(cid)
 
     def clear_finished_contracts(self):
         self._tracker.clear_finished()

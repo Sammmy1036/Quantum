@@ -271,6 +271,7 @@ class Contract:
     turn_in_how: str = ""              # "nearest" (picked by Quantum) or "manual" (picked by you)
     tracking_no: str = ""              # Quantum's own parcel-style number: 1SC + 15 random digits
     coords: list | None = None         # coordinates written in the contract's own text (see text_coords)
+    acked: bool = False                # completed and closed out by you: only then it drops into Finished
 
 # "Out for delivery" isn't guessed from time passing or from leaving the elevator: it starts when you set
 # your in-game route (quantum destination) to the drop-off, or press "Out for delivery" in Quantum.
@@ -423,6 +424,8 @@ class ContractTracker(threading.Thread):
             c["objectives"] = [Objective(**{k: v for k, v in o.items() if k in Objective.__dataclass_fields__})
                                for o in c.get("objectives", [])]
             con = Contract(**{k: v for k, v in c.items() if k in Contract.__dataclass_fields__})
+            if "acked" not in c and con.status != "active":
+                con.acked = True                  # finished before close-out existed: keep it in Finished
             self.contracts[con.id] = con
 
     def _save(self):
@@ -468,9 +471,18 @@ class ContractTracker(threading.Thread):
             self.contracts.pop(cid, None)
             self._changed()
 
+    def close_out(self, cid):
+        """A delivered contract stays up top until you close it out; then it goes to Finished."""
+        with self.lock:
+            c = self.contracts.get(cid)
+            if c:
+                c.acked = True
+                self._changed()
+
     def clear_finished(self):
         with self.lock:
-            self.contracts = {k: c for k, c in self.contracts.items() if c.status == "active"}
+            self.contracts = {k: c for k, c in self.contracts.items()
+                              if c.status == "active" or (c.status == "complete" and not c.acked)}
             self._changed()
 
     def snapshot(self):

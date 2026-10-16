@@ -25,9 +25,8 @@ GATEWAYS = {
     "Nyx Gateway Station": ("Stanton", "Nyx", (-62284229191.638901, 23467598946.457104, 20198395415.087944),
                             "Gateway station for the temporary link to Nyx (the old Magnus gate). "
                             "Position from a /showlocation at the station"),
-    # Sam's /showlocation docked at the station (4.10.2)
-    "Terra Gateway Station": ("Stanton", "Terra", (51118167214.692024, -5269990089.520522, -4339545559.678229),
-                              "Gateway station. Terra Gateway isn't open yet. Position from a /showlocation at the station"),
+    # The 4.10.2 reading turned out wrong: unplaced until a fresh /showlocation at the station (a job)
+    "Terra Gateway Station": ("Stanton", "Terra", None, "Gateway station. Terra Gateway isn't open yet"),
     "Stanton Gateway Station (Pyro)": ("Pyro", "Stanton", None, ""),
     "Nyx Gateway Station (Pyro)": ("Pyro", "Nyx", None, ""),
     "Pyro Gateway Station (Nyx)": ("Nyx", "Pyro", None, ""),
@@ -133,7 +132,7 @@ def learn_key(name):
 # station and Gateway position is from the game files or older community data, and stays a "Check its
 # position" job until a datarunner confirms it with a /showlocation there.
 VERIFIED = {"Stanton Gateway Station (Pyro)", "Stanton Gateway (Pyro)", "Nyx Gateway Station",
-            "Stanton Gateway Station (Nyx)", "Terra Gateway Station"}
+            "Stanton Gateway Station (Nyx)"}
 # A Gateway and its station are never the same spot (the jump point is tens of km out). A Gateway
 # position closer than this to its station's is a reading taken at the station, filed under the Gateway.
 SAME_SPOT_M = 3_000

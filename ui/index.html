@@ -311,6 +311,8 @@ em.up,em.down{font-style:normal;font-size:11.5px;font-weight:600;display:block}e
 .ovlist{margin-top:8px;display:grid;gap:3px;font-size:13px;max-height:180px;overflow:auto}
 .ovlist .i{display:grid;grid-template-columns:22px 1fr;gap:6px;align-items:baseline}
 .ovlist .n{font:700 12px var(--display);color:var(--route)}
+.contract.delivered{border-color:rgba(98,224,146,.55);box-shadow:0 0 0 1px rgba(98,224,146,.25) inset}
+.dlv-pill{display:inline-block;padding:1px 8px;border-radius:9px;background:rgba(98,224,146,.16);color:#62e092;font-weight:600}
 details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 
 /* waypoints */
@@ -537,6 +539,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-row.gone .nm b{text-decoration:line-through;color:var(--dim)}
 .dr-row.gone .val,.dr-row.gone .inv{opacity:.3;pointer-events:none}
 .dr-row.cool{opacity:.55}
+.dr-row .upd.a0{color:#62e092;font-weight:600}
 .dr-row .age{font:700 11px var(--text);text-align:center;border-radius:6px;padding:4px 0;font-variant-numeric:tabular-nums}
 .age.a0{color:#57e39b;background:rgba(87,227,155,.12)}.age.a1{color:var(--ink-2);background:var(--panel-3)}
 .age.a2{color:#f2c14e;background:rgba(242,193,78,.13)}.age.a3{color:#ff8a5c;background:rgba(255,138,92,.15)}
@@ -1574,7 +1577,7 @@ function cloudMaterial(look){
         float th=0.60-COV*0.22; return smoothstep(th-0.02,th+0.05,n*0.5+0.5); }
       void main(){
         #include <logdepthbuf_fragment>
-        float a=T*0.0015; vec3 p=vec3(vP.x*cos(a)-vP.y*sin(a), vP.x*sin(a)+vP.y*cos(a), vP.z);    // they drift slowly
+        float a=T*0.0003; vec3 p=vec3(vP.x*cos(a)-vP.y*sin(a), vP.x*sin(a)+vP.y*cos(a), vP.z);    // they drift slowly
         vec3 l=vec3(vL.x*cos(a)-vL.y*sin(a), vL.x*sin(a)+vL.y*cos(a), vL.z);
         float d=dens(p); if(d<0.01) discard;
         float shade=clamp(1.0-(dens(p+l*0.008)-d)*2.2,0.3,1.0);                                   // denser toward the sun: in shadow
@@ -2862,7 +2865,7 @@ document.addEventListener("pointerdown",e=>{ if(!$("rsearch-wrap").contains(e.ta
 function renderContracts(force){
   const typing=$("contracts").contains(document.activeElement)&&document.activeElement.tagName==="INPUT";
   if(typing&&!force) return;
-  const live=S.live, cs=live.contracts, active=cs.filter(c=>c.status==="active"), done=cs.filter(c=>c.status!=="active");
+  const live=S.live, cs=live.contracts, delivered=c=>c.status==="complete"&&!c.acked, active=cs.filter(c=>c.status==="active"||delivered(c)), done=cs.filter(c=>c.status!=="active"&&!delivered(c));
   const cnt=$("c-contracts"); cnt.textContent=active.length; cnt.classList.toggle("hot",active.length>0);
   $("plan-all-bar").style.display=active.length?"flex":"none";
   const lg=live.log, ok=lg.status==="watching";
@@ -2949,7 +2952,7 @@ function renderContracts(force){
     S.cw[id]=r.ok?{info:r.info}:{error:r.error}; renderContracts(); };
   const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you",coords:"from the coordinates in the contract",learned:"where you set it on a contract like this before",contract:"from the contract's details in the log"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
-    const active=c.status==="active";
+    const active=c.status==="active", isDelivered=c.status==="complete"&&!c.acked;
     const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?(o.marker.near_place?`${o.marker.near_km} km from ${o.marker.near_place} (${o.marker.body}${o.marker.system&&o.marker.system!==S.system?", "+o.marker.system:""})`:`Marker on ${o.marker.body}`):o.marker.from_text?`Contract coordinates${o.marker.near?` near ${o.marker.near}`:""}`:`Marker near ${o.marker.lpoint||o.marker.near||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
       const inR=o.in_route;
       // Pickups don't state the amount; it's what the delivery objectives add up to for that cargo.
@@ -2978,10 +2981,10 @@ function renderContracts(force){
     const turnIn = c.collection&&active ? `<div class="turnin"><span class="k">Hand in at</span>
         <select class="field" data-act="turnin">${c.turn_in?"":`<option value="">Nearest (needs your position)</option>`}${emps.map(n=>`<option value="${esc(n)}" ${n===c.turn_in?"selected":""}>${esc(n.replace("Wikelo Emporium ",""))}${n===c.turn_in&&c.turn_in_how==="nearest"?" (nearest)":""}</option>`).join("")}</select>
         ${tin?.unplaced?`<div class="unknown">Quantum doesn't know where ${esc(c.turn_in)} is yet, so it can't be a route stop. Fly there, type /showlocation, and press <b>I'm here: set position</b> on <a data-open="${esc(c.turn_in)}">its card</a>. Once is enough.</div>`:""}</div>` : "";
-    return `<div class="contract ${active?"":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
-      <div class="sub">${status}${c.system?" · "+esc(c.system):""}</div>
+    return `<div class="contract ${active?"":isDelivered?"delivered":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
+      <div class="sub">${isDelivered?`<span class="dlv-pill">✓ Delivered</span>`:status}${c.system?" · "+esc(c.system):""}</div>
       ${c.tracking_no||c.job_id?`<div class="trackids">${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${c.job_id?`<div class="trackno" title="The game's own id for this contract (from Game.log). Click to copy">Job ID <b>${esc(c.job_id)}</b></div>`:""}</div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
-      <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span><button class="btn small ghost" data-act="dismiss">Dismiss</button></div></div>`; };
+      <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span>${isDelivered?`<button class="btn small primary" data-act="closeout" title="Move it to Finished">Close out job</button>`:`<button class="btn small ghost" data-act="dismiss">Dismiss</button>`}</div></div>`; };
   $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
   const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
@@ -3004,6 +3007,7 @@ function renderContracts(force){
       if(!S.locMap[v]||S.locMap[v].unplaced) return toast("Pick a place from the suggestions"); const r=await api().set_item_source(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Get it at ${v}`:r.error); return; }
     if(act==="clearsrc"){ const r=await api().set_item_source(c.id,e.target.dataset.oid,null); await poll(); renderContracts(true); if(!r.ok) toast(r.error); return; }
     if(act==="dismiss"){ await api().dismiss_contract(c.id); await poll(); }
+    if(act==="closeout"){ await api().close_out_contract(c.id); await poll(); }
     if(act==="outdeliv"||act==="outundo"){ const r=await api().contract_out_for_delivery(c.id,act==="outdeliv"); if(!r.ok) return toast(r.error); await poll(); renderContracts(true);
       return toast(act==="outdeliv"?"Out for delivery":"Back to Collected"); }
     if(act==="collectall"){ const r=await api().mark_collected(c.id,null); if(!r.ok) return toast(r.error); await poll(); renderContracts(true);
@@ -4369,7 +4373,7 @@ const plural=(n,w)=>`${n} ${w}${n===1?"":"s"}`;
 const daysTxt=d=>plural(Math.round(d),"day");                      // 11 -> "11 days", 1 -> "1 day"
 // long: "11 days" / "5 hours" instead of "11d" / "5h" (the Jobs list has room for it)
 const drAge=(ts,long)=>{ if(!ts) return {t:"new",c:"a1",tip:"Not on UEX yet"}; const d=(Date.now()/1000-ts)/86400;
-  return {t:d*24<1?"now":d<1?(long?plural(Math.round(d*24),"hour"):`${Math.round(d*24)}h`):(long?daysTxt(d):`${Math.round(d)}d`), c:d<1?"a0":d<3?"a1":d<7?"a2":"a3", tip:`UEX last updated ${agoTs(ts)}`}; };
+  const mins=d*1440; return {t:mins<1?"now":mins<60?(long?plural(Math.round(mins),"minute"):`${Math.round(mins)}m`):d<1?(long?plural(Math.round(d*24),"hour"):`${Math.round(d*24)}h`):(long?daysTxt(d):`${Math.round(d)}d`), c:d<1?"a0":d<3?"a1":d<7?"a2":"a3", tip:`UEX last updated ${agoTs(ts)}`}; };
 const drNum=v=>{ if(v==null||v==="") return null; const m=String(v).trim().toLowerCase().replace(/,/g,"").match(/^(\d+(?:\.\d+)?)\s*([km])?$/);
   return m?Math.round(parseFloat(m[1])*({k:1e3,m:1e6}[m[2]]||1)*100)/100:NaN; };
 const drFmt=v=>v==null||isNaN(v)?"":Number(v).toLocaleString();
@@ -4445,7 +4449,7 @@ function drRowHtml(x,i){ const d=S.dr, st=d.pf.status_names, age=drAge(x.updated
   const ro=cool?"disabled":lock?"readonly":"";
   return `<div class="dr-row ${x.state} ${cool?"cool":""} ${lock?"locked":""}" tabindex="0" data-i="${i}">
     <div class="age ${age.c}" title="${esc(x.community?"Reported by a Quantum datarunner "+agoTs(x.updated)+", awaiting UEX review":age.tip)}">${age.t}</div>
-    <div class="nm"><b>${esc(x.name||"#"+x.id_commodity)}</b><div>${cool?`Sent ${Math.max(1,Math.round((300-cool)/60))} min ago, again in ${Math.ceil(cool/60)} min`:x.orig.price==null?"Not on UEX here yet":(x.community?`<span class="cm-pill">⚡ Quantum datarunner</span> `:"UEX ")+drFmt(x.orig.scu)+" SCU · "+drFmt(x.orig.price)}</div></div>
+    <div class="nm"><b>${esc(x.name||"#"+x.id_commodity)}</b><div>${cool?`Sent ${Math.max(1,Math.round((300-cool)/60))} min ago, again in ${Math.ceil(cool/60)} min`:x.orig.price==null?"Not on UEX here yet":(x.community?`<span class="cm-pill">⚡ Quantum datarunner</span> `:"UEX ")+drFmt(x.orig.scu)+" SCU · "+drFmt(x.orig.price)+(x.updated?` · <span class="upd ${age.c}">updated ${agoTs(x.updated)}</span>`:"")}</div></div>
     <div class="val"><input class="field" data-k="scu" inputmode="decimal" ${ro} value="${esc(x.scu??"")}" placeholder="SCU" aria-label="${x.side==="buy"?"Stock":"Demand"} in SCU"><div class="was">${x.side==="buy"?"Stock":"Demand"}</div></div>
     <div class="val"><input class="field" data-k="price" inputmode="decimal" ${ro} value="${esc(x.price??"")}" placeholder="aUEC" aria-label="Price per SCU"><div class="was">Price per SCU${diff}</div></div>
     <div class="inv"><div class="segs l${lvl}">${[1,2,3,4,5,6,7].map(n=>`<button data-lvl="${n}" class="${n<=lvl?"f":""}" title="${n} · ${esc(st[n])}" aria-label="${esc(st[n])}"></button>`).join("")}</div><span>${lvl?esc(st[lvl]):"Inventory?"}</span></div>
@@ -5407,6 +5411,8 @@ async function poll(){
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
   if(live.photos_version!==S.photosVersion){ const first=S.photosVersion===undefined; S.photosVersion=live.photos_version; if(!first) refreshPictures(); }
+  if(live.trade_ver!==S.tradeVer){ const first=S.tradeVer===undefined; S.tradeVer=live.trade_ver;
+    if(!first){ toast("Trade run in transit: you set your route to its sell point"); if($("tr-mine-out")) renderRuns(); } }
   const here=live.player?.system||live.where?.system;
   // You changed system (went through a jump point): the map goes with you, even if you'd been looking at
   // another system (a cross-system contract's drop-off, a route preview). Following picks up from there.
