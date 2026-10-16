@@ -91,7 +91,10 @@ if AVAILABLE:
         hwnd = user32.FindWindowW(None, title)
         if not hwnd:
             return "window not found"
-        if _is_overlay_up(hwnd):
+        # Up = pinned AND actually in front. Pinned alone isn't enough: the game can end up drawn over a
+        # pinned Quantum (it took the foreground back on its own, or after a click into it), and then the
+        # first F9 only "hid" a window that was already out of sight, so it took a second press to show it.
+        if _is_overlay_up(hwnd) and _in_front(hwnd):
             user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
             game = _find_game()
             if game:
@@ -139,6 +142,69 @@ if AVAILABLE:
     class _RECT(ctypes.Structure):
         _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
     user32.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(_RECT))
+
+    class _POINT(ctypes.Structure):
+        _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
+
+    class _WINDOWPLACEMENT(ctypes.Structure):
+        _fields_ = [("length", wintypes.UINT), ("flags", wintypes.UINT), ("showCmd", wintypes.UINT),
+                    ("ptMinPosition", _POINT), ("ptMaxPosition", _POINT), ("rcNormalPosition", _RECT)]
+    user32.GetWindowPlacement.argtypes = (wintypes.HWND, ctypes.POINTER(_WINDOWPLACEMENT))
+    user32.SetWindowPlacement.argtypes = (wintypes.HWND, ctypes.POINTER(_WINDOWPLACEMENT))
+    user32.IsZoomed.argtypes = (wintypes.HWND,)
+    WPF_RESTORETOMAXIMIZED, SW_SHOWNORMAL, SW_SHOWMAXIMIZED = 0x2, 1, 3
+
+    def get_placement(hwnd):
+        """Where the window is and whether it's maximised (or would come back maximised from the
+        taskbar), so it can be put back exactly so after something un-minimises it."""
+        wp = _WINDOWPLACEMENT()
+        wp.length = ctypes.sizeof(_WINDOWPLACEMENT)
+        if not hwnd or not user32.GetWindowPlacement(hwnd, ctypes.byref(wp)):
+            return None
+        maxed = bool(user32.IsZoomed(hwnd)) or (bool(user32.IsIconic(hwnd)) and bool(wp.flags & WPF_RESTORETOMAXIMIZED))
+        return wp, maxed
+
+    def put_back(hwnd, placement):
+        """Undo what pywebview's restore() does to a maximised window: it sets the window to normal size,
+        which leaves a maximised Quantum shrunk and partly off screen. Same spot, maximised again."""
+        if not hwnd or not placement:
+            return
+        wp, maxed = placement
+        wp.length = ctypes.sizeof(_WINDOWPLACEMENT)
+        wp.showCmd = SW_SHOWMAXIMIZED if maxed else SW_SHOWNORMAL
+        user32.SetWindowPlacement(hwnd, ctypes.byref(wp))
+
+    _dwm = ctypes.WinDLL("dwmapi")
+    _dwm.DwmSetWindowAttribute.argtypes = (wintypes.HWND, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD)
+    DWMWA_CLOAK = 13
+
+    def cloak(hwnd, on):
+        """Make Quantum invisible (or visible again) without minimising it. Nothing about the window
+        changes, not its size, place, maximised state or what WebView2 thinks: Windows just stops
+        drawing it. Minimising and restoring is what left a maximised Quantum shrunk and off screen.
+        Returns False if Windows wouldn't do it, so the caller can fall back to minimising."""
+        if not hwnd:
+            return False
+        v = ctypes.c_int(1 if on else 0)
+        try:
+            return _dwm.DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, ctypes.byref(v), ctypes.sizeof(v)) == 0
+        except Exception:
+            return False
+
+    user32.WindowFromPoint.argtypes = (_POINT,)
+    user32.WindowFromPoint.restype = wintypes.HWND
+    user32.GetAncestor.argtypes = (wintypes.HWND, wintypes.UINT)
+    user32.GetAncestor.restype = wintypes.HWND
+
+    def _in_front(hwnd):
+        """Can you actually see Quantum? It's the focused window, or it's what's on screen at its centre."""
+        if user32.GetForegroundWindow() == hwnd:
+            return True
+        r = _RECT()
+        if not user32.GetWindowRect(hwnd, ctypes.byref(r)):
+            return True                               # can't tell: keep the old behaviour
+        top = user32.WindowFromPoint(_POINT((r.left + r.right) // 2, (r.top + r.bottom) // 2))
+        return bool(top) and user32.GetAncestor(top, 2) == hwnd    # GA_ROOT: the WebView2 parts count as Quantum
 
     def is_covered(title=WINDOW_TITLE):
         """True when nobody can see Quantum: minimised, hidden in the tray, or tucked behind another
@@ -196,8 +262,17 @@ else:
     def focus_game(title=WINDOW_TITLE):
         return False
 
+    def cloak(hwnd, on):
+        return False
+
     def is_covered(title=WINDOW_TITLE):
         return False
+
+    def get_placement(hwnd):
+        return None
+
+    def put_back(hwnd, placement):
+        pass
 
     def set_app_id(app_id="microTech.Quantum"):
         pass

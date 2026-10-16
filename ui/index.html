@@ -4556,9 +4556,11 @@ function drRedrawRow(i,pop){ const el=$("dr-list")?.querySelector(`.dr-row[data-
 function renderDrMeter(){ const L=drRowsOf(S.dr.tab), done=L.filter(([x])=>x.state).length, m=$("dr-meter"); if(!m) return;
   m.innerHTML=`<div class="lbl"><span>${S.dr.tab==="buy"?"BUY":"LOCAL MARKET VALUE"} checked</span><b>${done} of ${L.length}</b></div><div class="bar"><i style="width:${L.length?done/L.length*100:0}%"></i></div>`; }
 function drReady(){ const d=S.dr; return d.rows.filter(x=>x.state); }
-function renderDrSend(){ const el=$("dr-send"); if(!el||!S.dr) return; const n=drReady().length, shots=S.drShotCount||0, d=S.dr;
+function renderDrSend(){ const el=$("dr-send"); if(!el||!S.dr) return; const rdy=drReady(), n=rdy.length, shots=S.drShotCount||0, d=S.dr;
+  // Only "Not sold here" rows: UEX still wants a screenshot, of the kiosk's list. It's the proof the item isn't on it.
+  const goneOnly=n>0&&rdy.every(x=>x.state==="gone");
   el.innerHTML=`<span class="chip y">✓ ${esc(d.pf.terminal||"Terminal")}</span>
-    <span class="chip ${shots?"y":"n"}" ${shots?"":`data-act="shoot"`} title="${shots?"":"UEX needs a screenshot of the kiosk"}">${shots?`✓ ${shots} screenshot${shots>1?"s":""}`:`${IC_CAM} Screenshot Required`}</span>
+    <span class="chip ${shots?"y":"n"}" ${shots?"":`data-act="shoot"`} title="${shots?"":goneOnly?"UEX still needs a screenshot for a Not sold here report: take one of this kiosk's list, which shows the item isn't on it":"UEX needs a screenshot of the kiosk"}">${shots?`✓ ${shots} screenshot${shots>1?"s":""}`:`${IC_CAM} Screenshot Required`}</span>
     ${n?`<span class="chip y">✓ ${n} row${n===1?"":"s"} ready</span><button class="btn primary go" id="dr-go">Submit Report</button>`:""}`; }
 
 // ---- editing
@@ -5393,11 +5395,15 @@ function drMatchState(){ S.drAssign??={}; S.drMatchSeen??=new Set();
   const shots=S.drShots||[], items=S.dr?drReady():[], ids=new Set(shots.map(s=>s.id));
   if(shots.length===1) for(const x of items) S.drAssign[drKey(x)]=shots[0].id;     // one shot: everything's in it
   for(const k in S.drAssign) if(!ids.has(S.drAssign[k])) delete S.drAssign[k];
-  const per=shots.map((sh,i)=>({shot:sh, n:i+1, items:items.filter(x=>S.drAssign[drKey(x)]===sh.id)}));
-  const loose=items.filter(x=>!ids.has(S.drAssign[drKey(x)])), empty=per.filter(p=>!p.items.length), unseen=shots.filter(sh=>!S.drMatchSeen.has(sh.id));
+  // "Not sold here" items can't appear in any screenshot (that's the point: the kiosk doesn't list them),
+  // so they never need matching. One that isn't ticked to a shot goes with the first report; the kiosk's
+  // list in that screenshot is the proof it's gone.
+  const shotOf=x=>ids.has(S.drAssign[drKey(x)])?S.drAssign[drKey(x)]:(x.state==="gone"&&shots.length?shots[0].id:null);
+  const per=shots.map((sh,i)=>({shot:sh, n:i+1, items:items.filter(x=>shotOf(x)===sh.id)}));
+  const loose=items.filter(x=>shotOf(x)==null), empty=per.filter(p=>!p.items.length), unseen=shots.filter(sh=>!S.drMatchSeen.has(sh.id));
   return {shots, items, per, loose, empty, unseen, done:shots.length>0&&items.length>0&&!loose.length&&!empty.length&&!unseen.length}; }
 function drItemLine(x){ const st=S.dr?.pf.status_names||{};
-  return x.state==="gone"?"not sold here any more":`${x.side==="buy"?"BUY":"LMV"} · ${x.scu!==""&&x.scu!=null?drFmt(drNum(x.scu))+" SCU":"no stock"} · ${x.price!==""&&x.price!=null?money(drNum(x.price)):"no price"}${x.status?" · "+esc(st[x.status]||""):""}`; }
+  return x.state==="gone"?"not sold here any more · the kiosk's list not showing it is the proof":`${x.side==="buy"?"BUY":"LMV"} · ${x.scu!==""&&x.scu!=null?drFmt(drNum(x.scu))+" SCU":"no stock"} · ${x.price!==""&&x.price!=null?money(drNum(x.price)):"no price"}${x.status?" · "+esc(st[x.status]||""):""}`; }
 // One page per screenshot: the exact 1920×1080 image UEX gets, and the items to tick that it shows.
 async function drMatchView(page=0){ let m=drMatchState(); if(!m.shots.length) return;
   page=Math.max(0,Math.min(page,m.shots.length-1)); const sh=m.shots[page], v=$("dr-view"), many=m.shots.length>1;

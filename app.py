@@ -943,10 +943,21 @@ class Api:
         self._save_settings()
 
     def _restore_window(self):
-        """Un-minimise through pywebview, so the embedded browser is told it's visible again."""
+        """Un-minimise through pywebview, so the embedded browser is told it's visible again. pywebview's
+        restore() also un-maximises, so a maximised Quantum is put back maximised, where it was."""
+        me = place = None
+        try:
+            me = overlay.user32.FindWindowW(None, overlay.WINDOW_TITLE) if os.name == "nt" else None
+            place = overlay.get_placement(me)
+        except Exception:
+            pass
         try:
             webview.windows[0].restore()
             time.sleep(0.15)
+        except Exception:
+            pass
+        try:
+            overlay.put_back(me, place)
         except Exception:
             pass
 
@@ -2313,26 +2324,49 @@ class Api:
         showing = bool(me) and bool(u.IsWindowVisible(me)) and not u.IsIconic(me)
         pinned = showing and overlay._is_overlay_up(me)
         hide = showing and (from_button or pinned)
+        place = overlay.get_placement(me) if hide else None     # maximised? where? put back exactly so after
+        cloaked = False
         try:
             if hide:
-                self._dr_log("minimising Quantum")
-                if pinned:
-                    u.SetWindowPos(me, overlay.HWND_NOTOPMOST, 0, 0, 0, 0, keep | ASYNC)
-                u.ShowWindowAsync(me, 6)                   # SW_MINIMIZE
+                # Cloaked, not minimised: the window keeps its size, place and maximised state, so it comes
+                # back exactly as it was (minimise + restore left a maximised Quantum small and off screen).
+                cloaked = overlay.cloak(me, True)
+                self._dr_log("hiding Quantum" if cloaked else "minimising Quantum")
+                if not cloaked:
+                    if pinned:
+                        u.SetWindowPos(me, overlay.HWND_NOTOPMOST, 0, 0, 0, 0, keep | ASYNC)
+                    u.ShowWindowAsync(me, 6)               # SW_MINIMIZE
             if u.IsIconic(game):
                 u.ShowWindowAsync(game, 9)                 # SW_RESTORE
             self._dr_log("bringing Star Citizen forward")
             u.SetWindowPos(game, wintypes_hwnd(0), 0, 0, 0, 0, keep | ASYNC)   # HWND_TOP
             u.SetForegroundWindow(game)
-            time.sleep(0.8 if hide else 0.15)              # minimise animation, then the game redraws
+            time.sleep(0.35 if cloaked else 0.8 if hide else 0.15)   # the game redraws (minimising also animates)
             self._dr_log("capturing")
             shot = datarunner.capture(game)
         finally:
-            if hide:
-                self._dr_restore_me(me, pinned)
+            if cloaked:
+                self._dr_uncloak_me(me, pinned)
+            elif hide:
+                self._dr_restore_me(me, pinned, place)
         return shot
 
-    def _dr_restore_me(self, me, pinned):
+    def _dr_uncloak_me(self, me, pinned):
+        """Show Quantum again after a cloaked screenshot: same size and place it never left."""
+        u = overlay.user32
+        self._dr_log("bringing Quantum back")
+        overlay.cloak(me, False)
+        keep = overlay.SWP_NOMOVE | overlay.SWP_NOSIZE | 0x0010 | 0x0040 | 0x4000   # + NOACTIVATE, SHOWWINDOW, ASYNC
+        # The game was brought in front: raise Quantum above it again (pin for a moment, then unpin,
+        # unless it was up as the F9 overlay, which stays pinned).
+        u.SetWindowPos(me, overlay.HWND_TOPMOST, 0, 0, 0, 0, keep)
+        if not pinned:
+            time.sleep(0.15)
+            u.SetWindowPos(me, overlay.HWND_NOTOPMOST, 0, 0, 0, 0, keep)
+        self._dr_timed("focusing Quantum", lambda: overlay._force_foreground(me), 1.5)
+        self._dr_timed("redrawing", self._nudge_redraw, 1.5)
+
+    def _dr_restore_me(self, me, pinned, place=None):
         """Put Quantum back in view after a screenshot."""
         u = overlay.user32
         self._dr_log("bringing Quantum back")
@@ -2340,6 +2374,9 @@ class Api:
         self._dr_timed("restoring the window", lambda: webview.windows[0].restore(), 2.0)
         if u.IsIconic(me):
             u.ShowWindowAsync(me, 9)                       # SW_RESTORE
+        # restore() also takes a maximised window down to normal size (it shrank and slid off screen):
+        # put it back maximised, in the same place.
+        self._dr_timed("putting the window back", lambda: overlay.put_back(me, place), 1.5)
         keep = overlay.SWP_NOMOVE | overlay.SWP_NOSIZE | 0x0010 | 0x0040 | 0x4000   # + SHOWWINDOW, ASYNC
         # Raising a window above the game needs no focus rights: pin it for a moment, then unpin
         # (or leave it pinned if it was up as the F9 overlay).
@@ -5795,6 +5832,42 @@ def _demo_args(argv):
     return rest
 
 
+# Folders inside the WebView2 profile that only hold cached copies (pages, scripts, compiled code and
+# shaders). Settings and saved state live elsewhere in the profile (Local Storage, IndexedDB) and are kept.
+_UI_CACHE_DIRS = {"Cache", "Code Cache", "GPUCache", "Service Worker", "DawnCache", "DawnGraphiteCache",
+                  "DawnWebGPUCache", "GrShaderCache", "ShaderCache"}
+
+
+def clear_stale_ui_cache(cache_dir):
+    """After an update (or any change to the UI files), throw away the browser's cached copies so the new
+    UI shows straight away, instead of the old one until someone deletes webview_cache by hand.
+    The UI is fingerprinted by content, not file dates: a packaged build unpacks fresh every launch."""
+    import hashlib
+    import shutil
+    h = hashlib.sha1(updater.VERSION.encode())
+    ui = RES / "ui"
+    try:
+        for f in sorted(ui.rglob("*")):
+            if f.is_file() and f.suffix.lower() in (".html", ".js", ".css", ".json"):
+                h.update(str(f.relative_to(ui)).encode())
+                h.update(f.read_bytes())
+    except OSError:
+        pass
+    stamp = h.hexdigest()
+    mark = cache_dir / "ui_stamp.txt"
+    try:
+        if mark.read_text().strip() == stamp:
+            return
+    except OSError:
+        pass
+    for d in [p for p in cache_dir.rglob("*") if p.is_dir() and p.name in _UI_CACHE_DIRS]:
+        shutil.rmtree(d, ignore_errors=True)
+    try:
+        mark.write_text(stamp)
+    except OSError:
+        pass
+
+
 def main():
     sys.argv = _demo_args(sys.argv)
     if DEMO["auto"]:
@@ -5838,6 +5911,7 @@ def main():
     cache_dir = HERE / "webview_cache"
     try:
         cache_dir.mkdir(exist_ok=True)
+        clear_stale_ui_cache(cache_dir)
         webview.start(func=started, private_mode=False, storage_path=str(cache_dir))
     except TypeError:                                      # an older pywebview without these options
         webview.start(func=started)
