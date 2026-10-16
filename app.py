@@ -964,6 +964,14 @@ class Api:
         except Exception:
             pass
 
+    def map_covered(self):
+        """Is the Quantum window out of sight (minimised, in the tray, or behind the game)? The map
+        asks while it isn't focused, and stops drawing until it's seen again."""
+        try:
+            return bool(overlay.is_covered())
+        except Exception:
+            return False
+
     def shutdown(self):
         self._sender.shutdown()
         self._watcher.stop()

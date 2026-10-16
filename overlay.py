@@ -136,6 +136,32 @@ if AVAILABLE:
         hwnd = user32.FindWindowW(None, title)
         return bool(hwnd) and bool(user32.IsWindowVisible(hwnd))
 
+    class _RECT(ctypes.Structure):
+        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long), ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+    user32.GetWindowRect.argtypes = (wintypes.HWND, ctypes.POINTER(_RECT))
+
+    def is_covered(title=WINDOW_TITLE):
+        """True when nobody can see Quantum: minimised, hidden in the tray, or tucked behind another
+        program's window (the borderless game, say) that fills all of it. The map stops drawing then,
+        so Quantum isn't spending the GPU on a picture no one is looking at."""
+        hwnd = user32.FindWindowW(None, title)
+        if not hwnd:
+            return False
+        if user32.IsIconic(hwnd) or not user32.IsWindowVisible(hwnd):
+            return True
+        fg = user32.GetForegroundWindow()
+        if not fg or fg == hwnd or _is_overlay_up(hwnd):
+            return False
+        pid_fg, pid_me = wintypes.DWORD(), wintypes.DWORD()
+        user32.GetWindowThreadProcessId(fg, ctypes.byref(pid_fg))
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid_me))
+        if pid_fg.value == pid_me.value:          # one of Quantum's own dialogs is in front
+            return False
+        a, b = _RECT(), _RECT()
+        if not (user32.GetWindowRect(fg, ctypes.byref(a)) and user32.GetWindowRect(hwnd, ctypes.byref(b))):
+            return False
+        return a.left <= b.left and a.top <= b.top and a.right >= b.right and a.bottom >= b.bottom
+
     def set_app_id(app_id="microTech.Quantum"):
         """Group Quantum under its own taskbar icon (not Python's). Call before the window opens."""
         try:
@@ -168,6 +194,9 @@ if AVAILABLE:
         return bool(big or small)
 else:
     def focus_game(title=WINDOW_TITLE):
+        return False
+
+    def is_covered(title=WINDOW_TITLE):
         return False
 
     def set_app_id(app_id="microTech.Quantum"):

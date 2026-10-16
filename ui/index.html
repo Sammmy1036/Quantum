@@ -2187,9 +2187,35 @@ let frame=function(){
 // The render loop asks for its next frame before drawing this one, and a drawing error is caught and
 // reported, so one bad value (a contract marker, a reading) can't stop the map for good: it would
 // freeze on the last frame while the rest of the app kept working.
+// The map draws only as often as it needs to. Star Citizen caps its own frame rate; a browser canvas
+// otherwise redraws at the monitor's full refresh rate (60, 144, 240 times a second) whether anything
+// moved or not, and that's what had Quantum's map at 100% GPU. So: full speed while you drag, zoom or fly
+// (capped at Settings > Map frame rate), a gentle 30 a second when the map just sits there, 10 when
+// Quantum isn't the focused window (the game on another monitor, say), and nothing at all when the map
+// can't be seen: behind the game, minimised, in the tray, or under a full-page tab (Fleet, Components…).
+// The picture itself is drawn exactly as before, so there's no loss of quality.
 const _frame=frame;
-frame=function(){ requestAnimationFrame(frame);
-  try{ if(S.splashUp) return; _frame(); }
+const GOV={last:0, active:0, covered:false};
+S.fpsMax=(()=>{ try{ const v=+localStorage.getItem("q-fps"); return [30,60,0].includes(v)&&localStorage.getItem("q-fps")!==null?v:60; }catch{ return 60; } })();
+function setMapFps(v){ S.fpsMax=+v; try{ localStorage.setItem("q-fps",String(S.fpsMax)); }catch{} mapBusy(); }
+function mapBusy(){ GOV.active=performance.now(); }
+for(const ev of ["pointerdown","pointermove","wheel","keydown","input"]) window.addEventListener(ev,mapBusy,{capture:true,passive:true});
+window.addEventListener("resize",mapBusy);
+window.addEventListener("focus",()=>{ GOV.covered=false; mapBusy(); });
+document.addEventListener("visibilitychange",mapBusy);
+setInterval(async()=>{ if(document.hasFocus()){ GOV.covered=false; return; }
+  try{ GOV.covered=!!(await api().map_covered()); }catch(_){ GOV.covered=false; } },1000);
+function mapHidden(){ return S.splashUp || document.hidden || GOV.covered
+  || !!document.querySelector("#mapwrap > .pic-panel.show, #vh-gallery.show"); }
+function mapFps(){ if(mapHidden()) return 0;
+  const max=S.fpsMax||1000;                                             // 0 = the monitor's refresh rate
+  if(drag||S.anim||performance.now()-GOV.active<1500) return max;      // you're moving the map, or it's flying
+  return Math.min(max, document.hasFocus()?30:10); }
+frame=function(ts){ requestAnimationFrame(frame);
+  const fps=mapFps(); if(!fps) return;
+  const iv=1000/fps, el=ts-GOV.last; if(el<iv-1) return;
+  GOV.last=el>iv*4?ts:ts-(el%iv);                                       // keeps an even pace on 144 Hz screens
+  try{ _frame(); }
   catch(e){ reportFrameError(e); try{ ctx.restore(); }catch(_){} } };
 function reportFrameError(e){ const msg=String(e&&e.stack||e).slice(0,1500), k=msg.slice(0,200);
   S.frameErrs=S.frameErrs||{}; if(S.frameErrs[k]) return; S.frameErrs[k]=1; console.error(e);
@@ -2512,6 +2538,10 @@ function renderDetail(){
             :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
             <button class="btn small ghost" data-a="bkrestore" ${S.bkBusy?"disabled":""} title="Adds back anything missing here. Never removes or overwrites anything">${S.bkBusy==="restore"?"Restoring…":"Restore missing items"}</button>
             <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
+      <div class="sub">Map performance</div>
+      <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px"><span>Map frame rate while you move it</span><span class="spacer"></span>
+        <select class="field" id="s-fps" onchange="setMapFps(this.value)" style="width:auto">${[[30,"30 fps (lightest)"],[60,"60 fps"],[0,"Monitor refresh rate"]].map(([v,l])=>`<option value="${v}" ${S.fpsMax===v?"selected":""}>${l}</option>`).join("")}</select></div>
+        <div class="muted" style="font-size:12px;margin-top:6px">When the map is just sitting there it draws 30 times a second (10 when Quantum isn't focused), and stops completely while it's hidden behind the game or under a full-page tab, so it leaves the GPU to Star Citizen.</div></div>
       <div class="sub">Help</div>
       <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
         :!S.bugOpen?`<div class="row"><span>Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
