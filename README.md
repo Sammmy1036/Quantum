@@ -6,6 +6,10 @@
 
 ---
 
+<a href="https://quantumsc.ddnsgeek.com/assets/Quantum-Demo.mp4">
+  <img src="https://quantumsc.ddnsgeek.com/assets/Quantum-Demo.jpg" width="1000" alt="Watch the Quantum demo">
+</a>
+
 <p align="center">
    <video src="https://github.com/user-attachments/assets/340e9341-8068-469b-bdbb-6557a09641fd" width="1000" controls muted></video>
  </p>
