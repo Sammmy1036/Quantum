@@ -7,7 +7,7 @@
 ---
 
 <p align="center">
-  [▶ Watch the demo](https://quantumsc.ddnsgeek.com/media/Quantum-Demo.mp4)
+  [▶ Watch the demo](https://quantumsc.org/media/Quantum-Demo.mp4)
   <video src="https://github.com/user-attachments/assets/ec267805-fe17-44b5-abfd-4945736c83d0" width="1000" controls muted></video>
  </p>
 
