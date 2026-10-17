@@ -135,7 +135,7 @@ You can change all of them in **Settings**. The `/showlocation` key starts unset
 
 ## The Quantum community
 
-Quantum users share a few things through the Quantum community server (`quantumsc.ddnsgeek.com`):
+Quantum users share a few things through the Quantum community server:
 
 - **Prices:** reports sent through Quantum are checked against UEX's own record and then shown to every Quantum user within seconds, marked ⚡. A report is shown for up to 72 hours, or until UEX's own data is newer, and is dropped as soon as UEX rejects it.
 - **Station positions:** a station goes live on everyone's map once two datarunners' `/showlocation` readings agree. Quantum fetches new ones every 10 minutes.
