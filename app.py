@@ -262,6 +262,9 @@ class Api:
     def __init__(self):
         self._lock = threading.RLock()
         self._db = NavDB.load(DB_PATH)
+        for _l in self._db.locations.values():         # contract stops saved before they had their own category
+            if _l.source == "mission" and not _l.category:
+                _l.category = "mission"
         self._db.path = DB_PATH
         self._renamed = rename_gateways(self._db)
         self._renamed.update(rename_raw_pois(self._db))
@@ -1121,7 +1124,8 @@ class Api:
                 how = getattr(self, "_sys_how", None) or ("log", "", None)
                 info = {"pos": p, "t": ptime, "age": t - (spot_at if approx else ptime), "system": psys, "body": None,
                         "sys_how": how[0], "sys_from": how[1], "sys_at": how[2],
-                        "approx": approx, "approx_how": how if approx else None}
+                        "approx": approx, "approx_how": how if approx else None,
+                        "fix_t": self._player_t}      # when your last /showlocation came in (t moves with log spots)
                 if body:
                     local = body.to_local(p, ptime)
                     lat, lon, alt = body.lat_lon_alt(local)
@@ -5545,7 +5549,10 @@ class Api:
         self._db.locations[name] = Location(name, "surface" if o.marker.get("body") else "space",
                                             tuple(o.marker["pos"]), o.marker.get("body"),
                                             notes=f"Contract: {c.name}", source="mission",
-                                            system=o.marker["system"], created=time.time())
+                                            system=o.marker["system"], created=time.time(),
+                                            # its own category: classify() reads the name, and "Objective (near
+                                            # Seraphim Station)" made a contract stop look like a station
+                                            category="mission")
         self._db.save()
         self._static_version += 1
         return name

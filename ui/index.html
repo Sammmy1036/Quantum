@@ -25,12 +25,14 @@ button{cursor:pointer}
 
 /* ---------- sidebar ---------- */
 .side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.brand{display:flex;align-items:center;gap:12px;padding:16px 20px 12px;border-bottom:1px solid var(--line);
+/* The logo sizes to the sidebar (cqi = 1% of its width, which grows with the window), like the tabs below it:
+   the 380px sidebar gets the original 40px mark and 19px wordmark, a 560px one about half as much again. */
+.brand{display:flex;align-items:center;gap:clamp(12px,3.2cqi,18px);padding:clamp(16px,4.2cqi,24px) clamp(20px,5.3cqi,30px) clamp(12px,3.2cqi,18px);border-bottom:1px solid var(--line);
   background:radial-gradient(120% 140% at 0% 0%,rgba(47,134,255,.16),transparent 60%)}
-.brand svg{width:40px;height:40px;flex:none;filter:drop-shadow(0 0 10px rgba(47,134,255,.45))}
-.brand h1{margin:0;font:400 19px/1 var(--wordmark);letter-spacing:.34em;color:#f2f7ff}
-.brand .by{margin-top:5px;font:500 10.5px/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
-.brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:12px}
+.brand svg{width:clamp(40px,10.5cqi,60px);height:clamp(40px,10.5cqi,60px);flex:none;filter:drop-shadow(0 0 10px rgba(47,134,255,.45))}
+.brand h1{margin:0;font:400 clamp(19px,5cqi,28px)/1 var(--wordmark);letter-spacing:.34em;color:#f2f7ff}
+.brand .by{margin-top:clamp(5px,1.3cqi,8px);font:500 clamp(10.5px,2.76cqi,15px)/1 var(--text);letter-spacing:.28em;color:var(--ink-2);text-transform:uppercase}
+.brand .by b{font-weight:600;letter-spacing:.06em;text-transform:none;color:#dbe9fb;font-size:clamp(12px,3.16cqi,17px)}
 .side{container-type:inline-size;container-name:side}
 /* Tabs size to the sidebar (which grows with the window, up to 560px): bigger text and wider spacing on a big
    screen instead of three short rows huddled in the corner. Each row spreads across the full width. */
@@ -103,7 +105,7 @@ button{cursor:pointer}
 .vh.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
 #vh-gallery{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:20px 22px 30px;display:none}
 #vh-gallery.show{display:block}
-#detail{z-index:40}
+#detail{z-index:40;pointer-events:auto}   /* the panel itself takes the mouse: a wheel over its padding or gaps scrolls it, never the map behind */
 .stepbox{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;width:100%;margin-bottom:4px}
 .stepbox label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink-2)}.stepbox .field{width:130px;padding:4px 8px}
 .runbar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 6px}.runbar i{height:6px;border-radius:3px;background:#223251}.runbar i.on{background:#57e39b}
@@ -2712,7 +2714,7 @@ function renderDetail(){
     if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
     if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
     if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); toast(`Guiding you to ${r.name}`); }
-    if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); toast("Added to route"); } };
+    if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); toast("Added to route"); fitRoute(false); } };
 }
 
 // =================================================================== HUD (guidance + next stop)
@@ -2936,6 +2938,31 @@ $("rs-list").onmousedown=e=>{ e.preventDefault(); const li=e.target.closest("li[
 document.addEventListener("pointerdown",e=>{ if(!$("rsearch-wrap").contains(e.target)){ $("rs-list").hidden=true; $("rsearch").setAttribute("aria-expanded","false"); } });
 
 // ---- contracts
+// A contract you're already on gets a new objective with a place (a patrol's next waypoint, the next leg of a
+// mission): the map follows along. If that contract already has stops in your route, or you have no route,
+// the new objective becomes a stop and the map shows the way there from you; with someone else's route
+// planned it only flies the map to the objective and leaves your route alone. Brand-new contracts aren't
+// touched: their stops go in when you press "Add to route".
+async function watchNewObjectives(live){
+  const keyOf=(c,o)=>`${c.id}|${o.id}|${o.location||(o.marker?.pos||[]).map(v=>Math.round(v)).join(",")}`;
+  const act=(live.contracts||[]).filter(c=>c.status==="active");
+  const keys=new Set(), fresh=[], known=S.objContracts;
+  for(const c of act) for(const o of c.objectives||[]){ if(o.status!=="active"||!(o.location||o.marker)) continue;
+    const k=keyOf(c,o); keys.add(k); if(S.objSeen&&!S.objSeen.has(k)&&known?.has(c.id)) fresh.push({c,o}); }
+  S.objSeen=keys; S.objContracts=new Set(act.map(c=>c.id));
+  if(!fresh.length||S.objBusy) return;
+  const {c,o}=fresh.find(x=>!x.o.in_route)||fresh[0]; S.objBusy=true;
+  try{
+    const ours=(c.objectives||[]).some(x=>x.in_route)||!(live.route||[]).length;
+    if(ours&&!o.in_route){ const r=await api().add_contract_stops(c.id,o.id); await poll();
+      if(r.ok){ toast(`New objective: ${o.label}. Added to your route`); fitRoute(false); return; } }
+    else if(o.in_route){ fitRoute(false); toast(`New objective: ${o.label}`); return; }
+    // Not routing it: just show where it is
+    if(o.location&&S.locMap[o.location]){ focusLoc(o.location,true); }
+    else if(o.marker&&(!o.marker.body||S.bodyMap[o.marker.body])){ if(o.marker.system&&o.marker.system!==S.system) setSystem(o.marker.system,false);
+      if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); }
+    toast(`New objective: ${o.label}. Add it to your route from the Contracts tab`);
+  } finally { S.objBusy=false; } }
 function renderContracts(force){
   const typing=$("contracts").contains(document.activeElement)&&document.activeElement.tagName==="INPUT";
   if(typing&&!force) return;
@@ -3088,7 +3115,10 @@ function renderContracts(force){
       return toast(r.sending?"Marked picked up. Sending /showlocation to Star Citizen":`Marked picked up. ${r.note||""}`); }
     if(act==="collect"){ const r=await api().mark_collected(c.id,e.target.dataset.oid); if(!r.ok) return toast(r.error); await poll(); renderContracts(true);
       toast(r.sending?"Marked collected. Sending /showlocation to Star Citizen":`Marked collected. ${r.note||""}`); }
-    if(act==="route"){ const r=await api().add_contract_stops(c.id,null); await poll(); renderContracts(true); toast(r.ok?`Added ${r.names.length} stop${r.names.length>1?"s":""} to route`:r.error); }
+    // The reply carries how many stops it added ("added"), not their names: r.names threw here, so the toast never
+    // showed and nothing moved. Now the map also swings to the route so you can see the way to the new stops.
+    if(act==="route"){ const r=await api().add_contract_stops(c.id,null); await poll(); renderContracts(true); if(!r.ok) return toast(r.error);
+      toast(r.added?`Added ${r.added} stop${r.added>1?"s":""} to route`:"Already in your route"); fitRoute(false); }
     if(act==="showroute"){ fitRoute(); }
     if(act==="setplace"){ const inp=cardEl.querySelector(`input[data-pick="${CSS.escape(e.target.dataset.oid)}"]`); const v=(inp?.value||"").trim();
       if(!S.locMap[v]) return toast("Pick a place from the suggestions"); const r=await api().set_objective_place(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Set to ${v}`:r.error); }
@@ -3542,6 +3572,15 @@ function statBlock(hero,rest){ const has=x=>x&&x.value!=null&&x.value!=="";
   const rowFit=["","fit1","fit2","fit3"][Math.max(0,...hero.map(x=>["","fit1","fit2","fit3"].indexOf(fit(x.value))))];
   return `<div class="hd-hero n${hero.length}">${hero.map(x=>`<div class="${x.changed?"chg":""} ${x.tone||""}"><span class="lab">${esc(x.label)}</span><b class="${rowFit}">${big(x.value)}</b>${x.delta?`<span class="dl">${x.delta}<small> from stock</small></span>`:""}</div>`).join("")}</div>`
     +(rest.length?`<div class="hd-read">${rest.map(x=>`<div class="r ${x.changed?"chg":""}"><span>${esc(x.label)}</span><b>${esc(x.value)}${x.delta?` ${x.delta}`:""}</b></div>`).join("")}</div>`:""); }
+// The headline numbers keep to their box: when a value (a long price, "Not in shops", a long class name) is
+// wider than its column at the CSS size, it steps down a pixel at a time until it fits (never below 10px).
+// Every headline row is watched, so it refits when the window or the panel next to it changes size.
+const heroFit=root=>{ for(const b of root.querySelectorAll("b")){ b.style.fontSize="";
+    let px=parseFloat(getComputedStyle(b).fontSize)||16;
+    while(b.scrollWidth>b.clientWidth+1&&px>10){ px-=1; b.style.fontSize=px+"px"; } } };
+const heroRO=typeof ResizeObserver==="function"?new ResizeObserver(es=>{ for(const e of es) heroFit(e.target); }):null;
+if(heroRO) new MutationObserver(()=>{ for(const h of document.querySelectorAll(".hd-hero:not([data-fit])")){ h.dataset.fit="1"; heroRO.observe(h); } })
+  .observe(document.body,{childList:true,subtree:true});
 // Which wiki brand icon a UEX manufacturer name goes with (Sc-icon-brand-<code>.svg)
 const BRAND_CODE=[[/aegis/i,"aegs"],[/anvil/i,"anvl"],[/aopoa|xi.?an/i,"xnaa"],[/\bargo\b/i,"argo"],[/banu/i,"banu"],[/consolidated/i,"cnou"],
   [/crusader/i,"crus"],[/drake/i,"drak"],[/esperia/i,"espr"],[/gatac/i,"gama"],[/gallenson/i,"glsn"],[/kruger/i,"krig"],[/musashi|\bmisc\b/i,"misc"],
@@ -3564,9 +3603,17 @@ function vehCategories(){ const V=S.veh||[], ships=V.filter(v=>!v.ground);
   return G.map(([sec,L])=>[sec,L.map(c=>({...c,count:V.filter(c.test).length})).filter(c=>c.count)]).filter(([,L])=>L.length); }
 function vehCat(){ const id=S.vehCat?.id||"all";
   return vehCategories().flatMap(([,L])=>L).find(c=>c.id===id)||{id:"all",name:"All vehicles",test:()=>true}; }
+// Vehicle search also understands names spelled out: some vehicles go by vowel-less codes (the ARGO ATLS, the
+// ATLS GEO), so a typed word matches a name word with the same consonants in the same order ("atlas" → ATLS).
+// Only for words of 4+ letters, so short searches stay exact.
+const vhSkel=w=>w[0]+w.slice(1).replace(/[aeiouy]/g,"");
+function vhMatch(hay,q){ hay=hay.toLowerCase().replace(/\bmk\s*/g,"mk "); q=q.replace(/\bmk\s*/g,"mk ");
+  if(hay.includes(q)) return true;
+  const toks=hay.split(/[^a-z0-9]+/).filter(Boolean);
+  return q.split(/\s+/).filter(Boolean).every(w=>hay.includes(w)||(w.length>=4&&/^[a-z]+$/.test(w)&&toks.some(t=>t.length>=3&&vhSkel(t)===vhSkel(w)))); }
 function vehList(){
   const q=$("vh-search").value.trim().toLowerCase(), av=S.vehAvail||"", sort=S.vehSort||"price", cat=vehCat().test;
-  const L=S.veh.filter(v=>cat(v)&&(!q||`${v.full} ${v.aka||""} ${v.maker} ${v.roles.join(" ")} ${v.concept?"concept":""}`.toLowerCase().replace(/\bmk\s*/g,"mk ").includes(q.replace(/\bmk\s*/g,"mk ")))&&(!av||v[av].length));
+  const L=S.veh.filter(v=>cat(v)&&(!q||vhMatch(`${v.full} ${v.aka||""} ${v.maker} ${v.roles.join(" ")} ${v.concept?"concept":""}`,q))&&(!av||v[av].length));
   const cheapest=v=>v.buy[0]?.price??v.rent[0]?.price??9e12, dearest=v=>v.buy[0]?.price??v.rent[0]?.price??-1;
   return [...L].sort(sort==="scu"?(a,b)=>b.scu-a.scu||cheapest(a)-cheapest(b):sort==="name"?(a,b)=>a.full.localeCompare(b.full)
     :sort==="price_desc"?(a,b)=>dearest(b)-dearest(a):(a,b)=>cheapest(a)-cheapest(b)); }
@@ -3779,7 +3826,8 @@ function cpFitsShips(i){ const f=S.cpFit; if(!f?.ok||f.cat!==S.cpCat?.id||!f.shi
 // Only your primary ship is called out; the component page's "Fit to a ship" section covers the rest.
 function cpFitsLine(i){ const main=cpFitsShips(i)?.find(s=>s.main); return main?`<span class="fits" title="Has a slot this fits (in its primary loadout)">✓ Fits your ${esc(main.name)}</span>`:""; }
 function cpKeyText(i){ const k=CP_KEY[S.cpCat?.slot], v=k&&i.game?.stats?.[k[0]]; if(!v) return "";
-  const f=CP_STATS.find(x=>x[0]===k[0]); return `${f?f[2](v):v}${k[0]==="dps"?" DPS":k[0]==="shield_hp"?" HP":k[0]==="missile"?" dmg":""}`; }
+  const f=CP_STATS.find(x=>x[0]===k[0]), st=i.game?.stats||{};
+  return `${f?f[2](v):v}${k[0]==="dps"?" DPS":k[0]==="shield_hp"?" HP":k[0]==="missile"?" dmg":""}${k[0]==="qt_speed"?qdTimes(st):""}`; }
 function cpCard(i,pinned){ const b=i.buy[0], kt=cpKeyText(i);
   return `<div class="vh ${pinned?"hl":""}"><div class="hd" data-cp="${i.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(i.name)}</div>
       <div class="mk">${esc(i.game?.maker||i.maker)}${cpSize(i)?` · size ${esc(cpSize(i))}`:""}${cpGrade(i)?` · grade ${esc(cpGrade(i))}`:""}${kt?` · ${esc(kt)}`:""}</div>${cpFitsLine(i)}</div>
@@ -3819,14 +3867,17 @@ $("cp-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const fit=e.target.closest("[data-cpfit]"); if(fit) return cpFitTo(fit);
   if(e.target.closest("[data-act=cpback]")){ S.cpDetail=null; S.cpGalKey=null; return renderComponents(); }
   const c=e.target.closest("[data-cpc]"); if(!c) return; S.cpSel=c.dataset.cpc; S.cpDetail=c.dataset.cpc; renderComponents(); $("pane-components").scrollTop=0; };
+// Numbers from the game files are floats, and subtracting two (a comparison's change) leaves tails like
+// 0.40000000000000036: show at most two decimals, and none when they're zeros (12.4, 12.39, 7).
+const nf=n=>typeof n==="number"&&isFinite(n)&&!Number.isInteger(n)?String(+n.toFixed(2)):n;
 // A component's own page in place of the grid: picture, what it is, its numbers, where to buy it, and fitting.
 const CP_STATS=[["dps","DPS",n=>Math.round(n).toLocaleString()],["alpha","Damage per shot",n=>Math.round(n*10)/10],["rpm","Fire rate",n=>`${Math.round(n)} rpm`],
-  ["damage_type","Damage type",x=>x],["range","Range",n=>`${Math.round(n).toLocaleString()} m`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],["ammo","Ammo",n=>n],
+  ["damage_type","Damage type",x=>x],["range","Range",n=>`${Math.round(n).toLocaleString()} m`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],["ammo","Ammo",n=>nf(n)],
   ["missile","Missile damage",n=>Math.round(n).toLocaleString()],["shield_hp","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n)}/s`],
-  ["regen_delay","Regen delay after hit",n=>`${n} s`],["down_delay","Regen delay when down",n=>`${n} s`],["qt_speed","Quantum speed",n=>`${fmtBig(n)}/s`],
-  ["qt_spool","Spool time",n=>`${n} s`],["qt_cooldown","Cooldown",n=>`${n} s`],["qt_fuel","Quantum fuel use",n=>n],["power","Power output",n=>`${n} pips`],
-  ["coolant_make","Cooling",n=>`${n}/s`],["power_use","Power use",n=>`${n} pips`],["em","EM signature",n=>Math.round(n).toLocaleString()],["ir","IR signature",n=>Math.round(n).toLocaleString()],
-  ["jump_align","Jump alignment rate",n=>n],["jump_tune","Jump tuning rate",n=>n],["jump_fuel","Jump fuel use",n=>`${n}×`],
+  ["regen_delay","Regen delay after hit",n=>`${nf(n)} s`],["down_delay","Regen delay when down",n=>`${nf(n)} s`],["qt_speed","Quantum speed",n=>`${fmtBig(n)}/s`],
+  ["qt_spool","Spool time",n=>`${nf(n)} s`],["qt_cooldown","Cooldown",n=>`${nf(n)} s`],["qt_fuel","Quantum fuel use",n=>nf(n)],["power","Power output",n=>`${nf(n)} pips`],
+  ["coolant_make","Cooling",n=>`${nf(n)}/s`],["power_use","Power use",n=>`${nf(n)} pips`],["em","EM signature",n=>Math.round(n).toLocaleString()],["ir","IR signature",n=>Math.round(n).toLocaleString()],
+  ["jump_align","Jump alignment rate",n=>nf(n)],["jump_tune","Jump tuning rate",n=>nf(n)],["jump_fuel","Jump fuel use",n=>`${nf(n)}×`],
   ["health","Health",n=>Math.round(n).toLocaleString()]];
 const rows0=st=>CP_STATS.some(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="");
 async function renderComponentDetail(id){
@@ -3912,10 +3963,12 @@ async function renderFleet(){
 // Stat labels: [key, label, format, lower-is-better]
 const SHIP_STATS=[["dps","DPS (pilot)",n=>Math.round(n).toLocaleString()],["missile_dmg","Missile dmg",n=>Math.round(n).toLocaleString()],
   ["shield","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n).toLocaleString()}/s`],["hull","Hull HP",n=>Math.round(n).toLocaleString()],
-  ["scm","SCM",n=>`${n} m/s`],["max","Max speed",n=>`${n} m/s`],["qt_speed","Quantum",n=>`${fmtBig(n)}/s`],["qt_range","QT range",n=>fmtBig(n)],
+  ["scm","SCM",n=>`${nf(n)} m/s`],["max","Max speed",n=>`${nf(n)} m/s`],["qt_speed","Quantum",n=>`${fmtBig(n)}/s`],["qt_range","QT range",n=>fmtBig(n)],
   ["em","EM",n=>fmtBig(n),true],["ir","IR",n=>fmtBig(n),true]];
 const ITEM_STAT={dps:["DPS",n=>Math.round(n).toLocaleString()],missile:["Damage",n=>Math.round(n).toLocaleString()],shield_hp:["Shield HP",n=>Math.round(n).toLocaleString()],
-  qt_speed:["Speed",n=>`${fmtBig(n)}/s`],cooling:["Cooling",n=>`${n} seg`],power:["Power",n=>`${n} seg`],scm:["SCM speed",n=>`${Math.round(n)} m/s`]};
+  qt_speed:["Speed",n=>`${fmtBig(n)}/s`],cooling:["Cooling",n=>`${nf(n)} seg`],power:["Power",n=>`${nf(n)} seg`],scm:["SCM speed",n=>`${Math.round(n)} m/s`]};
+// A quantum drive's spool-up and cooldown times (from the game files), for its slot and its options
+const qdTimes=st=>(st?.qt_spool!=null?` · spool ${nf(st.qt_spool)} s`:"")+(st?.qt_cooldown!=null?` · cooldown ${nf(st.qt_cooldown)} s`:"");
 const KEY_FOR={WeaponGun:"dps",Missile:"missile",Shield:"shield_hp",QuantumDrive:"qt_speed",Cooler:"cooling",PowerPlant:"power",FlightController:"scm"};
 const deltaTxt=(d,fmt,lowerBetter)=>{ if(!d) return ""; const good=lowerBetter?d<0:d>0; return `<em class="${good?"up":"down"}">${d>0?"+":"−"}${fmt(Math.abs(d))}</em>`; };
 // Simple line symbols for each power system, in the spirit of the in-game power screen.
@@ -3972,7 +4025,7 @@ async function renderShip(uid){
     // One row per slot: size and grade, the part and its maker, its key number, and Change
     return `<div class="slot ${sl.fitted?"fit":""} ${open?"open":""}">
       <div class="top"><span class="sz" title="Size ${esc(sl.size??"?")}">S${esc(sl.size??"?")}</span><span class="gr" title="${grade?`Grade ${esc(grade)}`:"No grade"}">${esc(grade||"–")}</span>
-        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
+        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
         ${val?`<div class="val"><b>${ITEM_STAT[k][1](val)}${sl.fitted&&stockVal?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
         <div class="acts">${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
@@ -3989,7 +4042,9 @@ async function renderShip(uid){
     <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
       return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
     <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
-  if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size); }
+  if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size);
+    // Just opened with Change: bring the slot and its options/comparison into view instead of leaving them below the fold
+    if(S.flScroll&&b){ S.flScroll=false; requestAnimationFrame(()=>b.closest(".slot")?.scrollIntoView({block:"start",behavior:"smooth"})); } }
   watchPic($("fl-panel").querySelector(".mkp-img"));
   loadLiveries(uid); }
 // ---- Livery: any paint there is for the ship, per loadout ("Stock paint" when none is picked).
@@ -4050,15 +4105,20 @@ async function loadoutAct(btn){ const a=btn.dataset.lo, uid=S.flSel, L=S.flLoad?
   S.flLoMode=null; S.flSlot=null; S.flOpts=null; S.cpFit=null; return renderFleet(); }
 // ---- Changing a part: what's in the slot now, then everything that fits as a table with labelled columns, and
 // a side-by-side comparison of the part in the slot and any option you click.
-const CMP_STATS=[...CP_STATS.filter(([k])=>k!=="damage_type"&&k!=="coolant_make"),["coolant_make","Cooling",n=>`${n}/s`],["cooling","Cooling",n=>`${n} seg`],
-  ["power_make","Power output",n=>`${n} pips`],["power_draw","Power draw",n=>`${n} pips`],["power_min","Minimum power",n=>`${n} pips`]];
+const CMP_STATS=[...CP_STATS.filter(([k])=>k!=="damage_type"&&k!=="coolant_make"),["coolant_make","Cooling",n=>`${nf(n)}/s`],["cooling","Cooling",n=>`${nf(n)} seg`],
+  ["power_make","Power output",n=>`${nf(n)} pips`],["power_draw","Power draw",n=>`${nf(n)} pips`],["power_min","Minimum power",n=>`${nf(n)} pips`]];
 const LOWER_BETTER=new Set(["jump_fuel","em","ir","qt_spool","qt_cooldown","qt_fuel","regen_delay","down_delay","power_use","power_draw","power_min"]);
 const slotNow=sl=>sl?(sl.fitted?{name:sl.fitted,maker:sl.fitted_maker,grade:sl.fitted_grade,stats:sl.fitted_stats||{},yours:true}
   :{name:sl.stock?.name||"Empty",maker:sl.stock?.maker,grade:sl.stock?.grade,stats:sl.stock?.stats||{},yours:false}):null;
 function cmpDelta(k,a,b){ if(typeof a!=="number"||typeof b!=="number"||a===b) return ""; const d=b-a, good=LOWER_BETTER.has(k)?d<0:d>0, f=(CMP_STATS.find(x=>x[0]===k)||[0,0,n=>Math.round(n*10)/10])[2];
-  const pct=a?Math.round(Math.abs(d)/Math.abs(a)*100):null;
-  return `<span class="cmp-d ${good?"up":"down"}">${d>0?"▲":"▼"} ${esc(String(f(Math.abs(d))))}${pct&&pct<1000?` <small>${pct}%</small>`:""}</span>`; }
-function compareHtml(now,opt,k){ const keys=CMP_STATS.filter(([x])=>now.stats[x]!=null||opt.stats[x]!=null);
+  const pct=a?Math.abs(d)/Math.abs(a)*100:null, pctTxt=pct==null?"":Number.isInteger(+pct.toFixed(2))?String(Math.round(pct)):pct.toFixed(2);   // 12.40%, 5%
+  return `<span class="cmp-d ${good?"up":"down"}">${d>0?"▲":"▼"} ${esc(String(f(Math.abs(d))))}${pct&&pct<1000?` <small>${pctTxt}%</small>`:""}</span>`; }
+function compareHtml(now,opt,k){
+  // A power plant carries its output as both "power" and "power_make" (the same number from two places in the
+  // game files), which listed Power output twice: fold them into one "power" row on both sides.
+  const one=o=>{ const st={...o.stats}; if(st.power==null&&st.power_make!=null) st.power=st.power_make; delete st.power_make; return {...o,stats:st}; };
+  now=one(now); opt=one(opt);
+  const keys=CMP_STATS.filter(([x])=>now.stats[x]!=null||opt.stats[x]!=null);
   const val=(st,x,f)=>st[x]==null||st[x]===""?`<span class="muted">–</span>`:esc(String(f(st[x])));
   const head=(o,lab)=>`<div class="cmp-col"><div class="cmp-tag">${lab}</div><b>${esc(o.name)}</b><span>${esc(o.maker||"")}${o.grade?` · grade ${esc(o.grade)}`:""}${o.class?` · ${esc(o.class)}`:""}</span>
       ${lab==="Option"?`<span>${o.price?money(o.price):"Not in shops"}${o.buy?.[0]?` · ${o.buy[0].place?`<a data-open="${esc(o.buy[0].place)}">${esc(o.buy[0].where)}</a>`:esc(o.buy[0].where)}`:""}</span>`:`<span>${o.yours?"Your swap":"Stock part"}</span>`}</div>`;
@@ -4077,19 +4137,21 @@ function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) r
     :(a,b)=>(a.price==null)-(b.price==null)||(a.price||0)-(b.price||0));
   const top=k?Math.max(1,...r.items.map(i=>+i.stats[k]||0),+cur||0):1;
   const hadFocus=document.activeElement?.id==="fl-q", sel=S.flCmp&&r.items.find(i=>(i.uuid||i.name)===S.flCmp);
-  const isNow=i=>(i.name||"").toLowerCase()===(now?.name||"").toLowerCase();
+  const isNow=i=>(i.name||"").toLowerCase()===(now?.name||"").toLowerCase(), qd=k==="qt_speed";
   box.innerHTML=`<div class="sw-now"><span class="sw-tag">In this slot now</span><b>${esc(now?.name||"Empty")}</b><span class="muted">${esc(now?.maker||"")}${now?.grade?` · grade ${esc(now.grade)}`:""} · ${now?.yours?"your swap":"stock"}</span>
-      ${k&&cur!=null?`<span class="sw-key">${esc(lab)} <b>${esc(String(fmt(cur)))}</b></span>`:""}${now?.stats?.em!=null?`<span class="sw-key">EM <b>${fmtBig(now.stats.em)}</b></span>`:""}</div>
+      ${k&&cur!=null?`<span class="sw-key">${esc(lab)} <b>${esc(String(fmt(cur)))}</b></span>`:""}${now?.stats?.em!=null?`<span class="sw-key">EM <b>${fmtBig(now.stats.em)}</b></span>`:""}${qd&&now?.stats?.qt_spool!=null?`<span class="sw-key">Spool <b>${nf(now.stats.qt_spool)} s</b></span>`:""}${qd&&now?.stats?.qt_cooldown!=null?`<span class="sw-key">Cooldown <b>${nf(now.stats.qt_cooldown)} s</b></span>`:""}</div>
     <div class="row" style="gap:6px;margin:8px 0"><input class="field" id="fl-q" placeholder="Search by name, maker or class" value="${esc(S.flQuery||"")}" style="flex:1;min-width:160px;padding:4px 8px" autocomplete="off">
       <span class="muted" style="font-size:12px">${L.length} that fit</span>
       <select class="field" id="fl-sort" style="width:auto;padding:3px 8px">${k?`<option value="best" ${sort==="best"?"selected":""}>Most ${esc(lab)}</option><option value="stealth" ${sort==="stealth"?"selected":""}>Stealthiest (lowest EM/IR)</option>`:""}<option value="price" ${sort==="price"?"selected":""}>Price: Low to High</option><option value="price_desc" ${sort==="price_desc"?"selected":""}>Price: High to Low</option></select></div>
     ${sel&&now?compareHtml(now,sel,k):""}
-    <div class="sw-wrap"><table class="sw-t"><thead><tr><th>Component</th><th>Grade</th>${k?`<th class="num" title="${esc(lab)} of each option">${esc(lab)}</th><th class="num" title="Compared with what's in the slot now">vs now</th>`:""}<th class="num" title="Electromagnetic signature: lower is stealthier">EM</th><th class="num">Price</th><th></th></tr></thead><tbody>
+    <div class="sw-wrap"><table class="sw-t"><thead><tr><th>Component</th><th>Grade</th>${k?`<th class="num" title="${esc(lab)} of each option">${esc(lab)}</th><th class="num" title="Compared with what's in the slot now">vs now</th>`:""}${qd?`<th class="num" title="Spool-up time before a jump: lower is better">Spool</th><th class="num" title="Cooldown after a jump: lower is better">Cooldown</th>`:""}<th class="num" title="Electromagnetic signature: lower is stealthier">EM</th><th class="num">Price</th><th></th></tr></thead><tbody>
     ${L.map((i,n)=>{ const v=k?i.stats[k]:null, here=isNow(i), on=sel===i;
       return `<tr class="${on?"on":""} ${here?"here":""}" data-flcmp="${esc(i.uuid||i.name)}" title="Click to compare with what's in the slot now">
         <td><b>${esc(i.name)}</b>${n===0&&sort==="best"&&v?' <span class="best-tag">best</span>':""}${here?' <span class="now-tag">in slot</span>':""}<div class="sub">${esc(i.maker)}${i.class?` · ${esc(i.class)}`:""}${i.buy[0]?` · ${i.buy[0].place?`<a data-open="${esc(i.buy[0].place)}">${esc(i.buy[0].where)}</a>`:esc(i.buy[0].where)}`:" · not in shops"}</div></td>
         <td>${i.grade?`<span class="gr-b">${esc(i.grade)}</span>`:"–"}</td>
         ${k?`<td class="num">${v!=null?`<b>${esc(String(fmt(v)))}</b><div class="bar"><i style="width:${Math.max(3,Math.round((+v||0)/top*100))}%"></i></div>`:"–"}</td><td class="num">${v!=null&&cur!=null&&!here?cmpDelta(k,+cur,+v)||'<span class="muted">same</span>':""}</td>`:""}
+        ${qd?`<td class="num">${i.stats.qt_spool!=null?`${nf(i.stats.qt_spool)} s${now?.stats?.qt_spool!=null&&!here?`<div>${cmpDelta("qt_spool",+now.stats.qt_spool,+i.stats.qt_spool)}</div>`:""}`:"–"}</td>
+          <td class="num">${i.stats.qt_cooldown!=null?`${nf(i.stats.qt_cooldown)} s${now?.stats?.qt_cooldown!=null&&!here?`<div>${cmpDelta("qt_cooldown",+now.stats.qt_cooldown,+i.stats.qt_cooldown)}</div>`:""}`:"–"}</td>`:""}
         <td class="num">${i.stats.em!=null?fmtBig(i.stats.em):"–"}</td>
         <td class="num">${i.price?money(i.price):'<span class="muted">–</span>'}</td>
         <td class="act"><button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}</td></tr>`; }).join("")}
@@ -4114,7 +4176,7 @@ $("fl-out").onclick=async e=>{
     S.flDel=null; await api().fleet_remove(y.dataset.fldelyes); S.cpFit=null; toast(`${nm||"Ship"} removed from your fleet`); return renderFleet(); }
   const h=e.target.closest("[data-fl]"); if(h){ S.flSel=h.dataset.fl; S.flSlot=null; renderFleet(); } };
 $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
-  const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; return renderShip(S.flSel); }
+  const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
   const lo=e.target.closest("[data-lo]"); if(lo) return loadoutAct(lo);
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;
     const r=await api().fleet_loadout_switch(S.flSel,ll.dataset.flload); if(!r.ok) return toast(r.error); S.flSlot=null; S.flOpts=null; S.flLoMode=null; return renderShip(S.flSel); }
@@ -5489,6 +5551,11 @@ async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
+  // A fresh /showlocation while the Contracts tab is open recentres the map on you (and your next stop, if
+  // there's a route), even when follow is off: it's how you check where you are against your objectives.
+  { const fx=live.player?.fix_t||null; if(fx!==S.fixSeen){ const first=S.fixSeen===undefined; S.fixSeen=fx;
+      if(!first&&fx&&S.tab==="contracts"&&!S.follow) setTimeout(followNow,60); } }
+  watchNewObjectives(live);
   if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
   if(live.photos_version!==S.photosVersion){ const first=S.photosVersion===undefined; S.photosVersion=live.photos_version; if(!first) refreshPictures(); }
   if(live.trade_ver!==S.tradeVer){ const first=S.tradeVer===undefined; S.tradeVer=live.trade_ver;

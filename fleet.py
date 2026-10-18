@@ -875,6 +875,7 @@ def item_stats(it):
         "shield_regen": _dig(it, "shield", "regen_rate"),
         "qt_speed": _dig(it, "quantum_drive", "standard_jump", "drive_speed") or _dig(it, "quantum_drive", "drive_speed"),
         "qt_spool": _dig(it, "quantum_drive", "standard_jump", "spool_up_time"),
+        "qt_cooldown": _dig(it, "quantum_drive", "standard_jump", "cooldown_time"),
         "cooling": _dig(it, "cooler", "coolant_segment_generation"),
         "power": _dig(it, "resource_network", "generation", "power"),
         "em": _dig(it, "emission", "em_max"),
