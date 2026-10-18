@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 
 TTL = 120                      # seconds between fetches
-DEFAULT_URL = "https://quantumsc.ddnsgeek.com"
+DEFAULT_URL = "https://quantumsc.org"
 
 
 class Community:
