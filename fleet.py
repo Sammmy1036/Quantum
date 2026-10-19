@@ -91,16 +91,18 @@ class Wiki:
     MISS_RETRY = 2 * 86400                                   # look again for a page that had no picture
     PLACEHOLDER = re.compile(r"placeholder|no[_\- ]?image|image[_\- ]?needed", re.I)
 
-    def pictures(self, refs, size=480):
+    def pictures(self, refs, size=480, any_page=False):
         """{ref: image url or None} for many pages, fetching only the ones not cached yet. A page in an
         armour, clothing or disambiguation category is treated as having no picture, so a ship part that
         shares its name with something else shows "No picture yet" (and can be sent in) instead of the
-        wrong thing."""
+        wrong thing. any_page skips that check (places: a station page can sit in an "FPS" category) and
+        is cached apart from it."""
         cache = self._pic_cache()
         if cache.get("_v") != self.PIC_CACHE_V:
             cache.clear()
             cache["_v"] = self.PIC_CACHE_V
-        key = (lambda t: t) if size == 480 else (lambda t: f"{t}@{size}")
+        tag = ("" if size == 480 else f"@{size}") + ("#any" if any_page else "")
+        key = lambda t: t + tag
         titles = {ref: title_of(ref) for ref in refs if ref}
         # A page with no picture yet (a ship just added to the game, whose wiki page is still a stub) is
         # asked about again after MISS_RETRY, so its picture shows up by itself once the wiki has one.
@@ -136,7 +138,7 @@ class Wiki:
                 for _ in range(3):
                     final = alias.get(final, final)
                 pg = pages.get(final) or {}
-                wrong = any(self.WRONG_PAGE.search(c) for c in pg.get("cats", []))
+                wrong = not any_page and any(self.WRONG_PAGE.search(c) for c in pg.get("cats", []))
                 pic = pg.get("pic", "")
                 if pic and self.PLACEHOLDER.search(pic):
                     pic = ""                                # the wiki's "no picture yet" stand-in

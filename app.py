@@ -4209,6 +4209,45 @@ class Api:
         return over or self._wiki_image(ref) or self._community.photos().get(key) or \
             self._part_images.get(str(ref or "").lower())
 
+    # Map markers the wiki has no page of their own for: caves, orbital markers, comm arrays, numbered
+    # derelicts and the game's internal ids ("Stanton1c_rock01_unoc_..."). Not asked about at all.
+    # Wrecks are skipped too: "Freelancer C Wreck" could land on the ship's own page and show the ship.
+    PLACE_NO_PAGE = re.compile(r"_|\bcave\b|\bwreck|spawn point|^(?:OM-\d|derelict outpost\b|comm array\b|"
+                               r"river #|unknown\b|colonial outpost xs\b|mining claim\b|escort asteroid\b)", re.I)
+
+    def place_image(self, name, page=None):
+        """A photo of a place or body for its info card, from its Star Citizen Wiki page:
+        {ok, url, page} (url None when the wiki has none). page: the wiki page we already know for it
+        (planets and moons); else the place's name is tried as Quantum spells it, then without the tags
+        on the end ("HDES Calthrope (NA) [F]" -> "HDES Calthrope"). The wiki follows its own redirects
+        ("CRU-L5" -> "CRU-L5 Beautiful Glen Station"). A picture you (the server owner) put in place
+        of the wiki's comes first."""
+        name = str(name or "").strip()
+        if not name and not page:
+            return {"ok": True, "url": None}
+        over = self._community.photo_overrides().get(self._pic_key(page or name))
+        if over:
+            return {"ok": True, "url": over, "page": wiki.page_url(fleet.title_of(page)) if page else None}
+        cands = [page] if page else []
+        if name and not self.PLACE_NO_PAGE.search(name):
+            cands.append(name)
+            short = name
+            for _ in range(3):                                 # trailing "(…)" / "[…]" tags, one at a time
+                short = re.sub(r"\s*[\(\[][^\)\]]*[\)\]]\s*$", "", short).strip()
+            if short and short != name:
+                cands.append(short)
+        cands = list(dict.fromkeys(c for c in cands if c))
+        if not cands:
+            return {"ok": True, "url": None}
+        try:
+            got = self._wikiapi.pictures(cands, size=720, any_page=True)
+        except Exception:
+            return {"ok": False, "url": None}
+        for c in cands:
+            if got.get(c):
+                return {"ok": True, "url": got[c], "page": wiki.page_url(fleet.title_of(c))}
+        return {"ok": True, "url": None}
+
     def _wiki_image(self, ref):
         """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
         wiki URL UEX gives, or a page title. A page about armour or clothing (a name a ship part shares)

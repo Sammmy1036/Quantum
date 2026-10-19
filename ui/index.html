@@ -362,11 +362,17 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 
 .status{border-top:1px solid var(--line);padding:11px 16px;font-size:12.5px;color:var(--ink-2);display:grid;gap:5px}
 .status b{color:var(--ink);font-weight:600}
-.rsearch{position:relative;margin:0 0 14px}
+.rsearch{position:relative;margin:0 0 14px;display:flex;gap:8px;align-items:stretch}
+.rsearch .search{flex:1;min-width:0}
+.rs-browse{flex:none;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;color:var(--ink-2);font-size:12.5px;padding:0 12px;cursor:pointer}
+.rs-browse:hover{color:var(--ink);border-color:var(--ink-2)}
+.rs-browse[aria-pressed=true]{background:var(--panel-3);color:var(--ink);border-color:var(--route)}
+#rs-panel .filters{margin:-4px 0 10px}
 .rsearch .search{padding-left:36px;background:var(--panel-2) no-repeat 12px 50%/15px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f82a0' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M20 20l-4.8-4.8'/%3E%3C/svg%3E")}
-.rs-list{position:absolute;z-index:8;left:0;right:0;top:calc(100% + 4px);margin:0;padding:4px;list-style:none;background:#0b1528;border:1px solid var(--line-2);border-radius:10px;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);max-height:360px;overflow:auto}
-.rs-list li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 8px;border-radius:7px;cursor:pointer}
-.rs-list li.on,.rs-list li:hover{background:var(--panel-3)}
+.rs-list{margin:0;padding:0;list-style:none}
+.rs-list li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 6px;border-radius:6px;cursor:pointer}
+.rs-list li:hover,.rs-list li.sel{background:var(--panel-2)}
+.rs-list li.on{background:var(--panel-3)}
 .rs-list .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rs-list .n mark{background:none;color:var(--route-2);font-weight:600}
 .rs-list .b{color:var(--dim);font-size:12px}
@@ -429,6 +435,13 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .detail.show{display:block}
 .detail h2{margin:0;font:700 18px/1.25 var(--display);padding-right:24px}
 .detail .sub{color:var(--dim);font-size:13px;margin:3px 0 10px;display:flex;gap:8px;align-items:center}
+.detail .dpic{margin:-14px -16px 12px;position:relative;aspect-ratio:16/8;overflow:hidden;border-radius:inherit;border-bottom-left-radius:0;border-bottom-right-radius:0;background:rgba(5,8,15,.35)}
+.detail .dpic img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s}
+.detail .dpic img.in{opacity:1}
+.detail .dpic::after{content:"";position:absolute;inset:auto 0 0 0;height:40%;background:linear-gradient(transparent,rgba(5,8,15,.55));pointer-events:none}
+.detail .dpic .dpic-cr{position:absolute;right:8px;bottom:5px;z-index:1;font-size:10.5px;color:rgba(255,255,255,.75);cursor:pointer;text-shadow:0 1px 2px #000}
+.detail .dpic .dpic-cr:hover{color:#fff;text-decoration:underline}
+.detail .dpic+.close,.detail:has(.dpic)>.close{color:#fff;text-shadow:0 1px 3px #000;z-index:2}
 .detail .close{position:absolute;top:10px;right:10px;background:none;border:0;color:var(--dim);font-size:18px}
 .detail .kv{display:grid;grid-template-columns:96px 1fr;gap:6px 10px;font-size:13px;margin-bottom:12px;align-items:center}
 .detail .kv .k{color:var(--dim)}
@@ -985,7 +998,6 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
       <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
-      <button class="tab" role="tab" data-tab="places" aria-selected="false">POI</button>
       <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <!-- three rows: getting around · trading · your ships -->
       <span class="tab-break" aria-hidden="true"></span>
@@ -1000,9 +1012,14 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 
     <section class="pane active" id="pane-route">
       <div class="rsearch" id="rsearch-wrap">
-        <input class="search" id="rsearch" placeholder="Search places, moons, or a service like “refinery”…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="rs-list">
-        <ul class="rs-list" id="rs-list" role="listbox" hidden></ul>
+        <input class="search" id="rsearch" placeholder="Search places, moons, services…" title="Search a place, a planet or moon, or a service like “refinery”" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="rs-list">
+        <button class="rs-browse" id="rs-browse" aria-pressed="false" title="List every place in this system">Browse</button>
       </div>
+      <div id="rs-panel" hidden>
+        <div class="filters" id="filters"></div>
+        <ul class="rs-list" id="rs-list" role="listbox"></ul>
+      </div>
+      <div id="route-body">
       <div class="route-summary" id="route-summary">
         <div><div class="big" id="route-total">–</div><div class="muted" id="route-sub">No stops yet</div></div>
         <div class="row"><button class="btn small ghost" id="btn-view" title="Show the whole route on the map">View</button>
@@ -1014,6 +1031,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <ol class="stops" id="stops"></ol>
       <div id="route-empty" class="empty"><strong>Plan a trip</strong>Search above to add stops, double-click anything on the map, or plan your contracts from the Contracts tab.</div>
       <button class="btn small ghost" id="btn-arrived" title="Stops tick themselves off when the game log or a /showlocation shows you've arrived" style="width:100%;display:none;margin-top:6px">Skip this stop (arrival is detected automatically)</button>
+      </div>
     </section>
 
     <section class="pane" id="pane-contracts">
@@ -1108,12 +1126,6 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
         <button class="btn" id="fl-add-btn">Add</button></div>
       <datalist id="fl-dl"></datalist>
       <div id="fl-out"></div>
-    </section>
-
-    <section class="pane" id="pane-places">
-      <input class="search" id="search" placeholder="Search stations, outposts, caves…" autocomplete="off">
-      <div class="filters" id="filters"></div>
-      <ul class="results" id="results"></ul>
     </section>
 
     <div class="status">
@@ -2456,6 +2468,22 @@ function servicesHtml(r){
     ${r.uex?`<div class="credit">Services: UEX (community data)</div>`:""}
     ${r.url||r.reported?`<div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div>`:""}</div>`; }
 S.svcCache={};
+// A photo of the place from its Star Citizen Wiki page, across the top of its card. Asked for once per
+// place (S.picCache), so the card can be redrawn every tick without the picture flickering.
+S.picCache={};
+const PIC_TYPES=new Set(["city","station","outpost","jump","lpoint"]);
+function placePicKey(sel){ if(sel.kind==="body"){ const w=wikiFor(sel.name); return w?.url?"body:"+sel.name:null; }
+  const L=S.locMap[sel.name]; if(!L||L.source==="user"||L.source==="mission"||!PIC_TYPES.has(L.type)) return null; return "loc:"+L.name; }
+function placePicHtml(key){ const p=key&&S.picCache[key]; if(!p?.url) return "";
+  return `<div class="dpic"><img src="${esc(p.url)}" alt="" referrerpolicy="no-referrer" class="in">${p.page?`<a class="dpic-cr" data-url="${esc(p.page)}" title="Photo from the Star Citizen Wiki (CC BY-SA 4.0)">Star Citizen Wiki</a>`:""}</div>`; }
+async function fillPlacePic(sel){ const key=placePicKey(sel); if(!key||key in S.picCache) return;
+  S.picCache[key]=null;                                              // asked: don't ask again while it loads
+  let r=null; try{ r=sel.kind==="body"?await api().place_image(sel.name,wikiFor(sel.name).url):await api().place_image(sel.name,null); }catch(_){}
+  if(!r?.ok){ delete S.picCache[key]; return; }                     // offline: try again next time it's opened
+  S.picCache[key]=r.url?{url:r.url,page:r.page}:{url:null}; if(!r.url) return;
+  const d=$("detail"); if(!d||placePicKey(S.selected||{})!==key||d.querySelector(".dpic")) return;
+  d.insertAdjacentHTML("afterbegin",placePicHtml(key)); const img=d.querySelector(".dpic img"); img.classList.remove("in");
+  const show=()=>img.classList.add("in"); img.complete?show():(img.onload=show); img.onerror=()=>img.closest(".dpic")?.remove(); }
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
   const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name]); }
@@ -2593,7 +2621,7 @@ function renderDetail(){
       <div class="muted" style="font-size:12px;margin-top:8px">Saved automatically to ${esc(st.file)}. A calibrations.json placed in the app folder is applied on start.</div>`;
   } else if(sel.kind==="body"){ const b=S.bodyMap[sel.name]; if(!b) return d.classList.remove("show");
     const n=S.locs.filter(L=>L.body===b.name).length;
-    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(b.name)}</h2>
+    d.innerHTML=`${placePicHtml(placePicKey(sel))}<button class="close" aria-label="Close">×</button><h2>${esc(b.name)}</h2>
       <div class="sub">${wikiFor(b.name)?.designation?esc(wikiFor(b.name).designation)+" · ":""}${kindLabel(b)} in ${esc(b.system)}${b.parent&&b.kind==="moon"?", orbiting "+esc(b.parent):""}</div>
       <div class="kv">${wikiFor(b.name)?.type?`<span class="k">Type</span><span>${esc(wikiFor(b.name).type)}</span>`:""}
       ${b.kind==="star"?systemBlurb(wikiSystem(b.system)):""}
@@ -2618,7 +2646,7 @@ function renderDetail(){
     const pl=live?.player, readingHere = pl && !pl.approx && pl.age<900 && pl.system===L.system && (L.kind==="surface" ? pl.body===L.body : (L.type!=="jump" || !pl.body));
     const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
-    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
+    d.innerHTML=`${placePicHtml(placePicKey(sel))}<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
       <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
       ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
@@ -2651,6 +2679,7 @@ function renderDetail(){
       $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
   }
   d.classList.add("show");
+  if(sel.kind==="body"||sel.kind==="loc") fillPlacePic(sel);
   if(sel.kind==="settings") fillUexStatus(false);
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
     const gl=e.target.closest("[data-golink]"); if(gl){ const n=gl.dataset.golink; select({kind:"loc",name:n}); if(S.locMap[n]?.pos) focusLoc(n,true); return; }
@@ -2788,7 +2817,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.selected){ S.selected=null; renderDetail(); }      // the card for what you clicked on the map belongs to that view
   for(const x of document.querySelectorAll(".tab")) x.setAttribute("aria-selected",String(x===t));
   for(const p of document.querySelectorAll(".pane")) p.classList.toggle("active",p.id==="pane-"+S.tab);
-  if(S.tab==="places") $("search").focus(); if(S.tab==="waypoints") renderWaypoints(true);
+  if(S.tab==="waypoints") renderWaypoints(true);
   $("vh-gallery").classList.toggle("show",S.tab==="vehicles"); if(S.tab!=="trade"){ setPreview(null); closeRunDetail(); }
   if(S.tab!=="market"){ S.mkMap=false; S.mapMarks=null; } syncMarketPanel();
   $("cp-panel").classList.toggle("show",S.tab==="components"); $("fl-panel").classList.toggle("show",S.tab==="fleet");
@@ -2909,53 +2938,77 @@ async function planRoute(withContracts){
 }
 $("btn-arrived").onclick=async()=>{ await api().arrived(); await poll(); };
 
-// ---- route search: find anything and add it as a stop (or fly to planets and moons)
-const RS={items:[],on:0};
+// ---- route search: find anything and add it as a stop (or fly to planets and moons). Typing, or pressing
+// Browse, swaps the stop list for a list of places (with type chips); clearing the search or Esc brings the
+// stops back. This is also where the old POI tab's list lives now.
+const RS={items:[],on:0,browse:false,type:null,more:0};
+const rsMode=()=>$("rsearch").value.trim()?"search":RS.browse?"browse":null;
+const RS_RANK={city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6};
+function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
+  return {kind:"loc",name:L.name,via,sc,r:L.source==="user"?-0.5:(RS_RANK[L.type]??4),sys:L.system,
+    type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type,
+    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}${padOf(L)!=="unknown"?" · pad: "+padLabel(padOf(L)):""}`}; }
 function rsCandidates(q){
   q=q.trim().toLowerCase(); if(!q) return [];
-  const rank=t=>({city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6}[t]??4);
   const score=n=>{ const x=n.toLowerCase(); if(x===q) return 0; if(x.startsWith(q)) return 1;
     if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; return x.includes(q)?3:9; };
   const out=[];
-  for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
-  for(const L of S.locs){ if(L.type==="om"&&!q.startsWith("om")) continue; if(L.mergedInto) continue;   // found as its station
-    let sc=score(L.name), lp=null; if(L.atLpoint){ const s2=score(L.atLpoint); if(s2<sc){ sc=s2; lp=L.atLpoint; } }
+  if(!RS.type) for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
+  for(const L of S.locs){ if(L.mergedInto) continue;                                  // found as its station
+    if(RS.type&&L.type!==RS.type) continue; if(L.type==="om"&&!q.startsWith("om")&&RS.type!=="om") continue;
+    let sc=score(L.name), lp=null, onBody=false; if(L.atLpoint){ const s2=score(L.atLpoint); if(s2<sc){ sc=s2; lp=L.atLpoint; } }
     // "commodity"/"trading" still finds places whose freight elevator or loading dock is their trade point
     let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q))
       ||("commodity trading".includes(q)||q.startsWith("commod")?L.amen.find(a=>/freight elevator|loading dock/i.test(a)):null); if(via) sc=4; }
-    if(sc<9) out.push({kind:"loc",name:L.name,via,
-    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`,sc,r:L.source==="user"?-0.5:rank(L.type),sys:L.system,type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type}); }
+    // Everything on a planet or moon by its name ("hurston" lists Hurston's places after Hurston itself)
+    if(sc>=9&&L.body&&L.source==="db"&&score(L.body)<=1){ sc=5; onBody=true; }
+    if(sc<9) out.push(rsLocItem(L,sc,{via,lp,onBody})); }
   out.sort((a,b)=>a.sc-b.sc||(a.sys!==S.system)-(b.sys!==S.system)||a.r-b.r||a.name.localeCompare(b.name));
-  return out.slice(0,q.length>=3&&out.some(o=>o.via)?30:12);
+  return out;
 }
+// Browse: every place in the system you're looking at (orbital markers only under their own chip)
+function rsBrowse(){
+  return S.locs.filter(L=>L.source==="db"&&!L.mergedInto&&L.system===S.system&&(RS.type?L.type===RS.type:L.type!=="om"))
+    .map(L=>rsLocItem(L,0)).sort((a,b)=>a.r-b.r||a.name.localeCompare(b.name)); }
+const RS_MAX=250;
 function rsRender(){
-  const q=$("rsearch").value, list=$("rs-list"), route=S.live?.route||[];
-  RS.items=rsCandidates(q); RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
-  if(!q.trim()){ list.hidden=true; $("rsearch").setAttribute("aria-expanded","false"); return; }
-  const hl=n=>{ const i=n.toLowerCase().indexOf(q.trim().toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.trim().length))+"</mark>"+esc(n.slice(i+q.trim().length)); };
-  list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" class="${i===RS.on?"on":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
+  const mode=rsMode(), list=$("rs-list"), route=S.live?.route||[], q=$("rsearch").value.trim();
+  $("rs-panel").hidden=!mode; $("route-body").hidden=!!mode;
+  const bb=$("rs-browse"); bb.setAttribute("aria-pressed",String(!!mode)); bb.textContent=mode?"Done":"Browse";
+  bb.title=mode?"Back to your route":"List every place in this system";
+  $("rsearch").setAttribute("aria-expanded",String(!!mode));
+  if(!mode){ RS.items=[]; return; }
+  const all=mode==="search"?rsCandidates(q):rsBrowse();
+  RS.items=all.slice(0,RS_MAX); RS.more=all.length-RS.items.length; RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
+  const hl=n=>{ if(!q) return esc(n); const i=n.toLowerCase().indexOf(q.toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.length))+"</mark>"+esc(n.slice(i+q.length)); };
+  const kb=mode==="search";                       // the keyboard pick is shown while typing
+  list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" data-name="${esc(it.name)}" class="${kb&&i===RS.on?"on":""}${S.selected?.name===it.name?" sel":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
       <div style="min-width:0"><div class="n">${hl(it.name)}</div><div class="b">${esc(it.sub)}</div></div>
       ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="add" title="In your route: click to add it again">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
-    :`<li class="empty">No match for “${esc(q)}”</li>`;
-  list.hidden=false; $("rsearch").setAttribute("aria-expanded","true");
+      +(RS.more>0?`<li class="empty">${RS.more} more. ${mode==="search"?"Type more of the name":"Pick a type above or search"} to narrow it down.</li>`:"")
+    :`<li class="empty">${mode==="search"?`No match for “${esc(q)}”${RS.type?` in ${esc(TYPES[RS.type]?.label||"")}`:""}`:`No ${RS.type?esc((TYPES[RS.type]?.label||"places").toLowerCase()):"places"} in ${esc(S.system)}`}</li>`;
 }
-async function rsPick(i,act){
+// Back to the route. The type chip goes back to All too, so the next search isn't quietly filtered.
+function rsClose(){ $("rsearch").value=""; RS.browse=false; RS.on=0; RS.type=null;
+  for(const x of $("filters").children) x.setAttribute("aria-pressed",String(!x.dataset.t)); rsRender(); $("rsearch").blur(); }
+async function rsPick(i,act,{fromKeys=false}={}){
   const it=RS.items[i]; if(!it) return;
   if(it.kind==="body"){ focusBody(it.name); select({kind:"body",name:it.name}); }
-  else if(act==="add"){ await addStops([it.name]); select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
+  else if(act==="add"){ await addStops([it.name]);
+    // From the keyboard: add, show it and go back to the route. A click on + keeps the list, to add more.
+    if(fromKeys){ select({kind:"loc",name:it.name}); focusLoc(it.name,true); rsClose(); return; } }
   else { select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
-  $("rsearch").value=""; rsRender(); $("rsearch").blur();
+  rsRender();
 }
 $("rsearch").oninput=()=>{ RS.on=0; rsRender(); };
-$("rsearch").onfocus=()=>rsRender();
 $("rsearch").onkeydown=e=>{
-  if(e.key==="ArrowDown"){ RS.on=Math.min(RS.on+1,RS.items.length-1); rsRender(); e.preventDefault(); }
-  else if(e.key==="ArrowUp"){ RS.on=Math.max(RS.on-1,0); rsRender(); e.preventDefault(); }
-  else if(e.key==="Enter"){ const it=RS.items[RS.on]; if(it) rsPick(RS.on, it.kind==="body"?"fly":"add"); e.preventDefault(); }
-  else if(e.key==="Escape"){ $("rsearch").value=""; rsRender(); $("rsearch").blur(); } };
-$("rs-list").onmousedown=e=>{ e.preventDefault(); const li=e.target.closest("li[data-i]"); if(!li) return;
+  const move=d=>{ RS.on=Math.max(0,Math.min(RS.on+d,RS.items.length-1)); rsRender(); $("rs-list").querySelector("li.on")?.scrollIntoView({block:"nearest"}); e.preventDefault(); };
+  if(e.key==="ArrowDown") move(1); else if(e.key==="ArrowUp") move(-1);
+  else if(e.key==="Enter"){ const it=RS.items[RS.on]; if(it&&$("rsearch").value.trim()) rsPick(RS.on, it.kind==="body"?"fly":"add", {fromKeys:true}); e.preventDefault(); }
+  else if(e.key==="Escape"){ rsClose(); e.preventDefault(); } };
+$("rs-browse").onclick=()=>{ if(rsMode()) return rsClose(); RS.browse=true; RS.on=0; rsRender(); };
+$("rs-list").onclick=e=>{ const li=e.target.closest("li[data-i]"); if(!li) return;
   const b=e.target.closest("[data-act]"); rsPick(+li.dataset.i, b?b.dataset.act:(RS.items[+li.dataset.i]?.kind==="body"?"fly":"view")); };
-document.addEventListener("pointerdown",e=>{ if(!$("rsearch-wrap").contains(e.target)){ $("rs-list").hidden=true; $("rsearch").setAttribute("aria-expanded","false"); } });
 
 // ---- contracts
 // A contract you're already on gets a new objective with a place (a patrol's next waypoint, the next leg of a
@@ -3182,25 +3235,14 @@ $("btn-wp-save").onclick=async()=>{ const r=await api().save_waypoint($("wp-name
   if(!r.ok) return toast(r.error); toast(`Saved ${r.name}${r.body?" on "+r.body:""}`); $("wp-name").value=""; $("wp-notes").value=""; await poll(); renderWaypoints(true); };
 $("wp-name").onkeydown=e=>{ if(e.key==="Enter") $("btn-wp-save").click(); };
 
-// ---- places
+// ---- place type chips (under the route search, while searching or browsing)
 function buildFilters(){ const types=["city","station","outpost","cave","wreck","jump","field","comm","poi","om"];
   $("filters").innerHTML=`<button class="fchip" data-t="" aria-pressed="true">All</button>`+types.map(t=>`<button class="fchip" data-t="${t}" aria-pressed="false"><span class="ty ${t}"></span>${TYPES[t].label}</button>`).join("");
-  $("filters").onclick=e=>{ const b=e.target.closest(".fchip"); if(!b) return; S.typeFilter=b.dataset.t||null; for(const x of $("filters").children) x.setAttribute("aria-pressed",String(x===b)); renderResults(); }; }
-function renderResults(){
-  const q=S.search.trim().toLowerCase(), route=S.live?.route||[];
-  let list=S.locs.filter(L=>L.source==="db" && !L.mergedInto && (!S.typeFilter||L.type===S.typeFilter) && (q ? (L.name.toLowerCase().includes(q)||(L.body||"").toLowerCase().includes(q)||(L.atLpoint||"").toLowerCase().includes(q)) : L.system===S.system));
-  if(!q&&!S.typeFilter) list=list.filter(L=>L.type!=="om");
-  list.sort((a,b)=>((a.system!==S.system)-(b.system!==S.system)) || ((a.name.toLowerCase().startsWith(q)?0:1)-(b.name.toLowerCase().startsWith(q)?0:1)) || a.name.localeCompare(b.name));
-  const shown=list.slice(0,250);
-  $("results").innerHTML = shown.length ? shown.map(L=>`<li class="res${S.selected?.name===L.name?" sel":""}" data-name="${esc(L.name)}"><span class="ty ${L.type}"></span>
-      <div style="min-width:0"><div class="n">${esc(L.name)}</div><div class="b">${esc(L.body||"Space")}${L.system!==S.system?" · "+esc(L.system):""}${padOf(L)!=="unknown"?", pad: "+esc(padLabel(padOf(L))):""}</div></div>
-      ${L.unplaced?`<span class="muted" title="Position not known yet: open it to set it">?</span>`:`<button class="iconbtn${route.includes(L.name)?" in":""}" title="${route.includes(L.name)?"In route: click to add it again":"Add to route"}">${route.includes(L.name)?"✓":"+"}</button>`}</li>`).join("")
-      +(list.length>shown.length?`<li class="muted" style="padding:8px">${list.length-shown.length} more. Narrow your search.</li>`:"")
-    : `<div class="empty"><strong>Nothing matches “${esc(S.search)}”</strong>Try part of the name, like “tressler” or “sm0”.</div>`; }
-$("results").onclick=e=>{ const li=e.target.closest(".res"); if(!li) return; const n=li.dataset.name;
-  if(e.target.closest(".iconbtn")){ addStops([n]); return; } select({kind:"loc",name:n}); focusLoc(n,true); };
-function highlightResult(){ for(const li of $("results").children) li.classList?.toggle("sel",li.dataset?.name===S.selected?.name); }
-$("search").oninput=e=>{ S.search=e.target.value; renderResults(); };
+  $("filters").onclick=e=>{ const b=e.target.closest(".fchip"); if(!b) return; RS.type=b.dataset.t||null; RS.on=0;
+    for(const x of $("filters").children) x.setAttribute("aria-pressed",String(x===b)); rsRender(); }; }
+// Kept under their old names: they're called when the route, the system or the selection changes.
+function renderResults(){ rsRender(); }
+function highlightResult(){ for(const li of $("rs-list").children) li.classList?.toggle("sel",!!li.dataset?.name&&li.dataset.name===S.selected?.name); }
 
 // ---- status & toast
 // The system you're in, with where Quantum got it from. Click to correct it: the log says nothing
@@ -3747,10 +3789,25 @@ const wtCounts=catId=>{ if(!S.cpIndex) return null; const n={}; for(const i of S
 async function cpLoadIndex(){ if(S.cpIndex||S.cpIndexP) return S.cpIndexP;
   S.cpIndexP=api().uex_component_index().then(r=>{ if(r?.ok) S.cpIndex=r; S.cpIndexP=null; return S.cpIndex; }).catch(()=>{ S.cpIndexP=null; return null; });
   return S.cpIndexP; }
+// Short names players use for makers, added to what a search looks through: "RSI" finds Roberts Space
+// Industries' parts. Makers with three or more words also get their initials (Gorgon Defender Industries: "GDI").
+const MAKER_ALIAS=[[/roberts space/i,"rsi"],[/amon & reese/i,"a&r ar"],[/klaus & werner/i,"k&w kw"],[/wen\/cassel/i,"wcp wen cassel"],
+  [/lightning power/i,"lpl"],[/juno starwerk/i,"juno"],[/hurston dynamics/i,"hd"],[/aegis/i,"aegs"],[/anvil/i,"anvl"],
+  [/gallenson/i,"gts"],[/tyler design/i,"tdt"],[/sakura sun/i,"ss"],[/kruger/i,"krig"],[/origin jumpworks/i,"origin"],
+  [/musashi/i,"misc"],[/consolidated outland/i,"cnou"],[/crusader/i,"crus"],[/grey'?s market/i,"greys"]];
+const MAKER_SKIP=/^(&|and|of|the|co\.?|ltd\.?|inc\.?|corp\.?|corporation)$/i;
+const makerAliasMemo={};
+function makerAlias(m){ m=String(m||""); if(!m) return ""; if(m in makerAliasMemo) return makerAliasMemo[m];
+  const out=MAKER_ALIAS.filter(([re])=>re.test(m)).map(([,a])=>a), words=m.split(/[\s\/-]+/).filter(w=>w&&!MAKER_SKIP.test(w));
+  if(words.length>=3) out.push(words.map(w=>w[0]).join(""));
+  return makerAliasMemo[m]=out.join(" ").toLowerCase(); }
+// A search word matches a whole word of the text, or the start of one, so "rsi" doesn't hit the middle of
+// another word, while "atl" still finds "Atlas". Longer words (4+ letters) may match anywhere, as before.
+const cpWordHit=(t,w)=>w.length>=4?t.includes(w):new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}`).test(t);
 // Parts anywhere that match a search: name, maker, category, or a gun's kind ("repeater")
 function cpSearchAll(q){ if(!S.cpIndex||q.length<2) return [];
   const words=q.split(/\s+/).filter(Boolean);
-  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.maker} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.every(w=>t.includes(w)); })
+  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.maker} ${makerAlias(i.maker)} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.every(w=>cpWordHit(t,w)); })
     .sort((a,b)=>((b.name||"").toLowerCase().startsWith(q))-((a.name||"").toLowerCase().startsWith(q))||(a.name||"").localeCompare(b.name||"")); }
 const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
 const cpGrade=i=>String(i.game?.grade||i.grade||"");
@@ -3832,7 +3889,7 @@ function cpFiltered(){ const q=$("cp-search").value.trim().toLowerCase(), size=$
     avail=$("cp-avail").value, ship=$("cp-ship").value, sort=$("cp-sort").value;
   let fits=null; if(ship&&S.cpFit?.ok){ const sh=S.cpFit.ships.find(s=>s.uid===ship); fits=new Set((sh?.slots||[]).map(s=>String(s.size))); }
   const wt=$("cp-wtype").value;
-  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||`${i.name} ${i.maker} ${i.game?.maker||""} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase().includes(q))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
+  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||(t=>q.split(/\s+/).every(w=>cpWordHit(t,w)))(`${i.name} ${i.maker} ${i.game?.maker||""} ${makerAlias(i.game?.maker||i.maker)} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase()))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
     &&(!maker||(i.game?.maker||i.maker)===maker)&&(avail!=="buy"||i.buy.length)&&(avail!=="noshop"||!i.buy.length)&&(!fits||fits.has(cpSize(i))));
   const price=i=>i.buy[0]?.price??null, key=CP_KEY[S.cpCat?.slot]?.[0], kv=i=>+(i.game?.stats?.[key])||null;
   const by={price:(a,b)=>(price(a)==null)-(price(b)==null)||(price(a)??0)-(price(b)??0),
@@ -4742,7 +4799,7 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
   const mj=e.target.closest("[data-mapjob],[data-cbmap]"); if(mj){ const nm=mj.dataset.mapjob||mj.dataset.cbmap;
     // A place with no position has no card on the map: show what's known about it right here instead.
     if(!S.locMap[nm]?.pos){ S.drMapInfo=nm; return renderDrJobs(); }
-    document.querySelector('.tab[data-tab="places"]').click(); focusLoc(nm,false); select({kind:"loc",name:nm}); return; }
+    document.querySelector('.tab[data-tab="route"]').click(); focusLoc(nm,false); select({kind:"loc",name:nm}); return; }
   if(await drMapJobClick(e)) return;
   // "Doesn't exist": a second click confirms. Hidden here now; hidden for everyone once a second
   // datarunner agrees (or a trusted contributor says so).
