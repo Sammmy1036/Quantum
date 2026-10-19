@@ -967,6 +967,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
   .hd-hero,.hd-hero.n4{grid-template-columns:minmax(0,1fr)}.hd-hero>div,.hd-hero.n4>div{padding:8px 0}
   .hd-hero>div+div{border-left:0;border-top:1px solid var(--line-2)}}
 .mk-row,.mkp-cols>*{min-width:0}
+.acct-code{font:600 22px ui-monospace,Consolas,monospace;letter-spacing:.25em;padding:8px 12px;border-radius:8px;background:rgba(47,134,255,.12);border:1px solid rgba(47,134,255,.35);display:inline-block}
 </style>
 </head>
 <body>
@@ -2497,7 +2498,7 @@ function renderDetail(){
         <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
           <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
         <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
-          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. It stays on this PC.</div>
+          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. ${S.acct?.keys?.stored?"It's also kept in your Quantum account (below).":"It stays on this PC."}</div>
         <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
         <label class="k st-label" for="s-drsecret" style="margin-top:14px"><span>UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></span>${(()=>{ const k=S.keyStat;
           if(!S.drHasSecret) return connPill("none");
@@ -2523,6 +2524,7 @@ function renderDetail(){
               <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn small" data-a="commcancel">Keep them on</button><button class="btn small danger" data-a="commoff">Turn off community features</button></div></div>`
             :`<div class="row" style="gap:6px;margin-top:8px">${on?`<button class="btn small ghost" data-a="commask">Disable community features</button>`
               :`<button class="btn small primary" data-a="common">Enable community features</button>`}</div>`}`; })()}</div>
+      ${(()=>{ const h=acctHtml(); return h?`<div class="sub">Quantum account</div><div class="note">${h}</div>`:""; })()}
       <div class="sub">Backup</div>
       <div class="note">${(()=>{ const b=S.bk; if(b===undefined){ S.bk=null; api().backup_status().then(x=>{ S.bk=x; renderDetail(); }); return "Checking…"; }
         if(!b) return "";
@@ -2667,6 +2669,24 @@ function renderDetail(){
     if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
       const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; } S.bk=undefined;
       S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
+    if(a==="acctsignin"){ S.acctErr=""; S.acct=await api().account_sign_in(); renderDetail(); acctWatch(); return; }
+    if(a==="acctlogin"){ const em=($("acct-email")?.value||"").trim(), pw=$("acct-pw")?.value||"";
+      if(!em||!pw){ S.acctErr="Enter your email and password."; renderDetail(); (em?$("acct-pw"):$("acct-email"))?.focus(); return; }
+      S.acctEmail=em; S.acctBusy=true; S.acctErr=""; renderDetail();
+      const r=await api().account_sign_in_password(em,pw); S.acctBusy=false; S.acct=r;
+      if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
+      else { S.acctErr=r.error; S.acctUnconfirmed=!!r.unconfirmed; }
+      renderDetail(); if(!r.ok) $("acct-pw")?.focus(); return; }
+    if(a==="acctkeys"){ const on=e.target.checked; S.acctKeysBusy=true; renderDetail();
+      const r=await api().account_set_key_sync(on); S.acctKeysBusy=false; S.acct=r;
+      if(r.ok){ toast(on?"Your UEX keys are kept in your Quantum account":"Removed from your Quantum account. They stay on this PC"); if(on) await acctKeysArrived(r); }
+      else toast(r.error||"Couldn't change it. Try again");
+      renderDetail(); return; }
+    if(a==="acctopen"){ S.acct=await api().account_open_page(); return; }
+    if(a==="acctcancel"){ S.acct=await api().account_cancel(); renderDetail(); return; }
+    if(a==="acctlink"){ toast("Linking your UEX name…"); S.acct=await api().account_link_now(); renderDetail();
+      toast(S.acct.uex?`Linked to ${S.acct.uex}`:"Couldn't link it: check your UEX Secret Key above"); return; }
+    if(a==="acctsignout"){ S.acct=await api().account_sign_out(); renderDetail(); toast("Signed out of your Quantum account on this PC"); return; }
     if(a==="commask"){ S.commAsk=true; renderDetail(); return; }
     if(a==="commcancel"){ S.commAsk=false; renderDetail(); return; }
     if(a==="commoff"||a==="common"){ S.commAsk=false; S.communityStatus=null; renderDetail();
@@ -4371,6 +4391,65 @@ $("update-bar").onclick=async e=>{ const ex=e.target.closest("[data-ext]"); if(e
 const IC_CAM='<svg class="ic-line" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h3.2l1.6-2.2h6.4l1.6 2.2H20a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8.5a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.4"/></svg>';
 const IC_PIC='<svg class="ic-line" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.8" cy="9.8" r="1.7"/><path d="M3.6 17.2l5.2-4.6 3.9 3.3 2.9-2.4 4.8 4"/></svg>';
 // A status beside a Settings heading: Connected in green, Offline or an error in red, Off in grey.
+// ---- Quantum account (Settings): sign in with email and password, or through the browser (the code here must
+// match the one on the page). Signed in, "Keep my UEX keys in my Quantum account" keeps the keys in step.
+function acctHtml(){
+  const a=S.acct;
+  // Asked when Settings opens, and again every 30 s while it's hidden (the server may open accounts, or the
+  // connection may not have been ready the first time)
+  if(a===undefined||(a&&!a.available&&Date.now()-(S.acctAt||0)>30000)){ const first=a===undefined; S.acct=a||null; S.acctAt=Date.now();
+    api().account_status().then(x=>{ const was=!!(S.acct&&S.acct.available); S.acct=x; S.acctAt=Date.now();
+      if(first||x.available!==was) renderDetail(); if(x.flow?.state==="waiting") acctWatch(); }); if(first) return ""; }
+  if(!a) return "";
+  if(!a.on||!a.available) return "";                 // community features off, or accounts not open on the server yet
+  const f=a.flow||{};
+  if(f.state==="waiting") return `<div><b>Approve the sign-in in your browser</b></div>
+      <div class="muted" style="font-size:12px;margin:4px 0 8px">Quantum opened quantumsc.org. Sign in there (or create an account), and check the page shows this code:</div>
+      <div class="acct-code">${esc(f.user_code||"")}</div>
+      <div class="row" style="gap:6px;margin-top:8px"><span class="spin-sm"></span><span class="muted" style="font-size:12px">Waiting for you to approve…</span><span class="spacer"></span>
+        <button class="btn small ghost" data-a="acctopen">Open the page again</button><button class="btn small ghost" data-a="acctcancel">Cancel</button></div>`;
+  if(a.signed_in){
+    const link=a.uex?`<div style="margin-top:4px">UEX datarunner: <b>${esc(a.uex)}</b></div>`
+      :a.has_secret?`<div class="muted" style="font-size:12px;margin-top:4px">Your UEX name isn't linked yet${a.link_error?` (${esc(String(a.link_error).replace(/_/g," "))})`:""}.
+          <button class="btn small ghost" data-a="acctlink">Link it now</button></div>`
+      :`<div class="muted" style="font-size:12px;margin-top:4px">Save your UEX Secret Key above and your UEX datarunner name links to this account by itself.</div>`;
+    const k=a.keys||{}, site=a.site||"https://quantumsc.org";
+    const keys=`<label class="row" style="gap:8px;margin-top:10px;cursor:pointer"><input type="checkbox" data-a="acctkeys" ${k.stored?"checked":""} ${S.acctKeysBusy?"disabled":""}>
+        Keep my UEX keys in my Quantum account${S.acctKeysBusy?` <span class="spin-sm"></span>`:""}</label>
+      <div class="muted" style="font-size:12px;margin-top:2px">${k.stored
+        ?"On: your UEX Bearer Token and Secret Key are saved (encrypted) in your account, filled in on any PC you sign in on, and kept up to date when you change them here or on the website."
+        :"Off: your UEX keys stay on this PC only. Turn it on to have them filled in on any PC you sign in on, or enter them on the website."}</div>
+      ${k.error?`<div style="color:#ffd38a;font-size:12px;margin-top:4px">${esc(k.error)}</div>`:""}`;
+    return `<div class="row"><span class="dot on"></span><span>Signed in as <b>${esc(a.email||"")}</b></span><span class="spacer"></span>
+        <button class="btn small ghost" data-a="acctsignout">Sign out</button></div>${link}${keys}
+      <div class="muted" style="font-size:12px;margin-top:8px">Manage it at <a data-url="${esc(site)}/account" style="cursor:pointer;text-decoration:underline">${esc(site.replace(/^https?:\/\//,""))}/account</a>.</div>`;
+  }
+  const err=f.state==="error"?`<div style="color:#ffd38a;font-size:12px;margin-bottom:6px">${esc(f.error||"")}</div>`:"";
+  const note=a.note?`<div style="color:#ffd38a;font-size:12px;margin-bottom:6px">${esc(a.note)}</div>`:"";
+  const site=a.site||"https://quantumsc.org", lerr=S.acctErr?`<div style="color:#ffd38a;font-size:12px;margin:6px 0 0">${esc(S.acctErr)}${S.acctUnconfirmed
+      ?` <a data-url="${esc(site)}/account/login" style="cursor:pointer;text-decoration:underline">Send the link again</a>`:""}</div>`:"";
+  const enter=`onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-a=acctlogin]')?.click();}"`;
+  return `${note}${err}<div class="muted" style="font-size:12px;margin-bottom:8px">One account for Quantum and quantumsc.org. Optional: everything in Quantum works without one.</div>
+    <input class="field" id="acct-email" type="email" placeholder="Email" autocomplete="username" value="${esc(S.acctEmail||"")}" oninput="S.acctEmail=this.value" ${enter} style="width:100%;margin-bottom:6px" ${S.acctBusy?"disabled":""}>
+    <input class="field" id="acct-pw" type="password" placeholder="Password" autocomplete="current-password" ${enter} style="width:100%" ${S.acctBusy?"disabled":""}>${lerr}
+    <div class="row" style="gap:8px;margin-top:8px"><button class="btn small primary" data-a="acctlogin" ${S.acctBusy?"disabled":""}>${S.acctBusy?"Signing in…":"Sign in"}</button>
+      <a data-url="${esc(site)}/account/forgot" style="cursor:pointer;font-size:12px;text-decoration:underline">Forgot your password?</a></div>
+    <div class="muted" style="font-size:12px;margin-top:10px">New here? <a data-url="${esc(site)}/account/signup" style="cursor:pointer;text-decoration:underline">Create an account</a> on the website (you'll confirm your email), then sign in here.</div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Or <a data-a="acctsignin" style="cursor:pointer;text-decoration:underline">sign in with your browser</a> instead, so Quantum never sees your password.</div>`;
+}
+// UEX keys filled in from the account (after signing in, or turning the switch on): refresh what uses them
+async function acctKeysArrived(x){
+  if(x?.keys?.note) toast(x.keys.note);
+  if(!x?.keys?.note&&!(x?.has_token&&!S.live?.log?.uex_token)) return;
+  S.bk=undefined; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; S.keyStat=undefined; S.drHasSecret=!!x.has_secret; S.uexDraft=""; S.drSecretDraft="";
+  await poll(); try{ await loadStatic(); }catch(e){} fillUexStatus(true); drRefreshAfterKey(); }
+function acctWatch(){
+  clearTimeout(S.acctT);
+  S.acctT=setTimeout(async()=>{ const x=await api().account_status(); const was=S.acct?.flow?.state; S.acct=x;
+    if(x.flow?.state==="waiting") acctWatch();
+    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ if($("s-uex")) renderDetail(); }); }
+      if(S.sel?.kind==="settings"||$("s-uex")) renderDetail(); } },2000);
+}
 function connPill(st,label,why){ const t={ok:["ok","Connected"],bad:["bad","Not connected"],offline:["bad","Offline"],off:["off","Disabled"],none:["off","Not set"],checking:["wait","Checking…"]}[st]||["off",st];
   return `<span class="conn ${t[0]}" ${why?`title="${esc(why)}"`:""}><i></i>${esc(label||t[1])}</span>`; }
 const IC_BOLT='<svg class="ic-line bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/></svg>';
@@ -5556,6 +5635,9 @@ async function poll(){
   { const fx=live.player?.fix_t||null; if(fx!==S.fixSeen){ const first=S.fixSeen===undefined; S.fixSeen=fx;
       if(!first&&fx&&S.tab==="contracts"&&!S.follow) setTimeout(followNow,60); } }
   watchNewObjectives(live);
+  // settings.json couldn't be read at start: say so once, long enough to read
+  if(live.settings_note&&!S.settingsNoted){ S.settingsNoted=true; toast(live.settings_note); clearTimeout(toastT);
+    toastT=setTimeout(()=>$("toast").classList.remove("show"),15000); }
   if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
   if(live.photos_version!==S.photosVersion){ const first=S.photosVersion===undefined; S.photosVersion=live.photos_version; if(!first) refreshPictures(); }
   if(live.trade_ver!==S.tradeVer){ const first=S.tradeVer===undefined; S.tradeVer=live.trade_ver;

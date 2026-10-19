@@ -35,12 +35,13 @@ class Community:
         u = DEFAULT_URL if u is None else u.strip()
         return "" if u.lower() == "off" else u.rstrip("/")
 
-    def _req(self, path, body=None, timeout=10, session=True):
+    def _req(self, path, body=None, timeout=10, session=True, headers=None):
         sess = (self._session() or "").strip() if session else ""
         req = urllib.request.Request(self.url + path, data=json.dumps(body).encode("utf-8") if body is not None else None,
                                      method="POST" if body is not None else "GET",
                                      headers={"Content-Type": "application/json", "Accept": "application/json",
-                                              "User-Agent": "Quantum", **({"X-Quantum-Session": sess} if sess else {})})
+                                              "User-Agent": "Quantum", **({"X-Quantum-Session": sess} if sess else {}),
+                                              **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 out = json.loads(r.read().decode("utf-8"))
@@ -75,6 +76,63 @@ class Community:
             urllib.request.urlopen(req, timeout=8).close()
         except Exception:
             pass
+
+    # ---- Quantum accounts: the app signs in with email and password (account_login), or through the browser (a
+    # device code), where it never sees the password.
+    # Its sign-in is sent as X-Quantum-Account for these calls; once the account is linked to a UEX name, the
+    # server also accepts it as X-Quantum-Session wherever it asks who someone is.
+    def _acct(self, path, body=None, token=None, agent=None, timeout=10):
+        if not self.url:
+            return {"status": "off"}
+        h = {}
+        if token:
+            h["X-Quantum-Account"] = token
+        if agent:
+            h["User-Agent"] = agent
+        try:
+            return self._req(path, body, timeout=timeout, session=False, headers=h)
+        except Exception as e:
+            return {"status": "unreachable", "detail": str(e)}
+
+    def device_start(self, agent):
+        """{status: ok, device_code, user_code, verify_url, interval, expires_in} | not_found (accounts off) | ..."""
+        r = self._acct("/v1/device/start", {}, agent=agent)
+        return {"status": "unavailable"} if r.get("status") in ("http_404", "not_found") else r
+
+    def device_poll(self, device_code):
+        """{status: pending | slow_down | ok (with session, email, uex) | denied | expired | unreachable}"""
+        return self._acct("/v1/device/poll", {"device_code": device_code})
+
+    def account_me(self, token):
+        """{status: ok, email, uex} | signed_out | unreachable"""
+        r = self._acct("/v1/account/me", token=token, timeout=8)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
+    def account_logout(self, token):
+        return self._acct("/v1/account/logout", {}, token=token, timeout=8)
+
+    def account_login(self, email, password, agent):
+        """Sign in with the account's email and password. {status: ok (with session, email, uex) | invalid_credentials |
+        unconfirmed | locked | disabled | requests_limit_reached | unavailable | unreachable, message}"""
+        r = self._acct("/v1/account/login", {"email": email, "password": password, "agent": agent}, agent=agent, timeout=20)
+        return {"status": "unavailable"} if r.get("status") in ("http_404", "not_found") else r
+
+    def uex_keys_get(self, token):
+        """The UEX keys saved in the account: {status: ok, stored, token, secret, updated} | unreadable | signed_out ..."""
+        r = self._acct("/v1/account/uex-keys", token=token, timeout=10)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
+    def uex_keys_save(self, token, bearer, secret):
+        """Save these UEX keys in the account (the server checks them with UEX first). {status: ok, uex, keys} | invalid_token ..."""
+        return self._acct("/v1/account/uex-keys", {"token": bearer, "secret": secret or None}, token=token, timeout=30)
+
+    def uex_keys_remove(self, token):
+        return self._acct("/v1/account/uex-keys/remove", {}, token=token, timeout=10)
+
+    def link_uex(self, token, secret):
+        """Link the UEX name this secret key belongs to (the server asks UEX, then forgets the key).
+        {status: ok, uex} | invalid_secret_key | banned | signed_out | unreachable ..."""
+        return self._acct("/v1/account/link-uex", {"secret": secret}, token=token, timeout=20)
 
     def health(self):
         if not self.url:
