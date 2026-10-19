@@ -26,6 +26,7 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 - [Using Quantum in game](#using-quantum-in-game)
 - [The tabs](#the-tabs)
 - [The Quantum community](#the-quantum-community)
+- [Your Quantum account](#your-quantum-account)
 - [Updates](#updates)
 - [Keeping the data up to date](#keeping-the-data-up-to-date)
 - [Your data and privacy](#your-data-and-privacy)
@@ -66,6 +67,7 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 ### Requirements
 
 - Windows 10 or 11
+- Optional: a free [Quantum account](#your-quantum-account), to see your stats and submissions on [quantumsc.org](https://quantumsc.org/account) and have your UEX keys filled in on any PC
 
 ## Connecting UEX (trade data)
 
@@ -79,7 +81,7 @@ The **Commodities**, **Trade Routes**, **Datarunner**, **Vehicles**, **Component
 Settings shows a green **Connected** beside the Bearer Token, the Secret Key (with your UEX name) and the **Quantum API** once each one works; the Quantum API shows **Offline** in red when the community server can't be reached.
 
 Things to know:
-- The token is stored only in your local `settings.json`.
+- The token is stored in your local `settings.json`. It only leaves your PC (besides going to UEX) if you choose to keep your UEX keys in your [Quantum account](#your-quantum-account).
 - UEX allows 120 requests a minute. Quantum caches its data (places for a day, prices and routes for 30 minutes) and should stay well under the limit.
 - UEX prices are reported by players. They can be out of date, so check the terminal before you buy.
 
@@ -87,7 +89,7 @@ Things to know:
 
 Reports go to UEX under your own account, so you need a UEX account with datarunner access turned on in your [UEX profile](https://uexcorp.space/account).
 
-1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's used to send your reports and to sign in to the Quantum community server (see [Your data and privacy](#your-data-and-privacy)), and stays on your PC.
+1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's used to send your reports and to sign in to the Quantum community server (see [Your data and privacy](#your-data-and-privacy)), and stays on your PC unless you keep your UEX keys in your [Quantum account](#your-quantum-account).
 2. Go to a commodity kiosk. Land or dock and Quantum picks the terminal from the game log, or type it in the **Terminal** box.
 3. Open the kiosk's list in game and take a screenshot (UEX needs one during a new datarunner's first 90 days; after that, Quantum offers to send without one, and UEX's answer settles it): press your screenshot key (set it in **Settings**) or **Take screenshot** in Quantum. UEX checks every report against it, so data entry stays locked until there is one. For a long list, scroll and take another; they're joined into one picture.
 4. Check each row. Matches the kiosk: **No Changes** (or Space). Different: type the stock and price and set the inventory bar. Gone from the kiosk: **Not Sold Here**. Keys: ↑ ↓ move, Space no changes, Enter edit, 1–7 inventory, G not sold here.
@@ -148,7 +150,37 @@ Quantum users share a few things through the Quantum community server:
 
 Nobody can add to or take from someone else's profile: a report only counts once UEX's own record shows that username sent it.
 
-**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map and planets they line up go live from their reading alone. The Datarunner tab's FAQ shows your progress. Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), so any PC with your key in Settings is recognised, including a new PC or a reinstall.
+**Trusted contributors.** Datarunners earn trust automatically once they have 5 approved price reports, 7 days since their first, no rejections in the last 14 days and at least 90% approval. A trusted contributor's pictures go live straight away (for things with no picture yet, up to 10 a day), and the stations they map and planets they line up go live from their reading alone. The Datarunner tab's FAQ shows your progress. Quantum signs in to the community server with your UEX secret key (the server asks UEX whose key it is, then forgets it), or with your Quantum account once it's linked to your UEX name, so any PC with your key or your account is recognised, including a new PC or a reinstall.
+
+## Your Quantum account
+
+A Quantum account is optional: everything in Quantum works without one. It's one account for the app and [quantumsc.org](https://quantumsc.org).
+
+**Create one** at [quantumsc.org/account/signup](https://quantumsc.org/account/signup) and confirm your email address with the link it sends you. Accounts that aren't confirmed are removed after 7 days.
+
+**Sign in from Quantum** in **Settings → Quantum account**:
+- Type your email and password there, or
+- Choose **sign in with your browser**: Quantum opens the website and shows a code to approve, so it never sees your password.
+
+Either way, Quantum keeps only its own sign-in (encrypted with Windows' data protection in `settings.json`), and it lasts a year while you use it. **Forgot your password?** and **Create an account** open the website.
+
+**Link your UEX datarunner name** so your stats show up on your account. There are two ways:
+- Save your UEX Secret Key in Quantum while it's signed in to your account, or
+- Enter your UEX keys on the website under **Security → UEX keys**. It links right away.
+
+**The account page** ([quantumsc.org/account](https://quantumsc.org/account)) has four tabs:
+- **Overview:** your approved count, leaderboard place, star rating, rank progress and latest submissions.
+- **Submissions:** every price report, picture, station position and alignment you've sent, with UEX's or the reviewer's decision and reason.
+- **Profile:** a display name, organization, bio and profile picture. Only you can see these for now.
+- **Security:** change your password, link or unlink your UEX name, see and end your sign-ins, **Download my data**, and **Delete my account**. When you delete it, you can also tick a box to delete everything sent under your UEX name.
+
+Your picture and name in the top corner open a menu with **Sign out**.
+
+**Keep my UEX keys in my Quantum account** (optional, off unless you turn it on). Turn it on in **Settings → Quantum account**, or save your keys on the website. Then:
+- Any PC you sign in on gets your UEX Bearer Token and Secret Key filled in.
+- A key you change on one PC, or on the website, reaches the others.
+- UEX checks the keys before they're saved. They're stored encrypted, and the website only ever shows their last 4 characters.
+- Turning it off removes them from your account; they stay on each PC.
 
 ## Updates
 
@@ -166,14 +198,14 @@ Positions come from community datasets, and component stats come from the game f
 
 ## Your data and privacy
 
-Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json`. The token is only ever sent to UEX. The secret key is sent to UEX, and once to the community server when Quantum signs in to it: the server passes it to UEX to learn which UEX account it belongs to, then forgets it. It's never stored or logged there. In return the server gives Quantum a **session token**, kept in `settings.json`, so it knows the pictures, places and alignments you send are really from you.
+Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json`, unless you choose to [keep them in your Quantum account](#your-quantum-account). Otherwise the token is only ever sent to UEX. The secret key is sent to UEX, and once to the community server when Quantum signs in to it: the server passes it to UEX to learn which UEX account it belongs to, then forgets it. It's never stored or logged there. In return the server gives Quantum a **session token**, kept in `settings.json`, so it knows the pictures, places and alignments you send are really from you.
 
 Quantum talks to these services:
 
 | Service | Why |
 |---|---|
 | **UEX API** | Prices, terminals, vehicles and items, and the price reports you send |
-| **Quantum API** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10 |
+| **Quantum API** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10, and your Quantum account if you use one |
 | **Star Citizen Wiki API** | Ship data, loadouts, pictures and manufacturer logos |
 | **GitHub** | Checking for updates |
 
@@ -183,15 +215,16 @@ What the community server receives from you:
 - **Shared routes:** routes you choose to share.
 - **Your UEX profile:** your username and avatar link, for your profile and the Top 10. Your username and stats are visible to other Quantum users on the Top 10.
 - **Your sign-in:** your UEX secret key once, over HTTPS, to confirm your UEX username with UEX (not kept). The session token it gives Quantum is stored on the server only as a one-way hash, with when and from where it was last used. Removing or changing your secret key in Settings signs that PC out.
+- **Your Quantum account**, if you make one: your email address, your password as a one-way scrypt hash (never the password itself), your sign-ins, your profile and picture, your linked UEX name, and your UEX keys only if you choose to keep them there (encrypted). The website's sign-up and forgotten-password pages use Cloudflare Turnstile to keep bots out.
 - **Your backup:** encrypted on your PC before it's sent. The server stores it but can't read it, and your UEX Bearer Token is never sent to it. Only plain data from known fields is included, never files. If you make a new UEX token, the old backup can't be opened, and Quantum starts a new one locked to the new token.
 
-It never receives your UEX Bearer Token, never keeps your secret key, and never receives your report screenshots (those go to UEX with the report, and Quantum's own copy stays on your PC).
+Unless you choose to keep your UEX keys in your Quantum account, it never receives your UEX Bearer Token and never keeps your secret key. It never receives your report screenshots (those go to UEX with the report, and Quantum's own copy stays on your PC).
 
-The community server is maintained owner and soon to be a small group of volunteer moderators, who review contributions and can suspend or ban accounts that misuse it. To have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
+The community server is maintained by its owner and soon a small group of volunteer moderators, who review contributions and can suspend or ban accounts that misuse it. With a Quantum account, you can download your data and delete your account yourself from the [account page](https://quantumsc.org/account?tab=security). If your UEX name is linked, you can also delete everything sent under that name at the same time. Otherwise, to have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
 
 | File | Holds |
 |---|---|
-| `settings.json` | Your UEX token and secret key, Quantum server sign-in, hotkeys, route, fleet and planned trade routes |
+| `settings.json` | Your UEX token and secret key, Quantum server and Quantum account sign-ins (encrypted), hotkeys, route, fleet and planned trade routes |
 | `places.json` | Station positions you set with `/showlocation` |
 | `community_places.json` | Station positions from other Quantum users |
 | `datarunner_reports.json` | The reports you've sent and what UEX did with them |
