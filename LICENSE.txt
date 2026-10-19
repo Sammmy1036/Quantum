@@ -38,6 +38,8 @@ Quantum includes or loads code from other projects, each under its own license:
     generator library (https://www.nayuki.io/page/qr-code-generator-library),
     MIT License, Copyright (c) Project Nayuki. The QR code standard is ISO/IEC
     18004; "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+  - Cloudflare Turnstile (quantumsc.org's sign-up and forgotten-password
+    pages): a bot check loaded from Cloudflare, under Cloudflare's own terms.
 
 -------------------------------------------------------------------------------
 Third-party data and trademarks
@@ -97,13 +99,74 @@ when and from where it was last used. Sign-ins not used for 180 days end on
 their own. Removing or changing the secret key in Settings signs that computer
 out, and the server owner can end a user's sign-ins at any time, for example
 when banning an account. The UEX Bearer Token is never sent to the community
-server.
+server, unless the user chooses to keep their UEX keys in their Quantum
+account (see Quantum accounts below).
+
+A Quantum account linked to a UEX name can stand in for this sign-in: once
+Quantum is signed in to the account, the server accepts that sign-in as the
+linked UEX name.
 
 Anyone running their own community server receives users' secret keys in the
 same way and should handle them with the same care. Users who don't want their
 secret key to reach the community server can turn community features off in
 Settings (Disable community features), or set "community_url" to "off" in
 settings.json; Quantum then uses UEX's data alone.
+
+-------------------------------------------------------------------------------
+Quantum accounts
+
+A Quantum account is optional; everything in Quantum works without one. An
+account is made on the Quantum website (quantumsc.org) with an email address
+and a password, and becomes active once the email address is confirmed.
+Accounts never confirmed are removed after 7 days.
+
+For each account, the community server keeps:
+
+  - the email address, used to sign in and for account emails (confirming the
+    address, resetting the password, telling the user when their password
+    changes, their account is deleted or their UEX name moves to another
+    account). No newsletters or marketing;
+  - the password as a one-way scrypt hash, never the password itself. Ten wrong
+    passwords in a row lock the account for 15 minutes;
+  - its sign-ins: for each one, a one-way hash of its token, when it began and
+    was last used, its IP address and browser or PC name. A website sign-in
+    lasts until the browser closes (at most 12 hours), or 30 days with "Keep me
+    signed in". Quantum's own sign-in lasts a year and is renewed while it's
+    used. Changing the password ends every other sign-in;
+  - the profile the user fills in: a display name, organization, bio and
+    profile picture (PNG, JPEG or WebP, up to 2 MB). The profile is currently
+    shown only to the user themself;
+  - the UEX datarunner name linked to the account, if any;
+  - the user's UEX Bearer Token and Secret Key, only if the user chooses to
+    keep them in the account (below).
+
+Quantum can sign in to an account in two ways: with the email and password
+typed into Quantum (sent once over HTTPS to the community server and never
+stored by Quantum), or through the browser, where Quantum gets a code to
+approve on the website and never sees the password. Either way, Quantum keeps
+only the sign-in token it receives, in settings.json, encrypted with Windows'
+data protection so it can't be used from another computer or Windows account.
+
+UEX keys kept in the account. A user can choose to save their UEX Bearer Token
+and Secret Key in their account, on the website or with the "Keep my UEX keys
+in my Quantum account" switch in Quantum. The setting is off unless the user
+turns it on. UEX checks the keys before they are saved. They are then stored
+encrypted (HMAC-SHA256 in counter mode with an HMAC-SHA256 tag), with an
+encryption key kept in its own file apart from the database, so a copy of the
+database alone can't read them. The website shows only their last 4
+characters. Quantum, signed in to the account on any computer, reads them back
+to fill them in, and saves keys changed on that computer to the account.
+Because the server must be able to give the keys back, the server (and so its
+owner) can decrypt them. Users who don't want that should leave the setting
+off. Turning it off, unlinking the UEX name or deleting the account removes the
+saved keys from the server; keys already on a computer stay there. A user
+whose keys may have been exposed can make new ones at UEX at any time.
+
+Users can download a copy of everything their account holds (the saved UEX
+keys themselves are left out) and delete their account at any time from the
+account page. Deleting removes the account, its sign-ins, profile, profile
+picture and saved keys at once. If a UEX name is linked, the user can also
+choose to delete everything sent under that name, as described below.
 
 -------------------------------------------------------------------------------
 Moderation
@@ -123,12 +186,15 @@ For each datarunner, the community server keeps their UEX username and avatar
 link, the UEX report IDs and values of the price reports they send through
 Quantum and what UEX decided about them, the pictures, station positions, pad
 sizes, planet alignments, job claims, shared routes and bug reports they send,
-and their sign-ins as described above. To protect the service it also keeps,
+and their sign-ins as described above. Quantum accounts are described under
+Quantum accounts. To protect the service it also keeps,
 for a short time, the IP address and time of requests: rate-limit counters for
 an hour, and a list of recent requests in memory until the server restarts.
 
-A user can ask the server owner to delete everything the server holds about
-them. The owner can erase it all from the admin page in one step; prices served
+A user can delete everything sent under their UEX name themselves, when
+deleting a Quantum account linked to that name, or ask the server owner to
+delete everything the server holds about them. The owner can erase it all from
+the admin page in one step; prices served
 from their reports stop being shown, and their pictures are removed. UEX keeps
 its own copy of the reports it received, under UEX's own terms. Encrypted
 backups are not tied to a username, so users delete theirs themselves from
@@ -147,9 +213,12 @@ swaps), waypoints, planned trade routes and mapped stations to the Quantum
 community server. Backups are
 encrypted on the user's own computer with a key made from their UEX Bearer
 Token; the server stores them without being able to read them, and the token is
-never sent to it (signing in uses the separate secret key, as described above). 
-Anyone who has the token can open the backup, so users should keep their token 
-private.
+never sent to it (signing in uses the separate secret key, as described above).
+Anyone who has the token can open the backup, so users should keep their token
+private. A user who keeps their UEX keys in their Quantum account gives the
+server their Bearer Token too, so for that user the server could open their
+backup. Users who want their backup unreadable to the server should leave that
+setting off.
 
 Backups are a convenience, provided as is with no guarantee that they will be
 available or complete. A backup cannot be opened with a different token, so it
