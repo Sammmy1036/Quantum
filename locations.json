@@ -16848,7 +16848,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 18 (microTech)",
+   "name": "Animal Area 18 (microTech)",
    "kind": "surface",
    "pos": [
     -494700.687351,
@@ -16938,7 +16938,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 10",
+   "name": "Animal Area 10 (microTech)",
    "kind": "surface",
    "pos": [
     799249.062526,
@@ -19818,7 +19818,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 13",
+   "name": "Animal Area 13 (microTech)",
    "kind": "surface",
    "pos": [
     -291952.257321,
@@ -20988,7 +20988,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 11 (microTech)",
+   "name": "Animal Area 11 (microTech)",
    "kind": "surface",
    "pos": [
     477022.83762500004,
@@ -21006,7 +21006,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 05",
+   "name": "Animal Area 05 (microTech)",
    "kind": "surface",
    "pos": [
     903932.693951,
@@ -21024,7 +21024,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 19",
+   "name": "Animal Area 19 (microTech)",
    "kind": "surface",
    "pos": [
     117251.557977,
@@ -21042,7 +21042,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 06 (microTech)",
+   "name": "Animal Area 06 (microTech)",
    "kind": "surface",
    "pos": [
     985866.614687,
@@ -21060,7 +21060,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 02",
+   "name": "Animal Area 02 (microTech)",
    "kind": "surface",
    "pos": [
     969488.8398750001,
@@ -21078,7 +21078,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 08",
+   "name": "Animal Area 08 (microTech)",
    "kind": "surface",
    "pos": [
     503001.11578500003,
@@ -21096,7 +21096,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 20 (microTech)",
+   "name": "Animal Area 20 (microTech)",
    "kind": "surface",
    "pos": [
     582301.881256,
@@ -21114,7 +21114,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 12",
+   "name": "Animal Area 12 (microTech)",
    "kind": "surface",
    "pos": [
     -267487.46489899996,
@@ -21132,7 +21132,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 03",
+   "name": "Animal Area 03 (microTech)",
    "kind": "surface",
    "pos": [
     953713.398774,
@@ -21150,7 +21150,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 07",
+   "name": "Animal Area 07 (microTech)",
    "kind": "surface",
    "pos": [
     786802.5177529999,
@@ -21168,7 +21168,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 21",
+   "name": "Animal Area 21 (microTech)",
    "kind": "surface",
    "pos": [
     826052.903484,
@@ -21222,7 +21222,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 16",
+   "name": "Animal Area 16 (microTech)",
    "kind": "surface",
    "pos": [
     -860150.042106,
@@ -21438,7 +21438,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 14",
+   "name": "Animal Area 14 (microTech)",
    "kind": "surface",
    "pos": [
     -571859.166545,
@@ -21510,7 +21510,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 15",
+   "name": "Animal Area 15 (microTech)",
    "kind": "surface",
    "pos": [
     -599252.6064940001,
@@ -21528,7 +21528,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 09",
+   "name": "Animal Area 09 (microTech)",
    "kind": "surface",
    "pos": [
     883546.2595909999,
@@ -21546,7 +21546,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 04 (microTech)",
+   "name": "Animal Area 04 (microTech)",
    "kind": "surface",
    "pos": [
     962155.515588,
@@ -21564,7 +21564,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 01",
+   "name": "Animal Area 01 (microTech)",
    "kind": "surface",
    "pos": [
     955267.6952409999,
@@ -21582,7 +21582,7 @@
    "created": 0.0
   },
   {
-   "name": "Area 17 (microTech)",
+   "name": "Animal Area 17 (microTech)",
    "kind": "surface",
    "pos": [
     -995631.14141,
@@ -34281,7 +34281,7 @@
    ],
    "body": null,
    "pad": "unknown",
-   "notes": "Gateway station. Terra Gateway isn't open yet. Position from a /showlocation at the station. Position from your /showlocation",
+   "notes": "Gateway station. Terra Gateway isn't open yet. Position from your /showlocation",
    "source": "db",
    "system": "Stanton",
    "qt": true,

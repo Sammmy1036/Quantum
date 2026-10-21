@@ -268,6 +268,10 @@ class Api:
             if _l.source == "mission" and not _l.category:
                 _l.category = "mission"
         self._db.path = DB_PATH
+        if self._db.recovered:                         # an update replaced locations.json: yours are back
+            self._db.save()
+            n = self._db.recovered
+            self._backup_note = f"Brought back {n} waypoint{'s' if n != 1 else ''} the update had left out"
         self._renamed = rename_gateways(self._db)
         self._renamed.update(rename_raw_pois(self._db))
         ren, self._unplaced = gateways.apply(self._db, self._learned_places())
@@ -986,6 +990,7 @@ class Api:
         return {"ok": True}
 
     def _db_changed(self):
+        self._backup_soon()
         self._uex.forget_places()
         self._services = self._match_services()
         self._static_version += 1
@@ -1037,6 +1042,10 @@ class Api:
             return False
 
     def shutdown(self):
+        # A waypoint saved just before closing still reaches the server (waits a few seconds at most).
+        t = threading.Thread(target=self._backup_quietly, daemon=True)
+        t.start()
+        t.join(8)
         self._sender.shutdown()
         self._watcher.stop()
         self._tracker.stop()
@@ -1841,6 +1850,25 @@ class Api:
         threading.Thread(target=self.backup_now, kwargs={"force": True}, daemon=True).start()
         return self.backup_status()
 
+    BACKUP_SOON = 5          # s after a change to your waypoints (several changes in a row send once)
+
+    def _backup_quietly(self):
+        try:
+            if not self._settings.get("backup_off"):
+                self.backup_now()
+        except Exception as e:
+            print("backup:", e, flush=True)
+
+    def _backup_soon(self):
+        """Upload the backup a few seconds after a change, rather than at the next minute's check (or the
+        next start, if Quantum is closed before then)."""
+        old = getattr(self, "_backup_timer", None)
+        if old:
+            old.cancel()
+        self._backup_timer = threading.Timer(self.BACKUP_SOON, self._backup_quietly)
+        self._backup_timer.daemon = True
+        self._backup_timer.start()
+
     def _backup_loop(self):
         time.sleep(20)
         self._backup_restore_if_empty()
@@ -2127,6 +2155,8 @@ class Api:
                 loc.notes = notes
             self._db.save()
             self._static_version += 1
+            if loc.source == "user":
+                self._backup_soon()
             return {"ok": True}
 
     def rename_location(self, old, new):
@@ -2155,6 +2185,7 @@ class Api:
                 self._db.locations[name].pinned = bool(pinned)
                 self._db.save()
                 self._static_version += 1
+                self._backup_soon()
             return {"ok": True}
 
     def delete_location(self, name):
@@ -4217,10 +4248,10 @@ class Api:
             self._part_images.get(str(ref or "").lower())
 
     # Map markers the wiki has no page of their own for: caves, orbital markers, comm arrays, numbered
-    # derelicts and the game's internal ids ("Stanton1c_rock01_unoc_..."). Not asked about at all.
+    # derelicts, microTech's animal areas (else "Area 18" would show ArcCorp's city) and the game's internal ids ("Stanton1c_rock01_unoc_..."). Not asked about at all.
     # Wrecks are skipped too: "Freelancer C Wreck" could land on the ship's own page and show the ship.
     PLACE_NO_PAGE = re.compile(r"_|\bcave\b|\bwreck|spawn point|^(?:OM-\d|derelict outpost\b|comm array\b|"
-                               r"river #|unknown\b|colonial outpost xs\b|mining claim\b|escort asteroid\b)", re.I)
+                               r"river #|unknown\b|colonial outpost xs\b|mining claim\b|escort asteroid\b|animal area\b)", re.I)
 
     def place_image(self, name, page=None):
         """A photo of a place or body for its info card, from its Star Citizen Wiki page:
@@ -6072,11 +6103,20 @@ def _place_key(name):
 
 def rename_raw_pois(db):
     """Older location data named some caves and derelict outposts by their game entity name
-    ("RastarLocationEntity-012 (Bloom)"). Give them readable names and drop developer test entities,
+    ("RastarLocationEntity-012 (Bloom)"), and microTech's animal areas "Area 18" like ArcCorp's city.
+    Give them readable names and drop developer test entities,
     so saved routes keep working. Returns {old name: new name}."""
     out = {}
     for name in list(db.locations):
         loc = db.locations[name]
+        if loc.source == "db" and loc.body == "microTech" and re.match(r"^Area \d+(?: \(microTech\))?$", name):
+            # microTech's wildlife zones, once named "Area 18" / "Area 18 (microTech)" like ArcCorp's city
+            new = nav_core.friendly_poi_name(name, "AnimalArea", loc.body)
+            if new != name and new not in db.locations:
+                loc.name = new
+                db.locations[new] = db.locations.pop(name)
+                out[name] = new
+            continue
         if loc.source != "db" or not nav_core.RAW_POI.match(name):
             continue
         if nav_core.is_test_poi(name.split(" (")[0]):

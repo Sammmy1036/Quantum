@@ -192,7 +192,14 @@ def friendly_poi_name(name: str, poi_type: str = "", body: str = "") -> str:
       RastarLocationEntity-012 (Bloom)          -> Derelict Outpost 012 (Bloom)
       RL_Pyro4_rock01_unoc_001_size04_003_001   -> Rocky Cave 003-001, size 4 (Pyro4)
       RL_col_m_drlct_otpst_occ_002              -> Medium Derelict Outpost 002, occupied (Bloom)
+      Area 18 (an AnimalArea on microTech)      -> Animal Area 18 (microTech)
     Names that aren't internal ones come back unchanged."""
+    if poi_type == "AnimalArea":
+        # The game's wildlife spawn zones on microTech (animallocation_oc018) are listed upstream as just
+        # "Area 18", which reads as ArcCorp's city Area18. Say what they are.
+        a = re.match(r"^(?:Animal\s+)?Area\s*(\d+)(?:\s*\([^)]*\))?$", name or "", re.I)
+        if a:
+            return f"Animal Area {a.group(1)}" + (f" ({body})" if body else "")
     if not name or not RAW_POI.match(name):
         return name
     m = re.match(r"^(.*?)\s*\(([^)]*)\)$", name)              # keep an existing "(Body)" suffix
@@ -322,24 +329,54 @@ class NavDB:
     bodies: dict[str, Body] = field(default_factory=dict)
     locations: dict[str, Location] = field(default_factory=dict)
     path: Path | None = None
+    recovered: int = 0          # waypoints put back from waypoints.json on load
 
     @classmethod
     def load(cls, path: str | Path) -> "NavDB":
         path = Path(path)
         db = cls(path=path)
-        if not path.exists():
-            return db
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        for b in raw.get("bodies", []):
-            body = _from_dict(Body, b)
-            db.bodies[body.name] = body
-        for l in raw.get("locations", []):
-            if l.get("source") == "valalol":   # files from the first importer
-                l["source"] = "db"
-            loc = _from_dict(Location, l)
-            db.locations[loc.name] = loc
+        if path.exists():
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            for b in raw.get("bodies", []):
+                body = _from_dict(Body, b)
+                db.bodies[body.name] = body
+            for l in raw.get("locations", []):
+                if l.get("source") == "valalol":   # files from the first importer
+                    l["source"] = "db"
+                loc = _from_dict(Location, l)
+                db.locations[loc.name] = loc
+        db.recovered = db._load_waypoint_copy()
         normalize(db)
         return db
+
+    # Your waypoints are also kept on their own in waypoints.json, which Quantum never ships. An update
+    # that brings a new locations.json (the map data) would otherwise take them with it.
+    WAYPOINT_COPY = "waypoints.json"
+
+    def _load_waypoint_copy(self) -> int:
+        """Put back waypoints from waypoints.json that locations.json lost. Returns how many."""
+        side = self.path.with_name(self.WAYPOINT_COPY) if self.path else None
+        if not side or not side.exists():
+            return 0
+        try:
+            rows = json.loads(side.read_text(encoding="utf-8")).get("waypoints", [])
+        except (OSError, ValueError, AttributeError):
+            return 0
+        n = 0
+        for l in rows:
+            try:
+                loc = _from_dict(Location, l)
+            except (TypeError, ValueError):
+                continue
+            have = self.locations.get(loc.name)
+            if have is not None and have.source == "user":
+                continue                                   # already here
+            loc.source = "user"
+            if have is not None:                           # the map data now has a place by that name
+                loc.name = self.unique_name(loc.name)
+            self.locations[loc.name] = loc
+            n += 1
+        return n
 
     def save(self) -> None:
         if not self.path:
@@ -349,6 +386,12 @@ class NavDB:
         tmp = self.path.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
         tmp.replace(self.path)
+        side = self.path.with_name(self.WAYPOINT_COPY)
+        mine = [asdict(l) for l in self.locations.values() if l.source == "user"]
+        if mine or side.exists():
+            tmp = side.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"waypoints": mine}, indent=1), encoding="utf-8")
+            tmp.replace(side)
 
     def unique_name(self, name: str) -> str:
         if name not in self.locations:

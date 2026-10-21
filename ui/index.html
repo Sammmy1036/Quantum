@@ -364,10 +364,8 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .status b{color:var(--ink);font-weight:600}
 .rsearch{position:relative;margin:0 0 14px;display:flex;gap:8px;align-items:stretch}
 .rsearch .search{flex:1;min-width:0}
-.rs-browse{flex:none;background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;color:var(--ink-2);font-size:12.5px;padding:0 12px;cursor:pointer}
-.rs-browse:hover{color:var(--ink);border-color:var(--ink-2)}
-.rs-browse[aria-pressed=true]{background:var(--panel-3);color:var(--ink);border-color:var(--route)}
 #rs-panel .filters{margin:-4px 0 10px}
+#route-body:not([hidden])+#rs-panel{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .rsearch .search{padding-left:36px;background:var(--panel-2) no-repeat 12px 50%/15px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f82a0' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M20 20l-4.8-4.8'/%3E%3C/svg%3E")}
 .rs-list{margin:0;padding:0;list-style:none}
 .rs-list li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 6px;border-radius:6px;cursor:pointer}
@@ -1013,11 +1011,6 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <section class="pane active" id="pane-route">
       <div class="rsearch" id="rsearch-wrap">
         <input class="search" id="rsearch" placeholder="Search places, moons, services…" title="Search a place, a planet or moon, or a service like “refinery”" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="rs-list">
-        <button class="rs-browse" id="rs-browse" aria-pressed="false" title="List every place in this system">Browse</button>
-      </div>
-      <div id="rs-panel" hidden>
-        <div class="filters" id="filters"></div>
-        <ul class="rs-list" id="rs-list" role="listbox"></ul>
       </div>
       <div id="route-body">
       <div class="route-summary" id="route-summary">
@@ -1029,8 +1022,11 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
         <button class="btn" id="btn-optimize" title="Reorder the current stops only">Optimize</button></div>
       <div class="warnbox" id="route-warn" style="display:none"></div>
       <ol class="stops" id="stops"></ol>
-      <div id="route-empty" class="empty"><strong>Plan a trip</strong>Search above to add stops, double-click anything on the map, or plan your contracts from the Contracts tab.</div>
       <button class="btn small ghost" id="btn-arrived" title="Stops tick themselves off when the game log or a /showlocation shows you've arrived" style="width:100%;display:none;margin-top:6px">Skip this stop (arrival is detected automatically)</button>
+      </div>
+      <div id="rs-panel" hidden>
+        <div class="filters" id="filters"></div>
+        <ul class="rs-list" id="rs-list" role="listbox"></ul>
       </div>
     </section>
 
@@ -2849,7 +2845,6 @@ function roleTags(roles){ return (roles||[]).map(r=>r.kind==="gate"?`<span class
 const isGateStop=roles=>(roles||[]).some(r=>r.kind==="gate"||r.kind==="gate-in");
 function renderRoute(){
   const live=S.live, route=live.route, el=$("stops"); $("c-route").textContent=route.length;
-  $("route-empty").style.display=route.length?"none":"block";
   $("route-summary").style.display=route.length?"":"none";      // nothing to total up without stops $("btn-arrived").style.display=route.length?"block":"none";
   $("route-total").textContent=route.length?fmtDist(live.total):"–";
   const jumps=route.filter((n,i)=>i>0&&S.locMap[n]?.system!==S.locMap[route[i-1]]?.system).length;
@@ -2949,11 +2944,11 @@ async function planRoute(withContracts){
 }
 $("btn-arrived").onclick=async()=>{ await api().arrived(); await poll(); };
 
-// ---- route search: find anything and add it as a stop (or fly to planets and moons). Typing, or pressing
-// Browse, swaps the stop list for a list of places (with type chips); clearing the search or Esc brings the
-// stops back. This is also where the old POI tab's list lives now.
-const RS={items:[],on:0,browse:false,type:null,more:0};
-const rsMode=()=>$("rsearch").value.trim()?"search":RS.browse?"browse":null;
+// ---- route search: find anything and add it as a stop (or fly to planets and moons). Under the route there's
+// always a list of every place in this system (with type chips) to add from; typing swaps the route and that
+// list for search results, and clearing the search or Esc brings them back. The old POI tab's list lives here.
+const RS={items:[],on:0,type:null,more:0};
+const rsMode=()=>$("rsearch").value.trim()?"search":"browse";
 const RS_RANK={city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6};
 function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
   return {kind:"loc",name:L.name,via,sc,r:L.source==="user"?-0.5:(RS_RANK[L.type]??4),sys:L.system,
@@ -2984,11 +2979,8 @@ function rsBrowse(){
 const RS_MAX=250;
 function rsRender(){
   const mode=rsMode(), list=$("rs-list"), route=S.live?.route||[], q=$("rsearch").value.trim();
-  $("rs-panel").hidden=!mode; $("route-body").hidden=!!mode;
-  const bb=$("rs-browse"); bb.setAttribute("aria-pressed",String(!!mode)); bb.textContent=mode?"Done":"Browse";
-  bb.title=mode?"Back to your route":"List every place in this system";
-  $("rsearch").setAttribute("aria-expanded",String(!!mode));
-  if(!mode){ RS.items=[]; return; }
+  $("rs-panel").hidden=false; $("route-body").hidden=mode==="search";
+  $("rsearch").setAttribute("aria-expanded",String(mode==="search"));
   const all=mode==="search"?rsCandidates(q):rsBrowse();
   RS.items=all.slice(0,RS_MAX); RS.more=all.length-RS.items.length; RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
   const hl=n=>{ if(!q) return esc(n); const i=n.toLowerCase().indexOf(q.toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.length))+"</mark>"+esc(n.slice(i+q.length)); };
@@ -3000,7 +2992,7 @@ function rsRender(){
     :`<li class="empty">${mode==="search"?`No match for “${esc(q)}”${RS.type?` in ${esc(TYPES[RS.type]?.label||"")}`:""}`:`No ${RS.type?esc((TYPES[RS.type]?.label||"places").toLowerCase()):"places"} in ${esc(S.system)}`}</li>`;
 }
 // Back to the route. The type chip goes back to All too, so the next search isn't quietly filtered.
-function rsClose(){ $("rsearch").value=""; RS.browse=false; RS.on=0; RS.type=null;
+function rsClose(){ $("rsearch").value=""; RS.on=0; RS.type=null;
   for(const x of $("filters").children) x.setAttribute("aria-pressed",String(!x.dataset.t)); rsRender(); $("rsearch").blur(); }
 async function rsPick(i,act,{fromKeys=false}={}){
   const it=RS.items[i]; if(!it) return;
@@ -3017,7 +3009,6 @@ $("rsearch").onkeydown=e=>{
   if(e.key==="ArrowDown") move(1); else if(e.key==="ArrowUp") move(-1);
   else if(e.key==="Enter"){ const it=RS.items[RS.on]; if(it&&$("rsearch").value.trim()) rsPick(RS.on, it.kind==="body"?"fly":"add", {fromKeys:true}); e.preventDefault(); }
   else if(e.key==="Escape"){ rsClose(); e.preventDefault(); } };
-$("rs-browse").onclick=()=>{ if(rsMode()) return rsClose(); RS.browse=true; RS.on=0; rsRender(); };
 $("rs-list").onclick=e=>{ const li=e.target.closest("li[data-i]"); if(!li) return;
   const b=e.target.closest("[data-act]"); rsPick(+li.dataset.i, b?b.dataset.act:(RS.items[+li.dataset.i]?.kind==="body"?"fly":"view")); };
 
