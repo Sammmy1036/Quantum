@@ -2451,6 +2451,13 @@ class Api:
         with self._lock:
             if self._dr_job.get("state") == "shooting" and time.time() - self._dr_job.get("started", 0) < 25:
                 return "busy with the last screenshot"
+            if not from_button and not self._dr_terminal:
+                # The hotkey only works once a terminal is picked in Datarunner (by you, or from the game log when
+                # you land there). Pressed by mistake anywhere else, it takes nothing. The page shows why.
+                self._dr_job = {"state": "error", "n": self._dr_job.get("n", 0) + 1, "started": time.time(),
+                                "from_button": False,
+                                "error": "No screenshot taken: pick the terminal in Datarunner first, then press the key at its kiosk"}
+                return "ignored: no terminal picked in Datarunner"
             self._dr_job = {"state": "shooting", "n": self._dr_job.get("n", 0) + 1, "started": time.time(),
                             "from_button": from_button}
         threading.Thread(target=self._dr_run_job, args=(from_button,), daemon=True).start()

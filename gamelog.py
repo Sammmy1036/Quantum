@@ -1686,7 +1686,12 @@ class ContractTracker(threading.Thread):
             return
         self._last_locate = now
         logs = running_game_logs()
-        self.game_running = bool(logs)
+        if logs:
+            self._run_seen = now
+        # One missed process check (a busy PC, a handle the check couldn't open) isn't the game closing: Quantum
+        # forgets your position when the game closes, which made the route line vanish until the next
+        # /showlocation. Only call it closed after a minute without seeing it.
+        self.game_running = bool(logs) or (self.proc_seen and now - getattr(self, "_run_seen", 0) < 60)
         self.proc_seen = self.proc_seen or self.game_running   # the process check works on this PC
         running = [p for p in logs if os.path.isfile(p)]
         if running and (not self.log_path or os.path.normcase(self.log_path) not in map(os.path.normcase, running)):

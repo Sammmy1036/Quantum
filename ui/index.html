@@ -1062,7 +1062,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <div class="seg-mini tr-tabs"><button data-trv="find" class="on">Find Routes</button><button data-trv="mine">Planned Routes <span id="tr-mine-n"></span></button></div>
       <div id="tr-find">
       <div class="tr-form">
-        <span class="k">From</span><select class="field" id="tr-from"></select>
+        <span class="k">From</span><div class="tr-ship"><input class="field" id="tr-from-q" placeholder="Type a planet, station or city" autocomplete="off" spellcheck="false"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tr-from-list"><div class="tr-ship-list" id="tr-from-list" role="listbox" hidden></div><select id="tr-from" hidden></select></div>
         <span class="k">Location</span><select class="field" id="tr-at" title="Start from one place there, like a station or city, or anywhere on it"><option value="">Any</option></select>
         <span class="k">Ship</span><div class="tr-ship"><input class="field" id="tr-ship" placeholder="None Selected: type any ship" autocomplete="off" spellcheck="false"
           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="tr-ship-list"><div class="tr-ship-list" id="tr-ship-list" role="listbox" hidden></div></div>
@@ -1089,10 +1090,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <div class="dr-shots" id="dr-shots"></div>
       <div class="row" style="gap:6px"><button class="btn" id="dr-shoot" style="flex:1" disabled>Take screenshot</button><button class="btn ghost" id="dr-shots-clear" hidden>Clear</button></div>
       <div class="muted" id="dr-shot-hint" style="font-size:12px;margin:6px 2px 0"></div>
-      <div class="mk-h">More details <span class="muted" style="text-transform:none;letter-spacing:0">optional</span></div>
-      <div class="setgrid" style="grid-template-columns:110px 1fr;margin-top:4px">
+      <div class="setgrid" style="grid-template-columns:110px 1fr;margin-top:14px">
         <span class="k">Game version</span><div class="dr-ver" id="dr-ver" title="Read from Game.log"></div>
-        <span class="k">Note</span><input class="field" id="dr-note" maxlength="500" placeholder="Like “terminal not working”" disabled>
       </div>
       <div class="dr-stats" id="dr-stats" hidden></div>
     </section>
@@ -1954,7 +1953,9 @@ function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S
 // map yourself pauses it; ◎ (or Y) turns it back on.
 function setFollow(on){ S.follow=on; $("z-you").classList.toggle("on",on); $("z-you").title=on?"Following you (drag the map to stop)":"Follow me (Y)"; }
 function followNow(){ const live=S.live, p=live?.player; if(!p) return;
-  if(live.route?.length && S.locMap[live.route[0]]?.system===p.system) fitRoute(false,[live.route[0]]); else focusPlayer(true); }
+  if(live.route?.length && S.locMap[live.route[0]]?.system===p.system) fitRoute(false,[live.route[0]]);
+  else if(live.guide?.name && S.locMap[live.guide.name]?.system===p.system) fitRoute(false,[live.guide.name]);   // guiding to a waypoint: you and it
+  else focusPlayer(true); }
 function focusPlayer(quiet){ const p=S.live?.player; if(!p) return quiet?null:toast("Type /showlocation in game chat first");
   if(p.system!==S.system) setSystem(p.system,false);
   if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), {...TOPDOWN,key:"player:"+p.body}); else flyTo({kind:"point",pos:p.pos}, 5e6, {key:"player:space"}); }
@@ -2048,7 +2049,12 @@ function legSamples(a,b,t){ // a,b: {g, body, local}
 function nodeOf(name,t){ const L=S.locMap[name]; if(!L||!L.pos||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
 // On a planet you turn with it, so place the last reading by its ground position, not its old space position.
 function playerG(t){ const p=S.live?.player; if(!p) return null; return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
-function playerNode(){ const p=S.live?.player; if(!p||p.system!==S.system) return null; return {g:playerG(now()), body:p.body, local:p.local}; }
+function playerNode(){ const p=S.live?.player;
+  if(p&&p.system===S.system){ S.lastPN={sys:p.system, body:p.body, local:p.local, pos:p.pos, at:Date.now()}; return {g:playerG(now()), body:p.body, local:p.local}; }
+  // Your position dropped out for a moment (or the log briefly named another system): keep the route and guide
+  // lines drawn from where you were last seen, for up to 10 minutes, instead of losing them until the next reading.
+  const L=S.lastPN; if(!L||L.sys!==S.system||S.live?.game_off||Date.now()-L.at>600000) return null;
+  const B=L.body&&L.local&&S.bodyMap[L.body]; return {g:B?toGlobal(B,L.local,now()):L.pos, body:L.body, local:L.local, stale:true}; }
 function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
   let prev=null; const segs=[]; let cur=[];
   for(const s of samples){ const q=proj(s.g); const vis=q&&visible(s.g,s.body); if(vis){ cur.push(q); } else { if(cur.length>1) segs.push(cur); cur=[]; } }
@@ -2152,9 +2158,9 @@ function drawOverlay(t){
   const pn=playerNode();
   if(pn){ const q=proj(pn.g); if(q&&visible(pn.g,pn.body)){ const ph=(performance.now()/1400)%1;
     ctx.strokeStyle=`rgba(127,231,255,${.55*(1-ph)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q[0],q[1],7+ph*18,0,7); ctx.stroke();
-    if(S.live.player?.approx){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
+    if(S.live.player?.approx||pn.stale){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
     ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke();
-    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label("You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
+    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label(pn.stale?"You (last seen)":"You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
     // The place you're at sits under the "You" marker: name it just below "You" so both show.
     const under=drawn.filter(d=>!d.isWp).map(d=>[d,Math.hypot(d.q[0]-q[0],d.q[1]-q[1])]).filter(x=>x[1]<24).sort((a,b)=>a[1]-b[1])[0]?.[0];
     S.youAt=under?.L.name||null;
@@ -2520,25 +2526,11 @@ function renderDetail(){
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
       <div class="sub">Planet alignment</div>
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span>${inSys.length?`<b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}`:`Nothing to align in ${esc(S.system)}`}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
-      <div class="sub">Trade data (UEX)</div>
+      <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
-        <label class="k st-label" for="s-uex"><span>UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></span>${connPill(!lg.uex_token?"none":!S.uexStat?"checking":S.uexStat.ok?"ok":"bad")}</label>
-        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
-          <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
-          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. ${S.acct?.keys?.stored?"It's also kept in your Quantum account (below).":"It stays on this PC."}</div>
-        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
-        <label class="k st-label" for="s-drsecret" style="margin-top:14px"><span>UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></span>${(()=>{ const k=S.keyStat;
-          if(!S.drHasSecret) return connPill("none");
-          if(k===undefined){ S.keyStat=null; api().uex_key_status().then(x=>{ S.keyStat=x; renderDetail(); }).catch(()=>{}); }
-          return !k?connPill("checking"):k.ok?connPill("ok",`Connected · ${k.username}`):connPill("bad",k.error?"Not accepted":"Not connected",k.error); })()}</label>
-        ${!lg.uex_token&&!S.drHasSecret?`<div class="muted" style="font-size:12px;margin:2px 0 6px;color:#ffd38a">Add and save your UEX Bearer Token above first. The Secret Key can't be saved until the token is in.</div>`:""}
-        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":!lg.uex_token?"Enter your Bearer Token first":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":!lg.uex_token?"Save your UEX Bearer Token first":""}" style="flex:1" autocomplete="off" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>
-          <button class="btn small" data-a="drsecret" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
         ${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); }
           const on=c?c.enabled!==false&&!!c.url:true, st=!c?"checking":!on?"off":c.ok?"ok":"offline";
-          return `<div class="st-label" style="margin-top:16px"><b>Quantum API</b>${connPill(st,st==="offline"?"Offline":null,c?.error)}</div>
+          return `<div class="st-label"><b>Quantum server</b>${connPill(st,st==="offline"?"Offline":null,c?.error)}</div>
           <div class="muted" style="font-size:12px;margin-top:6px;line-height:1.5">Community prices, photos, backups, planet alignment, station location alignment.
             ${on?`Community pricing updates will reflect within seconds when submitted from verified users, marked with ${IC_BOLT}.${st==="offline"?" The server can't be reached right now, so UEX's data is used alone until it's back.":""}`
               :"Community features are off: Quantum uses UEX's data alone."}</div>
@@ -2552,7 +2544,26 @@ function renderDetail(){
               <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn small" data-a="commcancel">Keep them on</button><button class="btn small danger" data-a="commoff">Turn off community features</button></div></div>`
             :`<div class="row" style="gap:6px;margin-top:8px">${on?`<button class="btn small ghost" data-a="commask">Disable community features</button>`
               :`<button class="btn small primary" data-a="common">Enable community features</button>`}</div>`}`; })()}</div>
-      ${(()=>{ const h=acctHtml(); return h?`<div class="sub">Quantum account</div><div class="note">${h}</div>`:""; })()}
+      ${(()=>{ const h=acctHtml(); return h?`<div class="sub">Quantum account</div><div class="note" style="margin:4px 0 12px">${h}</div>`:""; })()}
+      ${(()=>{ const g=uexGate(); return g?`<div class="sub">Trade data (UEX)</div><div class="note" style="margin:4px 0 12px">${g}</div>`:`
+      <div class="sub">Trade data (UEX)</div>
+      <div class="note" style="margin:4px 0 12px">
+        <label class="k st-label" for="s-uex"><span>UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></span>${connPill(!lg.uex_token?"none":!S.uexStat?"checking":S.uexStat.ok?"ok":"bad")}</label>
+        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
+          <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
+          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. ${S.acct?.keys?.stored?"It's also kept in your Quantum account (above).":"It stays on this PC."}</div>
+        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
+        <label class="k st-label" for="s-drsecret" style="margin-top:14px"><span>UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></span>${(()=>{ const k=S.keyStat;
+          if(!S.drHasSecret) return connPill("none");
+          if(k===undefined){ S.keyStat=null; api().uex_key_status().then(x=>{ S.keyStat=x; renderDetail(); }).catch(()=>{}); }
+          return !k?connPill("checking"):k.ok?connPill("ok",`Connected · ${k.username}`):connPill("bad",k.error?"Not accepted":"Not connected",k.error); })()}</label>
+        ${!lg.uex_token&&!S.drHasSecret?`<div class="muted" style="font-size:12px;margin:2px 0 6px;color:#ffd38a">Add and save your UEX Bearer Token above first. The Secret Key can't be saved until the token is in.</div>`:""}
+        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":!lg.uex_token?"Enter your Bearer Token first":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":!lg.uex_token?"Save your UEX Bearer Token first":""}" style="flex:1" autocomplete="off" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>
+          <button class="btn small" data-a="drsecret" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
+</div>
+      `; })()}
       <div class="sub">Backup</div>
       <div class="note">${(()=>{ const b=S.bk; if(b===undefined){ S.bk=null; api().backup_status().then(x=>{ S.bk=x; renderDetail(); }); return "Checking…"; }
         if(!b) return "";
@@ -2756,7 +2767,7 @@ function renderDetail(){
     if(a==="unroute"){ await api().remove_place(sel.name); await poll(); renderDetail(); }
     if(a==="focus") focusLoc(sel.name,true);
     if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
-    if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); toast(`Guiding you to ${sel.name}`); }
+    if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
       select({kind:"loc",name:sel.name}); focusLoc(sel.name,true); toast(`${sel.name} is on the map now`); return; }
@@ -3227,7 +3238,7 @@ $("wp-list").onclick=async e=>{ const row=e.target.closest(".wp"); if(!row) retu
   if(e.target.classList.contains("star")){ await api().set_pinned(n,!L.pinned); await poll(); return; }
   if(e.target.classList.contains("n")){ select({kind:"loc",name:n}); focusLoc(n,true); return; }
   const a=e.target.dataset?.a; if(!a) return;
-  if(a==="guide"){ await api().set_guide(n); await poll(); select({kind:"loc",name:n}); toast(`Guiding you to ${n}`); }
+  if(a==="guide"){ await api().set_guide(n); await poll(); select({kind:"loc",name:n}); setFollow(true); followNow(); toast(`Guiding you to ${n}`); }
   if(a==="unguide"){ await api().set_guide(null); await poll(); }
   if(a==="route") addStops([n]);
   if(a==="rename"){ S.editing=n; renderWaypoints(true); } };
@@ -3410,7 +3421,7 @@ $("mk-out").onclick=e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleM
 // ---- Trade routes: best runs from a starting point for your cargo space and budget
 const trPref=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem("q-"+k)||""; localStorage.setItem("q-"+k,v); }catch{ return ""; } };
 async function openTrade(){
-  if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; return; }
+  if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; trFromSync(); return; }
   const r=await api().uex_origins(); if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
   const cur=$("tr-from").value||trPref("from"); let html=r.here?`<option value="${r.here.kind}:${r.here.id}" data-name="${esc(r.here.name)}">Near me (${esc(r.here.name)})</option>`:"";
   // Wider searches: the most profitable runs in the whole game, or anywhere in one system
@@ -3418,7 +3429,7 @@ async function openTrade(){
   html+=`<optgroup label="Everywhere"><option value="all:all" data-name="">Anywhere (all systems)</option>${sysHave.map(sys=>`<option value="system:${sys}" data-name="">All of ${sys}</option>`).join("")}</optgroup>`;
   for(const sys of ["Stanton","Pyro","Nyx"]){ const g=r.items.filter(o=>o.system===sys); if(g.length) html+=`<optgroup label="${sys}">${g.map(o=>`<option value="${o.kind}:${o.id}" data-name="${esc(o.name)}">${esc(o.name)}</option>`).join("")}</optgroup>`; }
   S.trOrigins=r.items;
-  $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur;
+  $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur; trFromSync();
   trFillAt(trPref("at"));
   if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sys").dataset.init=1; }
   trSysFit();
@@ -3432,7 +3443,41 @@ async function openTrade(){
 function trFillAt(keep){ const o=(S.trOrigins||[]).find(o=>`${o.kind}:${o.id}`===$("tr-from").value), L=o?.terminals||[];
   $("tr-at").innerHTML=`<option value="">Any</option>`+L.map(t=>`<option value="${t.id}" data-name="${esc(t.name)}" data-place="${esc(t.place||"")}">${esc(t.name)}</option>`).join("");
   $("tr-at").value=keep&&L.some(t=>String(t.id)===String(keep))?String(keep):""; $("tr-at").disabled=!L.length; }
-$("tr-from").addEventListener("change",()=>{ trFillAt(""); trPref("at",""); trSysFit(); });
+$("tr-from").addEventListener("change",()=>{ trFillAt(""); trPref("at",""); trSysFit(); trFromSync(); });
+// From: type where you'll start (a planet, a moon, a station, a city or one terminal) or pick from the list. The hidden
+// select still holds the choice, so everything that reads it works as before. Picking a terminal also sets Location.
+function trFromSync(){ const q=$("tr-from-q"); if(!q||document.activeElement===q) return;
+  q.value=$("tr-from").selectedOptions[0]?.textContent||""; q.dataset.label=q.value; }
+function trFromOptions(qs){ const q=qs.trim().toLowerCase(), out=[], seen=new Set();
+  for(const o of $("tr-from").options){ const g=o.parentElement?.tagName==="OPTGROUP"?o.parentElement.label:"Near you";
+    if(!q||`${o.textContent} ${g}`.toLowerCase().includes(q)) out.push({value:o.value, label:o.textContent, group:g}); }
+  if(q.length>=2) for(const o of S.trOrigins||[]) for(const t of o.terminals||[]){
+    const label=t.place&&!t.name.toLowerCase().includes(t.place.toLowerCase())?`${t.place} · ${t.name}`:t.name;
+    if(!`${t.name} ${t.place||""}`.toLowerCase().includes(q)||seen.has(t.id)) continue; seen.add(t.id);
+    out.push({value:`${o.kind}:${o.id}`, at:String(t.id), label, group:`Terminals at ${o.name}`}); }
+  return out.slice(0,150); }
+function trFromList(){ const box=$("tr-from-list"), inp=$("tr-from-q");
+  const opts=trFromOptions(inp.value===(inp.dataset.label||"")?"":inp.value); S.trFromOpts=opts;
+  if((S.trFromAct??-1)>=opts.length) S.trFromAct=opts.length-1;
+  let html="", g=null; opts.forEach((o,i)=>{ if(o.group!==g){ g=o.group; html+=`<div class="h">${esc(g)}</div>`; }
+    html+=`<div class="opt ${i===S.trFromAct?"act":""}" role="option" data-trfrom="${i}">${esc(o.label)}</div>`; });
+  box.innerHTML=html||`<div class="muted" style="font-size:12px;padding:6px 8px">${$("tr-from").options.length?"No place or terminal matches":"Loading places…"}</div>`;
+  box.hidden=false; inp.setAttribute("aria-expanded","true"); }
+function trFromClose(){ $("tr-from-list").hidden=true; $("tr-from-q").setAttribute("aria-expanded","false"); S.trFromAct=-1; }
+function trFromPick(o){ if(!o) return; const sel=$("tr-from"), changed=sel.value!==o.value; sel.value=o.value;
+  if(changed) sel.dispatchEvent(new Event("change"));
+  if(o.at&&[...$("tr-at").options].some(x=>x.value===o.at)){ $("tr-at").value=o.at; $("tr-at").dispatchEvent(new Event("change")); }
+  trFromClose(); $("tr-from-q").blur(); trFromSync(); }
+$("tr-from-q").addEventListener("focus",()=>{ S.trFromAct=-1; $("tr-from-q").select(); trFromList(); });
+$("tr-from-q").addEventListener("input",()=>{ S.trFromAct=0; trFromList(); });
+$("tr-from-q").addEventListener("blur",()=>{ trFromClose(); trFromSync(); });
+$("tr-from-q").addEventListener("keydown",e=>{ const n=(S.trFromOpts||[]).length;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); if(!n) return; S.trFromAct=((S.trFromAct??-1)+(e.key==="ArrowDown"?1:-1)+n)%n; trFromList();
+    $("tr-from-list").querySelector(".opt.act")?.scrollIntoView({block:"nearest"}); }
+  else if(e.key==="Enter"){ e.preventDefault(); trFromPick(S.trFromOpts?.[Math.max(0,S.trFromAct??0)]); }
+  else if(e.key==="Escape"){ trFromClose(); $("tr-from-q").blur(); } });
+// mousedown, so the pick happens before the box loses focus
+$("tr-from-list").addEventListener("mousedown",e=>{ e.preventDefault(); const o=e.target.closest("[data-trfrom]"); if(o) trFromPick(S.trFromOpts?.[+o.dataset.trfrom]); });
 // Systems: only what can apply to where you start. Starting in Pyro, "Stay in Stanton" can't find
 // anything and "Avoid Pyro" rules out every run, so they're hidden (and a hidden choice goes back to Any).
 function trStartSystem(){ const [kind,id]=($("tr-from").value||"").split(":"); if(kind==="all") return null; if(kind==="system") return id;
@@ -4121,7 +4166,7 @@ async function renderShip(uid){
     <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
   if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size);
     // Just opened with Change: bring the slot and its options/comparison into view instead of leaving them below the fold
-    if(S.flScroll&&b){ S.flScroll=false; requestAnimationFrame(()=>b.closest(".slot")?.scrollIntoView({block:"start",behavior:"smooth"})); } }
+    if(S.flScroll&&b){ S.flScroll=false; S.flScrollUntil=Date.now()+4000; flScrollToSlot(); } }
   watchPic($("fl-panel").querySelector(".mkp-img"));
   loadLiveries(uid); }
 // ---- Livery: any paint there is for the ship, per loadout ("Stock paint" when none is picked).
@@ -4152,7 +4197,21 @@ async function loadSlotOptions(type,size){
   const box=$("fl-opts"); if(!box) return; box.innerHTML=`<div class="muted" style="font-size:12px">Loading what fits, with each one's numbers…</div>`;
   const r=await api().fleet_options(type,size?+size:0,S.flSel); if(!$("fl-opts")) return;
   if(!r.ok){ $("fl-opts").innerHTML=`<div class="unknown">${esc(r.error)}</div>`; return; }
-  S.flOpts=r; renderSlotOptions(); }
+  S.flOpts=r; renderSlotOptions(); flScrollToSlot(); }
+// Just opened with Change: bring the slot and its table of options into view. The page keeps moving under it
+// for a moment after the click (the ship picture loads and pushes everything down, the options table fills
+// in), so it's placed again each time, for a few seconds, rather than once straight away.
+function flScrollToSlot(){ if(!S.flSlot||Date.now()>(S.flScrollUntil||0)) return;
+  const go=()=>{ const panel=$("fl-panel"), b=panel?.querySelector(`[data-flswap="${CSS.escape(S.flSlot||"")}"]`), slot=b?.closest(".slot"); if(!slot) return;
+    const top=slot.getBoundingClientRect().top-panel.getBoundingClientRect().top+panel.scrollTop-12;
+    // Already showing the slot with as much of its table as fits: leave it (the user may be scrolling)
+    const r=slot.getBoundingClientRect(), pr=panel.getBoundingClientRect();
+    if(r.top>=pr.top&&(r.bottom<=pr.bottom||r.top<=pr.top+pr.height*0.25)) return;
+    panel.scrollTo({top:Math.max(0,top)}); };
+  requestAnimationFrame(go); for(const ms of [350,900,1800]) setTimeout(()=>{ if(Date.now()<=(S.flScrollUntil||0)) go(); },ms);
+  const img=$("fl-panel")?.querySelector(".mkp-img img"); if(img&&!img.complete) img.addEventListener("load",()=>requestAnimationFrame(go),{once:true}); }
+// Scrolling yourself stops the slot from being pulled back into view
+$("fl-panel").addEventListener("wheel",()=>{ S.flScrollUntil=0; },{passive:true});
 // ---- Loadouts: up to 5 named sets of parts per ship. The one shown is edited; the primary one (★) is the one
 // the rest of Quantum uses for this ship, like the Components tab's "Fit to a ship".
 function loadoutBar(L){ if(!L?.ok) return ""; const act=L.loadouts.find(x=>x.id===L.active), mode=S.flLoMode;
@@ -4469,7 +4528,7 @@ function acctHtml(){
     const link=a.uex?`<div style="margin-top:4px">UEX datarunner: <b>${esc(a.uex)}</b></div>`
       :a.has_secret?`<div class="muted" style="font-size:12px;margin-top:4px">Your UEX name isn't linked yet${a.link_error?` (${esc(String(a.link_error).replace(/_/g," "))})`:""}.
           <button class="btn small ghost" data-a="acctlink">Link it now</button></div>`
-      :`<div class="muted" style="font-size:12px;margin-top:4px">Save your UEX Secret Key above and your UEX datarunner name links to this account by itself.</div>`;
+      :`<div class="muted" style="font-size:12px;margin-top:4px">Save your UEX Secret Key below and your UEX datarunner name links to this account by itself.</div>`;
     const k=a.keys||{}, site=a.site||"https://quantumsc.org";
     const keys=`<label class="row" style="gap:8px;margin-top:10px;cursor:pointer"><input type="checkbox" data-a="acctkeys" ${k.stored?"checked":""} ${S.acctKeysBusy?"disabled":""}>
         Keep my UEX keys in my Quantum account${S.acctKeysBusy?` <span class="spin-sm"></span>`:""}</label>
@@ -4486,7 +4545,7 @@ function acctHtml(){
   const site=a.site||"https://quantumsc.org", lerr=S.acctErr?`<div style="color:#ffd38a;font-size:12px;margin:6px 0 0">${esc(S.acctErr)}${S.acctUnconfirmed
       ?` <a data-url="${esc(site)}/account/login" style="cursor:pointer;text-decoration:underline">Send the link again</a>`:""}</div>`:"";
   const enter=`onkeydown="if(event.key==='Enter'){event.preventDefault();document.querySelector('[data-a=acctlogin]')?.click();}"`;
-  return `${note}${err}<div class="muted" style="font-size:12px;margin-bottom:8px">One account for Quantum and quantumsc.org. Optional: everything in Quantum works without one.</div>
+  return `${note}${err}<div class="muted" style="font-size:12px;margin-bottom:8px">One account for Quantum and quantumsc.org. ${UEX_NEEDS_ACCOUNT?"Sign in to add your UEX keys (trade data, fleet, vehicles, components and datarunning). The map, routes and waypoints work without one.":"Optional: everything in Quantum works without one."}</div>
     <input class="field" id="acct-email" type="email" placeholder="Email" autocomplete="username" value="${esc(S.acctEmail||"")}" oninput="S.acctEmail=this.value" ${enter} style="width:100%;margin-bottom:6px" ${S.acctBusy?"disabled":""}>
     <input class="field" id="acct-pw" type="password" placeholder="Password" autocomplete="current-password" ${enter} style="width:100%" ${S.acctBusy?"disabled":""}>${lerr}
     <div class="row" style="gap:8px;margin-top:8px"><button class="btn small primary" data-a="acctlogin" ${S.acctBusy?"disabled":""}>${S.acctBusy?"Signing in…":"Sign in"}</button>
@@ -4494,6 +4553,21 @@ function acctHtml(){
     <div class="muted" style="font-size:12px;margin-top:10px">New here? <a data-url="${esc(site)}/account/signup" style="cursor:pointer;text-decoration:underline">Create an account</a> on the website (you'll confirm your email), then sign in here.</div>
     <div class="muted" style="font-size:12px;margin-top:6px">Or <a data-a="acctsignin" style="cursor:pointer;text-decoration:underline">sign in with your browser</a> instead, so Quantum never sees your password.</div>`;
 }
+// UEX keys need a Quantum account: the Trade data (UEX) section stays hidden until you're signed in on this PC.
+// Set to false to let anyone enter keys without an account again.
+const UEX_NEEDS_ACCOUNT=true;
+// Returns what to show instead of the UEX section, or "" to show it. Never locks anyone out:
+//  - keys already saved on this PC stay visible (so they can be replaced or removed);
+//  - with community features off, or accounts not open / the server unreachable, the section shows as before,
+//    so Quantum still works when the Quantum server is down.
+function uexGate(){ if(!UEX_NEEDS_ACCOUNT) return "";
+  const a=S.acct, lg=S.live?.log||{};
+  if(lg.uex_token||S.drHasSecret) return "";
+  // Still asking the server: wait a few seconds, then show the section rather than hide it behind a check that never answers
+  if(a===undefined||a===null) return Date.now()-(S.acctAt||0)<8000?`<span class="muted" style="font-size:12px"><span class="spin-sm"></span> Checking your Quantum account…</span>`:"";
+  if(!a.on||!a.available||a.signed_in) return "";
+  return `<div class="row" style="gap:8px"><span class="dot"></span><b>Sign in to your Quantum account first</b></div>
+    <div class="muted" style="font-size:12px;margin-top:6px">Your UEX Bearer Token and Secret Key are added once you're signed in above. If they're already kept in your account, they fill in by themselves.</div>`; }
 // UEX keys filled in from the account (after signing in, or turning the switch on): refresh what uses them
 async function acctKeysArrived(x){
   if(x?.keys?.note) toast(x.keys.note);
@@ -4504,8 +4578,8 @@ function acctWatch(){
   clearTimeout(S.acctT);
   S.acctT=setTimeout(async()=>{ const x=await api().account_status(); const was=S.acct?.flow?.state; S.acct=x;
     if(x.flow?.state==="waiting") acctWatch();
-    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ if($("s-uex")) renderDetail(); }); }
-      if(S.sel?.kind==="settings"||$("s-uex")) renderDetail(); } },2000);
+    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ if(S.selected?.kind==="settings") renderDetail(); }); }
+      if(S.selected?.kind==="settings") renderDetail(); } },2000);
 }
 function connPill(st,label,why){ const t={ok:["ok","Connected"],bad:["bad","Not connected"],offline:["bad","Offline"],off:["off","Disabled"],none:["off","Not set"],checking:["wait","Checking…"]}[st]||["off",st];
   return `<span class="conn ${t[0]}" ${why?`title="${esc(why)}"`:""}><i></i>${esc(label||t[1])}</span>`; }
@@ -4861,7 +4935,7 @@ $("dr-panel").addEventListener("focusin",e=>{ if(e.target.dataset?.k&&!drLocked(
 
 // ---- review and send (step 6 of the UEX guide: look it over once more)
 function drForm(){ const d=S.dr;
-  return {id_terminal:d.pf.id_terminal, details:$("dr-note").value, container_sizes:[...d.sizes], no_screenshot:!(S.drShotCount>0),
+  return {id_terminal:d.pf.id_terminal, details:"", container_sizes:[...d.sizes], no_screenshot:!(S.drShotCount>0),
     rows:drReady().map(x=>({id_commodity:x.id_commodity, side:x.side, price:x.state==="gone"?null:drNum(x.price), scu:x.state==="gone"?null:drNum(x.scu), status:x.status, missing:x.state==="gone", include:true}))}; }
 const drName=id=>S.dr?.pf.commodities.find(c=>c.id===id)?.name||"#"+id;
 function drSheet(html){ $("dr-panel").querySelector(".dr-sheet")?.remove(); if(!html) return; const el=document.createElement("div"); el.className="dr-sheet"; el.innerHTML=html; $("dr-panel").appendChild(el); return el; }
@@ -5156,11 +5230,10 @@ function fitDrPanel(sel){ const g=$("dr-panel").querySelector(sel); if(!g) retur
   g.style.fontSize=lo+"px"; if(!fits()) g.classList.add("tight"); }        // a very small window: scroll after all
 window.addEventListener("resize",()=>{ clearTimeout(S.drFitT); S.drFitT=setTimeout(fitDrGuide,60); });
 document.fonts?.ready?.then(()=>fitDrGuide());
-// Terminal and screenshot come first: no screenshot without the game and a terminal, no note without a terminal.
-function drSyncInputs(){ const term=!!S.dr?.pf?.id_terminal, game=!S.live?.game_off, b=$("dr-shoot"), n=$("dr-note");
+// Terminal and screenshot come first: no screenshot without the game and a terminal.
+function drSyncInputs(){ const term=!!S.dr?.pf?.id_terminal, game=!S.live?.game_off, b=$("dr-shoot");
   if(!S.drWaiting){ b.disabled=!term||!game;
     b.title=!game?"Start Star Citizen first: the screenshot is taken from the game window":!term?"Pick the terminal first, above":""; }
-  n.disabled=!term; n.placeholder=term?"Like “terminal not working”":"Pick a terminal first";
   const h=$("dr-shot-hint"); if(h&&(!term||!game)) h.textContent=!game?"Start Star Citizen and open the kiosk to take a screenshot.":"Pick the terminal above, then take a screenshot of its kiosk."; }
 // ---- With no terminal picked: how reporting works, step by step
 function drGuide(){ const k=S.drShotKey||S.dr?.pf?.shot_hotkey||S.live?.autoloc?.shot_hotkey;
@@ -5685,12 +5758,14 @@ function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
 async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
-  const fk=JSON.stringify([live.player?.t, live.player?.approx, live.travel?.state, live.travel?.place, live.route?.[0]]);
+  const fk=JSON.stringify([live.player?.fix_t, live.player?.approx, live.player?.system, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   // A fresh /showlocation while the Contracts tab is open recentres the map on you (and your next stop, if
   // there's a route), even when follow is off: it's how you check where you are against your objectives.
   { const fx=live.player?.fix_t||null; if(fx!==S.fixSeen){ const first=S.fixSeen===undefined; S.fixSeen=fx;
-      if(!first&&fx&&S.tab==="contracts"&&!S.follow) setTimeout(followNow,60); } }
+      // Guiding you to a waypoint: a fresh /showlocation turns following back on, so the map tracks you along the way
+      if(!first&&fx&&live.guide&&!S.follow){ setFollow(true); setTimeout(followNow,60); }
+      else if(!first&&fx&&S.tab==="contracts"&&!S.follow) setTimeout(followNow,60); } }
   watchNewObjectives(live);
   // settings.json couldn't be read at start: say so once, long enough to read
   if(live.settings_note&&!S.settingsNoted){ S.settingsNoted=true; toast(live.settings_note); clearTimeout(toastT);
