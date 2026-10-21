@@ -55,6 +55,14 @@ RE_OOC = re.compile(r"OOC_(Stanton|Pyro|Nyx)_\d+[a-z]?_(\w+)", re.I)
 RE_INV_MOVE = re.compile(r"<Update Inventory Location> Player \[[^\]]*\] is changing location\. Landing \[(\d+)\] -> "
                          r"\[(\d+)\]\. Location \[(\d+)\] -> \[(\d+)\]")
 RE_LOCATION = re.compile(r"<RequestLocationInventory>.*?Location\[([^\]]+)\]")
+# Gateway stations have location codes named <system you're in><system the gateway leads to>:
+#   Location[RR_JP_StantonPyro]  -> Pyro Gateway Station, in Stanton
+#   Location[RR_JP_PyroStanton]  -> Stanton Gateway Station (Pyro), in Pyro
+# Coming out of a wormhole you fly through the far station's zone, so this is logged right after a jump.
+RE_JP_CODE = re.compile(r"^RR_JP_(Stanton|Pyro|Nyx|Terra)(Stanton|Pyro|Nyx|Terra)$", re.I)
+# The wormhole's own zone, e.g. "zone OOC_JumpPoint_stanton_pyro": you're in (or at the mouth of) the
+# tunnel between those two systems.
+RE_TUNNEL = re.compile(r"OOC_JumpPoint_([A-Za-z]+)_([A-Za-z]+)")
 RE_ATC = re.compile(r"(ATC_DataManager_Port_[A-Za-z0-9_\-]+)'? \[(\d+)\]")   # quoted in "ATC '...' [id]" lines
 RE_JURISDICTION = re.compile(r"Entered (.+?) Jurisdiction")
 # What you personally are doing, from lines that name you or come from your own terminals:
@@ -387,6 +395,7 @@ class ContractTracker(threading.Thread):
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
         self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
         self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
+        self.tunnel = None         # last wormhole the log mentioned: {"pair": ("Stanton", "Pyro"), "at"}
         self._phys = None          # systems seen in the dump being read now
         self._pending = None       # buffered multi-line notification
         self._reopen = False
@@ -1105,14 +1114,55 @@ class ContractTracker(threading.Thread):
 
     LEO = {"HUR": "Everus Harbor", "CRU": "Seraphim Station", "ARC": "Baijini Point", "MIC": "Port Tressler"}
 
+    @staticmethod
+    def jump_station(code):
+        """'RR_JP_PyroStanton' -> ("Pyro", "Stanton Gateway Station (Pyro)"): the system you're in and the
+        gateway station's name in Quantum. None for any other code."""
+        m = RE_JP_CODE.match(code or "")
+        if not m:
+            return None
+        here, there = m.group(1).capitalize(), m.group(2).capitalize()
+        name = f"{there} Gateway Station" + ("" if here == "Stanton" else f" ({here})")
+        return here, name
+
+    def system_of_start(self, start, ts):
+        """System of a quantum route's projected start ("Bloom", "Stanton Gateway", "Ruin Station"):
+        that's where you are right now. A Gateway is named after the system it leads to, so "Stanton
+        Gateway" means Pyro or Nyx: the wormhole you just came through (or the planets the game has
+        loaded) says which. None if unsure."""
+        if not start:
+            return None
+        if start in self.nav.bodies:
+            return self.nav.bodies[start].system
+        m = re.fullmatch(r"(Stanton|Pyro|Nyx|Terra) Gateway(?: Station)?", start.strip(), re.I)
+        if m:
+            to = m.group(1).capitalize()
+            cands = [s for s in ("Stanton", "Pyro", "Nyx") if s != to]
+            t = self.tunnel or {}
+            if t and to in t["pair"] and 0 <= ts - t["at"] < 3600:
+                other = [s for s in t["pair"] if s != to]
+                if other and other[0] in cands:
+                    return other[0]
+            loaded = [s for s in cands if s in (self.phys_systems or [])]
+            if len(loaded) == 1:
+                return loaded[0]
+            here = self.where.get("system")
+            return here if here in cands else None
+        if start in self.nav.locations:
+            return self.nav.locations[start].system
+        return self.system_of_name(start)
+
     def place_for_code(self, code: str, body: str | None = None):
         """Game location code -> database place. Handles station codes like RR_MIC_LEO (Port Tressler)
         and RR_CRU_L1 (the CRU-L1 rest stop), then falls back to matching words in the name."""
         if (code or "").startswith("PLACE:"):
             name = code[6:]
             return name if name in self.nav.locations else None
-        if (code or "").startswith(("ACTIVITY:", "HANGAR:")):  # only the system is known from these
+        if (code or "").startswith(("ACTIVITY:", "HANGAR:", "QTSTART:", "TUNNEL:")):  # only the system is known
             return None
+        jp = self.jump_station(code)
+        if jp:
+            return jp[1] if jp[1] in self.nav.locations else None
         m = re.fullmatch(r"RR_([A-Z]{3})_(LEO|L\d)", code or "")
         if m:
             if m.group(2) == "LEO":
@@ -1256,6 +1306,10 @@ class ContractTracker(threading.Thread):
             return self._physics_stats(line)
         if ("LoadingPlatformManager_" in line or "LandingArea_" in line) and (m := RE_HANGAR_SYS.search(line)):
             return self._system_seen(m.group(1).capitalize(), log_time(line) or time.time(), "HANGAR:" + m.group(0))
+        if "OOC_JumpPoint_" in line and (m := RE_TUNNEL.search(line)):
+            pair = tuple(x.capitalize() for x in m.groups())
+            self.tunnel = {"pair": pair, "at": log_time(line) or time.time()}
+            return False
         if "STATE_CURRENT" in line and (m := RE_CHARACTER.search(line)):
             self.player_geid, self.player_name = m.group(1), m.group(2)
             return False
@@ -1318,6 +1372,9 @@ class ContractTracker(threading.Thread):
         if m := RE_LOCATION.search(line):
             code = m.group(1)
             sysm = SYSTEM_RE.match(code)
+            jp = self.jump_station(code)
+            if jp:
+                sysm = re.match(r"(\w+)", jp[0])           # RR_JP_PyroStanton: you're in Pyro
             ts = log_time(line) or time.time()
             place = self.place_for_code(code)
             pbody = self.nav.locations[place].body if place else None
@@ -1405,6 +1462,10 @@ class ContractTracker(threading.Thread):
                 b = start if start in self.nav.bodies else (self.nav.locations[start].body if start in self.nav.locations else None)
                 self.qt["start_body"] = b
                 self.qt["place"] = self.dest_place(m.group(2))
+                ssys = self.system_of_start(start, ts)
+                self.qt["start_system"] = ssys
+                if ssys:
+                    self._system_seen(ssys, ts, "QTSTART:" + start)
             return True
         if "has arrived at final destination" in line:
             q = self.qt or {}

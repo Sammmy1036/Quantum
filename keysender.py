@@ -6,6 +6,13 @@ The game then copies your coordinates to the clipboard, where watcher.py picks t
 
 Sequence: [open chat key] -> "/showlocation" -> Enter.
 Note: the hotkey is read from the key's state, so the game also still sees that key press.
+
+Hidden chat: the game's chat show/hide key (F12 by default) hides the chat window, and then Enter no
+longer opens a chat box: "/showlocation" would land on your key bindings instead (s, h, o, w...). The
+game doesn't log when chat is shown or hidden, so Quantum watches that key itself while the game is
+focused and won't type while it thinks chat is hidden. If it gets out of step (you hid chat before
+Quantum started, say), press the /showlocation key twice within a few seconds to send anyway; that
+also tells Quantum chat is showing.
 """
 import os
 import threading
@@ -50,6 +57,12 @@ if AVAILABLE:
     user32.GetAsyncKeyState.argtypes = (ctypes.c_int,)
     user32.GetAsyncKeyState.restype = ctypes.c_short
     user32.PostThreadMessageW.argtypes = (wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+    user32.FindWindowW.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR)
+    user32.FindWindowW.restype = wintypes.HWND
+
+    def game_window_open():
+        """Is there a Star Citizen window at all (focused or not)?"""
+        return bool(user32.FindWindowW(None, "Star Citizen"))
 
     def _scan(code, up=False):
         inp = INPUT(type=INPUT_KEYBOARD)
@@ -117,6 +130,9 @@ else:
     def game_in_focus():
         return False
 
+    def game_window_open():
+        return False
+
     def foreground_title():
         return ""
 
@@ -142,6 +158,9 @@ class ShowLocationSender:
         self.qt_only = True         # the timer only runs during quantum travel
         self.on_arrival = False     # ...and optionally sends once when a jump ends
         self.qt_policy = None       # set by the app: -> {"send", "interval", "reason", "arrived"}
+        self.chat_key = "F12"       # the game's chat show/hide key, watched so we don't type into hidden chat ("" = off)
+        self.chat_hidden = False    # what that key's presses (in game) say about the chat window
+        self._refused_at = 0.0      # last send refused because chat looked hidden: a quick second press sends anyway
         self._arrival_sent = None
         self.last_sent = None
         self.last_result = "idle"
@@ -155,7 +174,7 @@ class ShowLocationSender:
 
     # ------------------------------------------------------------ settings
     def configure(self, hotkey=None, interval=None, open_chat=None, action=None, qt_only=None,
-                  loc_hotkey=None, on_arrival=None, shot_hotkey=None):
+                  loc_hotkey=None, on_arrival=None, shot_hotkey=None, chat_key=None):
         """hotkey = show/hide Quantum, loc_hotkey = type /showlocation ("F1".."F12" or "" for off).
         interval = seconds between automatic /showlocations during quantum travel (0 = off)."""
         if qt_only is not None:
@@ -176,11 +195,18 @@ class ShowLocationSender:
         new_loc = new_loc if new_loc in FKEYS and new_loc != new_hk else ""
         new_shot = shot_hotkey if shot_hotkey is not None else self.shot_hotkey
         new_shot = new_shot if new_shot in FKEYS and new_shot not in (new_hk, new_loc) else ""
+        new_chat = chat_key if chat_key is not None else self.chat_key
+        new_chat = new_chat if new_chat in FKEYS and new_chat not in (new_hk, new_loc, new_shot) else ""
+        if new_chat != self.chat_key:
+            self.chat_hidden = False
         keys = (new_hk, new_loc, new_shot)
-        if keys != (self.hotkey, self.loc_hotkey, self.shot_hotkey) or (AVAILABLE and not self._hk_thread and any(keys)):
+        watch_chat = bool(new_chat and new_loc)      # only matters when Quantum types /showlocation
+        if keys != (self.hotkey, self.loc_hotkey, self.shot_hotkey) or new_chat != self.chat_key or \
+                (AVAILABLE and not self._hk_thread and any(keys)):
             self._stop_hotkey()
             self.hotkey, self.loc_hotkey, self.shot_hotkey = keys
-            if any(keys) and AVAILABLE:
+            self.chat_key = new_chat
+            if (any(keys) or watch_chat) and AVAILABLE:
                 self._hk_stop = threading.Event()
                 self._hk_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
                 self._hk_thread.start()
@@ -192,7 +218,7 @@ class ShowLocationSender:
 
     def status(self):
         return {"available": AVAILABLE, "hotkey": self.hotkey, "loc_hotkey": self.loc_hotkey,
-                "shot_hotkey": self.shot_hotkey,
+                "shot_hotkey": self.shot_hotkey, "chat_key": self.chat_key, "chat_hidden": self.chat_hidden,
                 "interval": self.interval, "qt_only": True, "on_arrival": self.on_arrival,
                 "open_chat": self.open_chat, "last_sent": self.last_sent, "last_result": self.last_result,
                 "events": self.events, "admin": we_are_admin() if AVAILABLE else False}
@@ -213,6 +239,16 @@ class ShowLocationSender:
             # Windows (UIPI) silently drops keystrokes sent to a program with higher rights.
             return self._event(f"{reason}: blocked. Star Citizen is running as administrator, so Windows "
                                "discards Quantum's keystrokes. Restart Quantum as administrator")
+        if self.chat_key and self.chat_hidden:
+            now = time.time()
+            if reason == self.loc_hotkey and now - self._refused_at < 4:
+                self.chat_hidden = False              # pressed twice: you know chat is showing
+            else:
+                if reason == self.loc_hotkey:
+                    self._refused_at = now
+                tip = (f" If chat is showing, press {reason} twice to send anyway" if reason == self.loc_hotkey else "")
+                return self._event(f"{reason}: skipped, chat looks hidden (you pressed {self.chat_key}). Press "
+                                   f"{self.chat_key} to show chat, then try again.{tip}")
         if not self._lock.acquire(blocking=False):
             return "busy"
         try:
@@ -238,17 +274,29 @@ class ShowLocationSender:
         state (as game overlays do) works whether or not the game is focused."""
         keys = {k: act for k, act in ((self.hotkey, "overlay"), (self.loc_hotkey, "showlocation"),
                                       (self.shot_hotkey, "screenshot")) if k}
+        if self.chat_key and self.loc_hotkey:
+            keys[self.chat_key] = "chat"
         stop = self._hk_stop
-        label = {"overlay": "show/hide Quantum", "showlocation": "/showlocation", "screenshot": "terminal screenshot"}
+        label = {"overlay": "show/hide Quantum", "showlocation": "/showlocation", "screenshot": "terminal screenshot",
+                 "chat": "game chat show/hide (watched)"}
         self._event(" · ".join(f"{k}: {label[a]}" for k, a in keys.items()) + " ready (works in game)")
         state = {k: [False, 0.0] for k in keys}
+        game_check = 0.0
         while not stop.wait(0.015):
+            if "chat" in keys.values() and time.time() - game_check > 2:
+                game_check = time.time()
+                if self.chat_hidden and not game_window_open():
+                    self.chat_hidden = False          # the game closed: chat shows again next launch
             for key, act in keys.items():
                 down = bool(user32.GetAsyncKeyState(FKEYS[key]) & 0x8000)
                 was, last = state[key]
                 if down and not was and time.time() - last > 0.3:      # one press = one action
                     state[key][1] = time.time()
-                    if act == "overlay" and self.on_overlay:
+                    if act == "chat":
+                        if game_in_focus():           # only presses the game saw toggle its chat
+                            self.chat_hidden = not self.chat_hidden
+                            self._event(f"{key}: chat {'hidden' if self.chat_hidden else 'showing'} in game")
+                    elif act == "overlay" and self.on_overlay:
                         try:
                             self._event(f"{key}: Quantum {self.on_overlay()}")
                         except Exception as e:

@@ -1025,6 +1025,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="btn small ghost" id="btn-arrived" title="Stops tick themselves off when the game log or a /showlocation shows you've arrived" style="width:100%;display:none;margin-top:6px">Skip this stop (arrival is detected automatically)</button>
       </div>
       <div id="rs-panel" hidden>
+        <button class="btn small ghost" id="rs-routebar" hidden title="Close the search and show your route, with Plan route and Optimize" style="width:100%;margin-bottom:8px"></button>
         <div class="filters" id="filters"></div>
         <ul class="rs-list" id="rs-list" role="listbox"></ul>
       </div>
@@ -2597,14 +2598,16 @@ function renderDetail(){
         <span class="k">Type /showlocation</span><select class="field" id="s-lochotkey">${keyOpts(a.loc_hotkey,a.hotkey)}</select>
         <span class="k">Terminal screenshot</span><select class="field" id="s-shothotkey">${keys.map(k=>`<option value="${k}" ${k===(a.shot_hotkey||"")?"selected":""} ${k&&(k===a.hotkey||k===a.loc_hotkey)?"disabled":""}>${k||"Off"}${k&&(k===a.hotkey||k===a.loc_hotkey)?" (used)":""}</option>`).join("")}</select>
         <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
+        <span class="k" title="Your game key that shows / hides the chat window. Quantum won't type /showlocation while you've hidden chat">Game's chat show/hide key</span><select class="field" id="s-chatkey">${keys.map(k=>`<option value="${k}" ${k===(a.chat_key??"F12")?"selected":""} ${k&&(k===a.hotkey||k===a.loc_hotkey||k===a.shot_hotkey)?"disabled":""}>${k?k+(k==="F12"?" (game default)":""):"Off, don't check"}${k&&(k===a.hotkey||k===a.loc_hotkey||k===a.shot_hotkey)?" (used)":""}</option>`).join("")}</select>
       </div>
+      ${a.loc_hotkey&&a.chat_key?`<div class="muted" style="font-size:12px;margin-top:6px">Chat in game: <b>${a.chat_hidden?"hidden":"showing"}</b>. While it's hidden, ${esc(a.loc_hotkey)} won't type (your letters would trigger key bindings). Out of step? Press ${esc(a.loc_hotkey)} twice to send anyway.</div>`:""}
       <div class="muted" style="font-size:12px;margin-top:8px">The game still sees your hotkeys, so pick keys that aren't bound in game.</div>
       <div class="sub" style="margin-top:12px">Log</div>
       <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>`;
     const save=async()=>{
-      await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value);
+      await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value, $("s-chatkey").value);
       await poll(); renderStatus(); renderDetail(); toast("Saved"); };
-    for(const id of ["s-hotkey","s-lochotkey","s-chat"]) $(id).onchange=save;
+    for(const id of ["s-hotkey","s-lochotkey","s-chat","s-chatkey"]) $(id).onchange=save;
     $("s-shothotkey").onchange=async e=>{ const r=await api().dr_set_hotkey(e.target.value); await poll(); renderDetail();
       toast(r.shot_hotkey?`${r.shot_hotkey} takes a terminal screenshot for your UEX report`:"Screenshot key off"); };
     $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
@@ -2759,18 +2762,18 @@ function renderDetail(){
     if(a==="export"){ const r=await api().export_calibrations(); if(r.ok) toast(`Exported ${r.count} planet alignment${r.count>1?"s":""}`); else if(r.error!=="cancelled") toast(r.error); }
     if(a==="import"){ const r=await api().import_calibrations(null); if(!r.ok){ if(r.error!=="cancelled") toast(r.error); return; }
       await poll(); await openAlign(); toast(r.applied.length?`Applied: ${r.applied.join(", ")}`:`Nothing new${r.skipped.length?": "+r.skipped.join(", "):""}`); }
-    if(a==="route") addStops([sel.name]);
+    if(a==="route"){ await addStops([sel.name]); showRoute(); }
     if(a==="unroute"){ await api().remove_place(sel.name); await poll(); renderDetail(); }
     if(a==="focus") focusLoc(sel.name,true);
     if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
-    if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
+    if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); showRoute(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
       select({kind:"loc",name:sel.name}); focusLoc(sel.name,true); toast(`${sel.name} is on the map now`); return; }
     if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
     if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
-    if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); toast(`Guiding you to ${r.name}`); }
-    if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); toast("Added to route"); fitRoute(false); } };
+    if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); showRoute(); toast(`Guiding you to ${r.name}`); }
+    if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); showRoute(); toast("Added to route"); fitRoute(false); } };
 }
 
 // =================================================================== HUD (guidance + next stop)
@@ -2981,6 +2984,9 @@ function rsRender(){
   const mode=rsMode(), list=$("rs-list"), route=S.live?.route||[], q=$("rsearch").value.trim();
   $("rs-panel").hidden=false; $("route-body").hidden=mode==="search";
   $("rsearch").setAttribute("aria-expanded",String(mode==="search"));
+  // While searching, the route is hidden under the results: a bar says it's there and brings it back.
+  const rb=$("rs-routebar"); if(rb){ rb.hidden=!(mode==="search"&&route.length);
+    if(!rb.hidden) rb.textContent=`Your route · ${route.length} stop${route.length>1?"s":""} · Plan / Optimize ›`; }
   const all=mode==="search"?rsCandidates(q):rsBrowse();
   RS.items=all.slice(0,RS_MAX); RS.more=all.length-RS.items.length; RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
   const hl=n=>{ if(!q) return esc(n); const i=n.toLowerCase().indexOf(q.toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.length))+"</mark>"+esc(n.slice(i+q.length)); };
@@ -2992,6 +2998,9 @@ function rsRender(){
     :`<li class="empty">${mode==="search"?`No match for “${esc(q)}”${RS.type?` in ${esc(TYPES[RS.type]?.label||"")}`:""}`:`No ${RS.type?esc((TYPES[RS.type]?.label||"places").toLowerCase()):"places"} in ${esc(S.system)}`}</li>`;
 }
 // Back to the route. The type chip goes back to All too, so the next search isn't quietly filtered.
+// showRoute(): the same, used after adding or guiding from a place card or the map, so the stop you just
+// added shows in the route list with Plan route / Optimize (the search kept it hidden before).
+function showRoute(){ if(rsMode()==="search") rsClose(); else rsRender(); }
 function rsClose(){ $("rsearch").value=""; RS.on=0; RS.type=null;
   for(const x of $("filters").children) x.setAttribute("aria-pressed",String(!x.dataset.t)); rsRender(); $("rsearch").blur(); }
 async function rsPick(i,act,{fromKeys=false}={}){
@@ -3004,6 +3013,7 @@ async function rsPick(i,act,{fromKeys=false}={}){
   rsRender();
 }
 $("rsearch").oninput=()=>{ RS.on=0; rsRender(); };
+$("rs-routebar").onclick=()=>rsClose();
 $("rsearch").onkeydown=e=>{
   const move=d=>{ RS.on=Math.max(0,Math.min(RS.on+d,RS.items.length-1)); rsRender(); $("rs-list").querySelector("li.on")?.scrollIntoView({block:"nearest"}); e.preventDefault(); };
   if(e.key==="ArrowDown") move(1); else if(e.key==="ArrowUp") move(-1);

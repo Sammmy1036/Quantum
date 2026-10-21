@@ -352,7 +352,8 @@ class Api:
              **self._settings.get("autoloc", {})}
         if a.get("action") == "showlocation" and not a.get("loc_hotkey"):
             a["loc_hotkey"], a["hotkey"] = a["hotkey"], "F9" if a["hotkey"] != "F9" else ""
-        self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False)
+        self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False,
+                               chat_key=a.get("chat_key", "F12"))
         self._dr = datarunner.Submitter(HERE / "datarunner_test")
         self._dr_shots, self._dr_seq = [], 0
         self._dr_job = {"state": "idle", "n": 0}
@@ -509,8 +510,8 @@ class Api:
           - you told Quantum which system you're in (set_my_system), and the log hasn't named a place since;
           - you went through a gateway: the reading before was at a jump point, no quantum jump was
             started since, and now you're nowhere near it. That's the other side of the wormhole.
-        Going through a wormhole doesn't write anything Quantum recognises to Game.log, so without
-        this the last system stays in place (readings in Nyx came out as Stanton)."""
+        The log names the far gateway station as you come out of a wormhole (RR_JP_PyroStanton) and the
+        next quantum route's start ("Stanton Gateway"); these cover the times neither shows up."""
         w = self._tracker.where or {}
         hint = w.get("system")
         self._sys_how = ("log", w.get("code") or "", w.get("at"))
@@ -554,7 +555,12 @@ class Api:
                 qsys = self._db.locations[dest].system
             elif q.get("start_body") and q["start_body"] in self._db.bodies:
                 qsys = self._db.bodies[q["start_body"]].system
-            elif last and 0 < t - last[1] < 3 * 3600 and (q.get("selected") or 0) > last[1]:
+            elif q.get("start_system") in nav_core.SYSTEMS:
+                qsys = q["start_system"]                   # "Projected Start Location is Stanton Gateway" etc.
+            elif last and 0 < t - last[1] < 3 * 3600 and (q.get("selected") or 0) > last[1] and \
+                    not (hint in nav_core.SYSTEMS and hint != last[2] and (w.get("at") or 0) > last[1]):
+                # Your last reading's system, unless the log has named another one since (you went
+                # through a gateway after that reading: the reading's system is the one you left).
                 qsys = last[2]
             if qsys in nav_core.SYSTEMS and qsys != hint:
                 self._sys_how = ("log", "quantum jump", q["selected"])
@@ -2219,12 +2225,13 @@ class Api:
                 self._static_version += 1
             return res
 
-    def set_autoloc(self, hotkey=None, interval=None, open_chat=None, loc_hotkey=None, *_ignored):
-        """hotkey: show/hide Quantum. loc_hotkey: type /showlocation. (interval is ignored: no automatic
-        /showlocation any more.)"""
-        self._sender.configure(hotkey, 0, open_chat, None, True, loc_hotkey, False)
+    def set_autoloc(self, hotkey=None, interval=None, open_chat=None, loc_hotkey=None, chat_key=None, *_ignored):
+        """hotkey: show/hide Quantum. loc_hotkey: type /showlocation. chat_key: the game's chat show/hide
+        key, watched so /showlocation isn't typed while chat is hidden ("" = off). (interval is ignored:
+        no automatic /showlocation any more.)"""
+        self._sender.configure(hotkey, 0, open_chat, None, True, loc_hotkey, False, chat_key=chat_key)
         st = self._sender.status()
-        self._settings["autoloc"] = {k: st[k] for k in ("hotkey", "loc_hotkey", "open_chat")}
+        self._settings["autoloc"] = {k: st[k] for k in ("hotkey", "loc_hotkey", "open_chat", "chat_key")}
         self._settings.setdefault("datarunner", {})["shot_hotkey"] = st["shot_hotkey"]   # may have lost a clash
         self._save_settings()
         return st

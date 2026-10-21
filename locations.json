@@ -114,17 +114,17 @@
    ],
    "radius_m": 337170.0,
    "rotation_period_h": 3.25,
-   "rotation_offset_deg": 15.397929,
+   "rotation_offset_deg": 15.37621,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 489850.0,
    "system": "Stanton",
    "internal": "Stanton4b",
    "kind": "moon",
    "calibrated": true,
-   "calibrated_at": 1790628936.8776467,
-   "calibrated_place": "Rayari Cantwell Research Outpost",
+   "calibrated_at": 1792221918.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 410.93383339,
-   "calibration_quality": "place"
+   "calibration_quality": "community"
   },
   {
    "name": "Crusader",
@@ -34239,9 +34239,9 @@
    "name": "Pyro Gateway Station",
    "kind": "space",
    "pos": [
-    3310460098.40437,
-    -27979379866.332127,
-    -2676291190.094194
+    3310458546.731116,
+    -27979392180.86428,
+    -2676296552.357252
    ],
    "body": null,
    "pad": "unknown",
