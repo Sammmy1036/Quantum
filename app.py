@@ -180,6 +180,28 @@ def _same_ship(extra, v):
     return False
 
 
+# Ships UEX files under the wrong maker: (name pattern, real maker). The Scythe and its kin are Esperia's
+# replicas of Vanduul ships, but UEX lists them under "Vanduul", which put them in a maker group of their own.
+MAKER_FIX = ((r"\b(scythe|glaive|blade)\b", "Esperia"),)
+
+
+def _fix_makers(rows):
+    """Correct the maker of ships in MAKER_FIX, spelled the way UEX spells that maker elsewhere (so they
+    land in the same "By manufacturer" group as the maker's other ships)."""
+    names = {str(v.get("company_name") or ""): None for v in rows}
+    out = []
+    for v in rows:
+        full = f"{v.get('name') or ''} {v.get('name_full') or ''}"
+        for rx, maker in MAKER_FIX:
+            cur = str(v.get("company_name") or "")
+            if re.search(rx, full, re.I) and maker.lower() not in cur.lower():
+                spelled = next((n for n in names if n.lower().startswith(maker.lower())), maker)
+                v = dict(v, company_name=spelled)
+                break
+        out.append(v)
+    return out
+
+
 def with_extra_vehicles(rows):
     """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet. When UEX does list one but with blanks
     (a new ship often comes in with 0 SCU, which hid the Mk V Centaurus from the trade route ship list
@@ -192,7 +214,7 @@ def with_extra_vehicles(rows):
             if any(not v.get(k) and x.get(k) for k in EXTRA_FILL):
                 v = dict(v, **{k: x[k] for k in EXTRA_FILL if not v.get(k) and x.get(k)})
         out.append(v)
-    return out + [dict(x) for x in EXTRA_VEHICLES if x["id"] not in used]
+    return _fix_makers(out + [dict(x) for x in EXTRA_VEHICLES if x["id"] not in used])
 
 
 def store_url(v):
@@ -274,6 +296,7 @@ class Api:
             self._backup_note = f"Brought back {n} waypoint{'s' if n != 1 else ''} the update had left out"
         self._renamed = rename_gateways(self._db)
         self._renamed.update(rename_raw_pois(self._db))
+        self._renamed.update(rename_rest_stops(self._db))
         ren, self._unplaced = gateways.apply(self._db, self._learned_places())
         self._renamed.update(ren)
         # Nyx (and anything else the community map data lacks) from the game files, via the Star
@@ -1099,7 +1122,7 @@ class Api:
                      "placeable": gateways.system_of(l.name) is not None or l.name in getattr(self, "_uex_pending", {}),
                      "verify": l.pos is not None and l.name in unverified,
                      "near": gateways.near_body(l.name),
-                     "pad_shared": (getattr(self, "_community_pads", None) or {}).get(l.name),
+                     "pad_shared": self._shared_pad(l.name),
                      **({"amen": self._services[l.name]["amenities"],
                          "pad_auto": services.pad_from(self._services[l.name]["amenities"])}
                         if l.name in self._services else {})}
@@ -4265,33 +4288,44 @@ class Api:
         {ok, url, page} (url None when the wiki has none). page: the wiki page we already know for it
         (planets and moons); else the place's name is tried as Quantum spells it, then without the tags
         on the end ("HDES Calthrope (NA) [F]" -> "HDES Calthrope"). The wiki follows its own redirects
-        ("CRU-L5" -> "CRU-L5 Beautiful Glen Station"). A picture you (the server owner) put in place
-        of the wiki's comes first."""
+        ("CRU-L5" -> "CRU-L5 Beautiful Glen Station"). Rest stops: the wiki leaves off the "R&R" Quantum
+        puts in front ("R&R HUR-L1 Green Glade Station" is "HUR-L1 Green Glade Station" there), so the name
+        the wiki data matched for the place (its services record) is tried too, and its own picture is the
+        last resort. A picture you (the server owner) put in place of the wiki's comes first."""
         name = str(name or "").strip()
         if not name and not page:
             return {"ok": True, "url": None}
-        over = self._community.photo_overrides().get(self._pic_key(page or name))
+        ovr = self._community.photo_overrides()
+        over = next((ovr[k] for k in (self._pic_key(x) for x in [page or name, *([] if page else self._old_names(name))]) if ovr.get(k)), None)
         if over:
             return {"ok": True, "url": over, "page": wiki.page_url(fleet.title_of(page)) if page else None}
         cands = [page] if page else []
+        rec = (self._services.get(name) or {}) if name and not page else {}
         if name and not self.PLACE_NO_PAGE.search(name):
             cands.append(name)
+            if rec.get("name"):
+                cands.append(rec["name"])                      # the wiki's own spelling of it
+            bare = re.sub(r"^R\s*(?:&|and)\s*R\s+", "", name, flags=re.I)
+            if bare != name:
+                cands.append(bare)
             short = name
             for _ in range(3):                                 # trailing "(…)" / "[…]" tags, one at a time
                 short = re.sub(r"\s*[\(\[][^\)\]]*[\)\]]\s*$", "", short).strip()
             if short and short != name:
                 cands.append(short)
         cands = list(dict.fromkeys(c for c in cands if c))
+        fallback = {"ok": True, "url": rec.get("image") or None,
+                    "page": (wiki.page_url(rec["name"]) if rec.get("image") and rec.get("name") else None)}
         if not cands:
-            return {"ok": True, "url": None}
+            return fallback
         try:
             got = self._wikiapi.pictures(cands, size=720, any_page=True)
         except Exception:
-            return {"ok": False, "url": None}
+            return fallback if fallback["url"] else {"ok": False, "url": None}
         for c in cands:
             if got.get(c):
                 return {"ok": True, "url": got[c], "page": wiki.page_url(fleet.title_of(c))}
-        return {"ok": True, "url": None}
+        return fallback
 
     def _wiki_image(self, ref):
         """Picture for an item from the Star Citizen Wiki (its page's main image), cached. ref is the
@@ -4834,6 +4868,15 @@ class Api:
             except Exception as e:
                 print("photo sync:", e, flush=True)
             time.sleep(self.PHOTOS_SYNC_EVERY)
+
+    def _old_names(self, name):
+        """A place's earlier names (before a rename like "R&R HUR-L1 …" -> "HUR-L1 …"): shared data from
+        Quantum users on older versions still uses them."""
+        return [o for o, n in (getattr(self, "_renamed", None) or {}).items() if n == name]
+
+    def _shared_pad(self, name):
+        pads = getattr(self, "_community_pads", None) or {}
+        return next((pads[k] for k in [name, *self._old_names(name)] if pads.get(k)), None)
 
     @staticmethod
     def _pic_key(ref):
@@ -6159,6 +6202,25 @@ def learned_local(db, entry):
     if off is None or abs(off - b.rotation_offset_deg) < 1e-9:
         return local
     return nav_core.rot_z(local, math.radians(off - b.rotation_offset_deg))
+
+
+def rename_rest_stops(db):
+    """The community map data calls the Lagrange-point rest stops "R&R HUR-L1 Green Glade Station"; the
+    game and the Star Citizen Wiki call them "HUR-L1 Green Glade Station". Use the game's name (so the
+    wiki's picture, UEX and search line up), and keep saved routes working. Returns {old name: new name}."""
+    out = {}
+    for name in list(db.locations):
+        loc = db.locations[name]
+        m = re.match(r"^R\s*(?:&|and)\s*R\s+(.+)$", name, re.I)
+        if loc.source != "db" or not m:
+            continue
+        new = m.group(1).strip()
+        if not new or new in db.locations:
+            continue
+        loc.name = new
+        db.locations[new] = db.locations.pop(name)
+        out[name] = new
+    return out
 
 
 def rename_gateways(db):

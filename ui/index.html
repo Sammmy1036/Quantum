@@ -103,6 +103,8 @@ button{cursor:pointer}
 .trackno{font:500 12px ui-monospace,Consolas,monospace;color:var(--ink-2);margin:2px 0 6px;cursor:copy;letter-spacing:.04em}.trackno b{color:var(--ink);font-weight:600}
 .vh-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px;margin-bottom:12px}.vh-filters .field{width:100%;min-width:0;padding-left:8px;padding-right:4px}
 .vh.hl{border-color:var(--route);box-shadow:0 0 0 1px var(--route)}
+.orbit-sw{display:inline-flex;gap:5px}.orbit-sw button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.orbit-sw button.on{border-color:var(--ink,#fff)}#s-orbitc{width:30px;height:22px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
 #vh-gallery{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:20px 22px 30px;display:none}
 #vh-gallery.show{display:block}
 #detail{z-index:40;pointer-events:auto}   /* the panel itself takes the mouse: a wheel over its padding or gaps scrolls it, never the map behind */
@@ -1243,6 +1245,7 @@ const api = () => window.pywebview.api;
 const CITIES3D=[];
 window.registerCity3D=c=>{ if(c&&!CITIES3D.includes(c)) CITIES3D.push(c); };
 const city3dDown=()=>CITIES3D.some(c=>c.active);                    // down in one of them, at ground level
+const city3dInCity=()=>CITIES3D.some(c=>c.inCity);                  // in a 3D city itself (not just a planet's terrain)
 const city3dFor=name=>CITIES3D.find(c=>c.has(name))||null;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const now = () => Date.now()/1000;
@@ -1764,7 +1767,7 @@ function buildSystem(){
     let orbit=null; const par=b.parent&&S.bodyMap[b.parent];
     if(par){ const r=Math.hypot(b.center[0]-par.center[0], b.center[1]-par.center[1]); const pts=[];
       for(let i=0;i<=256;i++){ const a=i/256*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r,Math.sin(a)*r,0)); }
-      orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x4fb6e0,transparent:true,opacity:par.kind==="star"?0.42:0.24,depthWrite:false}));
+      orbit=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:S.orbitColor,transparent:true,opacity:par.kind==="star"?0.42:0.24,depthWrite:false}));
       scene.add(orbit); }
     sysObjs.push({b,group,spin,mesh,grid,atmo,clouds,orbit,par,orbitZ:b.center[2],orbitR:par?Math.hypot(b.center[0]-par.center[0],b.center[1]-par.center[1]):0});
   }
@@ -2065,6 +2068,7 @@ function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
 // Distance rings on the ground around the view point (only when close to a surface).
 function drawRangeRings(t){
   if(!S.show.rings) return;                                                    // Layers > Distance rings
+  if(city3dInCity()) return;                  // hidden while you're in a 3D city (they cut across the buildings); back when you leave
   const sb=surfaceBodyOf(S.focus); if(!sb) return; const B=S.bodyMap[sb]; if(S.cam.dist>B.radius*0.4) return;
   const c=toLocal(B,S.cam.target,t), R=Math.hypot(...c), up=norm3(c); let east=cross3([0,0,1],up); if(Math.hypot(...east)<1e-6) east=[1,0,0]; east=norm3(east); const north=cross3(up,east);
   const target=S.cam.dist*0.35, p10=Math.pow(10,Math.floor(Math.log10(target))); let step=p10; for(const m of [1,2,5]) if(m*p10<=target) step=m*p10;
@@ -2215,6 +2219,15 @@ let frame=function(){
 const _frame=frame;
 const GOV={last:0, active:0, covered:false};
 S.fpsMax=(()=>{ try{ const v=+localStorage.getItem("q-fps"); return [30,60,0].includes(v)&&localStorage.getItem("q-fps")!==null?v:60; }catch{ return 60; } })();
+// Orbit line colour (Settings > Map look). Kept on this PC; changes the rings already drawn straight away.
+const ORBIT_DEFAULT="#4fb6e0";
+const ORBIT_PRESETS=[["#4fb6e0","Quantum blue"],["#8cc4ff","Pale blue"],["#7fe7c4","Teal"],["#f2c14e","Amber"],["#ff8a5c","Orange"],["#c79bff","Violet"],["#e6edf7","White"]];
+S.orbitColor=(()=>{ try{ const v=localStorage.getItem("q-orbit-color"); return /^#[0-9a-f]{6}$/i.test(v||"")?v:ORBIT_DEFAULT; }catch{ return ORBIT_DEFAULT; } })();
+function setOrbitColor(v,save=true){ if(!/^#[0-9a-f]{6}$/i.test(v||"")) return; S.orbitColor=v.toLowerCase();
+  for(const o of sysObjs) if(o.orbit) o.orbit.material.color.set(S.orbitColor);
+  if(save){ try{ localStorage.setItem("q-orbit-color",S.orbitColor); }catch{} }
+  for(const b of document.querySelectorAll("[data-orbitc]")) b.classList.toggle("on",b.dataset.orbitc===S.orbitColor);
+  mapBusy(); }
 function setMapFps(v){ S.fpsMax=+v; try{ localStorage.setItem("q-fps",String(S.fpsMax)); }catch{} mapBusy(); }
 function mapBusy(){ GOV.active=performance.now(); }
 for(const ev of ["pointerdown","pointermove","wheel","keydown","input"]) window.addEventListener(ev,mapBusy,{capture:true,passive:true});
@@ -2270,9 +2283,19 @@ function unroll(){ const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb], r=S.cam.rol
   const want=Math.atan2(hn,he), dy=Math.atan2(Math.sin(want-S.cam.yaw),Math.cos(want-S.cam.yaw));
   const k=Math.abs(r)<0.05?1:0.35; S.cam.yaw+=dy*k; S.cam.roll=r*(1-k); }
 function screenUp(){ const v=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1); return norm3([v.x,v.y,v.z]); }
-function attachToGround(){ if(S.focus.kind!=="point") return; const t=viewT(), G=S.cam.target;
+function attachToGround(){ if(S.focus.kind!=="point") return; const t=viewT(); let G=S.cam.target;
   const B=S.bodies.find(b=>b.system===S.system&&b.kind!=="star"&&b.kind!=="asteroid"&&d3(G,b.center)<b.radius*1.15); if(!B) return;
-  enterGround(B,G,norm3([camera.position.x,camera.position.y,camera.position.z]),screenUp());
+  const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
+  // Grabbed during the last part of a fly-in to a planet, the view's centre is still inside it (the glide
+  // heads for the planet's middle). A point in the core turns with the planet and swung the whole view
+  // round (Bloom spinning wildly). Slide it back along the line of sight to where that meets the ground:
+  // the picture doesn't move, and dragging then rolls the ground as it should.
+  if(d3(G,B.center)<B.radius*0.999){ const P=[0,1,2].map(i=>G[i]+d[i]*S.cam.dist), oc=[0,1,2].map(i=>P[i]-B.center[i]);
+    const bq=oc[0]*d[0]+oc[1]*d[1]+oc[2]*d[2], disc=bq*bq-(oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-B.radius*B.radius);
+    if(disc>=0&&bq-Math.sqrt(disc)>20){ const s=bq-Math.sqrt(disc); G=[0,1,2].map(i=>P[i]-d[i]*s); S.cam.dist=s; }
+    else { G=[0,1,2].map(i=>B.center[i]+d[i]*B.radius); S.cam.dist=Math.max(20,d3(P,G)); }   // looking past its edge: the near side
+    S.cam.target=G; }                                // the drag that follows in this same event reads it
+  enterGround(B,G,d,screenUp());
   S.anim=null; S.focus={kind:"local",body:B.name,pos:toLocal(B,G,t)}; }
 // Drag the planet under the cursor: the point you look at slides across the globe, so you can
 // roam freely instead of circling one fixed spot. Works from ground level up to orbit.
@@ -2578,6 +2601,11 @@ function renderDetail(){
             :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
             <button class="btn small ghost" data-a="bkrestore" ${S.bkBusy?"disabled":""} title="Adds back anything missing here. Never removes or overwrites anything">${S.bkBusy==="restore"?"Restoring…":"Restore missing items"}</button>
             <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
+      <div class="sub">Map look</div>
+      <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px;flex-wrap:wrap"><span>Orbit line colour</span><span class="spacer"></span>
+        <span class="orbit-sw">${ORBIT_PRESETS.map(([c,n])=>`<button type="button" data-orbitc="${c}" class="${c===S.orbitColor?"on":""}" title="${n}" style="background:${c}" onclick="setOrbitColor('${c}')"></button>`).join("")}</span>
+        <input type="color" id="s-orbitc" value="${S.orbitColor}" title="Any colour" oninput="setOrbitColor(this.value,false)" onchange="setOrbitColor(this.value)">
+        ${S.orbitColor!==ORBIT_DEFAULT?`<button class="btn small ghost" type="button" onclick="setOrbitColor(ORBIT_DEFAULT);renderDetail()">Reset</button>`:""}</div></div>
       <div class="sub">Map performance</div>
       <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px"><span>Map frame rate while you move it</span><span class="spacer"></span>
         <select class="field" id="s-fps" onchange="setMapFps(this.value)" style="width:auto">${[[30,"30 fps (lightest)"],[60,"60 fps"],[0,"Monitor refresh rate"]].map(([v,l])=>`<option value="${v}" ${S.fpsMax===v?"selected":""}>${l}</option>`).join("")}</select></div>
@@ -3749,10 +3777,17 @@ $("vh-nav").onclick=e=>{ const c=e.target.closest("[data-vhcat]"); if(c) openVeh
 $("vh-gallery").onchange=e=>{ const s=e.target.closest("[data-vhset]"); if(!s) return;
   if(s.dataset.vhset==="avail") S.vehAvail=s.value; else S.vehSort=s.value; S.vehGalKey=null; renderVehicles(); };
 $("vh-gallery").onclick=async e=>{ if(await tradeClick(e)) return;
-  if(e.target.closest("[data-act=vhback]")){ S.vehDetail=null; S.vehGalKey=null; return renderVehicles(); }
+  if(e.target.closest("[data-act=vhback]")){ const back=S.vehBack; S.vehDetail=null; S.vehGalKey=null; renderVehicles();
+    // Back where you were in the list. Same list (filter, sort, search): the same scroll position; if it changed
+    // meanwhile, the vehicle you opened is brought into view instead. Kept only while Quantum is open.
+    const g=$("vh-gallery");
+    if(back&&back.key===S.vehGalKey) g.scrollTop=back.top;
+    else if(back) g.querySelector(`[data-vg="${CSS.escape(String(back.id))}"]`)?.scrollIntoView({block:"center"});
+    return; }
   if(e.target.closest("[data-act=vhall]")){ return openVehCat("all"); }
   const cat=e.target.closest("[data-vhcat]"); if(cat) return openVehCat(cat.dataset.vhcat);
   const c=e.target.closest("[data-vg]"); if(!c) return;
+  S.vehBack={key:S.vehGalKey, top:$("vh-gallery").scrollTop, id:c.dataset.vg};      // where Back returns to
   S.vehDetail=c.dataset.vg; renderVehicles(); };
 // A vehicle's own page: picture, roles, crew and beds, cargo, size, flight, quantum, defences, weapons.
 async function renderVehicleDetail(id){

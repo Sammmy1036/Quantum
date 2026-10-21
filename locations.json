@@ -11430,24 +11430,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R ARC-L1 Wide Forest Station",
-   "kind": "space",
-   "pos": [
-    16729220031.0,
-    -19942048185.0,
-    2239767.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "Mining Claim #9WB-MTS",
    "kind": "space",
    "pos": [
@@ -11625,24 +11607,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R ARC-L2 Lively Pathway Station",
-   "kind": "space",
-   "pos": [
-    20451005907.0,
-    -24368053521.0,
-    -293845.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -11844,24 +11808,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R ARC-L3 Modern Express Station",
-   "kind": "space",
-   "pos": [
-    -25045525487.0,
-    14463255233.0,
-    -1892762.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "ChildCloud S3L3",
    "kind": "space",
    "pos": [
@@ -11895,24 +11841,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R ARC-L4 Faint Glen Station",
-   "kind": "space",
-   "pos": [
-    28476140157.0,
-    5018904179.0,
-    959732.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -11952,24 +11880,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R ARC-L5 Yellow Core Station",
-   "kind": "space",
-   "pos": [
-    -9895751577.0,
-    -27175156672.0,
-    882466.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "ChildCloud S3L5",
    "kind": "space",
    "pos": [
@@ -12003,24 +11913,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R CRU-L1 Ambitious Dream Station",
-   "kind": "space",
-   "pos": [
-    -17068753721.999998,
-    -2399482271.0,
-    -20043.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -12402,24 +12294,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R CRU-L4 Shallow Fields Station",
-   "kind": "space",
-   "pos": [
-    -7173768304.0,
-    -17750056493.0,
-    -2174785.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "ChildCloud S2L4",
    "kind": "space",
    "pos": [
@@ -12453,24 +12327,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R CRU-L5 Beautiful Glen Station",
-   "kind": "space",
-   "pos": [
-    -11785012210.0,
-    15091235759.0,
-    -2796440.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -12654,24 +12510,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R HUR-L1 Green Glade Station",
-   "kind": "space",
-   "pos": [
-    11561412556.0,
-    -262923.0,
-    -484614.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "Mining Claim #252-RDC",
    "kind": "space",
    "pos": [
@@ -12849,24 +12687,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R HUR-L2 Faithful Dream Station",
-   "kind": "space",
-   "pos": [
-    14139635581.0,
-    -1967281.0,
-    -527795.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -13050,24 +12870,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R HUR-L3 Thundering Express Station",
-   "kind": "space",
-   "pos": [
-    -12844743552.0,
-    -1554391.0,
-    1335042.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "Mining Claim #286-T23",
    "kind": "space",
    "pos": [
@@ -13245,24 +13047,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R HUR-L4 Melodic Fields Station",
-   "kind": "space",
-   "pos": [
-    6427627574.0,
-    11124766830.0,
-    666284.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -13446,24 +13230,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R HUR-L5 High Course Station",
-   "kind": "space",
-   "pos": [
-    6425723014.0,
-    -11128362131.0,
-    -842035.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "Mining Claim #P4S-50Z",
    "kind": "space",
    "pos": [
@@ -13641,24 +13407,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R MIC-L1 Shallow Frontier Station",
-   "kind": "space",
-   "pos": [
-    20196007299.0,
-    33470961096.0,
-    10707480.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -13932,24 +13680,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R MIC-L2 Long Forest Station",
-   "kind": "space",
-   "pos": [
-    24713774897.0,
-    40912934444.0,
-    -10634827.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "MIC-L3",
    "kind": "space",
    "pos": [
@@ -13965,24 +13695,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R MIC-L3 Endless Odyssey Station",
-   "kind": "space",
-   "pos": [
-    -22452218252.0,
-    -37179923023.0,
-    -10590411.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -14004,24 +13716,6 @@
    "created": 0.0
   },
   {
-   "name": "R&R MIC-L4 Red Crossroads Station",
-   "kind": "space",
-   "pos": [
-    -20968720663.0,
-    38056058357.0,
-    -11799275.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
-   "created": 0.0
-  },
-  {
    "name": "MIC-L5",
    "kind": "space",
    "pos": [
@@ -14037,24 +13731,6 @@
    "qt": false,
    "pinned": false,
    "category": "lpoint",
-   "created": 0.0
-  },
-  {
-   "name": "R&R MIC-L5 Modern Icarus Station",
-   "kind": "space",
-   "pos": [
-    43448559857.0,
-    -857708032.0,
-    -7824374.0
-   ],
-   "body": null,
-   "pad": "unknown",
-   "notes": "",
-   "source": "db",
-   "system": "Stanton",
-   "qt": true,
-   "pinned": false,
-   "category": "",
    "created": 0.0
   },
   {
@@ -34503,6 +34179,330 @@
    "qt": true,
    "pinned": false,
    "category": "city",
+   "created": 0.0
+  },
+  {
+   "name": "ARC-L1 Wide Forest Station",
+   "kind": "space",
+   "pos": [
+    16729220031.0,
+    -19942048185.0,
+    2239767.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "ARC-L2 Lively Pathway Station",
+   "kind": "space",
+   "pos": [
+    20451005907.0,
+    -24368053521.0,
+    -293845.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "ARC-L3 Modern Express Station",
+   "kind": "space",
+   "pos": [
+    -25045525487.0,
+    14463255233.0,
+    -1892762.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "ARC-L4 Faint Glen Station",
+   "kind": "space",
+   "pos": [
+    28476140157.0,
+    5018904179.0,
+    959732.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "ARC-L5 Yellow Core Station",
+   "kind": "space",
+   "pos": [
+    -9895751577.0,
+    -27175156672.0,
+    882466.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "CRU-L1 Ambitious Dream Station",
+   "kind": "space",
+   "pos": [
+    -17068753721.999998,
+    -2399482271.0,
+    -20043.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "CRU-L4 Shallow Fields Station",
+   "kind": "space",
+   "pos": [
+    -7173768304.0,
+    -17750056493.0,
+    -2174785.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "CRU-L5 Beautiful Glen Station",
+   "kind": "space",
+   "pos": [
+    -11785012210.0,
+    15091235759.0,
+    -2796440.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "HUR-L1 Green Glade Station",
+   "kind": "space",
+   "pos": [
+    11561412556.0,
+    -262923.0,
+    -484614.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "HUR-L2 Faithful Dream Station",
+   "kind": "space",
+   "pos": [
+    14139635581.0,
+    -1967281.0,
+    -527795.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "HUR-L3 Thundering Express Station",
+   "kind": "space",
+   "pos": [
+    -12844743552.0,
+    -1554391.0,
+    1335042.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "HUR-L4 Melodic Fields Station",
+   "kind": "space",
+   "pos": [
+    6427627574.0,
+    11124766830.0,
+    666284.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "HUR-L5 High Course Station",
+   "kind": "space",
+   "pos": [
+    6425723014.0,
+    -11128362131.0,
+    -842035.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "MIC-L1 Shallow Frontier Station",
+   "kind": "space",
+   "pos": [
+    20196007299.0,
+    33470961096.0,
+    10707480.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "MIC-L2 Long Forest Station",
+   "kind": "space",
+   "pos": [
+    24713774897.0,
+    40912934444.0,
+    -10634827.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "MIC-L3 Endless Odyssey Station",
+   "kind": "space",
+   "pos": [
+    -22452218252.0,
+    -37179923023.0,
+    -10590411.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "MIC-L4 Red Crossroads Station",
+   "kind": "space",
+   "pos": [
+    -20968720663.0,
+    38056058357.0,
+    -11799275.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
+   "created": 0.0
+  },
+  {
+   "name": "MIC-L5 Modern Icarus Station",
+   "kind": "space",
+   "pos": [
+    43448559857.0,
+    -857708032.0,
+    -7824374.0
+   ],
+   "body": null,
+   "pad": "unknown",
+   "notes": "",
+   "source": "db",
+   "system": "Stanton",
+   "qt": true,
+   "pinned": false,
+   "category": "",
    "created": 0.0
   }
  ]
