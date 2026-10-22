@@ -220,7 +220,9 @@ City3D.define({
       // Glass is drawn as dark, cool glass with the pale sky in it. Its material's colour is the tint light
       // takes on passing through (mint or teal in New Babbage), not paint: drawn as paint, it turned the
       // towers' glass walls and the domes green.
-      const GLASS_C=[0.075,0.095,0.125];
+      // New Babbage's glass towers read sky blue in the game (the clear, bright sky and the snow in them),
+      // not the dark glass of the other cities.
+      const GLASS_C=[0.17,0.29,0.46];
       const KC=[[0.6,0.64,0.7],[0.52,0.56,0.6],[0.78,0.86,0.94],[0.58,0.62,0.68],[0.6,0.64,0.7],[0.36,0.45,0.56]], SNOW=[0.9,0.93,0.97];
       // A model's triangles, coloured: the game's own colours part by part ([first triangle, count, r, g, b,
       // look]) when the layout has them; shaded smooth across gentle bends (curved hulls, domes, tunnels) and

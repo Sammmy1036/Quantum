@@ -54,19 +54,24 @@ City3D.define({
       return [0,1,2].map(i=>(sand[i]*(1-rock)+dark[i]*rock)*(1-city*0.7)+slab[i]*city*0.7); },{seg:400});
 
     // ---------------- views
-    const PT=G.landmarks.port, TW=G.landmarks.tower;
+    const PT=G.landmarks.port, GP=G.port, SK=G.skyline();
     // Teasa's own pin (the game's spot for it) comes first: the first pad-like model in the layout was often some
     // other landing pad across town, which left the camera looking at the wrong place
     const PIN=F.places[PORT_NAME];
-    const portT=PIN?[PIN.x,PIN.z]:(PT?.t||[3000,3000]);
-    const portY=PIN?hgt(...portT)+60:(PT?.y??hgt(...portT)+40), toPort=Math.atan2(portT[0],-portT[1]);
-    const towerT=TW?.t||[0,0], towerY=TW?(TW.base+(TW.top-TW.base)*0.45):hgt(0,0)+200;
+    // ...and the game's own spaceport container comes before that (the middle of its pieces, in the city file):
+    // Quantum's pin for Teasa is only good to a km or two. The city view looks down on the skyline from above
+    // and outside it, instead of from between two towers.
+    const AIM=ctx.aimAt(PIN,GP);
+    const portT=AIM?.t||PT?.t||[3000,3000];
+    const portY=AIM?(AIM.pin?Math.max(AIM.y,hgt(...portT))+20:AIM.y):(PT?.y??hgt(...portT)+40), toPort=Math.atan2(portT[0],-portT[1]);
+    const portD=GP?Math.min(6000,Math.max(1400,GP.r*2.8)):3000;
+    const cityT=SK?.t||[0,0], cityY=SK?SK.ground+(SK.top-SK.ground)*0.3:hgt(0,0)+200, cityD=SK?Math.min(10000,Math.max(3000,SK.spread*2.6)):5000;
     return {
       hgt, ready:G.loadNear(),
       views:{
         overview:{label:"Overview",t:[portT[0]*0.4,portT[1]*0.4],y:hgt(0,0)+200,d:26000,yaw:toPort+Math.PI+0.5,p:0.6},
-        city:{label:"The city",t:towerT,y:towerY,d:3600,yaw:toPort+0.3,p:0.12},
-        port:{label:"Teasa Spaceport",t:portT,y:portY,d:3000,yaw:toPort-0.6,p:0.32}},
+        city:{label:"The city",t:cityT,y:cityY,d:cityD,yaw:toPort+0.3,p:0.5},
+        port:{label:"Teasa Spaceport",t:portT,y:portY,d:portD,yaw:toPort-0.6,p:0.5}},
       onFrame({night,now}){ G.update(now); G.onNight(night); },
     };
   },

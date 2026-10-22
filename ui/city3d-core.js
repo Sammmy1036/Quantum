@@ -64,9 +64,12 @@ const cityIndexReady=loadScript("cities/index.js").then(()=>{ cityIndex=Array.is
 const LAYOUTS={};
 async function loadLayout(city){ if(city in LAYOUTS) return LAYOUTS[city];
   const file=city.replace(/\W/g,""); await cityIndexReady;
-  if(!cityIndex.includes(file)) return LAYOUTS[city]=null;
-  if(!window.QCITY?.[city]) await loadScript(`cities/${file}.js`);
-  const T=window.QCITY?.[city], raw=T?.inst||T?.b64; if(!raw) return LAYOUTS[city]=null;
+  // Listed in the index or not, try the city's own file: a stale index on the server mustn't hide a city
+  // that's there (the download just fails quietly when it isn't).
+  if(!window.QCITY?.[city]){ try{ await loadScript(`cities/${file}.js`); }catch(e){} }
+  const T=window.QCITY?.[city], raw=T?.inst||T?.b64;
+  if(!raw){ if(cityIndex.includes(file)) reportErr(`cities/${file}.js`,new Error(`${city}'s layout didn't load: it isn't on the server `+
+      `(or not in its manifest.json) and there's no copy in the ui folder`)); return LAYOUTS[city]=null; }
   try{ const bin=atob(raw), u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
     const f=new Float32Array(u8.buffer);
     LAYOUTS[city]=T.inst?{...T, inst:f}:{...T, b64:undefined, boxes:f}; }
@@ -240,6 +243,15 @@ function planetFx(o){ if(!o) return null; if(o.userData_c3d) return o.userData_c
   if(o.clouds) patchShader(o.clouds.material,{CLOUDK:fx.CLOUDK,CITYP:fx.CITYP},/gl_FragColor=vec4\(([^;]*),d\*0\.92\*mix\(0\.35,1\.0,day\)\);/,
     (m0,rgb)=>`gl_FragColor=vec4(${rgb},d*0.92*mix(0.35,1.0,day)*(1.0-CLOUDK*(1.0-smoothstep(0.045,0.09,distance(vP,CITYP)))));`);
   if(o.atmo) patchShader(o.atmo.material,{ATMOK:fx.ATMOK},"gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K,1.0);","gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K*ATMOK,1.0);");
+  // A rock (Delamar) is one plain mesh: while you're down at a city on it, it gets a hole round the city, as
+  // the game cuts its own terrain away round Levski. The city's own ground and rock take over there.
+  if(o.b?.kind==="asteroid"&&o.mesh?.material&&!o.mesh.material.userData.hole){ const m=o.mesh.material; fx.HOLE={value:0};
+    m.userData.hole=true; const prev=m.onBeforeCompile;
+    m.onBeforeCompile=(sh,r)=>{ prev?.call(m,sh,r); sh.uniforms.CITYP=fx.CITYP; sh.uniforms.HOLE=fx.HOLE;
+      sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nvarying vec3 vHoleDir;").replace("#include <begin_vertex>","#include <begin_vertex>\nvHoleDir=normalize(position);");
+      sh.fragmentShader=sh.fragmentShader.replace("#include <common>","#include <common>\nvarying vec3 vHoleDir; uniform vec3 CITYP; uniform float HOLE;")
+        .replace("void main() {","void main() {\n  if(HOLE>0.0&&distance(vHoleDir,CITYP)<HOLE) discard;"); };
+    m.customProgramCacheKey=()=>"c3dhole"; m.needsUpdate=true; }
   o.userData_c3d=fx; return fx; }
 // Precipitation round the camera: soft round particles kept 40-300 m away (closer ones drew as big
 // squares). Each city's weather sets colour, size and how they fall: snow, rain, dust...
@@ -267,6 +279,7 @@ const reduceMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 //   nearFile  the close-up file to load, or null for none
 //   landmarks {key: /model name/}: where the first copy of each stands (for camera views)
 //   lampTops  which light classes get street lamps on their flat tops (default plate and port)
+// The city file's 'lights' (the game's own light fixtures) are drawn as points of light after dark.
 // -> {LIT, landmarks, footprint({reach}), update(now), onNight(night), ready}
 function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={},lampTops=/plate|port/}={}){
   const {layout:LAY, F, inner, curve}=ctx, R0=F.B.radius;
@@ -313,7 +326,7 @@ function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={}
     const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
     if(lite) g.setAttribute("lite",new THREE.BufferAttribute(lite,1));
     g.setAttribute("normal",new THREE.BufferAttribute(crease(pos,nt,keys),3)); return g; };
-  const LOD={}, LM={}, foot=[];
+  const LOD={}, LM={}, foot=[], tall=[];
   const byMesh=new Map(); for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
   const Mx=new THREE.Matrix4(), Q=new THREE.Quaternion(), Y=new THREE.Vector3(0,1,0), U=new THREE.Vector3(), Tm=new THREE.Matrix4(), Cv=new THREE.Vector3();
   const place=o=>{ const x=IN[o+3], z=IN[o+11], y=IN[o+7]+lift+(x*x+z*z)/(2*R0); return [x,y,z]; };
@@ -334,11 +347,27 @@ function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={}
         let lo=1e9, hi=-1e9; for(let c=0;c<8;c++){ const yy=at(b.c[0]+(c&1?1:-1)*b.h[0], b.c[1]+(c&2?1:-1)*b.h[1], b.c[2]+(c&4?1:-1)*b.h[2])[1]; lo=Math.min(lo,yy); hi=Math.max(hi,yy); }
         const rise=y-IN[o+7];
         if(rad[n]>12&&rad[n]<1500) foot.push([x,z,Math.hypot(b.h[0],b.h[1])*s,lo+rise]);
+        if(m.kind===0&&hi-lo>40) tall.push([x,z,lo+rise,hi+rise]);
         for(const [key,rx] of Object.entries(landmarks)) if(!LM[key]&&rx.test(m.name)){ const c=at(...b.c); LM[key]={t:[c[0],c[2]], y:c[1]+rise, base:lo+rise, top:hi+rise}; }
         n++; }
       im.count=n; im.castShadow=true; im.receiveShadow=true; im.frustumCulled=false; inner.add(im);
       LOD[k]={far:im, near:null, mat, n, mats, cen, rad, b};
-      if(++done%40===0) await ctx.tick(); } }
+      if(++done%40===0) await ctx.tick(); }
+    fixtures(); }
+  // The game's own light fixtures (the city file's 'lights', from build_city.py: each Light entity the game
+  // places, with its colour, intensity and reach): a point of light at each, in its own colour, brighter for
+  // stronger, farther-reaching lights. Shown after dark; never anywhere the game has no light.
+  let FIX=null;
+  function fixtures(){ if(!LAY.lights) return;
+    const f=new Float32Array(bytes(LAY.lights).buffer), n=Math.floor(f.length/8), pos=new Float32Array(n*3), col=new Float32Array(n*3);
+    for(let i=0;i<n;i++){ const o=i*8, x=f[o], z=f[o+2], y=f[o+1]+lift+(x*x+z*z)/(2*R0);
+      pos.set(curve(x,y,z),i*3);
+      const k=Math.min(1.6,Math.sqrt(Math.max(0,f[o+6])*Math.min(Math.max(f[o+7],1),60))/30);
+      col.set([f[o+3]*k,f[o+4]*k,f[o+5]*k],i*3); }
+    const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(col,3));
+    const mat=new THREE.PointsMaterial({size:6,sizeAttenuation:true,map:dot,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0,fog:false});
+    mat.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <logdepthbuf_vertex>","gl_PointSize=max(gl_PointSize,1.6);\n#include <logdepthbuf_vertex>"); };
+    FIX=new THREE.Points(g,mat); FIX.frustumCulled=false; FIX.visible=false; inner.add(FIX); }
   // close-up versions near the camera (the biggest-looking copies first, within a triangle budget)
   const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=12e6; let dirty=true, at=0; const camAt=new THREE.Vector3(1e12,0,0), camL=new THREE.Vector3();
   function update(now){ if(now-at<300) return; at=now;
@@ -380,9 +409,21 @@ function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={}
       const g=(a,k)=>a[k]; let W=0, Fl=0;
       for(const [dx,dz,ww] of [[0,0,(1-tx)*(1-tz)],[1,0,tx*(1-tz)],[0,1,(1-tx)*tz],[1,1,tx*tz]]){ const k=(z0+dz)*N+x0+dx; W+=g(w,k)*ww; Fl+=g(fl,k)*g(w,k)*ww; }
       return W>0.001?{floor:Fl/W, w:W}:null; }; }
-  return {LIT, landmarks:LM, build, footprint, update, loadNear,
+  // Where the city stands tallest (its skyline): the middle of its tallest buildings, the ground under them
+  // and how far they spread, for a camera view that shows the city rather than a street between two towers.
+  function skyline(){ if(!tall.length) return null;
+    const T=[...tall].sort((a,b)=>b[3]-a[3]).slice(0,Math.max(12,Math.round(tall.length*0.06)));
+    const med=a=>{ const v=[...a].sort((p,q)=>p-q); return v[v.length>>1]; };
+    const cx=med(T.map(t=>t[0])), cz=med(T.map(t=>t[1])), ground=med(T.map(t=>t[2])), top=med(T.map(t=>t[3]));
+    const spread=med(T.map(t=>Math.hypot(t[0]-cx,t[1]-cz)))*1.6+300;
+    return {t:[cx,cz], ground, top, spread}; }
+  // the spaceport where the game has it (build_city.py writes the middle of its own container's pieces)
+  const port=LAY.port?(()=>{ const [x,z]=LAY.port.t, k=lift+(x*x+z*z)/(2*R0);      // (lifted as place() lifts the pieces)
+    return {t:[x,z], base:LAY.port.base+k, top:LAY.port.top+k, r:LAY.port.r}; })():null;
+  return {LIT, landmarks:LM, build, footprint, update, loadNear, skyline, port,
     onNight(night){ LIT.tower.emissiveIntensity=1.4*night; LIT.base.emissiveIntensity=1.3*night; LIT.glass.emissiveIntensity=1.6*night;
-      LIT.plate.emissiveIntensity=1.2*night; LIT.port.emissiveIntensity=1.5*night; LIT.dome.emissiveIntensity=0.14*night; LIT.city.emissiveIntensity=1.4*night; } }; }
+      LIT.plate.emissiveIntensity=1.2*night; LIT.port.emissiveIntensity=1.5*night; LIT.dome.emissiveIntensity=0.14*night; LIT.city.emissiveIntensity=1.4*night;
+      if(FIX){ FIX.material.opacity=Math.min(1,night*1.2); FIX.visible=night>0.02; } } }; }
 
 const DEFAULTS={
   alt0:0,                     // altitude (m) of the model's ground zero
@@ -426,9 +467,9 @@ function define(spec){
     let east=crs([0,0,1],up); east=Math.hypot(...east)<1e-6?[1,0,0]:nrm(east); const north=crs(up,east);
     const Rb=B.radius+C.alt0, A=up.map(v=>v*Rb);
     const enu=q=>{ const d=[q[0]-p[0],q[1]-p[1],q[2]-p[2]]; return {x:dot3(d,east), z:-dot3(d,north), alt:Math.hypot(q[0],q[1],q[2])-B.radius}; };
-    const pins=[], places={};
+    const pins=[], places={}, a0=r-B.radius;      // (heights round the city's own: Orison's places are all ~79 km up)
     for(const o of S.locs){ if(o.body!==C.body||o.kind!=="surface"||!o.pos||o.source!=="db") continue;
-      const q=enu(o.pos); if(Math.hypot(q.x,q.z)>C.extent*0.85||q.alt<-100||q.alt>6000) continue;     // orbital markers and the like are out
+      const q=enu(o.pos); if(Math.hypot(q.x,q.z)>C.extent*0.85||q.alt<Math.min(-100,a0-3000)||q.alt>Math.max(6000,a0+6000)) continue;     // orbital markers and the like are out
       places[o.name]=q; if(!C.places.includes(o.name)) pins.push({name:o.name,...q}); }
     return {B,L,up,east,north,Rb,A,pins,places};
   }
@@ -524,7 +565,12 @@ function define(spec){
         return [up[0]*c+(e[0]*x-n[0]*z)*k, up[1]*c+(e[1]*x-n[1]*z)*k, up[2]*c+(e[2]*x-n[2]*z)*k]; }
 
       const ctx={F, C, inner, curve, fade, litWindows, litLamps, litCity, parts, terrain, pinned, heights, dirAt, layout, tick, fbm, fbm3, sstep, hash, rnd:seeded(C.seed||20251), THREE};
-      ctx.gameLayout=opts=>gameLayout(ctx,opts);         // a city drawn from the game's own layout (see above)
+      ctx.gameLayout=opts=>gameLayout(ctx,opts);
+      // Where to aim a view at a named place: its label on the map (Quantum's pin, where you see the name) when
+      // it sits on the game's own spaceport (or there's nothing to check it against); the game's spaceport
+      // otherwise (Quantum's pin can be a km or two off). -> {t:[x,z], y} in model terms, or null
+      ctx.aimAt=(pin,gp)=>{ if(pin&&(!gp||Math.hypot(pin.x-gp.t[0],pin.z-gp.t[1])<Math.max(800,gp.r*1.5))) return {t:[pin.x,pin.z], y:pin.alt-C.alt0, pin:true};
+        return gp?{t:gp.t, y:gp.base+(gp.top-gp.base)*0.25}:null; };         // a city drawn from the game's own layout (see above)
       const model=await C.build(ctx);
       inner.traverse(o=>{ if(o.material) fade(o.material); });      // everything the city added fades with it
       // swap in the new model (a planet's terrain is rebuilt as you travel; the old one stays up meanwhile)
@@ -639,7 +685,7 @@ function setPanel(on){ if(panel===on) return; panel=on; ui.show(on?owner:null); 
 
 function update(t){
   // a planet with real terrain under you: its terrain, built round where you look
-  if(terrainIndex) for(const name of terrainIndex){ const B=S.bodyMap[name]; if(!B||B.system!==S.system||worlds[name]) continue;
+  if(terrainIndex) for(const name of terrainIndex){ const B=S.bodyMap[name]; if(!B||B.system!==S.system||worlds[name]||B.kind==="asteroid") continue;
     if(d3([O[0]+camera.position.x,O[1]+camera.position.y,O[2]+camera.position.z],B.center)-B.radius<400000) worldFor(name); }
   let best=null, world=null;
   for(const st of cities){ try{ st.measure(t); }catch(e){ reportErr(st.C.city,e); } if(!(st.built&&st.r>=0.003)) continue;
@@ -652,7 +698,10 @@ function update(t){
   if(!owner) return;
   const st=owner, C=st.C, W=st.W, {B,fr,ang,upG,Ag,camAlt,r,g}=st, M=st.model||{};
   st.root.visible=true; st.FADE.value=r;
-  setPanel(camAlt<C.panelAlt&&st.dCity<C.panelDist);
+  // Looking at a station (or anything else in space), the camera can swing down into the planet's air as it
+  // circles: the city's clock, snow and haze are for the ground, not for that, so they stay off
+  const inSpace=S.focus?.kind==="loc"&&!surfaceBodyOf(S.focus);
+  setPanel(!inSpace&&camAlt<C.panelAlt&&st.dCity<C.panelDist);
   st.root.position.set(B.center[0]-O[0],B.center[1]-O[1],B.center[2]-O[2]); st.root.rotation.set(0,0,ang); st.root.updateMatrixWorld(true);
 
   // the sun as seen from the city
@@ -670,12 +719,15 @@ function update(t){
   const zenCol=st.ZEN.night.clone().lerp(st.ZEN.dusk,sstep(-0.18,0,sinEl)).lerp(st.ZEN.day,sstep(0,0.3,sinEl));
   const pl=sysObjs.find(o=>o.b.name===C.body);
   if(pl){ st.fx=planetFx(pl); if(pl.grid&&r>0.5) pl.grid.visible=false;
-    if(st.fx){ st.fx.CITYP.value.set(...fr.up); st.fx.CLOUDK.value=sstep(0,0.6,r); st.fx.ATMOK.value=1-g; } }
+    if(st.fx){ st.fx.CITYP.value.set(...fr.up); st.fx.CLOUDK.value=sstep(0,0.6,r); st.fx.ATMOK.value=1-g;
+      // only once you're down at the city (its own ground drawn and solid round you), and only as wide as that
+      // ground is solid: from further off the rock stays whole (a hole there showed as a black crater)
+      if(st.fx.HOLE) st.fx.HOLE.value=!C.world&&st.model&&r>0.9&&g>0.6?C.edge[0]/B.radius:0; } }
   const bright=sstep(-0.12,0.15,sinEl), du=dome.material.uniforms;
   dome.visible=g>0.002; du.A.value=g*(0.35+0.65*bright);
   du.UP.value.set(...upG); du.SUN.value.set(...sunDir); du.ZEN.value.copy(zenCol); du.HOR.value.copy(skyCol); du.SUNK.value=bright; du.GLOW.value.set(W.sunGlow);
   STARK.value=1-g*(0.25+0.75*bright);
-  if(opt.haze&&g>0.002){ fog.color.copy(skyCol); fog.near=W.haze.near+camAlt*0.4; fog.far=fog.near+(W.haze.far+camAlt)/Math.max(g,1e-3); scene.fog=fog; } else scene.fog=null;
+  if(!inSpace&&opt.haze&&W.haze&&g>0.002){ fog.color.copy(skyCol); fog.near=W.haze.near+camAlt*0.4; fog.far=fog.near+(W.haze.far+camAlt)/Math.max(g,1e-3); scene.fog=fog; } else scene.fog=null;
 
   // shadows over what you're looking at
   const sd=nrm([stp[0]-O[0],stp[1]-O[1],stp[2]-O[2]]);
@@ -687,13 +739,16 @@ function update(t){
   // keep the camera above the ground
   if(M.hgt&&r>0.9){ const lp=st.inner.worldToLocal(camera.position.clone()), [fx,fy,fz]=st.frame.toFlat(lp.x,lp.y,lp.z), gh=M.hgt(fx,fz)+12;
     if(fy<gh){ camera.position.addScaledVector(new THREE.Vector3(...upG),gh-fy); camera.lookAt(0,0,0); camera.updateMatrixWorld();
-      // and tilt the view up a little, so the next frame starts above the ground too (moving the camera back
-      // every frame on its own made it jitter while you turned)
-      if(surfaceBodyOf(S.focus)) S.cam.pitch=Math.min(1.55,S.cam.pitch+Math.min(0.04,(gh-fy)/Math.max(S.cam.dist,50))); } }
+      // and set the tilt to exactly what keeps the camera there, so the next frame is placed right to begin
+      // with. (Nudging the tilt a bit each frame while the camera was pushed up made it wobble as you
+      // right-dragged: the drag and the push fought every frame.)
+      if(surfaceBodyOf(S.focus)){ const d=Math.max(S.cam.dist,1), ty=fy-d*Math.sin(S.cam.pitch), need=(gh-ty)/d;
+        if(need<0.999) S.cam.pitch=Math.min(1.55,Math.max(S.cam.pitch,Math.asin(Math.max(-1,need))));
+        else S.cam.pitch=1.55; } } }
 
   // precipitation round the camera, near the ground
   const P=W.precip, now_=performance.now(), dt=Math.min(0.1,(now_-lastNow)/1000); lastNow=now_;
-  precip.visible=!!P&&opt.precip&&camAlt<P.maxAlt&&g>0.5&&!reduceMotion();
+  precip.visible=!inSpace&&!!P&&opt.precip&&camAlt<P.maxAlt&&g>0.5&&!reduceMotion();
   if(precip.visible){ const pm=precip.material; pm.color.set(P.color); pm.size=P.size; pm.opacity=P.opacity;
     precip.position.copy(camera.position); precip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...upG));
     const p=pg.attributes.position.array, f0=P.fall[0], f1=P.fall[1]-P.fall[0];
@@ -707,7 +762,7 @@ function update(t){
 const ui=(()=>{
   const css=document.createElement("style"); css.textContent=`
   .c3d{position:absolute;right:16px;bottom:64px;width:min(300px,calc(100% - 32px));padding:12px 14px;display:flex;flex-direction:column;gap:10px;z-index:6;pointer-events:auto}
-  .c3d[hidden]{display:none}
+  .c3d[hidden],.c3d [hidden]{display:none!important}
   .c3d .h{display:flex;align-items:baseline;gap:8px}.c3d .h b{font:600 15px var(--display)}.c3d .h .muted{font-size:12px}
   .c3d .h .x{margin-left:auto;background:none;border:0;color:var(--ink-2);font-size:18px;line-height:1;cursor:pointer}
   .c3d .lbl{font:600 10.5px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
@@ -720,18 +775,33 @@ const ui=(()=>{
   .c3d .views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
   .c3d .views button{font:500 12px var(--text,inherit);color:var(--ink);background:rgba(75,141,255,.08);border:1px solid var(--line-2);border-radius:7px;padding:6px 2px;cursor:pointer}
   .c3d .views button:hover{border-color:rgba(127,231,255,.5)}
-  .c3d .note{font-size:11.5px;color:var(--dim)}`;
+  .c3d .note{font-size:11.5px;color:var(--dim)}
+  .c3d .h .up{background:none;border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);font-size:11.5px;padding:1px 7px;cursor:pointer;margin-left:auto}
+  .c3d .h .up+.x{margin-left:4px}
+  .c3d-mini{position:absolute;right:16px;bottom:64px;z-index:6;display:flex;align-items:center;gap:7px;padding:7px 12px;cursor:pointer;
+    font:600 13px var(--display);color:var(--ink);pointer-events:auto}
+  .c3d-mini[hidden]{display:none!important}
+  .c3d-mini:hover{border-color:rgba(127,231,255,.5)}
+  .c3d-mini .ic{font-size:14px;color:#9fd8ff}`;
   document.head.appendChild(css);
   const el=document.createElement("div"); el.className="card c3d"; el.id="city3d"; el.hidden=true;
-  el.innerHTML=`<div class="h"><b id="c3d-name">City</b><span class="muted" id="c3d-kind">3D city</span><button class="x" id="c3d-x" title="Fly back up" aria-label="Fly back up">×</button></div>
+  el.innerHTML=`<div class="h"><b id="c3d-name">City</b><span class="muted" id="c3d-kind">3D city</span><button class="up" id="c3d-up" title="Leave the 3D view and fly back up">Fly up</button><button class="x" id="c3d-x" title="Hide this panel (the city stays)" aria-label="Hide this panel">×</button></div>
     <div><div class="lbl">Local time</div><div class="clock"><span class="v" id="c3d-clock">–</span><span class="chip" id="c3d-mode">Live</span></div></div>
     <input type="range" id="c3d-t" min="0" max="24" step="0.05" aria-label="Preview another time of day">
     <div class="sunl" id="c3d-sun"></div>
-    <div class="row"><label id="c3d-precip-l"><input type="checkbox" id="c3d-precip" checked> <span>Snowfall</span></label><label><input type="checkbox" id="c3d-haze" checked> Haze</label>
+    <div class="row"><label id="c3d-precip-l"><input type="checkbox" id="c3d-precip" checked> <span>Snowfall</span></label><label id="c3d-haze-l"><input type="checkbox" id="c3d-haze" checked> Haze</label>
       <button class="btn small" id="c3d-live" hidden>Back to live</button></div>
     <div class="views" id="c3d-views"></div>
     <div class="note" id="c3d-note"></div>`;
   ($("mapwrap")||document.body).appendChild(el);
+  // × tucks the panel away to a small button in its corner (the city stays, with the whole view to itself);
+  // the button brings it back. "Fly up" leaves the 3D view, as × used to.
+  const mini=document.createElement("button"); mini.className="card c3d-mini"; mini.hidden=true; mini.title="Show the 3D city panel";
+  mini.innerHTML=`<span class="ic">▣</span><span id="c3d-mini-name">City</span>`;
+  ($("mapwrap")||document.body).appendChild(mini);
+  let tucked=false;
+  const place=()=>{ el.hidden=!cur||tucked; mini.hidden=!cur||!tucked; };
+  mini.onclick=()=>{ tucked=false; place(); };
   const q=s=>el.querySelector(s);
   let cur=null, dragging=false, lastSin=0;
   const slider=q("#c3d-t");
@@ -743,10 +813,14 @@ const ui=(()=>{
   q("#c3d-live").onclick=()=>{ S.timeShift=0; tick(); };
   q("#c3d-precip").onchange=e=>opt.precip=e.target.checked;
   q("#c3d-haze").onchange=e=>opt.haze=e.target.checked;
-  q("#c3d-x").onclick=()=>{ if(!cur) return; if(cur.C.world) focusBody(cur.C.body); else focusLoc(cur.C.city,false); };
+  q("#c3d-x").onclick=()=>{ tucked=true; place(); };
+  q("#c3d-up").onclick=()=>{ if(!cur) return; if(cur.C.world) focusBody(cur.C.body); else focusLoc(cur.C.city,false); };
   q("#c3d-views").onclick=e=>{ const b=e.target.closest("[data-v]"); if(b&&cur) cur.go(b.dataset.v); };
   function tick(sinEl){ if(sinEl!=null) lastSin=sinEl; if(!cur) return; const L=cur.loc(); if(!L) return;
-    const shift=S.timeShift||0, lt=localTime(L,now()+shift); if(!lt) return;
+    const shift=S.timeShift||0, lt=localTime(L,now()+shift);
+    if(!lt){ const e=Math.round(Math.asin(Math.max(-1,Math.min(1,lastSin)))*180/Math.PI), Bn=cur.C.body;
+      q("#c3d-clock").textContent=`${e>=0?"☀":"☾"} Fixed`; q("#c3d-mode").textContent="No day"; q("#c3d-live").hidden=true;
+      q("#c3d-sun").textContent=`${Bn} doesn't turn: the sun stays ${Math.abs(e)}° ${e>=0?"up":"below the horizon"} here`; return; }
     q("#c3d-clock").textContent=`${lt.day?"☀":"☾"} ${fmtClock(lt.h)}`;
     const m=q("#c3d-mode"); m.textContent=shift?"Preview":"Live"; m.classList.toggle("pv",!!shift);
     q("#c3d-live").hidden=!shift;
@@ -755,9 +829,11 @@ const ui=(()=>{
     q("#c3d-sun").textContent=`Sun ${Math.abs(e)}° ${e>=0?"up":"below the horizon"}${lt.polar?"":` · ${lt.day?"sunset":"sunrise"} in ~${fmtMins(lt.mins)}`}${shift?` · live: ${fmtClock(localTime(L,now()).h)}`:""}`; }
   function views(st){ if(st!==cur&&st!==owner) return; const v=st?.model?.views;
     q("#c3d-views").innerHTML=v?Object.entries(v).map(([k,x])=>`<button data-v="${k}">${esc(x.label)}</button>`).join(""):""; }
-  function show(st){ cur=st; el.hidden=!st; if(!st) return;
-    q("#c3d-name").textContent=st.C.city; q("#c3d-kind").textContent=st.C.world?"3D terrain":"3D city"; q("#c3d-note").textContent=st.C.note||"";
+  function show(st){ cur=st; place(); if(!st) return;
+    q("#c3d-name").textContent=st.C.city; mini.querySelector("#c3d-mini-name").textContent=st.C.city; q("#c3d-kind").textContent=st.C.world?"3D terrain":"3D city"; q("#c3d-note").textContent=st.C.note||"";
     const P=st.W.precip; q("#c3d-precip-l").hidden=!P; if(P) q("#c3d-precip-l span").textContent=P.label;
+    q("#c3d-haze-l").hidden=!st.W.haze;
+    const B=S.bodyMap[st.C.body]; slider.hidden=!(B?.period>0);                    // a body that doesn't turn: its time never changes
     views(st); tick(); }
   return {show,tick,views};
 })();
@@ -776,7 +852,7 @@ function prepare(name){
     if(!st.built) return null;
     if(st.model?.ready) await Promise.race([st.model.ready, new Promise(r=>setTimeout(r,60000))]);
     // the planet's own ground, built round the city (as it would be once you're looking at it)
-    if(B&&L?.pos&&terrainIndex?.includes(B.name)){ const w=worldFor(B.name);
+    if(B&&L?.pos&&B.kind!=="asteroid"&&terrainIndex?.includes(B.name)){ const w=worldFor(B.name);
       if(!w.built&&!w.building){ const r=Math.hypot(...L.pos); w.want=L.pos.map(v=>v/r*B.radius); w.build(); }
       await until(()=>w.built||!w.building); }
     warm(); return st; })());
@@ -804,5 +880,10 @@ window.City3D={define, get cities(){ return cities.map(c=>c.C.city); }, prepare,
 const forPlace=name=>cities.find(st=>!st.C.world&&st.C.places.includes(name));
 window.registerCity3D({name:"3D cities", update,
   has:name=>!!forPlace(name), titleFor:name=>forPlace(name)?.C.city, open:name=>forPlace(name)?.open(name),
-  get active(){ return panel; }});
+  get active(){ return panel; },
+  get inCity(){ return !!(panel&&owner&&!owner.C.world); },
+  // A city that floats high above its planet's surface (Orison, ~79 km up): the height of its floor, for the
+  // map's zoom and drag to work at (they aimed at the planet's surface far below it, so one notch of the wheel
+  // flew the camera kilometres away and the city was out of view at once). null for everywhere else.
+  groundAlt(body){ const st=owner; return st&&!st.C.world&&st.C.body===body&&st.r>0.5&&Number.isFinite(st.model?.floorAlt)?st.model.floorAlt:null; }});    // down in a city itself (the map hides its distance rings then)
 })();

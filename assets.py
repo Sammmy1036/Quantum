@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://quantumsc.org/assets/"
-FOLDERS = ("cities/", "citylights/", "planets/", "terrain/")
+FOLDERS = ("cities/", "citylights/", "planets/", "terrain/", "stations/")
 MANIFEST_TTL = 600            # re-check the manifest at most every 10 minutes
 
 
@@ -32,7 +32,7 @@ class AssetCache:
                 return self._manifest
             saved = self.dir / "manifest.json"
             try:
-                data = json.loads(self._fetch("manifest.json"))
+                data = json.loads(self._fetch("manifest.json", version=int(time.time())))   # always the server's own
                 if not isinstance(data.get("files"), dict):
                     raise ValueError("manifest has no files")
                 saved.write_text(json.dumps(data), encoding="utf-8")
@@ -48,11 +48,14 @@ class AssetCache:
 
     # ---- files
     @staticmethod
-    def _fetch(path, timeout=30, progress=None):
+    def _fetch(path, timeout=30, progress=None, version=None):
         """Download one file (gzip on the wire). progress(bytes_so_far) is called as it arrives, counted
-        in the file's real (unpacked) size, so it lines up with the manifest's size."""
-        req = urllib.request.Request(BASE_URL + urllib.parse.quote(path),
-                                     headers={"Accept-Encoding": "gzip", "User-Agent": "Quantum"})
+        in the file's real (unpacked) size, so it lines up with the manifest's size. version goes on the URL
+        (?v=...): a CDN in front of the server (Cloudflare) caches by the whole URL, so a rebuilt file, with a
+        new hash in the manifest, is a new URL and can never come back as the cache's old copy."""
+        url = BASE_URL + urllib.parse.quote(path) + (f"?v={urllib.parse.quote(str(version))}" if version else "")
+        req = urllib.request.Request(url, headers={"Accept-Encoding": "gzip", "User-Agent": "Quantum",
+                                                   "Cache-Control": "no-cache"})
         with urllib.request.urlopen(req, timeout=timeout) as r:
             unzip = zlib.decompressobj(31) if (r.headers.get("Content-Encoding") or "").lower() == "gzip" else None
             parts, got = [], 0
@@ -122,7 +125,8 @@ class AssetCache:
                 self._active[path] = entry
                 self._failed.pop(path, None)
             try:
-                data = self._fetch(path, timeout=60, progress=lambda n: entry.__setitem__("done", n))
+                data = self._fetch(path, timeout=60, progress=lambda n: entry.__setitem__("done", n),
+                                   version=want["sha256"][:16])
             except Exception as e:
                 self.log(f"asset download {path}: {e}")
                 data = None
@@ -131,7 +135,8 @@ class AssetCache:
                     self._active.pop(path, None)
             if data is None or len(data) != want["size"] or self._sha(data) != want["sha256"]:
                 if data is not None:
-                    self.log(f"asset {path}: download didn't match the manifest; not used")
+                    self.log(f"asset {path}: download didn't match the manifest; not used (got {len(data):,} bytes "
+                             f"sha256 {self._sha(data)[:12]}, manifest says {want['size']:,} bytes sha256 {want['sha256'][:12]})")
                 with self._lock:
                     self._failed[path] = time.time()
                 return None
