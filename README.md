@@ -11,7 +11,7 @@
   <video src="https://github.com/user-attachments/assets/ec267805-fe17-44b5-abfd-4945736c83d0" width="1000" controls muted></video>
  </p>
 
-Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coordinates and the game's own log to show where you are on a live 3D map of the system, plans and guides multi-stop routes, and tracks your hauling contracts from pickup to delivery. With a free UEX token it also finds profitable trade routes, compares ships and fits components. With a UEX datarunner account you can report terminal prices from inside Quantum, climb the ranks and keep trade data fresh for everyone.
+Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coordinates and the game's own log to show where you are on a live 3D map of the system, plans and guides multi-stop routes, and tracks your hauling contracts from pickup to delivery. It has a browsable catalogue of personal gear and crafting blueprints, where you can build your own gear loadouts for each kind of job. With a free UEX token it also finds profitable trade routes, compares ships and fits components. With a UEX datarunner account you can report terminal prices from inside Quantum, climb the ranks and keep trade data fresh for everyone.
 
 > **Fan project.** Quantum is an unofficial Star Citizen fan tool. It isn't affiliated with or endorsed by Cloud Imperium Games. It never changes game files or memory: it only reads `Game.log` and your clipboard, and (if you ask it to) types `/showlocation` into chat and takes screenshots of the game window for price reports.
 
@@ -24,7 +24,8 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 - [Connecting UEX (trade data)](#connecting-uex-trade-data)
 - [Datarunner: reporting prices](#datarunner-reporting-prices)
 - [Using Quantum in game](#using-quantum-in-game)
-- [The tabs](#the-tabs)
+- [Finding your way around](#finding-your-way-around)
+- [Your profile](#your-profile)
 - [The Quantum community](#the-quantum-community)
 - [Your Quantum account](#your-quantum-account)
 - [Updates](#updates)
@@ -35,7 +36,8 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 ## Features
 
 **Map and navigation**
-- Interactive 3D map of Stanton, Pyro and Nyx: planets, moons, stations, cities, outposts, Lagrange points and gateways, under each system's own galaxy sky with its sun. ArcCorp, Hurston, Crusader and microTech have their own surfaces with day and night sides, clouds and city lights, and stations are shown as 3D models.
+- Interactive 3D map of Stanton, Pyro and Nyx: planets, moons, stations, cities, outposts, Lagrange points and gateways, under each system's own galaxy sky with its sun. ArcCorp, Hurston, Crusader and microTech have their own surfaces with day and night sides, clouds and city lights.
+- 3D cities built from the game's own layouts: New Babbage, Lorville, Area 18, Orison and Levski, with real terrain and the game's own night lights. Stations are drawn with the game's own models once you get close. This map data is downloaded from the Quantum server the first time it's needed, then kept on your PC.
 - Your position from `/showlocation`, and from the game log between readings (landed at, talking to traffic control, just took off from). When you jump through a gateway, Quantum sees the new system in the game log and moves the map there.
 - Plan routes with as many stops as you like, optimise their order, and follow a live guide to the next stop. Routes can cross systems: Quantum adds the gateway to fly to and the one you come out at, going through Pyro to reach Nyx when there's no direct link.
 - An in-game overlay you toggle with a hotkey, and a hotkey that types `/showlocation` for you.
@@ -48,11 +50,18 @@ Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coor
 - Mark cargo as picked up yourself when the game doesn't report it.
 
 **Trade and ships** (with a free [UEX](https://uexcorp.space) token)
-- **Commodities:** where each commodity is cheapest to buy and sells best, with headline prices, stock and a map view.
+- **Commodities:** where each commodity is cheapest to buy and sells best, with headline prices, stock and a map view. Mined and harvested resources also show **where to find them**: each moon, planet or belt with how it's gathered (ship, ROC or hand mining, harvesting), how likely a deposit is and its quality range, with **+** to add it to your route and **Show on map** to mark them all. A refined commodity shows its ore's locations.
 - **Trade Routes:** ranked routes from every system at once, a single system, a planet, or one place on it like Baijini Point, for your ship's cargo and your budget, with a full route page and preview. Runs between systems are previewed one system at a time, through the gateways. Type any ship with cargo space (your fleet's ships are listed first). Plan a route and track it *Planned › Bought › In transit › Sold*, including auto loading and unloading fees. Share a planned route and other Quantum users see it in *Find Routes* for a week.
 - **Vehicles:** every ship and ground vehicle with specs, and where to buy or rent it (including the Drake Command Module, which comes with the Caterpillar and Ironclad). Browse by role, landing pad or manufacturer, each maker with its own logo. Every vehicle page leads with its buy price, rent price, crew and cargo (SCU) beside its maker's logo.
 - **Components:** a landing page of every component category (systems, avionics, weapons, mining), with a search that finds any part in every category by name, and ship guns split by kind (repeaters, cannons, gatlings, scatterguns, distortion, beams). Each category has search and filters for size, grade, maker, where to get it (shops, or loot, crafting and ship stock) and what fits your ships, plus sorting by price or by the stat that matters (DPS, shield HP, quantum speed, cooling). A component's page shows its maker's logo, its game-file stats, where to buy it, whether it fits your primary ship, and **Fit here** buttons for every matching slot in your fleet.
 - **My Fleet:** your ships with their stock loadouts, each with its maker's logo. Every ship with a quantum drive also gets its jump module slot (Explorer, Excelsior, Exodus, Exfiltrate). Keep up to 5 named loadouts per ship and mark one primary; swap components from a table that compares every option with the part in the slot (side by side, stat by stat), see the stats change, and get an EM/IR estimate with Combat (SCM) and Travel (NAV) modes.
+
+**Gear and blueprints** (from the [Star Citizen Wiki](https://starcitizen.tools), no token needed)
+- **Weapons, Armor, Clothing, Gadgets and Keys:** every personal weapon, armor set and piece, clothing item, gadget (multi-tools and their attachments, tractor beams, rangefinders, mining gadgets) and key (hacking chips, cryptokeys, keycards), each with its maker's logo, stats and where to buy it. Each item is listed once, and paint variants are shown on the item's own page.
+- **Consumables:** food, drinks and medical items, with nutrition (NDR) and hydration (HEI) and their effects.
+- **Blueprints:** every crafting blueprint, its ingredients, what dismantling gives back, the stats of what it makes, and the missions that unlock it. Each mission opens its own page in Quantum with payout, reputation, its briefing, where it's offered and where it sends you (one click adds a place to your route), what has to be done first, and the blueprints it can reward.
+- **Gear loadouts** (Gear → Loadouts): your own sets of gear for each kind of job ("Bunker run", "Cave mining"). Pick armor by slot, weapons, gadgets, keys and clothing from the wiki's lists, add consumables with how many you carry, and see the total price, core protection, carrying space, mass and primary DPS. Mark one as your main, duplicate or delete them, keep notes, and add a whole loadout to your cart in one click.
+- **Cart:** anything you can buy (ship parts, gear, whole loadouts) goes in one cart, and Quantum plans the fewest stops to buy it all.
 
 **Datarunner** (with a UEX datarunner account)
 - Report a terminal's prices to UEX from Quantum: the terminal is picked from the game log, every row starts from UEX's current numbers, and most rows need one key press.
@@ -75,13 +84,13 @@ The **Commodities**, **Trade Routes**, **Datarunner**, **Vehicles**, **Component
 
 1. Sign in at [uexcorp.space](https://uexcorp.space) and go to **[My Apps](https://uexcorp.space/api/apps)**.
 2. Create an app (any name, e.g. "Quantum") and copy its **access token**.
-3. In Quantum, click **Settings** (bottom left) and find **Trade data (UEX)**.
+3. In Quantum, click your **profile picture** at the top of the left bar, then **Linked accounts**.
 4. Paste it into **UEX Bearer Token** and press **Save**. Quantum checks it with UEX first and only keeps it if it works.
 
-Settings shows a green **Connected** beside the Bearer Token, the Secret Key (with your UEX name) and the **Quantum API** once each one works; the Quantum API shows **Offline** in red when the community server can't be reached.
+**Linked accounts** shows a green **Connected** beside your Quantum account, the Bearer Token and the Secret Key once each one works. **Settings → Quantum API** shows whether the community server can be reached (**Offline** in red when it can't).
 
 Things to know:
-- The token is stored in your local `settings.json`. It only leaves your PC (besides going to UEX) if you choose to keep your UEX keys in your [Quantum account](#your-quantum-account).
+- Without a Quantum account, the token is stored in your local `settings.json`. If you keep your UEX keys in your [Quantum account](#your-quantum-account), it isn't saved on your PC at all: Quantum gets it from your account each time it starts.
 - UEX allows 120 requests a minute. Quantum caches its data (places for a day, prices and routes for 30 minutes) and should stay well under the limit.
 - UEX prices are reported by players. They can be out of date, so check the terminal before you buy.
 
@@ -89,7 +98,7 @@ Things to know:
 
 Reports go to UEX under your own account, so you need a UEX account with datarunner access turned on in your [UEX profile](https://uexcorp.space/account).
 
-1. In **Settings → Trade data (UEX)**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's used to send your reports and to sign in to the Quantum community server (see [Your data and privacy](#your-data-and-privacy)), and stays on your PC unless you keep your UEX keys in your [Quantum account](#your-quantum-account).
+1. In your **profile → Linked accounts**, paste your **UEX Secret Key** (from your UEX profile) and press **Save**. It's used to send your reports and to sign in to the Quantum community server (see [Your data and privacy](#your-data-and-privacy)). It's saved on your PC, unless you keep your UEX keys in your [Quantum account](#your-quantum-account), in which case it's only kept there.
 2. Go to a commodity kiosk. Land or dock and Quantum picks the terminal from the game log, or type it in the **Terminal** box.
 3. Open the kiosk's list in game and take a screenshot (UEX needs one during a new datarunner's first 90 days; after that, Quantum offers to send without one, and UEX's answer settles it): press your screenshot key (set it in **Settings**) or **Take screenshot** in Quantum. UEX checks every report against it, so data entry stays locked until there is one. For a long list, scroll and take another; they're joined into one picture.
 4. Check each row. Matches the kiosk: **No Changes** (or Space). Different: type the stock and price and set the inventory bar. Gone from the kiosk: **Not Sold Here**. Keys: ↑ ↓ move, Space no changes, Enter edit, 1–7 inventory, G not sold here.
@@ -112,7 +121,7 @@ Take screenshot only works while Star Citizen is running and a terminal is picke
 | **F10** | Types `/showlocation` in game chat, so the map knows exactly where you are |
 | **Screenshot key** | Screenshots the kiosk for a datarunner report (unset until you pick one, e.g. F12) |
 
-You can change all of them in **Settings**. The `/showlocation` key starts unset on a fresh install; pick one in Settings (F10 works well).
+You can change all of them in **Settings** (the cog at the bottom of the left bar). The `/showlocation` key starts unset on a fresh install; pick one in Settings (F10 works well).
 
 - **Game.log** is found automatically while Star Citizen is running. Quantum reads it for contracts, approximate positions, the terminal you're at and the game version.
 - **Admin rights:** if Star Citizen (or the RSI Launcher) runs as administrator, Quantum must too, or Windows won't let its hotkeys type into the game. Settings has a **Restart Quantum as administrator** button.
@@ -120,20 +129,33 @@ You can change all of them in **Settings**. The `/showlocation` key starts unset
 - **Tray icon:** click it to show or hide Quantum; right click for **Exit Quantum**.
 - **One copy at a time:** launching Quantum again brings the running copy to the front (even from the tray) instead of opening a second one.
 
-## The tabs
+## Finding your way around
 
-| Tab | What it's for |
-|---|---|
-| **Route** | Search places, moons or services ("refinery", "refuel"); build, optimise and follow a route, across systems too |
-| **Waypoints** | Places you've saved yourself |
-| **POI** | Browse every place on the map |
-| **Contracts** | Your hauling contracts from the game log, with trackers and map pins |
-| **Commodities** | Buy and sell prices for any commodity, as a picture grid with a detail page and map view |
-| **Trade Routes** | *Find Routes* ranks profitable runs from every system, one system, a planet or one place on it, including ones other users shared. *Planned Routes* tracks the ones you're doing, or ones you enter yourself |
-| **Datarunner** | *Report Prices*, *Jobs*, *My Reports*, *Top 10* and *FAQ* |
-| **My Fleet** | Your ships, up to 5 named loadouts each (one primary), component swaps with side-by-side comparison, and EM/IR with power settings |
-| **Components** | Every component category, a search across all of them, guns by kind, filters, game-file stats, shops and fitting to your fleet |
-| **Vehicles** | Ships and vehicles with specs, where to buy and where to rent, by role, pad size or manufacturer |
+The bar on the far left has one button per section; each section's own tabs show under its title. Your profile picture sits at the top, with **Cart** and **Settings** at the bottom.
+
+| Section | Tabs | What it's for |
+|---|---|---|
+| **Navigate** | Route, Waypoints, Contracts | Search places, moons or services ("refinery", "refuel"), build, optimise and follow a route (across systems too); places you've saved yourself; your hauling contracts from the game log, with trackers and map pins |
+| **Trade** | Commodities, Trade routes, Datarunner | Buy and sell prices (and where mined resources are found); profitable runs, including ones other users shared, and the ones you're doing; *Report Prices*, *Jobs*, *My Reports*, *Top 10* and *FAQ* |
+| **Ships** | My Fleet, Components, Vehicles | Your ships with up to 5 named loadouts each, component swaps and EM/IR; every component with stats, shops and fitting to your fleet; ships and vehicles with specs, where to buy and rent |
+| **Gear** | Weapons, Armor, Clothing, Gadgets, Keys, Loadouts | Personal gear from the Star Citizen Wiki, and your own gear loadouts |
+| **Consumables** | | Food, drinks and medical items |
+| **Blueprints** | | Crafting blueprints and the missions that unlock them |
+| **Cart** | | Everything you want to buy, and the quickest trip to buy it all |
+
+Trade and Ships need a UEX Bearer Token; without one, their buttons take you to **Linked accounts** to add it.
+
+## Your profile
+
+Click your picture at the top of the left bar. Signed out, it's a dashed outline and the profile is where you sign in.
+
+- **Overview:** your datarunner banner (rank, stars, progress to the next rank), when you joined, your last backup, your fleet and gear loadout counts, the **trusted contributor** checklist with a tick for each criterion you've met, your linked accounts, your recent submissions, your fleet with pictures, and your personal gear loadouts.
+- **Profile photo:** the camera button sets your own picture (cropped to a square). Without one, your UEX avatar is shown. It shows straight away each time Quantum starts.
+- **Linked accounts:** your Quantum account sign-in, and your UEX Bearer Token and Secret Key.
+- **Backup:** when you were last backed up, **Back up now**, restore and delete.
+- **Submissions:** your datarunner card, and every picture, station position and alignment you've sent with its status.
+- **My fleet** and **Gear loadouts:** choose which ships and loadouts your profile shows (up to 10), drag them into order, or hide the section entirely, then **Save**.
+- **Sign out:** asks you to confirm, then signs you out of everything: your Quantum account, the Quantum server, and your UEX keys come off this PC, so nothing stays connected. Your ships, waypoints, routes, gear loadouts and settings stay on your PC.
 
 ## The Quantum community
 
@@ -145,7 +167,7 @@ Quantum users share a few things through the Quantum community server:
 - **Planet alignments:** after a game update, landing at a known place and typing `/showlocation` lines that planet or moon up for the new version. It goes live for everyone once a second datarunner's alignment agrees.
 - **Landing pad sizes:** pick a place's largest pad on its card. It's yours straight away and shows for everyone once a second datarunner agrees.
 - **Shared trade routes:** routes you share from *Planned Routes* appear in other users' *Find Routes* for a week.
-- **Encrypted backups:** your fleet with every ship's loadouts and component swaps, waypoints, planned trade routes and mapped stations are backed up within a minute of any change. They're encrypted on your PC with a key made from your UEX Bearer Token (datarunner or not), so the server can't read them. On a new install, enter the same Bearer Token and they come back automatically. Restoring only adds what's missing (ships, loadouts a ship doesn't have yet, routes, waypoints, stations); it never removes or overwrites anything. **Settings → Backup** shows when the last backup happened, and lets you delete your backup and turn backups off.
+- **Encrypted backups:** your fleet with every ship's loadouts and component swaps, waypoints, planned trade routes, mapped stations, gear loadouts and how your profile is laid out are backed up within a minute of any change. They're encrypted on your PC with a key made from your UEX Bearer Token (datarunner or not), so the server can't read them. On a new install, enter the same Bearer Token and they come back automatically. Restoring only adds what's missing (ships, loadouts a ship doesn't have yet, routes, waypoints, stations, gear loadouts); it never removes or overwrites anything. **Profile → Backup** shows when the last backup happened, and lets you delete your backup and turn backups off.
 - **Datarunner profiles and the Top 10:** your rank, star rating and report counts, kept under your UEX username so they survive reinstalling Quantum.
 
 Nobody can add to or take from someone else's profile: a report only counts once UEX's own record shows that username sent it.
@@ -158,7 +180,7 @@ A Quantum account is optional: everything in Quantum works without one. It's one
 
 **Create one** at [quantumsc.org/account/signup](https://quantumsc.org/account/signup) and confirm your email address with the link it sends you. Accounts that aren't confirmed are removed after 7 days.
 
-**Sign in from Quantum** in **Settings → Quantum account**:
+**Sign in from Quantum** by clicking your picture at the top of the left bar (or **Profile → Linked accounts**):
 - Type your email and password there, or
 - Choose **sign in with your browser**: Quantum opens the website and shows a code to approve, so it never sees your password.
 
@@ -176,11 +198,13 @@ Either way, Quantum keeps only its own sign-in (encrypted with Windows' data pro
 
 Your picture and name in the top corner open a menu with **Sign out**.
 
-**Keep my UEX keys in my Quantum account** (optional, off unless you turn it on). Turn it on in **Settings → Quantum account**, or save your keys on the website. Then:
-- Any PC you sign in on gets your UEX Bearer Token and Secret Key filled in.
+**Keep my UEX keys in my Quantum account** (optional, off unless you turn it on). Turn it on in **Profile → Linked accounts**, or save your keys on the website. Then:
+- Your keys aren't saved on your PC at all. Quantum gets them from your account each time it starts, on any PC you sign in on. If the Quantum server can't be reached when Quantum starts, the UEX features wait until it's back.
 - A key you change on one PC, or on the website, reaches the others.
 - UEX checks the keys before they're saved. They're stored encrypted, and the website only ever shows their last 4 characters.
-- Turning it off removes them from your account; they stay on each PC.
+- Turning it off removes them from your account, and Quantum saves them on your PC again.
+
+**Signing out** from your profile signs you out of your Quantum account and the Quantum server and takes your UEX keys off that PC. Sign in again and keys kept in your account fill back in.
 
 ## Updates
 
@@ -198,7 +222,7 @@ Positions come from community datasets, and component stats come from the game f
 
 ## Your data and privacy
 
-Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json`, unless you choose to [keep them in your Quantum account](#your-quantum-account). Otherwise the token is only ever sent to UEX. The secret key is sent to UEX, and once to the community server when Quantum signs in to it: the server passes it to UEX to learn which UEX account it belongs to, then forgets it. It's never stored or logged there. In return the server gives Quantum a **session token**, kept in `settings.json`, so it knows the pictures, places and alignments you send are really from you.
+Your **UEX Bearer Token** and **UEX Secret Key** stay on your PC in `settings.json`, unless you choose to [keep them in your Quantum account](#your-quantum-account): then they're kept only there and held in memory while Quantum runs, never written to your PC. Otherwise the token is only ever sent to UEX. The secret key is sent to UEX, and once to the community server when Quantum signs in to it: the server passes it to UEX to learn which UEX account it belongs to, then forgets it. It's never stored or logged there. In return the server gives Quantum a **session token**, kept in `settings.json`, so it knows the pictures, places and alignments you send are really from you.
 
 Quantum talks to these services:
 
@@ -206,7 +230,8 @@ Quantum talks to these services:
 |---|---|
 | **UEX API** | Prices, terminals, vehicles and items, and the price reports you send |
 | **Quantum API** | Community prices, station positions, pictures, shared routes, datarunner profiles and the Top 10, and your Quantum account if you use one |
-| **Star Citizen Wiki API** | Ship data, loadouts, pictures and manufacturer logos |
+| **Star Citizen Wiki API** | Ship data, loadouts, pictures and manufacturer logos; personal gear, consumables, blueprints, missions and where resources are found |
+| **Quantum map data** (quantumsc.org/assets) | 3D cities, terrain, city lights, planet surfaces and station models, downloaded once and checked against the server's list |
 | **GitHub** | Checking for updates |
 
 What the community server receives from you:
@@ -215,28 +240,29 @@ What the community server receives from you:
 - **Shared routes:** routes you choose to share.
 - **Your UEX profile:** your username and avatar link, for your profile and the Top 10. Your username and stats are visible to other Quantum users on the Top 10.
 - **Your sign-in:** your UEX secret key once, over HTTPS, to confirm your UEX username with UEX (not kept). The session token it gives Quantum is stored on the server only as a one-way hash, with when and from where it was last used. Removing or changing your secret key in Settings signs that PC out.
-- **Your Quantum account**, if you make one: your email address, your password as a one-way scrypt hash (never the password itself), your sign-ins, your profile and picture, your linked UEX name, and your UEX keys only if you choose to keep them there (encrypted). The website's sign-up and forgotten-password pages use Cloudflare Turnstile to keep bots out.
+- **Your Quantum account**, if you make one: your email address, your password as a one-way scrypt hash (never the password itself), your sign-ins, your profile and picture (including the photo you set in Quantum while signed in), your linked UEX name, and your UEX keys only if you choose to keep them there (encrypted). The website's sign-up and forgotten-password pages use Cloudflare Turnstile to keep bots out.
 - **Your backup:** encrypted on your PC before it's sent. The server stores it but can't read it, and your UEX Bearer Token is never sent to it. Only plain data from known fields is included, never files. If you make a new UEX token, the old backup can't be opened, and Quantum starts a new one locked to the new token.
 
 Unless you choose to keep your UEX keys in your Quantum account, it never receives your UEX Bearer Token and never keeps your secret key. It never receives your report screenshots (those go to UEX with the report, and Quantum's own copy stays on your PC).
 
-The community server is maintained by its owner and soon a small group of volunteer moderators, who review contributions and can suspend or ban accounts that misuse it. With a Quantum account, you can download your data and delete your account yourself from the [account page](https://quantumsc.org/account?tab=security). If your UEX name is linked, you can also delete everything sent under that name at the same time. Otherwise, to have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Settings → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
+The community server is maintained by its owner and soon a small group of volunteer moderators, who review contributions and can suspend or ban accounts that misuse it. With a Quantum account, you can download your data and delete your account yourself from the [account page](https://quantumsc.org/account?tab=security). If your UEX name is linked, you can also delete everything sent under that name at the same time. Otherwise, to have everything the community server holds about you deleted, ask through Quantum's [GitHub page](https://github.com/Sammmy1036/Quantum). Your encrypted backup isn't tied to your name, so delete it yourself from **Profile → Backup**; UEX keeps its own copy of the reports you sent it. To turn the community features off, use **Disable community features** under **Settings → Quantum API** (or set `"community_url": "off"` in `settings.json`); Quantum then uses UEX's data alone. **Enable community features** turns them back on.
 
 | File | Holds |
 |---|---|
-| `settings.json` | Your UEX token and secret key, Quantum server and Quantum account sign-ins (encrypted), hotkeys, route, fleet and planned trade routes |
+| `settings.json` | Your UEX token and secret key (unless your Quantum account keeps them), Quantum server and Quantum account sign-ins (encrypted), hotkeys, route, fleet, planned trade routes, gear loadouts, your profile photo and profile layout |
+| `asset_cache/` | The 3D cities, terrain, city lights and station models downloaded from the Quantum server |
 | `places.json` | Station positions you set with `/showlocation` |
 | `community_places.json` | Station positions from other Quantum users |
 | `datarunner_reports.json` | The reports you've sent and what UEX did with them |
 | `report_screenshots/` | The screenshot each report was sent with, deleted after 14 days |
-| `uex_cache/` | Cached UEX and wiki data, and datarunner avatars |
+| `uex_cache/` | Cached UEX and wiki data (gear, blueprints, missions, resource locations), manufacturer logos and datarunner avatars |
 
 ## Credits
 
 Quantum stands on the work of the Star Citizen community:
 
 - **[UEX Corp](https://uexcorp.space)**: commodity prices, trade routes, vehicles, items and the datarunner program.
-- **[Star Citizen Wiki](https://starcitizen.tools)** and its **[API](https://api.star-citizen.wiki)**: ship data, loadouts, pictures, manufacturer logos and jump module data.
+- **[Star Citizen Wiki](https://starcitizen.tools)** and its **[API](https://api.star-citizen.wiki)**: ship data, loadouts, pictures, manufacturer logos, jump module data, personal gear, consumables, blueprints, missions and resource locations.
 - **[Valalol / Star-Citizen-Navigation](https://github.com/Valalol/Star-Citizen-Navigation)**: verified Stanton positions.
 - **[starnav](https://crates.io/crates/starnav)**: Stanton, Pyro and Nyx points of interest.
 - **[unp4k](https://github.com/dolkensp/unp4k)**: game-file extraction for component stats.
