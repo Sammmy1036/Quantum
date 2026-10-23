@@ -384,6 +384,117 @@ class Wiki:
                 missing[k] = time.time()
         return logos, missing
 
+    # Personal-gear makers (armor, weapons, gadgets, clothing…) the wiki names in full or by code; their
+    # logos are found the same way as the component makers', on demand (maker_logos).
+    GEAR_MAKER_NAMES = {
+        "cds": ["Clark Defense Systems", "CDS"], "clarkdefensesystems": ["Clark Defense Systems", "CDS"],
+        "rrs": ["Roussimoff Rehabilitation Systems", "RRS"], "roussimoffrehabilitationsystems": ["Roussimoff Rehabilitation Systems", "RRS"],
+        "ksar": ["Kastak Arms"], "kastakarms": ["Kastak Arms"], "behr": ["Behring Applied Technology", "Behring"],
+        "gmni": ["Gemini"], "gemini": ["Gemini"], "lbco": ["Lightning Bolt Company", "Lightning Bolt Co."],
+        "lightningboltcompany": ["Lightning Bolt Company", "Lightning Bolt Co."], "lightningboltco": ["Lightning Bolt Company", "Lightning Bolt Co."],
+        "klwe": ["Klaus & Werner", "Klaus and Werner"], "hdgw": ["Hedeby Gunworks"], "apar": ["Apocalypse Arms"],
+        "prar": ["Preacher Armaments"], "volt": ["V.O.L.T.", "VOLT"], "vervoltaiclasertechnology": ["V.O.L.T.", "VOLT"],
+        "qrt": ["Quirinus Tech"], "quirinustech": ["Quirinus Tech"], "vgl": ["Virgil Limited", "Virgil Ltd", "Virgil"],
+        "virgillimited": ["Virgil Limited", "Virgil Ltd", "Virgil"], "doomsday": ["Doomsday"], "grin": ["Greycat Industrial", "Greycat"],
+        "greycatindustrial": ["Greycat Industrial", "Greycat"], "shubininterstellar": ["Shubin Interstellar", "Shubin"],
+        "curelife": ["CureLife"], "tehachapi": ["Tehachapi"], "escarlimited": ["Escar Limited", "Escar"],
+        "stegmans": ["Stegman's"], "fiore": ["Fiore"], "octagon": ["Octagon"], "derionmanufacturing": ["Derion"],
+        "argoastronautics": ["Argo Astronautics"], "microidbattlegear": ["Microid Battle Gear", "MBG"], "mbg": ["Microid Battle Gear", "MBG"],
+    }
+
+    def maker_logos(self, makers):
+        """{"cmp:<maker>": logo data URL} for makers the ship and component lists don't cover (armor,
+        weapons, gadgets, clothing…), looked up when a tab first shows them. makers: [{name, code}].
+        Kept with the other logos; a maker with no logo on the wiki is asked about again after a month."""
+        import threading
+        lock = self.__dict__.setdefault("_logo_lock", threading.Lock())
+        f = self.dir / "brand_logos.json"
+        with lock:
+            try:
+                cache = json.loads(f.read_text(encoding="utf-8"))
+            except Exception:
+                cache = {}
+            cmp, missing = dict(cache.get("cmp") or {}), dict(cache.get("gear_missing") or {})
+            want = {}
+            for m in makers or []:
+                name = (m.get("name") if isinstance(m, dict) else m) or ""
+                code = (m.get("code") if isinstance(m, dict) else "") or ""
+                k = self.maker_key(name)
+                if not name or k == "cmp:" or k in cmp or time.time() - missing.get(k, 0) < 30 * 86400:
+                    continue
+                names = [name] + self.GEAR_MAKER_NAMES.get(k[4:], []) + self.GEAR_MAKER_NAMES.get(re.sub(r"[^a-z0-9]", "", code.lower()), [])
+                names = [n for n in dict.fromkeys(n.strip() for n in names) if n]
+                want[k] = names
+                if len(want) >= 25:
+                    break
+            if not want:
+                return {k: v for k, v in cmp.items() if k in {self.maker_key(m.get("name") if isinstance(m, dict) else m) for m in makers or []}}
+        titles = sorted({f"File:{n}{suf}.svg" for L in want.values() for n in L for suf in self.JP_SUFFIXES}
+                        | {f"File:{n} logo.png" for L in want.values() for n in L} | {f"File:{n}.png" for L in want.values() for n in L})
+        urls, alias = {}, {}
+        try:
+            for i in range(0, len(titles), 50):
+                q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url",
+                                            "titles": "|".join(titles[i:i + 50])})
+                data = _get(f"{PAGES_API}?{q}").get("query", {})
+                alias.update({x["from"]: x["to"] for x in data.get("normalized", [])})
+                urls.update({p.get("title"): (p.get("imageinfo") or [{}])[0].get("url")
+                             for p in data.get("pages", {}).values() if p.get("imageinfo")})
+        except Exception:
+            return {}                                         # the wiki can't be reached: asked again next time
+        page_imgs = self._page_logo_images([L[0] for L in want.values()])
+        got = {}
+        for k, names in want.items():
+            logo = None
+            for n in names:
+                for t in [f"File:{n}{suf}.svg" for suf in self.JP_SUFFIXES] + [f"File:{n} logo.png", f"File:{n}.png"]:
+                    u = urls.get(alias.get(t, t))
+                    if u:
+                        logo = self._logo_data(u)
+                        if logo:
+                            break
+                if logo:
+                    break
+            if not logo:
+                for u in self._search_logo_files(names):
+                    logo = self._logo_data(u)
+                    if logo:
+                        break
+            if not logo and page_imgs.get(names[0]):
+                logo = self._logo_data(page_imgs[names[0]])
+            if logo:
+                got[k] = logo
+            else:
+                missing[k] = time.time()
+        with lock:
+            try:
+                cache = json.loads(f.read_text(encoding="utf-8"))
+            except Exception:
+                cache = {}
+            cache["cmp"] = {**(cache.get("cmp") or {}), **got}
+            cache["gear_missing"] = {**(cache.get("gear_missing") or {}), **missing}
+            self.dir.mkdir(exist_ok=True)
+            f.write_text(json.dumps(cache), encoding="utf-8")
+        return got
+
+    def _page_logo_images(self, names):
+        """The main picture of each maker's own wiki page, when it's a logo (an SVG, or "logo" in the name)."""
+        out = {}
+        try:
+            for i in range(0, len(names), 40):
+                q = urllib.parse.urlencode({"action": "query", "format": "json", "prop": "pageimages", "piprop": "original",
+                                            "redirects": 1, "titles": "|".join(names[i:i + 40])})
+                data = _get(f"{PAGES_API}?{q}").get("query", {})
+                back = {x["to"]: x["from"] for x in (data.get("redirects") or []) + (data.get("normalized") or [])}
+                for p in data.get("pages", {}).values():
+                    u = (p.get("original") or {}).get("source")
+                    if u and (u.lower().split("?")[0].endswith(".svg") or "logo" in u.lower()):
+                        t = p.get("title")
+                        out[back.get(t, t)] = u
+        except Exception:
+            pass
+        return out
+
     def _search_logo_files(self, names):
         """Logo files on the wiki whose name starts with the maker's name, best first: the vector logos
         (" - JP0907.svg" and the like), then any SVG, then pictures with "logo" in the name."""
@@ -465,7 +576,7 @@ class Wiki:
             done = all(k in cmp or k in missing for k in self._component_candidates())
             f.write_text(json.dumps({"v": 2, "at": time.time() if len(logos) == len(self.BRANDS) else 0, "logos": logos,
                                      "cmp": cmp, "cmp_missing": missing, "cmp_at": time.time() if done else 0,
-                                     "cmp_v": self.CMP_VERSION}),
+                                     "cmp_v": self.CMP_VERSION, "gear_missing": cache.get("gear_missing") or {}}),
                          encoding="utf-8")
         return {**logos, **cmp}
 

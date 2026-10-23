@@ -390,7 +390,8 @@ class Api:
             self._sign_in_soon()                              # signs in on first start after updating, too
         self._acct_flow = {"state": "idle"}
         if self._account_token():
-            threading.Thread(target=self._account_refresh, daemon=True).start()
+            threading.Thread(target=self._load_account_keys if self._keys_in_account() and not self._uex.token
+                             else self._account_refresh, daemon=True).start()
         threading.Thread(target=self._account_loop, daemon=True).start()
         threading.Thread(target=self._sync_places, daemon=True).start()
         threading.Thread(target=self._watch_server, daemon=True).start()
@@ -448,7 +449,16 @@ class Api:
     def _save_settings(self):
         self._settings.update(route_tasks=self._route, guide=self._guide)
         self._settings.pop("route", None)
-        text = json.dumps(self._settings, indent=1)
+        out = self._settings
+        if self._keys_in_account():
+            # Your Quantum account keeps your UEX keys: they're only held in memory here, never written to
+            # settings.json. Quantum gets them from the account each time it starts (_load_account_keys).
+            out = dict(out)
+            out.pop("uex_token", None)
+            dr = dict(out.get("datarunner") or {})
+            dr.pop("secret", None)
+            out["datarunner"] = dr
+        text = json.dumps(out, indent=1)
         # Written to a temporary file first, then swapped in, so a crash or a full disk mid-write can't
         # leave a half-written settings.json behind.
         tmp = SETTINGS_PATH.with_name(f"settings.json.{os.getpid()}.{threading.get_ident()}.tmp")
@@ -461,6 +471,17 @@ class Api:
             except OSError:
                 pass
             SETTINGS_PATH.write_text(text, encoding="utf-8")       # e.g. the file is briefly locked
+
+    def _keys_in_account(self):
+        a = self._settings.get("account") or {}
+        return bool(a.get("token") and a.get("keys_stored"))
+
+    def _load_account_keys(self):
+        """At start (and when the server is back): the UEX keys from your Quantum account, when it keeps them
+        and they aren't here yet."""
+        if self._keys_in_account() and not self._uex.token and self._account_token():
+            self._account()["keys_at"] = 0                  # ask for them, whatever this PC saw last
+            self._account_refresh()
 
     def _game_on(self):
         """Is Star Citizen running?"""
@@ -1739,7 +1760,9 @@ class Api:
         with self._lock:
             way = [asdict(l) for l in self._db.locations.values() if l.source == "user"]
         return {"v": 1, "fleet": self._settings.get("fleet") or [], "trade_runs": self._settings.get("trade_runs") or [],
-                "waypoints": way, "places": gateways.load_learned(PLACES_PATH)}
+                "waypoints": way, "places": gateways.load_learned(PLACES_PATH),
+                "gear_loadouts": self._settings.get("gear_loadouts") or [],
+                "profile_prefs": self._settings.get("profile_prefs") or {}}
 
     def _backup_state(self, **kw):
         st = self._settings.setdefault("backup", {})
@@ -1772,7 +1795,7 @@ class Api:
     def _local_empty(self):
         with self._lock:
             way = any(l.source == "user" for l in self._db.locations.values())
-        return not (self._settings.get("fleet") or self._settings.get("trade_runs") or way)
+        return not (self._settings.get("fleet") or self._settings.get("trade_runs") or self._settings.get("gear_loadouts") or way)
 
     def _backup_restore_if_empty(self):
         try:
@@ -1800,7 +1823,7 @@ class Api:
             data = backup.decrypt(token, r["blob"])
         except Exception as e:
             return {"ok": False, "error": f"The backup couldn't be opened: {e}"}
-        added = {"ships": 0, "loadouts": 0, "routes": 0, "waypoints": 0, "stations": 0}
+        added = {"ships": 0, "loadouts": 0, "routes": 0, "waypoints": 0, "stations": 0, "gear loadouts": 0}
         fleet = self._fleet()
         have = {f["uid"]: f for f in fleet}
         for f in data.get("fleet") or []:
@@ -1839,6 +1862,14 @@ class Api:
         for x in data.get("trade_runs") or []:
             if x.get("id") and x["id"] not in have:
                 runs.append(x); added["routes"] += 1
+        if data.get("profile_prefs") and not self._settings.get("profile_prefs"):     # how your profile is laid out
+            self._settings["profile_prefs"] = self.profile_prefs_set(data["profile_prefs"])["prefs"]
+        gl = self._settings.setdefault("gear_loadouts", [])
+        have = {x.get("id") for x in gl}
+        for x in data.get("gear_loadouts") or []:
+            c = self._gl_clean(x)
+            if c and c["id"] not in have:
+                gl.append(c); added["gear loadouts"] += 1
         self._save_settings()
         with self._lock:
             for d in data.get("waypoints") or []:
@@ -1867,6 +1898,84 @@ class Api:
         words = [f"{v} {k if v != 1 else k[:-1]}" for k, v in added.items() if v]
         return {"ok": True, "added": n, "detail": added, "updated": r.get("updated"),
                 "summary": ", ".join(words) if words else "nothing was missing"}
+
+    # ------------------------------------------------------------ personal gear loadouts
+    # What you wear and carry for a kind of job ("Bunker run", "Cave mining", "EVA salvage"): a piece of armor
+    # per slot, weapons, gadgets, utility items and consumables with how many. Kept in settings, backed up
+    # with the rest, and shown in Gear › Loadouts and on your profile.
+    GL_SLOTS = {"helmet": "armor", "core": "armor", "arms": "armor", "legs": "armor", "backpack": "armor",
+                "undersuit": "armor", "primary": "weapons", "secondary": "weapons", "sidearm": "weapons",
+                "melee": "weapons", "gadget1": "gadgets", "gadget2": "gadgets", "utility1": "utility",
+                "utility2": "utility", "hat": "clothing", "torso": "clothing", "jacket": "clothing",
+                "pants": "clothing", "shoes": "clothing", "gloves": "clothing"}
+    GL_MAX = 60
+
+    def _gl_item(self, x, kind):
+        if not isinstance(x, dict) or not str(x.get("name") or "").strip():
+            return None
+        out = {"name": str(x["name"]).strip()[:120], "kind": kind,
+               "uuid": str(x.get("uuid") or "")[:64] or None, "class_name": str(x.get("class_name") or "")[:120] or None}
+        q = x.get("qty")
+        if isinstance(q, (int, float)) and not isinstance(q, bool):
+            out["qty"] = max(1, min(99, int(q)))
+        return out
+
+    def _gl_clean(self, lo):
+        """A loadout as the page sent it, checked and trimmed to what's kept (None if it isn't one)."""
+        if not isinstance(lo, dict):
+            return None
+        name = str(lo.get("name") or "").strip()[:60]
+        if not name:
+            return None
+        slots = {}
+        for k, v in (lo.get("slots") or {}).items() if isinstance(lo.get("slots"), dict) else []:
+            if k in self.GL_SLOTS:
+                it = self._gl_item(v, self.GL_SLOTS[k])
+                if it:
+                    it.pop("qty", None)
+                    slots[k] = it
+        cons = [c for c in (self._gl_item(x, "consumables") for x in (lo.get("consumables") or [])[:20]) if c]
+        for c in cons:
+            c.setdefault("qty", 1)
+        lid = str(lo.get("id") or "") or "g" + secrets.token_hex(5)
+        return {"id": re.sub(r"[^A-Za-z0-9_-]", "", lid)[:20] or "g" + secrets.token_hex(5), "name": name,
+                "scenario": str(lo.get("scenario") or "").strip()[:60], "notes": str(lo.get("notes") or "").strip()[:500],
+                "slots": slots, "consumables": cons, "main": bool(lo.get("main")),
+                "created": lo.get("created") if isinstance(lo.get("created"), (int, float)) else int(time.time()),
+                "updated": int(time.time())}
+
+    def gear_loadouts(self):
+        return {"ok": True, "loadouts": self._settings.get("gear_loadouts") or []}
+
+    def gear_loadout_save(self, lo):
+        """Add or change one loadout (matched by id). {ok, loadout, loadouts}"""
+        c = self._gl_clean(lo)
+        if not c:
+            return {"ok": False, "error": "Give the loadout a name first"}
+        L = self._settings.setdefault("gear_loadouts", [])
+        old = next((x for x in L if x.get("id") == c["id"]), None)
+        if old:
+            c["created"] = old.get("created") or c["created"]
+            L[L.index(old)] = c
+        else:
+            if len(L) >= self.GL_MAX:
+                return {"ok": False, "error": f"That's {self.GL_MAX} loadouts already. Delete one first"}
+            L.append(c)
+        if c["main"]:
+            for x in L:
+                x["main"] = x is c
+        elif not any(x.get("main") for x in L):
+            L[0]["main"] = True
+        self._save_settings()
+        return {"ok": True, "loadout": c, "loadouts": L}
+
+    def gear_loadout_delete(self, lid):
+        L = self._settings.setdefault("gear_loadouts", [])
+        self._settings["gear_loadouts"] = L = [x for x in L if x.get("id") != lid]
+        if L and not any(x.get("main") for x in L):
+            L[0]["main"] = True
+        self._save_settings()
+        return {"ok": True, "loadouts": L}
 
     def backup_status(self):
         st = self._settings.get("backup") or {}
@@ -1957,7 +2066,8 @@ class Api:
 
     def _server_back(self):
         """The server is reachable again: refresh what was missed while it was down."""
-        steps = (("sign-in", lambda: self._dr_cfg().get("secret") and not self._session_token() and self._sign_in()),
+        steps = (("keys", self._load_account_keys),
+                 ("sign-in", lambda: self._dr_cfg().get("secret") and not self._session_token() and self._sign_in()),
                  ("prices", lambda: self._community.prices(fresh=True)),
                  ("photos", lambda: self._community.photos(fresh=True)),
                  ("places", self._sync_places_once),
@@ -1978,6 +2088,10 @@ class Api:
                 self._resend_places()                          # positions the server didn't get yet
             except Exception as e:
                 print("place resend:", e, flush=True)
+            try:
+                self._resend_alignments()                      # and planet alignments
+            except Exception as e:
+                print("alignment resend:", e, flush=True)
             try:
                 self._sync_places_once()
             except Exception as e:
@@ -3354,6 +3468,7 @@ class Api:
             self._settings.pop("device_key", None)            # the old per-PC key isn't used any more
             self._settings.pop("trust_key", None)
             self._save_settings()
+            threading.Thread(target=self._resend_alignments, daemon=True).start()   # ones made before signing in
         else:
             self._sender._event(f"Quantum server sign-in: {r.get('status')}")    # shows in Settings > Log
         self._sign_in_status = r.get("status")
@@ -3410,6 +3525,13 @@ class Api:
             if (a.get("email"), a.get("uex")) != (r.get("email"), r.get("uex")):
                 a.update(email=r.get("email"), uex=r.get("uex"))
                 self._save_settings()
+            if r.get("created_at") and r.get("created_at") != a.get("joined"):
+                a["joined"] = r["created_at"]                    # when the account was made (Profile › Joined)
+                self._save_settings()
+            av = r.get("avatar")                                 # the profile photo kept with the account
+            if isinstance(av, str) and av.startswith(("data:image/", "https://")) and av != a.get("avatar"):
+                a["avatar"] = av
+                self._save_settings()
             self._account_keys(r.get("uex_keys"))
             if not r.get("uex") and not self._account().get("uex"):
                 self._account_link()
@@ -3417,6 +3539,44 @@ class Api:
             a.pop("token", None)
             a["note"] = "You were signed out of your Quantum account. Sign in again to keep using it here."
             self._save_settings()
+
+    # ------------------------------------------------------------ profile photo
+    # Your own picture for the profile button: kept on this PC, and with your Quantum account when you're
+    # signed in (POST /v1/account/avatar, so the website and your other PCs show it). Without one, your UEX
+    # avatar is shown. The page shrinks it to a 256 px square JPEG before it gets here.
+    PHOTO_MAX = 400_000                     # characters of data: URL (~300 KB)
+
+    def profile_photo(self):
+        a = self._account()
+        return {"ok": True, "photo": self._settings.get("profile_photo") or a.get("avatar"),
+                "shared": bool(self._settings.get("profile_photo_shared"))}
+
+    def profile_photo_set(self, data_url=None):
+        if data_url:
+            m = re.match(r"^data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$", str(data_url))
+            if not m or len(data_url) > self.PHOTO_MAX:
+                return {"ok": False, "error": "That picture couldn't be used. Try a JPEG or PNG under a few MB"}
+            try:
+                from PIL import Image
+                import io
+                Image.open(io.BytesIO(base64.b64decode(m.group(2)))).verify()
+            except Exception:
+                return {"ok": False, "error": "That file isn't a picture Quantum can read"}
+            self._settings["profile_photo"] = data_url
+        else:
+            self._settings.pop("profile_photo", None)
+            self._account().pop("avatar", None)
+        self._settings["profile_photo_shared"] = False
+        self._save_settings()
+        tok = self._account_token()
+        if tok:
+            def send(img=data_url or None):
+                r = self._community.account_avatar(tok, img)
+                if r.get("status") == "ok" and self._settings.get("profile_photo") == (img or None):
+                    self._settings["profile_photo_shared"] = True
+                    self._save_settings()
+            threading.Thread(target=send, daemon=True).start()
+        return {"ok": True, "photo": data_url or self._account().get("avatar"), "signed_in": bool(tok)}
 
     def _account_link(self):
         """Link the saved UEX secret key's name to the account, if both are here and it isn't linked yet."""
@@ -3457,7 +3617,7 @@ class Api:
             self._acct_checked = time.time()                     # Settings is open: catch changes made on the website
             threading.Thread(target=self._account_refresh, daemon=True).start()
         return {"on": bool(self._community.url), "available": bool(self._account_token()) or (bool(self._community.url) and self._accounts_open()),
-                "signed_in": bool(self._account_token()), "email": a.get("email"),
+                "signed_in": bool(self._account_token()), "email": a.get("email"), "joined": a.get("joined"),
                 "uex": a.get("uex"), "link_error": a.get("link_error"), "note": a.get("note"),
                 "has_secret": bool(self._dr_cfg().get("secret")), "has_token": bool(self._uex.token), "flow": dict(self._acct_flow),
                 "site": self._community.url or community.DEFAULT_URL,
@@ -3662,6 +3822,40 @@ class Api:
             threading.Thread(target=self._community.account_logout, args=(tok,), daemon=True).start()
         self._acct_flow = {"state": "idle"}
         return self.account_status()
+
+    # What your profile shows of your fleet and gear loadouts: in which order, which ones, and how many.
+    # {"ships": {"order": [uid…], "hidden": [uid…], "count": n}, "gearlo": {...}}
+    def profile_prefs(self):
+        return {"ok": True, "prefs": self._settings.get("profile_prefs") or {}}
+
+    def profile_prefs_set(self, prefs):
+        out = {}
+        for k in ("ships", "gearlo"):
+            v = (prefs or {}).get(k) if isinstance(prefs, dict) else None
+            if not isinstance(v, dict):
+                continue
+            ids = lambda L: [str(x)[:40] for x in (L or []) if isinstance(x, (str, int))][:200]
+            c = v.get("count")
+            out[k] = {"order": ids(v.get("order")), "hidden": ids(v.get("hidden")), "off": bool(v.get("off")),
+                      "count": max(1, min(10, int(c))) if isinstance(c, (int, float)) and not isinstance(c, bool) else None}
+        self._settings["profile_prefs"] = out
+        self._save_settings()
+        return {"ok": True, "prefs": out}
+
+    def sign_out_all(self):
+        """Profile › Sign out: off with everything on this PC, so nothing stays connected. Your Quantum
+        account sign-in, the Quantum server sign-in, and your UEX Bearer Token and Secret Key are removed
+        (a copy kept in your Quantum account stays there and comes back when you sign in again). Your
+        ships, waypoints, routes, loadouts and settings stay on this PC."""
+        self.account_sign_out()
+        self.dr_set_secret("")                      # also signs this PC out of the Quantum server
+        cfg = self._dr_cfg()
+        for k in ("username", "uex_user", "rating", "session"):
+            cfg.pop(k, None)
+        self.set_uex_token("")
+        self._settings["profile_photo_shared"] = False
+        self._save_settings()
+        return {"ok": True}
 
     def account_link_now(self):
         """Try linking the saved UEX secret key again (from Settings)."""
@@ -4914,6 +5108,14 @@ class Api:
         except Exception as e:
             return {"ok": False, "logos": {}, "error": str(e)}
 
+    def maker_logos(self, makers):
+        """Logos for the makers of personal gear (armor, weapons, gadgets, clothing…), which the ship and
+        component logo lists don't have: {ok, logos: {"cmp:<maker>": data URL}}. makers: [{name, code}]."""
+        try:
+            return {"ok": True, "logos": self._wikiapi.maker_logos(makers)}
+        except Exception as e:
+            return {"ok": False, "logos": {}, "error": str(e)}
+
     def wiki_images(self, refs):
         """{ref: picture url} for many wiki pages at once (commodity and component grids). Pictures you
         (the server owner) put in place of the wiki's come first; ones Quantum users sent in (and you
@@ -5924,7 +6126,10 @@ class Api:
         out.sort(key=lambda x: x["price"])
         return out
 
-    GEAR_KINDS = ("weapons", "armor", "blueprints")
+    GEAR_KINDS = ("weapons", "armor", "blueprints", "gadgets", "clothing", "consumables", "utility")
+    # A shopping-list entry's kind -> the tab whose list knows its shops
+    SHOP_GEAR = {"weapon": "weapons", "armor": "armor", "gadget": "gadgets", "clothing": "clothing",
+                 "consumable": "consumables", "utility": "utility"}
 
     def gear_list(self, kind, fresh=False):
         """Everything of one kind from the Star Citizen Wiki for the Weapons, Armor and Blueprints tabs, with
@@ -6020,6 +6225,78 @@ class Api:
             out["out_game"] = gv
         return {"ok": True, "blueprint": out}
 
+    # ------------------------------------------------------------ places named by the wiki
+    def _named_place(self, name, system=None):
+        """A wiki place name -> (place you can add to the route or None, planet or moon or None). A planet
+        or moon is reached at its orbital marker (OM-1)."""
+        if not name:
+            return None, None
+        k = re.sub(r"[^a-z0-9]", "", str(name).lower())
+        idx = getattr(self, "_name_idx", None)
+        if idx is None or getattr(self, "_name_idx_n", 0) != len(self._db.locations):
+            idx = {}
+            for n, L in self._db.locations.items():
+                idx.setdefault((re.sub(r"[^a-z0-9]", "", n.lower()), L.system), n)
+                idx.setdefault((re.sub(r"[^a-z0-9]", "", n.lower()), None), n)
+            self._name_idx, self._name_idx_n = idx, len(self._db.locations)
+        body = next((b.name for b in self._db.bodies.values() if b.kind != "star"
+                     and re.sub(r"[^a-z0-9]", "", b.name.lower()) == k and (not system or b.system == system)), None)
+        if body:
+            om = f"OM-1 ({body})"
+            return (om if om in self._db.locations else None), body
+        place = idx.get((k, system)) or idx.get((k, None)) or idx.get((k + "station", system))
+        return place, None
+
+    def _place_rows(self, group):
+        """{"names", "more"} from the mission summary -> [{name, place, body}]"""
+        out = []
+        for n in (group or {}).get("names") or []:
+            p, b = self._named_place(n)
+            out.append({"name": n, "place": p, "body": b})
+        return out
+
+    def mission_page(self, ref=None, code=None, title=None):
+        """A mission's own page in Quantum (opened from a blueprint's How you get it): payout, reputation,
+        briefing, where it's offered and where it sends you (as places you can add to the route), what it
+        needs first and the blueprints it can give."""
+        try:
+            info = self._missions.page(ref, code, title)
+        except Exception:
+            return {"ok": False, "error": "The Star Citizen Wiki couldn't be reached. Try again in a minute"}
+        if not info:
+            return {"ok": True, "found": False}
+        info = dict(info)
+        for k in ("offered_at", "pickups", "destinations"):
+            info[k + "_rows"] = self._place_rows(info.get(k))
+        bps = {}
+        try:
+            for b in (self._gear.items("blueprints").get("items") or []):
+                if b.get("out_uuid"):
+                    bps[str(b["out_uuid"]).lower()] = b.get("uuid")
+                bps.setdefault("name:" + (b.get("name") or "").lower(), b.get("uuid"))
+        except Exception:
+            pass
+        for i in info.get("blueprint_items") or []:
+            i["bp"] = bps.get(str(i.get("uuid") or "").lower()) or bps.get("name:" + (i.get("name") or "").lower())
+        return {"ok": True, "found": True, "info": info}
+
+    def commodity_sources(self, name):
+        """Where a commodity is mined or harvested (Star Citizen Wiki), each place matched to the map:
+        {ok, found, from, sources: [{name, system, type, methods, chance, quality, place, body}]}."""
+        try:
+            r = self._gear.commodity_sources(name)
+        except Exception:
+            return {"ok": False, "error": "The Star Citizen Wiki couldn't be reached"}
+        if not r or not r.get("sources"):
+            return {"ok": True, "found": False}
+        rows = []
+        for x in r["sources"]:
+            p, b = self._named_place(x["name"], x.get("system"))
+            if not p and not b and x.get("parent"):               # an asteroid field or cave by its planet
+                p, b = self._named_place(x["parent"], x.get("system"))
+            rows.append(dict(x, place=p, body=b))
+        return {"ok": True, "found": True, "from": r.get("from"), "sources": rows, "web_url": r.get("web_url")}
+
     # ------------------------------------------------------------ shopping list
     # The parts and gear you want to buy, and the trip that buys them all: fewest stops (or cheapest), in the
     # shortest order from where you are. Steps tick off as you buy (Game.log shows shop purchases), or by hand.
@@ -6056,15 +6333,20 @@ class Api:
             data = self._gear.items(kind)
         except Exception:
             return {}
-        return {str(i.get("uuid")).lower(): i for i in data.get("items") or []}
+        out = {}
+        for i in data.get("items") or []:            # an item merged with its copies answers to their uuids too
+            for u in [i.get("uuid"), *(i.get("alias_uuids") or [])]:
+                if u:
+                    out.setdefault(str(u).lower(), i)
+        return out
 
     def _shop_spots(self, e, cache):
         """Where one shopping-list entry is sold: [spot]."""
         if e["id"] in cache:
             return cache[e["id"]]
         spots = []
-        if e.get("kind") in ("weapon", "armor"):
-            ix = cache.setdefault("_" + e["kind"], self._gear_by_uuid("weapons" if e["kind"] == "weapon" else "armor"))
+        if e.get("kind") in self.SHOP_GEAR:
+            ix = cache.setdefault("_" + e["kind"], self._gear_by_uuid(self.SHOP_GEAR[e["kind"]]))
             g = ix.get(str(e.get("uuid") or "").lower())
             if g:
                 spots = self._wiki_spots(g.get("prices"))
@@ -6125,7 +6407,7 @@ class Api:
         return None
 
     def shop_add(self, entries):
-        """Add items: [{name, kind ("component" | "weapon" | "armor"), uuid, uex_id, class_name, qty, source}].
+        """Add items: [{name, kind ("component" | "weapon" | "armor" | "gadget" | "clothing" | "consumable" | "utility"), uuid, uex_id, class_name, qty, source}].
         One already on the list gets its count raised instead."""
         sh = self._shop()
         n = 0
@@ -6602,13 +6884,42 @@ class Api:
         alignment of the same body in the same build agrees, it earns points toward your rank (the first
         alignments after a game update are the useful ones)."""
         b = self._db.bodies.get(body_name)
-        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
-        if not b or not user or not self._tracker.build:
+        if not b or not self._tracker.build:
             return
-        self._community.post_alignment({
-            "username": user.lower(), "body": b.name, "system": b.system, "build": str(self._tracker.build),
-            "offset": round(b.rotation_offset_deg, 6), "period": b.rotation_period_h, "epoch": b.epoch_utc,
-            "place": place, "quality": b.calibration_quality or kind})
+        # Kept in settings until the server has it (like shared station positions): an alignment made
+        # while the server is down, or before you've signed in, is sent with the next map sync instead
+        # of being lost. A newer alignment of the same body replaces the waiting one.
+        entry = {"body": b.name, "system": b.system, "build": str(self._tracker.build),
+                 "offset": round(b.rotation_offset_deg, 6), "period": b.rotation_period_h, "epoch": b.epoch_utc,
+                 "place": place, "quality": b.calibration_quality or kind}
+        self._settings.setdefault("align_unsent", {})[b.name] = entry
+        self._save_settings()
+        self._send_alignment(entry)
+
+    def _send_alignment(self, entry):
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not user or not self._community.url:
+            return                                          # sent once you've signed in
+
+        def done(answered):
+            waiting = self._settings.get("align_unsent") or {}
+            if answered and waiting.get(entry["body"]) is entry:
+                waiting.pop(entry["body"], None)
+                self._save_settings()
+        self._community.post_alignment(dict(entry, username=user.lower()), on_done=done)
+
+    def _resend_alignments(self):
+        """Alignments the server hasn't got yet: only this game build's (an older one is no use to anyone)."""
+        build = self._game_build()
+        waiting = self._settings.get("align_unsent") or {}
+        stale = [k for k, e in waiting.items() if str(e.get("build")) != str(build)] if build else []
+        for k in stale:
+            waiting.pop(k, None)
+        if stale:
+            self._save_settings()
+        for e in list(waiting.values()):
+            if self._community.align_results.get(e["body"], {}).get("state") != "sending":
+                self._send_alignment(e)
 
     def calibration_status(self):
         """Per body: aligned or community values, and what the checks say about drift."""
@@ -6796,6 +7107,12 @@ class Api:
 
     def assets_progress(self):
         return self._assets.progress()
+
+    def assets_status(self):
+        try:
+            return self._assets.status()
+        except Exception as e:
+            return {"ok": False, "error": str(e), "files": 0, "cached": 0, "groups": {}, "cities": []}
 
     def close_out_contract(self, cid):
         self._tracker.close_out(cid)

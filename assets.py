@@ -24,6 +24,7 @@ class AssetCache:
         self._file_locks = {}
         self._server = None
         self._active, self._failed = {}, {}       # path -> {done, total}; path -> when it failed
+        self.last_error, self.manifest_ok, self.last_ok = None, None, None
 
     # ---- manifest
     def manifest(self):
@@ -36,7 +37,10 @@ class AssetCache:
                 if not isinstance(data.get("files"), dict):
                     raise ValueError("manifest has no files")
                 saved.write_text(json.dumps(data), encoding="utf-8")
+                self.manifest_ok = time.time()
             except Exception as e:
+                self.last_error = f"manifest.json: {e}"
+                self.manifest_ok = False
                 if self._manifest is None:
                     self.log(f"asset manifest: {e}; using the saved one")
                 try:
@@ -129,12 +133,16 @@ class AssetCache:
                                    version=want["sha256"][:16])
             except Exception as e:
                 self.log(f"asset download {path}: {e}")
+                self.last_error = f"{path}: {e}"
                 data = None
             finally:
                 with self._lock:
                     self._active.pop(path, None)
             if data is None or len(data) != want["size"] or self._sha(data) != want["sha256"]:
                 if data is not None:
+                    self.last_error = (f"{path}: the download didn't match manifest.json (got {len(data):,} bytes, "
+                                       f"manifest says {want['size']:,}). The file on the server was changed without "
+                                       f"rebuilding the manifest, or something in front of the server changed it")
                     self.log(f"asset {path}: download didn't match the manifest; not used (got {len(data):,} bytes "
                              f"sha256 {self._sha(data)[:12]}, manifest says {want['size']:,} bytes sha256 {want['sha256'][:12]})")
                 with self._lock:
@@ -145,7 +153,23 @@ class AssetCache:
             tmp.write_bytes(data)
             os.replace(tmp, dest)
             dest.with_name(dest.name + ".ok").write_text(want["sha256"])
+            self.last_ok = time.time()
             return dest
+
+    def status(self):
+        """For Settings › Map data: can the server be reached, what its manifest lists, what's on this PC, and
+        the last thing that went wrong. Asks the server for its manifest again."""
+        with self._lock:
+            self._manifest_at = 0
+        files = self.manifest().get("files", {})
+        groups = {}
+        for f in files:
+            groups.setdefault(f.split("/", 1)[0], []).append(f)
+        cached = sum(1 for f, w in files.items() if (self.dir / f).is_file())
+        cities = sorted(f.split("/", 1)[1].rsplit(".js", 1)[0] for f in groups.get("cities", []) if not f.endswith("index.js"))
+        return {"ok": bool(self.manifest_ok), "url": BASE_URL, "files": len(files), "cached": cached,
+                "groups": {k: len(v) for k, v in groups.items()}, "cities": cities, "error": self.last_error,
+                "last_ok": self.last_ok}
 
     # ---- local server for the map
     def base_url(self):

@@ -21,7 +21,27 @@ html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font:14
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--you);outline-offset:2px}
-.app{display:grid;grid-template-columns:clamp(380px,26vw,560px) minmax(0,1fr);height:100vh}   /* the sidebar grows with wide windows */
+.app{display:grid;grid-template-columns:80px clamp(340px,24vw,500px) minmax(0,1fr);height:100vh}   /* the rail, then the sidebar (grows with wide windows) */
+/* ---------- rail: your profile, then one button per section; Cart and Settings at the foot ---------- */
+.rail{background:#040912;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 0 12px;min-height:0;overflow-y:auto;overflow-x:hidden}
+.rail::-webkit-scrollbar{width:0}
+.rail-btn{width:72px;padding:9px 0 8px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--dim);font:600 10.5px/1.1 var(--text);position:relative;flex:none}
+.rail-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail-btn:hover{color:var(--ink);background:var(--panel-2)}
+.rail-btn[aria-current=page]{color:var(--ink);background:var(--panel-3);box-shadow:inset 3px 0 0 var(--route)}
+.rail-btn[aria-current=page] svg{stroke:var(--route-2)}
+.rail-gap{flex:1;min-height:12px}
+.rail-n{position:absolute;top:3px;right:8px;background:var(--route);color:#fff;font:700 10px/1 var(--text);border-radius:999px;padding:3px 6px}
+.rail-n[hidden]{display:none}
+.rail-me{width:46px;height:46px;flex:none;border-radius:50%;padding:0;border:2px solid var(--line-2);background:#14223a;margin-bottom:12px;position:relative;color:#cfe2ff;font:700 17px var(--text)}
+.rail-me .av{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.rail-me img{width:100%;height:100%;object-fit:cover}
+.rail-me svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.rail-me.out{border-style:dashed;border-color:var(--route);color:var(--route-2);background:#0c1629}
+.rail-me[aria-current=page]{border-color:var(--route);box-shadow:0 0 0 3px rgba(75,141,255,.28)}
+.rail-me:hover{border-color:var(--route-2)}
+.rail-me .on-dot{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid #040912}
+.rail-me .on-dot[hidden]{display:none}
 
 /* ---------- sidebar ---------- */
 .side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
@@ -36,12 +56,17 @@ button{cursor:pointer}
 .side{container-type:inline-size;container-name:side}
 /* Tabs size to the sidebar (which grows with the window, up to 560px): bigger text and wider spacing on a big
    screen instead of three short rows huddled in the corner. Each row spreads across the full width. */
-.tabs{display:flex;flex-wrap:wrap;column-gap:clamp(4px,1.6cqi,14px);padding:0 clamp(8px,2.4cqi,18px);border-bottom:1px solid var(--line)}
-.tab-break{flex-basis:100%;height:0}
-.tab{background:none;border:0;padding:clamp(11px,2.9cqi,16px) clamp(5px,1.3cqi,10px) clamp(10px,2.7cqi,15px);color:var(--dim);font:600 clamp(11px,2.55cqi,14.5px) var(--text);letter-spacing:.09em;flex:1 1 auto;justify-content:center;text-transform:uppercase;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;gap:6px;align-items:center}
-.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--route);text-shadow:0 0 12px rgba(75,141,255,.5)}
-.tab[hidden]{display:none}
-.tab .count{font:600 clamp(10.5px,2.3cqi,13px) var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
+/* The section's own tabs: pills under its title. Only the open section's show; a section with one tab has none. */
+.sec-head{padding:14px clamp(14px,4cqi,24px) 0}
+.sec-head h2{margin:0;font:600 clamp(20px,5.2cqi,26px)/1.2 var(--display);letter-spacing:.01em}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding:10px clamp(14px,4cqi,24px) 14px;border-bottom:1px solid var(--line)}
+.tabs.solo{padding:0;border-bottom:0;height:12px}.tabs.solo .tab{display:none}
+.tab{background:var(--panel-2);border:1px solid var(--line-2);border-radius:9px;padding:6px 12px;color:var(--ink-2);font:500 clamp(12.5px,3cqi,14px) var(--text);flex:0 0 auto;display:flex;gap:6px;align-items:center}
+.tab:hover{color:var(--ink);border-color:var(--ink-2)}
+.tab[aria-selected=true]{background:var(--brand-grad);border-color:#3f8cff;color:#fff;font-weight:600}
+.tab[aria-selected=true] .count{background:rgba(0,0,0,.25);color:#fff}
+.tab[hidden],.tab.off-group{display:none}
+.tab .count{font:600 11px var(--text);background:var(--panel-3);color:var(--ink-2);border-radius:9px;padding:1px 7px}
 .tab .count.hot{background:var(--mission);color:#1a0612}
 .pane{flex:1;overflow:auto;padding:14px 14px 20px;display:none;min-height:0}
 .pane.active{display:block}
@@ -983,6 +1008,78 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .acct-code{font:600 22px ui-monospace,Consolas,monospace;letter-spacing:.25em;padding:8px 12px;border-radius:8px;background:rgba(47,134,255,.12);border:1px solid rgba(47,134,255,.35);display:inline-block}
 /* Weapons, Armor, Blueprints */
 .gr-view{display:flex;margin:8px 0 2px}.gr-view button{flex:1}
+.vd-grid.bp-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.gr-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 12px}.gr-tags span{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);background:var(--panel-2)}
+.mi-text{white-space:pre-line}
+/* ---------- profile ---------- */
+#btn-settings{display:none}      /* Settings is on the rail now */
+.pf-me{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px 18px;border-bottom:1px solid var(--line);text-align:center}
+.pf-av-wrap{position:relative}
+.pf-av{width:104px;height:104px;border-radius:50%;background:#14223a;border:2px solid var(--line-2);display:flex;align-items:center;justify-content:center;overflow:hidden;font:700 40px var(--text);color:#cfe2ff}
+.pf-av img{width:100%;height:100%;object-fit:cover}
+.pf-av.out{border-style:dashed;border-color:var(--route);color:var(--route-2);background:#0c1629}.pf-av svg{width:46px;height:46px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+.pf-cam{position:absolute;right:-2px;bottom:2px;width:34px;height:34px;border-radius:50%;border:3px solid var(--panel);background:var(--brand-grad);color:#fff;display:flex;align-items:center;justify-content:center;padding:0}
+.pf-cam .ic-line{width:16px;height:16px}
+.pf-name{font:600 19px var(--display);word-break:break-word}.pf-mail{font-size:12.5px;margin-top:-4px}
+.pf-badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pf-trust{display:inline-flex;align-items:center;gap:5px;font:600 12px var(--text);color:#57e39b;border:1px solid rgba(87,227,155,.4);background:rgba(87,227,155,.08);border-radius:999px;padding:3px 10px}
+.pf-trust.no{color:var(--ink-2);border-color:var(--line-2);background:none;font-weight:500}
+.pf-nav{display:flex;flex-direction:column;gap:2px;padding:12px 0}
+.pf-nav button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;background:none;border:0;color:var(--ink-2);font-size:14px;text-align:left}
+.pf-nav button:hover{background:var(--panel-2);color:var(--ink)}
+.pf-nav button.on{background:var(--panel-3);color:var(--ink);font-weight:600}
+.pf-nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.pf-nav button.on svg{stroke:var(--route-2)}
+.pf-nav .n{margin-left:auto;font-size:12px;color:var(--dim);font-weight:500}
+.pf-foot{display:flex;justify-content:center;gap:8px;padding:4px 0 10px}
+.pf-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.pf-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.pf-stat span{font:600 11px var(--text);letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.pf-stat b{font:600 21px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
+.pfc{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.pfc h3{margin:0 0 10px;font:600 15px var(--text);display:flex;align-items:center;gap:8px}
+.pfc h3 .r{margin-left:auto;font-weight:500;font-size:12.5px;color:var(--dim)}
+.pfc .note{background:none;border:0;padding:0;font-size:12.5px}
+.pfc+.pfc{margin-top:0}
+.pfc-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;min-width:0}
+.pfc-row:first-of-type{border-top:0}.pfc-row .w{flex:1;min-width:0}.pfc-row .w b{display:block}.pfc-row .w small{color:var(--dim);font-size:12px}
+.pfc-ships{display:flex;flex-wrap:wrap;gap:6px}.pfc-ships span{font-size:13px;padding:5px 10px;border-radius:8px;background:var(--panel-3)}
+.pfc .bar{height:8px;border-radius:999px;background:var(--panel);overflow:hidden;margin-top:6px}.pfc .bar i{display:block;height:100%;background:var(--brand-grad);border-radius:999px}
+.pf-flat .note{background:none;border:0;padding:6px 0 0;font-size:12.5px}
+.pf-flat{margin-top:20px}
+.pf-arr{display:grid;grid-template-columns:18px 80px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:grab}
+.pf-arr:last-child{border-bottom:0}.pf-arr.drag{opacity:.4}.pf-arr.over{box-shadow:inset 0 2px 0 var(--route)}
+.pf-arr .h{color:var(--dim);letter-spacing:-2px;font-size:14px;text-align:center}
+.pf-arr .th{width:80px;height:45px;border-radius:6px;overflow:hidden;background:var(--panel-3);display:block}.pf-arr .th img{width:100%;height:100%;object-fit:cover;display:block}
+.pf-arr .th span{display:block;width:100%;height:100%}.pf-arr .th span img{width:100%;height:100%;object-fit:cover}
+.pf-arr .w b{display:block;font-size:13.5px}.pf-arr .w small{color:var(--dim);font-size:12px}
+.pf-arr.off .w,.pf-arr.off .th{opacity:.5}
+.pf-ov{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 32px;align-items:start;margin-top:18px}
+.pf-ov>.vd-full{grid-column:1/-1}
+@container pic (max-width:980px){.pf-ov{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container pic (max-width:640px){.pf-ov{grid-template-columns:1fr}}
+.pf-ck{display:inline-flex;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:8px;border:1px solid var(--line-2);color:var(--dim);flex:none}
+.pf-ck.ok{background:rgba(87,227,155,.14);border-color:rgba(87,227,155,.55);color:#57e39b}
+.pf-ov .vd-row span{display:flex;align-items:center}
+.pf-ov .grid,.gl-pick .grid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+/* ---------- gear loadouts ---------- */
+.gl-cart svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
+.gl-name{display:block;font:600 24px var(--text);background:none;border:1px solid transparent;border-radius:8px;padding:2px 6px;margin-left:-7px;color:var(--ink);width:100%;max-width:560px}
+.gl-name:hover,.gl-name:focus{border-color:var(--line-2);background:var(--panel-2);outline:none}
+.gl-scn{display:block;margin-top:2px;font-size:13px;color:var(--ink-2);background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px;margin-left:-7px;width:100%;max-width:420px}
+.gl-scn:hover,.gl-scn:focus{border-color:var(--line-2);background:var(--panel-2);outline:none}
+.gl-row .w small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:2px}
+.gl-row .w .empty-slot{color:var(--dim);font-style:italic;font-weight:400}
+.gl-row .acts{display:flex;gap:6px;align-items:center}
+.gl-qty{display:inline-flex;align-items:center;gap:4px}.gl-qty b{min-width:22px;text-align:center}
+.gl-notes{width:100%;min-height:70px;resize:vertical;margin-top:6px}
+.pf-flat .dr-rep{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;margin:0;padding:10px 0;box-shadow:none}
+.pf-flat .dr-rep:last-child{border-bottom:0}
+#pf-panel .dr-prof{margin:0 0 4px}
+.pf-flat.pf-one{grid-template-columns:minmax(0,820px)}
+.pf-flat .vd-row{align-items:center}
+.pf-bar{height:6px;border-radius:999px;background:var(--panel-3);overflow:hidden;margin:8px 0 2px}.pf-bar i{display:block;height:100%;background:var(--brand-grad)}
 .gr-desc{color:var(--ink-2);font-size:13.5px;line-height:1.6;margin:0 2px 16px;max-width:900px}
 .gr-piece .w a{cursor:pointer}
 /* Cart */
@@ -1025,29 +1122,44 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
   <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>
   <div class="wm" aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</div><div class="by">by <b>microTech</b></div><div class="tag">THE VERSE, IN YOUR REACH.</div><div class="load"><span></span></div></div></div>
 <div class="app">
+  <nav class="rail" id="rail" aria-label="Sections">
+    <button class="rail-me out" id="rail-me" data-group="profile" aria-label="Your profile" title="Sign in"><span class="av" id="rail-av"></span><i class="on-dot" id="rail-dot" hidden></i></button>
+    <button class="rail-btn" data-group="navigate" title="Route, waypoints and contracts"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8 16c4-1 2-7 8-8"/></svg>Navigate</button>
+    <button class="rail-btn" data-group="trade" title="Commodities, trade routes and datarunning"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
+    <button class="rail-btn" data-group="ships" title="Your fleet, components and vehicles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/></svg>Ships</button>
+    <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
+    <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
+    <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
+    <span class="rail-gap"></span>
+    <button class="rail-btn" data-group="cart" title="Your cart: everything you want to buy, and the quickest trip to buy it all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Cart<b class="rail-n" id="rail-cart-n" hidden>0</b></button>
+    <button class="rail-btn" id="rail-settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
+  </nav>
   <aside class="side">
     <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs>
   <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/>
   <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/>
   <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1 aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</h1><div class="by">by <b>microTech</b></div></div></div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
-      <button class="tab" role="tab" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
-      <button class="tab" role="tab" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
-      <!-- three rows: getting around · trading · your ships -->
-      <span class="tab-break" aria-hidden="true"></span>
-      <button class="tab uex-tab" role="tab" data-tab="market" aria-selected="false" hidden>Commodities</button>
-      <button class="tab uex-tab" role="tab" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
-      <button class="tab uex-tab" role="tab" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
-      <span class="tab-break" aria-hidden="true"></span>
-      <button class="tab uex-tab" role="tab" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
-      <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
-      <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
-      <span class="tab-break" aria-hidden="true"></span>
-      <button class="tab" role="tab" data-tab="weapons" aria-selected="false" title="Personal (FPS) weapons, from the Star Citizen Wiki">Weapons</button>
-      <button class="tab" role="tab" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
-      <button class="tab" role="tab" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
-      <button class="tab" role="tab" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
+    <div class="sec-head"><h2 id="sec-title">Navigate</h2></div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-group="navigate" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
+      <button class="tab" role="tab" data-group="navigate" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
+      <button class="tab" role="tab" data-group="navigate" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
+      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="market" aria-selected="false" hidden>Commodities</button>
+      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
+      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
+      <button class="tab uex-tab" role="tab" data-group="ships" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
+      <button class="tab uex-tab" role="tab" data-group="ships" data-tab="components" aria-selected="false" hidden>Components</button>
+      <button class="tab uex-tab" role="tab" data-group="ships" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="weapons" aria-selected="false" title="Personal (FPS) weapons, from the Star Citizen Wiki">Weapons</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="clothing" aria-selected="false" title="Clothing: hats, shirts, jackets, pants, shoes… from the Star Citizen Wiki">Clothing</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="gadgets" aria-selected="false" title="Multi-tools and their attachments, tractor beams, rangefinders, mining gadgets… from the Star Citizen Wiki">Gadgets</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="utility" aria-selected="false" title="Hacking chips, cryptokeys and keycards, from the Star Citizen Wiki">Keys</button>
+      <button class="tab" role="tab" data-group="consumables" data-tab="consumables" aria-selected="false" title="Food, drinks and medical items, from the Star Citizen Wiki">Consumables</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="gearlo" aria-selected="false" title="Your own gear loadouts: what you wear and carry for each kind of job">Loadouts</button>
+      <button class="tab" role="tab" data-group="crafting" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
+      <button class="tab" role="tab" data-group="cart" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="profile" data-tab="profile" aria-selected="false">Profile</button>
     </div>
 
     <section class="pane active" id="pane-route">
@@ -1169,6 +1281,12 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <section class="pane" id="pane-weapons"></section>
     <section class="pane" id="pane-armor"></section>
     <section class="pane" id="pane-blueprints"></section>
+    <section class="pane" id="pane-gadgets"></section>
+    <section class="pane" id="pane-clothing"></section>
+    <section class="pane" id="pane-consumables"></section>
+    <section class="pane" id="pane-utility"></section>
+    <section class="pane" id="pane-profile"></section>
+    <section class="pane" id="pane-gearlo"></section>
     <section class="pane" id="pane-shopping">
       <div class="row" style="gap:6px"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
         <button class="btn primary" id="sh-plan">Update route</button></div>
@@ -1198,6 +1316,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="fl-panel" class="pic-panel"></div>
     <div id="gr-panel" class="pic-panel"></div>
     <div id="sh-panel" class="pic-panel"></div>
+    <div id="pf-panel" class="pic-panel"></div>
+    <div id="gl-panel" class="pic-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
@@ -1873,7 +1993,7 @@ const STATION_DESIGNS=[0,1,2,3].map(v=>{ const rnd=seededRand("station-design-"+
   return {geos:mergeParts(parts), length:L*1.2}; });
 let stationObjs=[];
 function buildStations(){
-  for(const o of stationObjs){ scene.remove(o.group); } stationObjs=[];
+  for(const o of stationObjs){ scene.remove(o.group); window.Stations3D?.hide(o); } stationObjs=[];
   for(const L of S.locs||[]){
     if(L.type!=="station"||L.system!==S.system||!L.pos) continue;
     if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(!b||Math.hypot(...L.pos)<b.radius*1.02) continue; }   // ground stations: no model
@@ -1882,9 +2002,12 @@ function buildStations(){
     group.quaternion.setFromEuler(new THREE.Euler(rnd()*6.28,rnd()*6.28,rnd()*6.28)); group.visible=false; scene.add(group);
     stationObjs.push({L,group,len:d.length,spin:(rnd()-0.5)*0.06}); } }
 function updateStations(t){ const f=H/2/Math.tan(camera.fov*Math.PI/360), on=S.layers?.station!==false, v=new THREE.Vector3();
-  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ o.group.visible=false; continue; }
+  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ o.group.visible=false; window.Stations3D?.hide(o); continue; }
     v.set(g[0]-O[0],g[1]-O[1],g[2]-O[2]); const d=camera.position.distanceTo(v);
-    if(d>1.6e7){ o.group.visible=false; continue; }                                    // whole-system view: just the marker
+    if(d>1.6e7){ o.group.visible=false; window.Stations3D?.hide(o); continue; }       // whole-system view: just the marker
+    // The game's own model (stations3d.js), once it's downloaded, takes the stand-in's place
+    let real=false; try{ real=!!window.Stations3D?.show(o,v,d,t,f); }catch(e){ console.warn(e); }
+    if(real){ o.group.visible=false; continue; }
     o.group.visible=true; o.group.position.copy(v); o.group.scale.setScalar(Math.max(1,48*d/(o.len*f)));
     o.group.rotateX(o.spin*0.016); } }
 
@@ -2097,7 +2220,9 @@ function legSamples(a,b,t){ // a,b: {g, body, local}
     const n=Math.min(120,Math.max(12,Math.round(chord/B.radius*80))); const pts=[];
     for(let i=0;i<=n;i++){ const f=i/n; const R=ra+(rb-ra)*f+hump*Math.sin(Math.PI*f); pts.push({g:toGlobal(B,slerpLocal(a.local,b.local,f,R),t),body:a.body}); } return pts; }
   const pts=[]; for(let i=0;i<=24;i++){ const f=i/24; pts.push({g:[0,1,2].map(k=>a.g[k]+(b.g[k]-a.g[k])*f), body:null}); } return pts; }
-function nodeOf(name,t){ const L=S.locMap[name]; if(!L||!L.pos||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
+function nodeOf(name,t){ const L=S.locMap[name];
+  if(!L){ const b=S.bodyMap?.[name]; return b&&b.center&&b.system===S.system?{g:b.center,body:null,local:null}:null; }      // a planet or moon (map marks)
+  if(!L.pos||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
 // On a planet you turn with it, so place the last reading by its ground position, not its old space position.
 function playerG(t){ const p=S.live?.player; if(!p) return null; return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
 function playerNode(){ const p=S.live?.player;
@@ -2577,6 +2702,70 @@ function systemBlurb(sw){ if(!sw) return "";
     ${sw.star_type?`<span class="k">Star</span><span>${esc(sw.star||"")} · ${esc(sw.star_type)}</span>`:""}
     <span class="k">Bodies</span><span>${sw.planets.length} planet${sw.planets.length===1?"":"s"}${sw.moons?`, ${sw.moons} moon${sw.moons===1?"":"s"}`:""}${sw.belts.length?`, ${sw.belts.length} belt${sw.belts.length===1?"":"s"}`:""}${sw.asteroids?.length?`, ${sw.asteroids.length} large asteroid${sw.asteroids.length===1?"":"s"} (${sw.asteroids.map(esc).join(", ")})`:""}</span>`; }
 function distFromYou(g,sys){ const p=S.live?.player; return g&&p&&p.system===sys?d3(g,playerG(now())):null; }
+// The actions behind Settings' and the Profile page's buttons (account, UEX keys, backup, bug report, updates…)
+async function settingsAction(a,e){
+    if(a==="openalign"){ await openAlign(); return; }
+    if(a==="logchange"){ const r=await api().browse_log(); if(r.ok){ toast("Now reading the selected Game.log"); await poll(); renderDetail(); } return; }
+    if(a==="bugopen"){ S.bugOpen=true; S.bugSent=false; renderDetail(); $("s-bugmsg")?.focus(); return; }
+    if(a==="bugcancel"){ S.bugOpen=false; renderDetail(); return; }
+    if(a==="bugsend"){ const msg=($("s-bugmsg")?.value||"").trim(), contact=($("s-bugcontact")?.value||"").trim();
+      if(msg.length<5) return toast("Describe the bug first");
+      S.bugMsg=msg; S.bugContact=contact; S.bugBusy=true; renderDetail();
+      const r=await api().send_bug_report(msg, contact); S.bugBusy=false;
+      if(r.ok){ S.bugOpen=false; S.bugSent=true; S.bugMsg=""; S.bugContact=""; toast("Bug report sent. Thank you!"); } else toast(r.error);
+      renderDetail(); return; }
+    if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
+      const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; } S.bk=undefined;
+      S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
+    if(a==="acctsignin"){ S.acctErr=""; S.acct=await api().account_sign_in(); renderDetail(); acctWatch(); return; }
+    if(a==="acctlogin"){ const em=($("acct-email")?.value||"").trim(), pw=$("acct-pw")?.value||"";
+      if(!em||!pw){ S.acctErr="Enter your email and password."; renderDetail(); (em?$("acct-pw"):$("acct-email"))?.focus(); return; }
+      S.acctEmail=em; S.acctBusy=true; S.acctErr=""; renderDetail();
+      const r=await api().account_sign_in_password(em,pw); S.acctBusy=false; S.acct=r;
+      if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
+      else { S.acctErr=r.error; S.acctUnconfirmed=!!r.unconfirmed; }
+      renderDetail(); if(!r.ok) $("acct-pw")?.focus(); return; }
+    if(a==="acctkeys"){ const on=e.target.checked; S.acctKeysBusy=true; renderDetail();
+      const r=await api().account_set_key_sync(on); S.acctKeysBusy=false; S.acct=r;
+      if(r.ok){ toast(on?"Your UEX keys are kept in your Quantum account":"Removed from your Quantum account. They stay on this PC"); if(on) await acctKeysArrived(r); }
+      else toast(r.error||"Couldn't change it. Try again");
+      renderDetail(); return; }
+    if(a==="acctopen"){ S.acct=await api().account_open_page(); return; }
+    if(a==="acctcancel"){ S.acct=await api().account_cancel(); renderDetail(); return; }
+    if(a==="acctlink"){ toast("Linking your UEX name…"); S.acct=await api().account_link_now(); renderDetail();
+      toast(S.acct.uex?`Linked to ${S.acct.uex}`:"Couldn't link it: check your UEX Secret Key above"); return; }
+    if(a==="acctsignout"){ S.acct=await api().account_sign_out(); renderDetail(); toast("Signed out of your Quantum account on this PC"); return; }
+    if(a==="commask"){ S.commAsk=true; renderDetail(); return; }
+    if(a==="commcancel"){ S.commAsk=false; renderDetail(); return; }
+    if(a==="commoff"||a==="common"){ S.commAsk=false; S.communityStatus=null; renderDetail();
+      const r=await api().set_community_enabled(a==="common"); S.communityStatus=r; S.bk=undefined; S.ownerAsked=false;
+      toast(a==="commoff"?"Community features are off. Quantum uses UEX's data alone":r.ok?"Community features are on and connected":"Community features are on, but the server didn't answer yet");
+      renderDetail(); if(a==="common") setTimeout(()=>ownerCheck().catch(()=>{}),3000); return; }
+    if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
+      toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
+    if(a==="updcheck"){ if(S.updChecking) return; S.updChecking=true; S.updNote=""; renderDetail();
+      const [st]=await Promise.all([api().update_status(true), new Promise(r=>setTimeout(r,700))]);   // long enough to see
+      S.updChecking=false; S.qVersion=st.current;
+      if(st.latest?.available){ S.updNote=`Quantum ${st.latest.version} is available`; await api().update_skip(""); renderUpdateBar(true); toast(S.updNote); }
+      else { S.updNote=st.latest?.error?"Couldn't reach GitHub just now":`Up to date · checked ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+        toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); }
+      renderDetail(); return; }
+    if(a==="drsecret"){ if(!S.live?.log?.uex_token){ toast("Enter your UEX Bearer Token first, then your Secret Key"); $("s-uex")?.focus(); return; }
+      const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
+      const r=await api().dr_set_secret(v); if(r.ok===false){ toast(r.error); if(r.need==="token") $("s-uex")?.focus(); return; } S.drHasSecret=r.has_secret; S.drSecretDraft=""; S.bk=undefined; S.keyStat=undefined; S.ownerAsked=false; setTimeout(()=>ownerCheck().catch(()=>{}),3000); toast("Datarunner secret key saved"); renderDetail(); drRefreshAfterKey(); return; }
+    if(a==="bkdel"){ if(!S.bkDelAsk){ S.bkDelAsk=true; renderDetail(); setTimeout(()=>{ S.bkDelAsk=false; renderDetail(); },4000); return; }
+      S.bkDelAsk=false; S.bkBusy="del"; renderDetail(); const r=await api().backup_delete(); S.bkBusy=null;
+      toast(r.ok?"Backup deleted from the server. Backups are off for this PC":r.error); S.bk=await api().backup_status(); renderDetail(); return; }
+    if(a==="bkon"){ S.bk=await api().backup_enable(); toast("Backups are on again"); renderDetail(); return; }
+    if(a==="bknow"||a==="bkrestore"){ S.bkBusy=a==="bknow"?"save":"restore"; renderDetail();
+      const r=a==="bknow"?await api().backup_now(true):await api().backup_restore(); S.bkBusy=null;
+      if(a==="bknow") toast(r.ok?"Backed up":"Backup failed: "+(r.error||r.status));
+      else { toast(r.ok?(r.added?`Restored ${r.summary}`:"Nothing was missing: you're up to date"):r.error); if(r.ok&&r.added) await afterRestore(); }
+      S.bk=await api().backup_status(); renderDetail(); return; }
+    if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
+    if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
+    if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
+}
 function renderDetail(){
   const d=$("detail"), sel=S.selected;
   if(sel?.kind!=="settings"){ S.bugSent=false; S.bugOpen=false; }      // Settings closed: back to "Report a bug" next time
@@ -2616,43 +2805,8 @@ function renderDetail(){
               <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn small" data-a="commcancel">Keep them on</button><button class="btn small danger" data-a="commoff">Turn off community features</button></div></div>`
             :`<div class="row" style="gap:6px;margin-top:8px">${on?`<button class="btn small ghost" data-a="commask">Disable community features</button>`
               :`<button class="btn small primary" data-a="common">Enable community features</button>`}</div>`}`; })()}</div>
-      ${(()=>{ const h=acctHtml(); return h?`<div class="sub">Quantum account</div><div class="note" style="margin:4px 0 12px">${h}</div>`:""; })()}
-      ${(()=>{ const g=uexGate(); return g?`<div class="sub">Trade data (UEX)</div><div class="note" style="margin:4px 0 12px">${g}</div>`:`
-      <div class="sub">Trade data (UEX)</div>
-      <div class="note" style="margin:4px 0 12px">
-        <label class="k st-label" for="s-uex"><span>UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></span>${connPill(!lg.uex_token?"none":!S.uexStat?"checking":S.uexStat.ok?"ok":"bad")}</label>
-        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
-          <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
-          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. ${S.acct?.keys?.stored?"It's also kept in your Quantum account (above).":"It stays on this PC."}</div>
-        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
-        <label class="k st-label" for="s-drsecret" style="margin-top:14px"><span>UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></span>${(()=>{ const k=S.keyStat;
-          if(!S.drHasSecret) return connPill("none");
-          if(k===undefined){ S.keyStat=null; api().uex_key_status().then(x=>{ S.keyStat=x; renderDetail(); }).catch(()=>{}); }
-          return !k?connPill("checking"):k.ok?connPill("ok",`Connected · ${k.username}`):connPill("bad",k.error?"Not accepted":"Not connected",k.error); })()}</label>
-        ${!lg.uex_token&&!S.drHasSecret?`<div class="muted" style="font-size:12px;margin:2px 0 6px;color:#ffd38a">Add and save your UEX Bearer Token above first. The Secret Key can't be saved until the token is in.</div>`:""}
-        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":!lg.uex_token?"Enter your Bearer Token first":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":!lg.uex_token?"Save your UEX Bearer Token first":""}" style="flex:1" autocomplete="off" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>
-          <button class="btn small" data-a="drsecret" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
-        <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
-</div>
-      `; })()}
-      <div class="sub">Backup</div>
-      <div class="note">${(()=>{ const b=S.bk; if(b===undefined){ S.bk=null; api().backup_status().then(x=>{ S.bk=x; renderDetail(); }); return "Checking…"; }
-        if(!b) return "";
-        const ago=b.at?fmtAgo(b.at):null;
-        const state=!b.on?"Off: community features are turned off."
-          :!b.has_key?`<span style="color:#ffd38a">Add your UEX Bearer Token above to turn on backups.</span>`
-          :b.off?`Backups are off for this PC.`
-          :b.status==="too_large"?`<span style="color:#ffd38a">Your data is larger than a backup can hold.</span>`
-          :b.status==="requests_limit_reached"?`<span style="color:#ffd38a">The server is busy with this connection; it'll try again.</span>`
-          :b.status==="unreachable"?`<span style="color:#ffd38a">Couldn't reach the Quantum server; it'll try again.</span>`
-          :ago?`<span style="color:#9fe0b4">Backed up ${ago}.</span>`:"Not backed up yet; it'll happen within a minute.";
-        return `Your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up automatically, encrypted on this PC with a key made from your UEX Bearer Token. The Quantum server can't read them, and your token is never sent to it. On a new install or a new PC, enter the same Bearer Token and they come back. Replacing your token? Enter the new one here on a PC that has your data, and the backup moves to it; a backup made with a token you've deleted at UEX can't be opened.
-          <div style="margin-top:8px">${state}</div>
-          ${b.on&&b.has_key?(b.off?`<div class="row" style="gap:6px;margin-top:8px"><button class="btn small" data-a="bkon">Turn backups back on</button></div>`
-            :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
-            <button class="btn small ghost" data-a="bkrestore" ${S.bkBusy?"disabled":""} title="Adds back anything missing here. Never removes or overwrites anything">${S.bkBusy==="restore"?"Restoring…":"Restore missing items"}</button>
-            <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`; })()}</div>
+      <div class="sub">Account, UEX keys and backup</div>
+      <div class="note row" style="margin:4px 0 12px;gap:8px"><span>Your Quantum account, UEX keys and backups are in your profile now: click your picture at the top left.</span><span class="spacer"></span><button class="btn small" data-a="openprofile">Open profile</button></div>
       <div class="sub">Map look</div>
       <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px;flex-wrap:wrap"><span>Orbit line colour</span><span class="spacer"></span>
         <span class="orbit-sw">${ORBIT_PRESETS.map(([c,n])=>`<button type="button" data-orbitc="${c}" class="${c===S.orbitColor?"on":""}" title="${n}" style="background:${c}" onclick="setOrbitColor('${c}')"></button>`).join("")}</span>
@@ -2775,67 +2929,8 @@ function renderDetail(){
     const gl=e.target.closest("[data-golink]"); if(gl){ const n=gl.dataset.golink; select({kind:"loc",name:n}); if(S.locMap[n]?.pos) focusLoc(n,true); return; }
     const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;
     if(a==="zoom") focusBody(sel.name);
-    if(a==="openalign"){ await openAlign(); return; }
-    if(a==="logchange"){ const r=await api().browse_log(); if(r.ok){ toast("Now reading the selected Game.log"); await poll(); renderDetail(); } return; }
-    if(a==="bugopen"){ S.bugOpen=true; S.bugSent=false; renderDetail(); $("s-bugmsg")?.focus(); return; }
-    if(a==="bugcancel"){ S.bugOpen=false; renderDetail(); return; }
-    if(a==="bugsend"){ const msg=($("s-bugmsg")?.value||"").trim(), contact=($("s-bugcontact")?.value||"").trim();
-      if(msg.length<5) return toast("Describe the bug first");
-      S.bugMsg=msg; S.bugContact=contact; S.bugBusy=true; renderDetail();
-      const r=await api().send_bug_report(msg, contact); S.bugBusy=false;
-      if(r.ok){ S.bugOpen=false; S.bugSent=true; S.bugMsg=""; S.bugContact=""; toast("Bug report sent. Thank you!"); } else toast(r.error);
-      renderDetail(); return; }
-    if(a==="uexsave"){ const v=$("s-uex").value.trim(); if(!v) return toast("Paste the token first"); toast("Checking the token…");
-      const r=await api().set_uex_token(v); if(!r.ok){ toast(r.error); return; } S.bk=undefined;
-      S.uexDraft=""; S.mk=null; S.veh=null; S.cpCats=null; S.cpItems=null; toast("UEX connected"); await poll(); await loadStatic(); renderDetail(); fillUexStatus(true); return; }
-    if(a==="acctsignin"){ S.acctErr=""; S.acct=await api().account_sign_in(); renderDetail(); acctWatch(); return; }
-    if(a==="acctlogin"){ const em=($("acct-email")?.value||"").trim(), pw=$("acct-pw")?.value||"";
-      if(!em||!pw){ S.acctErr="Enter your email and password."; renderDetail(); (em?$("acct-pw"):$("acct-email"))?.focus(); return; }
-      S.acctEmail=em; S.acctBusy=true; S.acctErr=""; renderDetail();
-      const r=await api().account_sign_in_password(em,pw); S.acctBusy=false; S.acct=r;
-      if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
-      else { S.acctErr=r.error; S.acctUnconfirmed=!!r.unconfirmed; }
-      renderDetail(); if(!r.ok) $("acct-pw")?.focus(); return; }
-    if(a==="acctkeys"){ const on=e.target.checked; S.acctKeysBusy=true; renderDetail();
-      const r=await api().account_set_key_sync(on); S.acctKeysBusy=false; S.acct=r;
-      if(r.ok){ toast(on?"Your UEX keys are kept in your Quantum account":"Removed from your Quantum account. They stay on this PC"); if(on) await acctKeysArrived(r); }
-      else toast(r.error||"Couldn't change it. Try again");
-      renderDetail(); return; }
-    if(a==="acctopen"){ S.acct=await api().account_open_page(); return; }
-    if(a==="acctcancel"){ S.acct=await api().account_cancel(); renderDetail(); return; }
-    if(a==="acctlink"){ toast("Linking your UEX name…"); S.acct=await api().account_link_now(); renderDetail();
-      toast(S.acct.uex?`Linked to ${S.acct.uex}`:"Couldn't link it: check your UEX Secret Key above"); return; }
-    if(a==="acctsignout"){ S.acct=await api().account_sign_out(); renderDetail(); toast("Signed out of your Quantum account on this PC"); return; }
-    if(a==="commask"){ S.commAsk=true; renderDetail(); return; }
-    if(a==="commcancel"){ S.commAsk=false; renderDetail(); return; }
-    if(a==="commoff"||a==="common"){ S.commAsk=false; S.communityStatus=null; renderDetail();
-      const r=await api().set_community_enabled(a==="common"); S.communityStatus=r; S.bk=undefined; S.ownerAsked=false;
-      toast(a==="commoff"?"Community features are off. Quantum uses UEX's data alone":r.ok?"Community features are on and connected":"Community features are on, but the server didn't answer yet");
-      renderDetail(); if(a==="common") setTimeout(()=>ownerCheck().catch(()=>{}),3000); return; }
-    if(a==="communitysave"){ const r=await api().set_community_url($("s-community").value); S.communityStatus=r; S.communityDraft=undefined;
-      toast(!r.url?"Community prices off":r.ok?"Community prices connected":"Saved, but the server didn't answer"); renderDetail(); return; }
-    if(a==="updcheck"){ if(S.updChecking) return; S.updChecking=true; S.updNote=""; renderDetail();
-      const [st]=await Promise.all([api().update_status(true), new Promise(r=>setTimeout(r,700))]);   // long enough to see
-      S.updChecking=false; S.qVersion=st.current;
-      if(st.latest?.available){ S.updNote=`Quantum ${st.latest.version} is available`; await api().update_skip(""); renderUpdateBar(true); toast(S.updNote); }
-      else { S.updNote=st.latest?.error?"Couldn't reach GitHub just now":`Up to date · checked ${new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
-        toast(st.latest?.error?"Couldn't reach GitHub just now":`You have the latest version (${st.current})`); }
-      renderDetail(); return; }
-    if(a==="drsecret"){ if(!S.live?.log?.uex_token){ toast("Enter your UEX Bearer Token first, then your Secret Key"); $("s-uex")?.focus(); return; }
-      const v=$("s-drsecret").value.trim(); if(!v) return toast("Paste the secret key first");
-      const r=await api().dr_set_secret(v); if(r.ok===false){ toast(r.error); if(r.need==="token") $("s-uex")?.focus(); return; } S.drHasSecret=r.has_secret; S.drSecretDraft=""; S.bk=undefined; S.keyStat=undefined; S.ownerAsked=false; setTimeout(()=>ownerCheck().catch(()=>{}),3000); toast("Datarunner secret key saved"); renderDetail(); drRefreshAfterKey(); return; }
-    if(a==="bkdel"){ if(!S.bkDelAsk){ S.bkDelAsk=true; renderDetail(); setTimeout(()=>{ S.bkDelAsk=false; renderDetail(); },4000); return; }
-      S.bkDelAsk=false; S.bkBusy="del"; renderDetail(); const r=await api().backup_delete(); S.bkBusy=null;
-      toast(r.ok?"Backup deleted from the server. Backups are off for this PC":r.error); S.bk=await api().backup_status(); renderDetail(); return; }
-    if(a==="bkon"){ S.bk=await api().backup_enable(); toast("Backups are on again"); renderDetail(); return; }
-    if(a==="bknow"||a==="bkrestore"){ S.bkBusy=a==="bknow"?"save":"restore"; renderDetail();
-      const r=a==="bknow"?await api().backup_now(true):await api().backup_restore(); S.bkBusy=null;
-      if(a==="bknow") toast(r.ok?"Backed up":"Backup failed: "+(r.error||r.status));
-      else { toast(r.ok?(r.added?`Restored ${r.summary}`:"Nothing was missing: you're up to date"):r.error); if(r.ok&&r.added) await afterRestore(); }
-      S.bk=await api().backup_status(); renderDetail(); return; }
-    if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
-    if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
-    if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
+    if(a==="openprofile"){ select(null); return openProfileView("accounts"); }
+    await settingsAction(a,e);
     if(a==="jump") jumpThrough(sel.name);
     if(a==="resetcal"){ const n=e.target.dataset.body; const r=await api().reset_calibration(n); if(!r.ok) return toast(r.error);
       await poll(); await openAlign(); toast(`${n} is back on community values`); return; }
@@ -2914,8 +3009,407 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.tab==="components") openComponents(); if(S.tab==="fleet") openFleet();
   $("gr-panel").classList.toggle("show",!!GEAR[S.tab]); if(GEAR[S.tab]) openGear(S.tab);
   $("sh-panel").classList.toggle("show",S.tab==="shopping"); if(S.tab==="shopping") openShopping();
+  $("pf-panel").classList.toggle("show",S.tab==="profile"); if(S.tab==="profile") openProfile();
+  $("gl-panel").classList.toggle("show",S.tab==="gearlo"); if(S.tab==="gearlo") openGearLoadouts();
   $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
+
+// ---- the rail: one button per section; each section's own tabs show as pills under its title
+const GROUPS={navigate:{t:"Navigate",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade","datarunner"]},
+  ships:{t:"Ships",tabs:["fleet","components","vehicles"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","utility","gearlo"]},
+  consumables:{t:"Consumables",tabs:["consumables"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},profile:{t:"Profile",tabs:["profile"]}};
+const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
+S.lastTab=S.lastTab||{};
+function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";
+  for(const b of document.querySelectorAll("#rail [data-group]")){ if(b.dataset.group===g) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); }
+  let n=0; for(const t of document.querySelectorAll("#tabs .tab")){ const on=t.dataset.group===g; t.classList.toggle("off-group",!on); if(on&&!t.hidden) n++; }
+  $("tabs").classList.toggle("solo",n<=1); $("sec-title").textContent=GROUPS[g].t; }
+for(const b of document.querySelectorAll("#rail [data-group]")) b.onclick=()=>{ const g=b.dataset.group, G=GROUPS[g];
+  const ok=n=>{ const t=document.querySelector(`.tab[data-tab="${n}"]`); return t&&!t.hidden?t:null; };
+  const t=ok(S.lastTab[g])||G.tabs.map(ok).find(Boolean);
+  if(!t){ toast(`${G.t} needs your UEX Bearer Token: add it under Linked accounts`); return openProfileView("accounts"); }
+  t.click(); };
+$("rail-settings").onclick=()=>{ if(S.selected?.kind==="settings") return select(null); select({kind:"settings"}); };
+for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",syncRail);
+syncRail();
+
+// =================================================================== Gear loadouts
+// Your own sets of personal gear for a kind of job ("Bunker run", "Cave mining"): armor by slot, weapons, gadgets,
+// utility items, clothing and consumables with how many. The picker uses the Weapons/Armor/… tabs' wiki lists.
+const GL_GROUPS=[
+  ["Armor",[["helmet","Helmet","armor",i=>i.slot==="Helmet"],["core","Core","armor",i=>i.slot==="Core"],["arms","Arms","armor",i=>i.slot==="Arms"],
+    ["legs","Legs","armor",i=>i.slot==="Legs"],["backpack","Backpack","armor",i=>i.slot==="Backpack"],["undersuit","Undersuit","armor",i=>i.slot==="Undersuit"]]],
+  ["Weapons",[["primary","Primary","weapons",i=>!/pistol|knife|grenade/i.test(i.kind||"")],["secondary","Secondary","weapons",i=>!/knife|grenade/i.test(i.kind||"")],
+    ["sidearm","Sidearm","weapons",i=>/pistol/i.test(i.kind||"")],["melee","Melee","weapons",i=>/knife|melee/i.test(i.kind||"")]]],
+  ["Gadgets and keys",[["gadget1","Gadget","gadgets",()=>true],["gadget2","Gadget","gadgets",()=>true],["utility1","Key","utility",()=>true],["utility2","Key","utility",()=>true]]],
+  ["Clothing",[["hat","Hat","clothing",i=>/hat|head/i.test(i.kind||"")],["torso","Shirt","clothing",i=>/shirt/i.test(i.kind||"")],["jacket","Jacket","clothing",i=>/jacket|outer/i.test(i.kind||"")],
+    ["pants","Pants","clothing",i=>/legs|pants/i.test(i.kind||"")],["shoes","Shoes","clothing",i=>/shoe|feet|boot/i.test(i.kind||"")],["gloves","Gloves","clothing",i=>/glove|hand/i.test(i.kind||"")]]]];
+const GL_SLOT=Object.fromEntries(GL_GROUPS.flatMap(([,L])=>L.map(x=>[x[0],x])));
+const GL_SCENARIOS=["Bunker run","Cave mining","EVA salvage","Bounty hunting","Medical rescue","Cargo hauling","Exploration","PvP","Prison break","Racing"];
+S.gl=S.gl||{list:null,sel:null,pick:null,q:"",all:false};
+// A gear list loaded quietly for the picker (the tab draws it when you open it)
+async function glData(kind){ const st=grState(kind); if(st.data) return st.data.items;
+  if(!st.glP) st.glP=api().gear_list(kind,false).then(r=>{ if(r?.ok&&!st.data) st.data=r; st.glP=null; return r; }).catch(()=>{ st.glP=null; });
+  await st.glP; return st.data?.items||[]; }
+const glFind=(kind,x)=>{ if(!x) return null; const L=grState(kind).data?.items||[]; return L.find(i=>x.uuid&&i.uuid===x.uuid)||L.find(i=>i.name===x.name)||null; };
+const glCur=()=>(S.gl.list||[]).find(x=>x.id===S.gl.sel)||null;
+const glItems=lo=>[...Object.entries(lo.slots||{}).map(([k,v])=>({...v,slot:k})),...(lo.consumables||[]).map(c=>({...c,slot:"cons"}))];
+async function glLoad(){ const r=await api().gear_loadouts(); S.gl.list=r?.loadouts||[]; return S.gl.list; }
+async function glSave(lo,quiet){ const r=await api().gear_loadout_save(lo); if(!r.ok){ toast(r.error); return null; }
+  S.gl.list=r.loadouts; if(!quiet) renderGearLoadouts(); return r.loadout; }
+async function openGearLoadouts(){ if(!S.gl.list) await glLoad(); renderGearLoadouts();
+  const lo=glCur(); if(lo){ const kinds=[...new Set(glItems(lo).map(i=>i.kind))]; await Promise.all(kinds.map(glData)); if(S.tab==="gearlo") renderGearLoadouts(); } }
+function glStats(lo){ const it=glItems(lo).map(x=>({x,g:glFind(x.kind,x)})); let price=0, priced=0, carry=0, mass=0;
+  for(const {x,g} of it){ const q=x.qty||1, pr=g?grPrice(g):null; if(pr!=null){ price+=pr*q; priced++; } if(g?.stats?.carry) carry+=g.stats.carry; if(g?.stats?.mass) mass+=g.stats.mass*q; }
+  const core=glFind("armor",lo.slots?.core), prim=glFind("weapons",lo.slots?.primary);
+  return {n:it.length, price, priced, missing:it.length-priced, carry, mass, dr:core?.stats?.dr, dps:prim?.stats?.dps, weight:core?.weight}; }
+function renderGearLoadouts(){ if(S.tab!=="gearlo") return; glSide(); if(S.gl.pick) return glPicker(); glMain(); }
+function glSide(){ const L=S.gl.list||[], P=$("pane-gearlo");
+  const a=document.activeElement; if(a&&P.contains(a)&&a.id==="gl-new") return;   // typing a new name
+  P.innerHTML=`<div class="row" style="gap:6px"><input class="field" id="gl-new" placeholder="New loadout, like “Bunker run”" autocomplete="off" style="flex:1" list="gl-scn-dl">
+      <button class="btn primary" data-gl="new">Create</button></div>
+    <datalist id="gl-scn-dl">${GL_SCENARIOS.map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+    <div class="muted" style="font-size:12px;margin:8px 2px 12px">What you wear and carry for each kind of job. Pick pieces from the wiki's lists; prices are UEX's.</div>
+    ${L.length?L.map(lo=>{ const st=glStats(lo); return `<div class="vh ${lo.id===S.gl.sel?"hl":""}"><div class="hd" data-glsel="${esc(lo.id)}"><div><div class="nm">${lo.main?"★ ":""}${esc(lo.name)}</div>
+        <div class="mk">${esc([lo.scenario,plural(st.n,"item")].filter(Boolean).join(" · "))}</div></div><div class="pr">${st.priced?money(st.price):""}</div></div></div>`; }).join("")
+      :`<div class="empty">No loadouts yet. Name one above to start.</div>`}`; }
+function glMain(){ const P=$("gl-panel"), lo=glCur();
+  if(!lo){ const L=S.gl.list||[];
+    P.innerHTML=`<div class="gh"><b>Your gear loadouts</b>${L.length?`${plural(L.length,"loadout")} · click one to change it`:"Make one on the left"}</div>
+      ${L.length?`<div class="grid">${L.map(glCard).join("")}</div>`:`<div class="empty" style="margin-top:40px"><strong>Gear for every kind of job</strong>Make a loadout for bunkers, caves, salvage or rescues: armor, weapons, gadgets, clothing and the MedPens and food you take.
+        It keeps the total price, and the whole set goes in your cart in one click.</div>`}`;
+    fillGearPictures(P); return; }
+  const st=glStats(lo), buyable=glItems(lo).filter(x=>glFind(x.kind,x)?.buy?.length);
+  const slotRow=([k,label,kind])=>{ const x=lo.slots?.[k], g=glFind(kind,x), G=GEAR[kind];
+    return `<div class="mk-row gl-row"><div class="w"><small>${esc(label)}</small>${x?`<a data-glview="${esc(kind)}|${esc(x.uuid||x.name)}">${esc(x.name)}</a>`:`<span class="empty-slot">Empty</span>`}
+        ${x?`<div class="m">${esc([g?.maker,G?.key?.(g||{}),g?grPrice(g)!=null?money(grPrice(g)):"Not in shops":""].filter(Boolean).join(" · "))}</div>`:""}</div>
+      <div class="p"></div><div class="acts"><button class="btn small" data-glpick="${k}">${x?"Change":"Choose"}</button>${x?`<button class="btn small ghost" data-glclear="${k}" aria-label="Take ${esc(x.name)} out">✕</button>`:""}</div></div>`; };
+  const cons=lo.consumables||[];
+  P.innerHTML=`<button class="btn" data-gl="all" style="margin-bottom:14px">← All loadouts</button>
+    <div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:18px"><div class="hd-main">
+      <input class="gl-name" id="gl-name" value="${esc(lo.name)}" maxlength="60" aria-label="Loadout name">
+      <input class="gl-scn" id="gl-scn" value="${esc(lo.scenario||"")}" maxlength="60" placeholder="What it's for, like “Cave mining”" aria-label="What it's for" list="gl-scn-dl">
+      ${statBlock([{label:"Items",value:st.n},{label:"Whole loadout",value:st.priced?money(st.price):"–"},{label:"Core protection",value:st.dr!=null?GR_PCT(st.dr):null}],
+        [{label:"Not in shops",value:st.missing?plural(st.missing,"item"):null},{label:"Carrying space",value:st.carry?`${Math.round(st.carry).toLocaleString()} µSCU`:null},
+         {label:"Mass",value:st.mass?`${nf(st.mass)} kg`:null},{label:"Primary DPS",value:st.dps!=null?Math.round(st.dps).toLocaleString():null},{label:"Armor weight",value:st.weight||null}])}
+      <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn primary gl-cart" data-gl="cart" ${buyable.length?"":"disabled"}>${CART_SVG}Add ${buyable.length?plural(buyable.length,"item"):"it"} to cart</button>
+        ${lo.main?`<span class="muted" style="font-size:12.5px;align-self:center">★ Your main loadout</span>`:`<button class="btn ghost" data-gl="main">★ Make main</button>`}
+        <button class="btn ghost" data-gl="dup">Duplicate</button>
+        <button class="btn ghost" data-gl="del" style="color:#ff9b8a">${S.gl.delAsk===lo.id?"Click again to delete":"Delete"}</button></div></div></div>
+    <div class="vd-grid vd-flat bp-grid">
+      ${GL_GROUPS.map(([g,L])=>`<div class="vd-sec"><div class="mk-h">${esc(g)}<span class="mk-note">${L.filter(x=>lo.slots?.[x[0]]).length} of ${L.length}</span></div>${L.map(slotRow).join("")}</div>`).join("")}
+      <div class="vd-sec"><div class="mk-h">Consumables<span class="mk-note">${cons.reduce((t,c)=>t+(c.qty||1),0)} carried</span></div>
+        ${cons.map((c,i)=>{ const g=glFind("consumables",c); return `<div class="mk-row gl-row"><div class="w">${esc(c.name)}<div class="m">${esc([g?.kind,g&&grPrice(g)!=null?`${money(grPrice(g))} each`:""].filter(Boolean).join(" · "))}</div></div><div class="p"></div>
+          <div class="acts"><span class="gl-qty"><button class="btn small ghost" data-glqty="${i}|-1" aria-label="One fewer">−</button><b>${c.qty||1}</b><button class="btn small ghost" data-glqty="${i}|1" aria-label="One more">+</button></span>
+          <button class="btn small ghost" data-glqty="${i}|0" aria-label="Take ${esc(c.name)} out">✕</button></div></div>`; }).join("")}
+        <div class="row" style="margin-top:8px"><button class="btn small" data-glpick="cons">Add a consumable</button></div></div>
+      <div class="vd-sec"><div class="mk-h">Notes</div><textarea class="field gl-notes" id="gl-notes" maxlength="500" placeholder="Anything to remember: ammo to bring, where to buy, which ship it goes with…">${esc(lo.notes||"")}</textarea></div>
+    </div>
+    <div class="uex-credit">Items from the Star Citizen Wiki; prices from UEX, reported by players.</div>`; }
+function glCard(lo){ const st=glStats(lo), pic=lo.slots?.core||lo.slots?.helmet||lo.slots?.primary||lo.slots?.jacket||Object.values(lo.slots||{})[0];
+  return `<div class="vg" data-glopen="${esc(lo.id)}"><div class="ph" ${pic?`data-gpic="${esc(pic.name)}"`:""}>${pic?"":"Empty loadout"}</div>
+    <div class="tx"><b>${lo.main?"★ ":""}${esc(lo.name)}</b><span>${esc([lo.scenario,plural(st.n,"item")].filter(Boolean).join(" · "))}${st.priced?` · ${money(st.price)}`:""}</span></div></div>`; }
+async function glPicker(){ const P=$("gl-panel"), lo=glCur(), k=S.gl.pick; if(!lo){ S.gl.pick=null; return glMain(); }
+  const def=k==="cons"?["cons","Consumable","consumables",()=>true]:GL_SLOT[k], [,label,kind,fits]=def, G=GEAR[kind];
+  const draw=()=>{ const L=grState(kind).data?.items;
+    if(!L){ P.innerHTML=`<button class="btn" data-glback="1" style="margin-bottom:14px">← ${esc(lo.name)}</button>${qLoader(`Loading ${G.title.toLowerCase()} from the Star Citizen Wiki…`)}`; return; }
+    const q=S.gl.q.trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean);
+    const fit=L.filter(fits), base=S.gl.all||!fit.length?L:fit;
+    const shown=base.filter(i=>!words.length||words.every(w=>`${i.name} ${i.maker} ${i.kind||""} ${i.slot||""}`.toLowerCase().includes(w))).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200);
+    const box=$("gl-pick-grid");
+    const grid=shown.length?`<div class="grid">${shown.map(i=>`<div class="vg" data-glchoose="${esc(i.uuid||i.name)}"><div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+        <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.slot||i.kind].filter(Boolean).join(" · "))}${grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
+      :`<div class="empty">Nothing matches.</div>`;
+    if(box){ box.innerHTML=grid; $("gl-pick-n").textContent=`${shown.length}${base.length>shown.length?` of ${base.length}`:""} shown`; fillGearPictures(box); return; }
+    P.innerHTML=`<button class="btn" data-glback="1" style="margin-bottom:14px">← ${esc(lo.name)}</button>
+      <div class="gh"><b>Choose ${k==="cons"?"a consumable":`a ${esc(label.toLowerCase())}`}</b><span id="gl-pick-n">${shown.length} shown</span></div>
+      <div class="row gl-pick" style="gap:8px;margin:0 2px 14px;flex-wrap:wrap"><input class="field" id="gl-q" placeholder="${esc(G.ph)}" value="${esc(S.gl.q)}" autocomplete="off" style="flex:1;min-width:220px">
+        ${fit.length&&fit.length<L.length?`<label class="row" style="gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="gl-all" ${S.gl.all?"checked":""}> Show every ${esc(G.noun)}, not just ${esc(label.toLowerCase())}s</label>`:""}</div>
+      <div id="gl-pick-grid" class="gl-pick">${grid}</div>`;
+    fillGearPictures(P); $("gl-q")?.focus(); };
+  draw(); if(!grState(kind).data){ await glData(kind); if(S.gl.pick===k&&S.tab==="gearlo") draw(); } }
+$("gl-panel").addEventListener("input",e=>{ if(e.target.id==="gl-q"){ S.gl.q=e.target.value; glPicker(); } });
+$("gl-panel").addEventListener("change",async e=>{ const lo=glCur(); if(!lo) return;
+  if(e.target.id==="gl-all"){ S.gl.all=e.target.checked; $("gl-pick-grid").innerHTML=""; $("gl-pick-grid").removeAttribute("id"); return glPicker(); }
+  if(e.target.id==="gl-name"){ const v=e.target.value.trim(); if(!v){ e.target.value=lo.name; return toast("A loadout needs a name"); } lo.name=v; await glSave(lo,true); glSide(); }
+  if(e.target.id==="gl-scn"){ lo.scenario=e.target.value.trim(); await glSave(lo,true); glSide(); }
+  if(e.target.id==="gl-notes"){ lo.notes=e.target.value; await glSave(lo,true); toast("Notes saved"); } });
+$("gl-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return; const lo=glCur();
+  const op=e.target.closest("[data-glopen]"); if(op){ S.gl.sel=op.dataset.glopen; S.gl.pick=null; return openGearLoadouts(); }
+  if(e.target.closest("[data-gl=all]")){ S.gl.sel=null; return renderGearLoadouts(); }
+  if(e.target.closest("[data-glback]")){ S.gl.pick=null; S.gl.q=""; return renderGearLoadouts(); }
+  if(!lo) return;
+  const pk=e.target.closest("[data-glpick]"); if(pk){ S.gl.pick=pk.dataset.glpick; S.gl.q=""; S.gl.all=false; $("gl-panel").scrollTop=0; return glPicker(); }
+  const ch=e.target.closest("[data-glchoose]"); if(ch){ const k=S.gl.pick, kind=k==="cons"?"consumables":GL_SLOT[k][2];
+    const i=(grState(kind).data?.items||[]).find(x=>(x.uuid||x.name)===ch.dataset.glchoose); if(!i) return;
+    const it={name:i.name,uuid:i.uuid,class_name:i.class_name,kind};
+    if(k==="cons"){ lo.consumables=lo.consumables||[]; const have=lo.consumables.find(c=>(c.uuid&&c.uuid===i.uuid)||c.name===i.name); if(have) have.qty=(have.qty||1)+1; else lo.consumables.push({...it,qty:1}); }
+    else { lo.slots=lo.slots||{}; lo.slots[k]=it; }
+    S.gl.pick=null; S.gl.q=""; await glSave(lo); toast(`${i.name} added to ${lo.name}`); return; }
+  const cl=e.target.closest("[data-glclear]"); if(cl){ delete lo.slots[cl.dataset.glclear]; return glSave(lo); }
+  const qt=e.target.closest("[data-glqty]"); if(qt){ const [i,d]=qt.dataset.glqty.split("|").map(Number), c=lo.consumables[i]; if(!c) return;
+    if(d===0) lo.consumables.splice(i,1); else c.qty=Math.max(1,Math.min(99,(c.qty||1)+d)); return glSave(lo); }
+  const vw=e.target.closest("[data-glview]"); if(vw){ const [kind,id]=vw.dataset.glview.split("|"); const t=document.querySelector(`.tab[data-tab="${kind}"]`); if(!t) return;
+    t.click(); setTimeout(()=>{ const st=grState(kind); if(kind==="armor"){ st.view="items"; } if(st.data) grOpenItem(kind,id,null); },250); return; }
+  const b=e.target.closest("[data-gl]")?.dataset.gl;
+  if(b==="main"){ lo.main=true; return glSave(lo); }
+  if(b==="dup"){ const c=await glSave({...JSON.parse(JSON.stringify(lo)),id:null,main:false,name:`${lo.name} (copy)`.slice(0,60)}); if(c){ S.gl.sel=c.id; renderGearLoadouts(); toast("Copied"); } return; }
+  if(b==="del"){ if(S.gl.delAsk!==lo.id){ S.gl.delAsk=lo.id; glMain(); setTimeout(()=>{ if(S.gl.delAsk===lo.id){ S.gl.delAsk=null; if(S.tab==="gearlo"&&!S.gl.pick) glMain(); } },4000); return; }
+    const r=await api().gear_loadout_delete(lo.id); S.gl.list=r.loadouts; S.gl.sel=null; S.gl.delAsk=null; toast(`${lo.name} deleted`); return renderGearLoadouts(); }
+  if(b==="cart"){ const items=glItems(lo).map(x=>({x,g:glFind(x.kind,x)})).filter(({g})=>g?.buy?.length)
+      .map(({x,g})=>({name:g.name,kind:GR_CART[x.kind],uuid:g.uuid,class_name:g.class_name,qty:x.qty||1,source:lo.name}));
+    if(items.length) return addToCart(items,`${lo.name} (${plural(items.length,"item")})`); } });
+$("pane-gearlo").addEventListener("click",async e=>{
+  const sl=e.target.closest("[data-glsel]"); if(sl){ S.gl.sel=sl.dataset.glsel; S.gl.pick=null; $("gl-panel").scrollTop=0; return openGearLoadouts(); }
+  if(e.target.closest("[data-gl=new]")){ const v=($("gl-new")?.value||"").trim(); if(!v) return toast("Name the loadout first, like “Bunker run”");
+    const c=await glSave({name:v,scenario:GL_SCENARIOS.includes(v)?v:"",slots:{},consumables:[]},true); if(c){ $("gl-new").value=""; $("gl-new").blur(); S.gl.sel=c.id; S.gl.pick=null; renderGearLoadouts(); } } });
+$("pane-gearlo").addEventListener("keydown",e=>{ if(e.target.id==="gl-new"&&e.key==="Enter"){ e.preventDefault(); document.querySelector('[data-gl=new]')?.click(); } });
+
+// =================================================================== Profile
+// Behind your picture at the top of the rail: who you are (photo, UEX name, rank, trusted status), your Quantum
+// account and UEX keys, backups, what you've sent in, and your fleet. Signed out, it's where you sign in.
+const PF_PERSON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>';
+const PF_VIEWS=[["overview","Overview",'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+  ["accounts","Linked accounts",'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>'],
+  ["backup","Backup",'<path d="M7 18a5 5 0 010-10 6 6 0 0111 2 4 4 0 010 8z"/><path d="M12 11v6M9 14l3-3 3 3"/>'],
+  ["submissions","Submissions",'<path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/>'],
+  ["fleet","My fleet",'<path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/>'],
+  ["gearlo","Gear loadouts",'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>']];
+S.pfView=S.pfView||"overview";
+const pfSignedIn=()=>!!(S.acct?.signed_in||S.drProf?.username||S.drHasSecret);
+const pfPhoto=()=>pfSignedIn()?(S.pfPhoto||S.drProf?.avatar||S.drProf?.avatar_url||null):null;
+const pfName=()=>S.drProf?.username||S.acct?.uex||(S.acct?.email||"").split("@")[0]||"";
+function pfAvatar(){ const u=pfPhoto(), n=pfName();
+  return u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:n?`<span>${esc(n[0].toUpperCase())}</span>`:PF_PERSON; }
+const pfDate=x=>{ if(!x) return null; const d=typeof x==="number"?new Date(x<1e12?x*1000:x):new Date(x); return isNaN(d)?null:d.toLocaleDateString([], {year:"numeric",month:"short",day:"numeric"}); };
+function syncRailMe(){ const b=$("rail-me"); if(!b) return; const on=pfSignedIn();
+  const html=pfAvatar(); if($("rail-av").dataset.h!==html){ $("rail-av").innerHTML=html; $("rail-av").dataset.h=html; }
+  b.classList.toggle("out",!on); $("rail-dot").hidden=!on; b.title=on?(pfName()?`${pfName()}: your profile`:"Your profile"):"Sign in";
+  if(S.pfReady) try{ localStorage.setItem("q-me",JSON.stringify({on,html})); }catch(_){} }
+// The picture from last time, drawn before anything's asked of the app, so the rail is never blank at start
+try{ const m=JSON.parse(localStorage.getItem("q-me")||"null"); if(m&&typeof m.html==="string"){ $("rail-av").innerHTML=m.html; $("rail-av").dataset.h=m.html;
+  $("rail-me").classList.toggle("out",!m.on); $("rail-dot").hidden=!m.on; } }catch(_){}
+// Everything the profile shows: asked for at start (for the picture on the rail), and again when it opens
+async function pfPrime(force){ S.pfAt=Date.now(); const jobs=[];
+  if(force||S.acct===undefined||S.acct===null) jobs.push(api().account_status().then(x=>{ S.acct=x; S.acctAt=Date.now(); }).catch(()=>{}));
+  if(force||S.pfPhoto===undefined) jobs.push(api().profile_photo().then(x=>{ S.pfPhoto=x?.photo||null; }).catch(()=>{ S.pfPhoto=null; }));
+  if(S.drHasSecret&&(force||!S.drProf)) jobs.push(api().dr_profile(false).then(p=>{ if(p?.ok){ S.drProf=p; S.drProfAt=Date.now(); } }).catch(()=>{}));
+  if(S.drHasSecret&&(force||!S.drTrust)) jobs.push(api().trust_status().then(x=>{ S.drTrust=x; }).catch(()=>{}));
+  if(force||S.bk===undefined||S.bk===null) jobs.push(api().backup_status().then(x=>{ S.bk=x; }).catch(()=>{}));
+  if(S.live?.log?.uex_token&&(force||!S.pfFleet)) jobs.push(api().fleet_list().then(x=>{ if(x?.ok) S.pfFleet=x.ships; }).catch(()=>{}));
+  if(force||!S.gl.list) jobs.push(glLoad().catch(()=>{}));
+  if(force||!S.pfPrefs) jobs.push(api().profile_prefs().then(x=>{ S.pfPrefs=x?.prefs||{}; }).catch(()=>{ S.pfPrefs=S.pfPrefs||{}; }));
+  await Promise.allSettled(jobs); S.pfReady=true; syncRailMe(); if(S.tab==="profile") renderProfile(true); }
+function openProfile(){ renderProfile(true); pfPrime(Date.now()-(S.pfAt||0)>60000); }
+function openProfileView(v){ S.pfView=v||"overview"; if(S.tab==="profile") return renderProfile(true); document.querySelector('.tab[data-tab="profile"]').click(); }
+function renderProfile(force){ if(S.tab!=="profile") return;
+  const a=document.activeElement;
+  if(!force&&a&&($("pf-panel").contains(a)||$("pane-profile").contains(a))&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;   // don't redraw under typing
+  pfSide(); pfMain(); syncRailMe(); }
+function pfSide(){ const on=pfSignedIn(), p=S.drProf, t=S.drTrust, nm=pfName();
+  const trusted=!!(p?.trust?.trusted||t?.trusted), rankI=p?.ranks?p.ranks.findIndex(x=>x[1]===p.rank?.name):-1;
+  const counts={fleet:S.pfFleet?.length||"",gearlo:S.gl.list?.length||""};
+  $("pane-profile").innerHTML=`<div class="pf-me">
+      <div class="pf-av-wrap"><div class="pf-av ${on?"":"out"}">${pfAvatar()}</div>
+        <button class="pf-cam" data-pf="photo" aria-label="Change your profile photo" title="Change your profile photo">${IC_CAM}</button></div>
+      <b class="pf-name">${esc(on?(nm||"Your profile"):"Not signed in")}</b>
+      ${S.acct?.email?`<div class="muted pf-mail">${esc(S.acct.email)}</div>`:""}
+      ${on?`<div class="pf-badges">${trusted?`<span class="pf-trust">✓ Trusted datarunner</span>`:p?.username?`<span class="pf-trust no">Not trusted yet</span>`:""}
+        ${p?.rank?`<span class="rank-badge r${Math.max(0,rankI)}">${esc(p.rank.name)}</span>`:""}</div>`:""}
+      ${S.pfPhoto?`<button class="btn small ghost" data-pf="photo-remove">Remove photo</button>`:""}
+    </div>
+    <nav class="pf-nav" aria-label="Profile">${PF_VIEWS.map(([k,l,ic])=>`<button data-pfv="${k}" class="${S.pfView===k?"on":""}" ${S.pfView===k?'aria-current="page"':""}><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg><span>${l}</span>${counts[k]?`<span class="n">${counts[k]}</span>`:""}</button>`).join("")}</nav>
+    ${on?`<div class="pf-foot" style="flex-direction:column;align-items:center">${S.pfOutAsk?`<div class="muted" style="font-size:12px;text-align:center;line-height:1.45;margin:0 6px 10px"><b style="color:var(--ink)">Sign out of Quantum?</b><br>You'll be signed out of your Quantum account and the Quantum server, and your UEX keys come off this PC, so nothing stays connected. Your ships, waypoints, routes and loadouts stay here.</div>
+        <div class="row" style="gap:8px"><button class="btn small danger" data-pf="signout-yes">Confirm sign out</button><button class="btn small ghost" data-pf="signout-no">Cancel</button></div>`
+      :`<button class="btn small ghost" data-pf="signout" style="color:#ff9b8a">Sign out</button>`}</div>`:""}
+    <input type="file" id="pf-file" accept="image/png,image/jpeg,image/webp" hidden>`; }
+function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drProf, lg=S.live?.log||{};
+  // Laid out like the ship and item pages: a title with headline numbers, then flat sections with thin rules
+  const head=(t,sub,hero,rest)=>`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>${esc(t)}</h2>${sub?`<div class="sub">${sub}</div>`:""}</div></div>${hero?statBlock(hero,rest||[]):""}</div></div>`;
+  const sec=(h,body,note,wide)=>`<div class="vd-sec"${wide?' style="grid-column:1/-1"':""}><div class="mk-h">${h}${note?`<span class="mk-note">${note}</span>`:""}</div>${body}</div>`;
+  const row=(k,val)=>`<div class="vd-row"><span>${k}</span><b>${val}</b></div>`;
+  const grid=(x,cls="")=>`<div class="vd-grid vd-flat bp-grid pf-flat ${cls}">${x}</div>`;
+  const acct=acctHtml();
+  if(v==="accounts"){
+    P.innerHTML=`${head("Linked accounts","Your Quantum account and your UEX keys")}${grid(
+      (acct?sec("Quantum account",`<div class="note">${acct}</div>`,"one account for Quantum and quantumsc.org"):"")
+      +sec("UEX",`<div class="note">${uexSectionInner()}</div>`,"prices, fleet, vehicles, components and datarunning"),"pf-one")}`;
+    fillUexStatus(false); return; }
+  if(v==="backup"){ const bk=S.bk;
+    P.innerHTML=`${head("Backup","Encrypted on this PC, kept on the Quantum server",
+        [{label:"Last backup",value:bk?.at?fmtAgo(bk.at):bk?.off?"Off":"Not yet"},{label:"Status",value:!bk?"Checking":!bk.on?"Off":!bk.has_key?"Needs UEX":bk.off?"Off":"On"}])}
+      ${grid(sec("Your backup",`<div class="note">${backupInner()}</div>`),"pf-one")}`; return; }
+  if(v==="submissions"){
+    const c=(p?.contrib||[]).slice().sort((x,y)=>(y.at||0)-(x.at||0));
+    P.innerHTML=`${head("Submissions","Prices, pictures, station positions and alignments you've sent",
+        p?.ok?[{label:"Approved",value:(p.accepted||0).toLocaleString()},{label:"Sent",value:(p.reports||0).toLocaleString()},{label:"Rating",value:p.rated?`${p.stars.toFixed(1)} ★`:"–"}]:null)}
+      ${p?.ok?drProfileCard(p):`<div class="empty">${S.drHasSecret?"Loading your datarunner profile…":"Add your UEX Secret Key under Linked accounts to see your submissions, rank and rating."}</div>`}
+      ${S.drHasSecret&&lg.uex_token?`<div class="row" style="margin:12px 2px"><button class="btn small" data-pf="mine">Open all my price reports</button></div>`:""}
+      ${c.length?grid(sec("Pictures, stations and alignments",c.slice(0,40).map(drContribCard).join(""),plural(c.length,"item"),true)):""}`; return; }
+  if(v==="fleet"||v==="gearlo") return pfArrangeView(v);
+  // Overview
+  if(!on){
+    P.innerHTML=`${head("Sign in","Everything in Quantum works without an account")}${grid(
+      (acct?sec("Quantum account",`<div class="note">${acct}</div>`):sec("Connect with UEX",`<div class="note">${uexSectionInner()}</div>`))
+      +sec("What you get",[["Backups","Your fleet, loadouts, waypoints, trade runs and mapped stations, encrypted, back on any PC"],
+          ["Your name on what you find","Price reports, pictures, station positions and planet alignments count toward your rank"],
+          ["Trusted status","Once you're trusted, what you send goes live for everyone straight away"],
+          ["A profile photo","On the rail here, and kept with your Quantum account on any PC"]]
+        .map(([a,b])=>`<div class="mk-row"><div class="w">${a}<div class="m">${b}</div></div><div class="p"></div><span></span></div>`).join("")))}`;
+    if(!acct) fillUexStatus(false); return; }
+  const bk=S.bk, T=S.drTrust, trusted=!!(p?.trust?.trusted||T?.trusted);
+  const c=(p?.contrib||[]).slice().sort((x,y)=>(y.at||0)-(x.at||0)).slice(0,6);
+  const what={photo:"Picture",alignment:"Planet alignment",pad:"Landing pad",missing:"Doesn't exist",place:"Station position"};
+  const ships=S.pfFleet||[], los=(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0));
+  const shipsOn=pfOrdered(ships,x=>x.uid,"ships",true), losOn=pfOrdered(los,x=>x.id,"gearlo",true);
+  const link=(k,t)=>`<a data-pfv="${k}" style="cursor:pointer;color:var(--route-2);margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:12px">${t}</a>`;
+  // The trusted-contributor checklist, met or not, from the server's own criteria
+  const ck=T?.info?.checks, tick=(ok,label,val)=>`<div class="vd-row"><span><i class="pf-ck ${ok?"ok":""}" aria-label="${ok?"Met":"Not met yet"}">${ok?"✓":""}</i>${label}</span><b>${val}</b></div>`;
+  const trustBody=`<div style="font-size:13px;line-height:1.55;color:var(--ink-2);padding:6px 0 8px">${T?.info?.revoked?"Trust was turned off for your account by the server owner."
+      :trusted?`Your pictures and station positions go live for everyone straight away${T?.info?.owner?" (you're the server owner)":""}. It's checked all the time, so a rejection takes it away until you're clean again.`
+      :"Meet all of these and you're trusted: your pictures and station positions go live without waiting for review."}</div>
+    ${ck?[tick(ck.reports.ok,`${ck.reports.need} approved price reports`,`${ck.reports.have} / ${ck.reports.need}`),
+          tick(ck.days.ok,`${ck.days.need} days since your first approved report`,`${ck.days.have} / ${ck.days.need}`),
+          tick(ck.clean.ok,`No rejections in the last ${ck.clean.days} days`,ck.clean.have?`${ck.clean.have} rejected`:"None"),
+          tick(ck.approval.ok,`${ck.approval.need}% approval or better`,ck.approval.have!=null?`${ck.approval.have}%`:"–")].join("")
+      :`<div class="muted" style="font-size:12.5px">${S.drHasSecret?"Couldn't check your progress with the Quantum server just now.":"Add your UEX Secret Key to start."}</div>`}`;
+  const keys=`<div class="vd-row"><span>Quantum account</span>${connPill(S.acct?.signed_in?"ok":"none",S.acct?.signed_in?"Connected":null)}</div>
+    <div class="vd-row"><span>UEX Bearer Token</span>${connPill(lg.uex_token?"ok":"none",lg.uex_token?"Connected":null)}</div>
+    <div class="vd-row"><span>UEX Secret Key</span>${connPill(S.drHasSecret?"ok":"none",S.drHasSecret?"Connected":null)}</div>`;
+  const backupBody=`${row("Status",esc(!bk?"Checking…":!bk.on?"Off":!bk.has_key?"Needs your UEX Bearer Token":bk.off?"Off for this PC":"On"))}${row("Last backup",esc(bk?.at?fmtAgo(bk.at):"Not yet"))}
+    ${bk?.on&&bk?.has_key&&!bk.off?`<div class="row" style="gap:6px;margin-top:10px"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button></div>`:""}`;
+  const subs=c.length?c.map(x=>{ const [l,col]=CB_ST[x.status]||[x.status||"",var_dim];
+      return `<div class="mk-row"><div class="w">${esc(what[x.type]||"Station position")}<div class="m">${esc(x.name||"")}${x.at?` · ${fmtAgo(x.at)}`:""}</div></div><div class="p" style="color:${col};font-size:12px;white-space:nowrap">${esc(l)}</div><span></span></div>`; }).join("")
+    :`<div class="muted" style="font-size:13px;padding:6px 0">${S.drHasSecret?"Nothing sent yet. Pictures, station positions and alignments you send show up here.":"Add your UEX Secret Key under Linked accounts to send reports."}</div>`;
+  const fleet=!lg.uex_token?`<div class="muted" style="font-size:13px;padding:6px 0">Add your UEX Bearer Token to keep your fleet here.</div>`
+    :ships.length?!shipsOn.shown.length?`<div class="muted" style="font-size:13px;padding:6px 0">No ships chosen to show. <a data-pfv="fleet" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`:`<div class="grid" style="margin-top:8px">${shipsOn.shown.map(x=>`<div class="vg" data-pfship="${esc(x.uid||"")}"><div class="ph">${x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+        <div class="tx"><b>${x.main?"★ ":""}${esc(x.full||x.name||"")}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:"",x.loadouts>1?plural(x.loadouts,"loadout"):""].filter(Boolean).join(" · "))}</span></div></div>`).join("")}</div>
+`
+    :`<div class="muted" style="font-size:13px;padding:6px 0">No ships yet.</div>`;
+  const gear=los.length?!losOn.shown.length?`<div class="muted" style="font-size:13px;padding:6px 0">No loadouts chosen to show. <a data-pfv="gearlo" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`
+      :`<div class="grid" style="margin-top:8px">${losOn.shown.map(glCard).join("")}</div>`
+    :`<div class="muted" style="font-size:13px;padding:6px 0">No gear loadouts yet. Make one for each kind of job in Gear › Loadouts. <a data-pfv="opengearlo" style="cursor:pointer;color:var(--route-2)">Make one</a></div>`;
+  P.innerHTML=`${p?.ok&&p.username?drProfileCard(p):head(pfName()||"Your profile",S.acct?.email?esc(S.acct.email):"")}
+    ${statBlock([{label:"Joined",value:pfDate(S.acct?.joined||p?.first_seen)||"–"},{label:"Last backup",value:bk?.at?fmtAgo(bk.at):bk?.off?"Off":"Not yet"},
+      {label:"Ships",value:lg.uex_token?String(ships.length):"–"},{label:"Gear loadouts",value:String(los.length)}],[])}
+    <div class="pf-ov vd-flat">
+      ${sec(`Trusted contributor`,trustBody,trusted?`<span style="color:#57e39b">✓ trusted</span>`:"")}
+      <div>${sec(`Linked accounts${link("accounts","Manage")}`,keys)}${sec(`Backup${link("backup","More")}`,backupBody)}</div>
+      ${sec(`Recent submissions${link("submissions","See all")}`,subs)}
+      ${shipsOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My fleet<span class="mk-note">${ships.length?plural(ships.length,"ship"):""}</span>${lg.uex_token&&ships.length?link("fleet","Arrange"):""}</div>${fleet}</div>`}
+      ${losOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My personal loadouts<span class="mk-note">${los.length?plural(los.length,"loadout"):""}</span>${los.length?link("gearlo","Arrange"):""}</div>${gear}</div>`}
+    </div>`;
+  fillGearPictures(P); }
+const var_dim="var(--dim)";
+// ---- What your profile shows of your fleet and gear loadouts: which ones, in what order, and how many.
+const PF_COUNTS=[1,2,3,4,5,6,7,8,9,10];
+// The saved choices, or the draft being changed on the Arrange page (saved with Save)
+const pfPref=key=>S.pfDraft?.[key]||S.pfPrefs?.[key]||{};
+function pfOrdered(list,idOf,key,saved){ const pr=(saved?S.pfPrefs?.[key]:pfPref(key))||{}, ord=pr.order||[], hid=new Set(pr.hidden||[]), pos=new Map(ord.map((id,i)=>[String(id),i]));
+  const all=list.map((x,i)=>[x,i]).sort((a,b)=>(pos.get(String(idOf(a[0])))??1e6+a[1])-(pos.get(String(idOf(b[0])))??1e6+b[1])).map(([x])=>x);
+  const count=Math.max(1,Math.min(10,pr.count??8)); return {all, shown:all.filter(x=>!hid.has(String(idOf(x)))).slice(0,count), count, hidden:hid, off:!!pr.off}; }
+const pfDirty=key=>!!S.pfDraft?.[key]&&JSON.stringify(S.pfDraft[key])!==JSON.stringify(S.pfPrefs?.[key]||{});
+function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, ships=v==="fleet", key=ships?"ships":"gearlo";
+  const list=ships?(S.pfFleet||[]):(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)), idOf=ships?(x=>x.uid):(x=>x.id);
+  const o=pfOrdered(list,idOf,key), noun=ships?"ship":"loadout", dirty=pfDirty(key), sec=ships?"My fleet":"My personal loadouts";
+  const head=`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>${ships?"My fleet on your profile":"Gear loadouts on your profile"}</h2>
+    <div class="sub">Choose which ${noun}s your profile shows and in what order. Drag a row, or use the arrows, then Save.</div></div></div>
+    ${statBlock([{label:"Section",value:o.off?"Hidden":"Shown"},{label:"Shown",value:o.off?"–":`${o.shown.length} of ${list.length}`},{label:"Most at once",value:String(o.count)}],[])}</div></div>`;
+  if(ships&&!lg.uex_token){ P.innerHTML=`${head}<div class="empty">Add your UEX Bearer Token under Linked accounts to keep your fleet here.</div>`; return; }
+  const shownIds=new Set(o.shown.map(x=>String(idOf(x))));
+  const row=(x,i)=>{ const id=String(idOf(x)), hid=o.hidden.has(id), on=shownIds.has(id)&&!o.off, name=ships?(x.full||x.name||""):x.name;
+    const sub=ships?[x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "):[x.scenario,plural(glItems(x).length,"item")].filter(Boolean).join(" · ");
+    const pic=ships?(x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""):(()=>{ const p=x.slots?.core||x.slots?.helmet||x.slots?.primary||Object.values(x.slots||{})[0]; return p?`<span data-gpic="${esc(p.name)}"></span>`:""; })();
+    return `<div class="pf-arr ${on?"":"off"}" draggable="true" data-pfdrag="${esc(key)}|${esc(id)}">
+      <span class="h" aria-hidden="true">⋮⋮</span><span class="th">${pic}</span>
+      <div class="w"><b>${x.main?"★ ":""}${esc(name)}</b><small>${esc(sub)}${o.off?"":hid?" · hidden":on?"":" · over the limit"}</small></div>
+      <label class="row" style="gap:6px;font-size:12.5px;cursor:pointer"><input type="checkbox" data-pfarr="${key}|show|${esc(id)}" ${hid?"":"checked"}> Show</label>
+      <span class="row" style="gap:4px"><button class="btn small ghost" data-pfarr="${key}|up|${esc(id)}" ${i?"":"disabled"} aria-label="Move ${esc(name)} up">↑</button><button class="btn small ghost" data-pfarr="${key}|down|${esc(id)}" ${i<o.all.length-1?"":"disabled"} aria-label="Move ${esc(name)} down">↓</button></span></div>`; };
+  P.innerHTML=`${head}
+    <div class="vd-flat"><div class="vd-sec"><div class="mk-h">On your profile</div>
+      <div class="vd-row"><span>Show the “${sec}” section</span><label class="row" style="gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" data-pfarr="${key}|section|" ${o.off?"":"checked"}> ${o.off?"Hidden":"Shown"}</label></div>
+      <div class="vd-row"><span>${ships?"Ships":"Loadouts"} to show, at most</span><select class="field" data-pfarr="${key}|count|" style="width:auto" ${o.off?"disabled":""}>${PF_COUNTS.map(n=>`<option value="${n}" ${n===o.count?"selected":""}>${n}</option>`).join("")}</select></div></div></div>
+    <div class="row" style="gap:8px;margin:4px 2px 14px;flex-wrap:wrap;align-items:center">
+      <button class="btn primary" data-pfarr="${key}|save|" ${dirty?"":"disabled"}>Save</button>
+      <button class="btn ghost" data-pfarr="${key}|discard|" ${dirty?"":"disabled"}>Discard changes</button>
+      ${dirty?`<span style="font-size:12.5px;color:#ffd38a">Unsaved changes</span>`:`<span class="muted" style="font-size:12.5px">${S.pfSavedAt?.[key]?"Saved":"No changes"}</span>`}
+      <span class="spacer"></span><button class="btn small ghost" data-pfarr="${key}|reset|">Back to default</button>
+      <button class="btn small" data-pfv="${ships?"openfleet":"opengearlo"}">${ships?"Open My Fleet":"Open Gear › Loadouts"}</button></div>
+    ${list.length?`<div class="vd-flat" style="${o.off?"opacity:.55":""}"><div class="vd-sec"><div class="mk-h">${ships?"Your ships":"Your loadouts"}<span class="mk-note">top to bottom is left to right on your profile</span></div>${o.all.map(row).join("")}</div></div>`
+      :`<div class="empty">${ships?"No ships in My Fleet yet.":"No gear loadouts yet."}</div>`}`;
+  if(!ships) fillGearPictures(P); }
+async function pfArrange(key,act,id,el){ const v=key==="ships"?"fleet":"gearlo";
+  const list=key==="ships"?(S.pfFleet||[]):(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)), idOf=key==="ships"?(x=>x.uid):(x=>x.id);
+  if(act==="save"){ if(!pfDirty(key)) return; const next={...(S.pfPrefs||{}),[key]:S.pfDraft[key]};
+    const r=await api().profile_prefs_set(next).catch(()=>null); if(!r?.ok) return toast("Couldn't save. Try again");
+    S.pfPrefs=r.prefs; delete S.pfDraft[key]; S.pfSavedAt={...(S.pfSavedAt||{}),[key]:Date.now()};
+    const o=pfOrdered(list,idOf,key,true);
+    toast(o.off?`Saved: the ${key==="ships"?"My fleet":"My personal loadouts"} section is hidden on your profile`:`Saved: your profile shows ${plural(o.shown.length,key==="ships"?"ship":"loadout")}`);
+    return renderProfile(true); }
+  if(act==="discard"){ if(S.pfDraft) delete S.pfDraft[key]; toast("Changes discarded"); return renderProfile(true); }
+  const o=pfOrdered(list,idOf,key); let order=o.all.map(x=>String(idOf(x))), hidden=new Set(o.hidden), count=o.count, off=o.off;
+  const i=order.indexOf(id);
+  if(act==="up"&&i>0) [order[i-1],order[i]]=[order[i],order[i-1]];
+  else if(act==="down"&&i>=0&&i<order.length-1) [order[i+1],order[i]]=[order[i],order[i+1]];
+  else if(act==="show"){ if(el.checked) hidden.delete(id); else hidden.add(id); }
+  else if(act==="section") off=!el.checked;
+  else if(act==="count") count=+el.value;
+  else if(act==="move"){ const [from,to]=id.split(">"); const a=order.indexOf(from), b=order.indexOf(to); if(a<0||b<0||a===b) return; order.splice(a,1); order.splice(order.indexOf(to)+(a<b?1:0),0,from); }
+  else if(act==="reset"){ order=[]; hidden=new Set(); count=8; off=false; }
+  else return;
+  S.pfDraft={...(S.pfDraft||{}),[key]:{order,hidden:[...hidden],count,off}};
+  if(S.tab==="profile"&&S.pfView===v) renderProfile(true); }
+// Drag a row to its new place
+document.addEventListener("dragstart",e=>{ const r=e.target.closest?.("[data-pfdrag]"); if(!r) return; S.pfDrag=r.dataset.pfdrag; e.dataTransfer.effectAllowed="move"; r.classList.add("drag"); });
+document.addEventListener("dragend",e=>{ e.target.closest?.("[data-pfdrag]")?.classList.remove("drag"); for(const x of document.querySelectorAll(".pf-arr.over")) x.classList.remove("over"); });
+document.addEventListener("dragover",e=>{ const r=e.target.closest?.("[data-pfdrag]"); if(!r||!S.pfDrag||r.dataset.pfdrag.split("|")[0]!==S.pfDrag.split("|")[0]) return; e.preventDefault();
+  for(const x of document.querySelectorAll(".pf-arr.over")) if(x!==r) x.classList.remove("over"); r.classList.add("over"); });
+document.addEventListener("drop",e=>{ const r=e.target.closest?.("[data-pfdrag]"); if(!r||!S.pfDrag) return; e.preventDefault();
+  const [key,from]=S.pfDrag.split("|"), [k2,to]=r.dataset.pfdrag.split("|"); S.pfDrag=null; if(key!==k2||from===to) return; pfArrange(key,"move",`${from}>${to}`); });
+// Your photo: any picture, cropped to the middle square and shrunk to 256 px here, so it's small to keep and send
+function pfShrink(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
+  img.onload=()=>{ const sz=Math.min(img.naturalWidth,img.naturalHeight), c=document.createElement("canvas"); c.width=c.height=256;
+    const g=c.getContext("2d"); g.imageSmoothingQuality="high"; g.drawImage(img,(img.naturalWidth-sz)/2,(img.naturalHeight-sz)/2,sz,sz,0,0,256,256);
+    URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.88)); };
+  img.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("unreadable")); }; img.src=u; }); }
+async function pfSignOut(){ S.pfOutAsk=false;
+  const r=await api().sign_out_all().catch(()=>null); if(!r?.ok) return toast("Couldn't sign out. Try again");
+  Object.assign(S,{acct:undefined,drProf:null,drProfAt:0,drTrust:null,pfFleet:null,bk:undefined,keyStat:undefined,uexStat:null,uexDraft:"",drSecretDraft:"",drHasSecret:false,
+    mk:null,veh:null,cpCats:null,cpItems:null,owner:false,ownerAsked:false});
+  S.pfView="overview"; await poll(); await pfPrime(true); renderProfile(true); toast("Signed out. Nothing is connected now"); }
+async function pfClick(e){
+  const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
+  if(await tradeClick(e)) return;
+  const v=e.target.closest("[data-pfv]"); if(v){ const k=v.dataset.pfv;
+    if(k==="openfleet"){ const t=document.querySelector('.tab[data-tab="fleet"]'); if(t&&!t.hidden) return t.click(); toast("Add your UEX Bearer Token first: My Fleet uses it"); S.pfView="accounts"; return renderProfile(true); }
+    if(k==="opengearlo"){ S.gl.sel=null; S.gl.pick=null; return document.querySelector('.tab[data-tab="gearlo"]').click(); }
+    if((S.pfView==="fleet"&&pfDirty("ships"))||(S.pfView==="gearlo"&&pfDirty("gearlo"))) toast("Your changes aren't saved yet: they're kept until you Save or discard them");
+    S.pfView=k; $("pf-panel").scrollTop=0; return renderProfile(true); }
+  const go=e.target.closest("[data-glopen]"); if(go){ S.gl.sel=go.dataset.glopen; S.gl.pick=null; return document.querySelector('.tab[data-tab="gearlo"]').click(); }
+  const fs=e.target.closest("[data-pfship]"); if(fs){ const t=document.querySelector('.tab[data-tab="fleet"]'); if(t&&!t.hidden) t.click(); return; }
+  const ar=e.target.closest("[data-pfarr]"); if(ar&&ar.tagName!=="SELECT"){ const [key,act,id]=ar.dataset.pfarr.split("|"); return pfArrange(key,act,id,ar); }
+  const pf=e.target.closest("[data-pf]"); if(pf){ const k=pf.dataset.pf;
+    if(k==="photo") return $("pf-file")?.click();
+    if(k==="photo-remove"){ const r=await api().profile_photo_set(null); S.pfPhoto=r.photo||null; toast("Photo removed"); return renderProfile(true); }
+    if(k==="signout"){ S.pfOutAsk=true; return renderProfile(true); }
+    if(k==="signout-no"){ S.pfOutAsk=false; return renderProfile(true); }
+    if(k==="signout-yes") return pfSignOut();
+    if(k==="mine"){ S.drNextView="mine"; const t=document.querySelector('.tab[data-tab="datarunner"]'); if(t) t.click(); return; } }
+  const a=e.target.dataset?.a||e.target.closest("[data-a]")?.dataset.a; if(!a) return;
+  if(a==="acctsignout"){ S.pfOutAsk=true; renderProfile(true); return toast("Confirm signing out under your picture on the left"); }   // signing out means everything
+  await settingsAction(a,e);
+  if(a==="acctsignout"||a==="drsecret"||a==="drsecretclear"||a==="uexsave"||a==="uexclear"){ S.drProf=a==="drsecretclear"?null:S.drProf; setTimeout(()=>pfPrime(true),800); } }
+$("pf-panel").addEventListener("click",pfClick);
+$("pane-profile").addEventListener("click",pfClick);
+$("pf-panel").addEventListener("change",e=>{ const ar=e.target.closest("select[data-pfarr]"); if(!ar) return; const [key,act,id]=ar.dataset.pfarr.split("|"); pfArrange(key,act,id,ar); });
+document.addEventListener("change",async e=>{ if(e.target.id!=="pf-file") return; const f=e.target.files?.[0]; e.target.value=""; if(!f) return;
+  if(f.size>25e6) return toast("That picture is too big (25 MB at most)");
+  let url; try{ url=await pfShrink(f); }catch(_){ return toast("Couldn't read that picture"); }
+  const r=await api().profile_photo_set(url); if(!r.ok) return toast(r.error);
+  S.pfPhoto=r.photo; toast(r.signed_in?"Photo updated, and saved to your Quantum account":"Photo updated on this PC. Sign in to your Quantum account to keep it there too"); renderProfile(true); syncRailMe(); });
+// Account and key changes made anywhere redraw the profile too
+{ const rd=renderDetail; renderDetail=function(){ rd(); if(S.tab==="profile") renderProfile(); syncRailMe(); }; }
 
 // ---- route
 // Adding one place by hand may repeat a stop already in the route (A > B > C > B); a stop straight after
@@ -3384,7 +3878,7 @@ const money=n=>n==null?"–":`${Math.round(n).toLocaleString()} aUEC`;
 const shortMoney=n=>Math.abs(n)>=1e6?`${(n/1e6).toFixed(2)}M`:Math.abs(n)>=1e4?`${Math.round(n/1e3)}k`:Math.round(n).toLocaleString();
 const agoTs=ts=>{ if(!ts) return ""; const a=Math.max(0,Date.now()/1000-ts); return a<3600?`${Math.max(1,Math.round(a/60))} min ago`:a<172800?`${Math.round(a/3600)} h ago`:`${Math.round(a/86400)} d ago`; };
 const uexCredit=at=>`<div class="uex-credit">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the terminal before you buy.${at?` Fetched ${agoTs(at)}.`:""}</div>`;
-const needToken=`<div class="empty"><strong>Connect UEX first</strong>Add your free UEX access token in Settings to see prices and trade runs.<br><br><button class="btn small" data-act="opensettings">Open Settings</button></div>`;
+const needToken=`<div class="empty"><strong>Connect UEX first</strong>Add your free UEX access token in your profile to see prices and trade runs.<br><br><button class="btn small" data-act="opensettings">Open your profile</button></div>`;
 // Status is fetched when Settings opens or the token changes, not on every refresh of the panel.
 async function fillUexStatus(refresh){ const el=$("uex-status"); if(!el) return;
   if(refresh||!S.uexStat){ if(S.uexBusy) return; S.uexBusy=true;
@@ -3403,7 +3897,7 @@ async function tradeClick(e){
     const r=await api().add_stops([name],true); await poll(); markAdded(name); const n=S.live?.route?.length||1;
     toast(!r?.added?.length?`${name} is already the last stop`:`Added ${name} to your route${had?" again":""} (stop ${n} of ${n})`); return true; }
   const ex=e.target.closest("[data-ext]"); if(ex){ api().open_url(ex.dataset.ext); return true; }
-  if(e.target.closest("[data-act=opensettings]")){ select({kind:"settings"}); return true; }
+  if(e.target.closest("[data-act=opensettings]")){ openProfileView("accounts"); return true; }
   return false; }
 // ---- Commodities: where to buy and sell one commodity
 async function openMarket(){
@@ -3450,9 +3944,9 @@ async function renderMarket(){
       ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`):`<span></span>`}
       <div class="m">${esc(x.system||"")}${x.scu?` · ${kind==="buy"?"stock":"demand"} ${x.scu.toLocaleString()} SCU`:""}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.max_box?` · boxes up to ${x.max_box} SCU`:""}${x.community?` · <span class="cm-pill" title="Reported by a Quantum datarunner and checked against UEX's copy of the report. UEX hasn't finished reviewing it yet.">⚡ ${agoTs(x.community.at)}, awaiting UEX review</span>`:x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); };
   const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
-  if(!mkOnMap(r,sys)&&S.mkMap){ S.mkMap=false; S.mapMarks=null; }     // nothing left to mark (another system picked)
+  if(!mkOnMap(r,sys)&&S.mkMap&&S.mkMap!=="src"){ S.mkMap=false; S.mapMarks=null; }     // nothing left to mark (another system picked)
   $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
-    ${mkOnMap(r,sys)?`<div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>`:""}
+    ${mkOnMap(r,sys)||S.mkMap==="src"?`<div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>`:""}
     <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
     <div class="mk-h">Sell at <span class="muted" style="text-transform:none;letter-spacing:0">best price first, per SCU</span></div>${rows(r.sell,"sell")}${uexCredit(r.at)}`;
   S.mkData={c,r,rows}; renderMarketPanel(); }
@@ -3470,18 +3964,57 @@ async function renderMarketPanel(){
           [{label:"Sold at",value:plural(r.buy.length,"terminal")},{label:"Bought at",value:plural(r.sell.length,"terminal")},
            {label:"Average buy",value:ab!=null?money(ab):null},{label:"Average sell",value:av!=null?money(av):null}]); })()}
       <div class="desc" id="mkp-desc" style="margin-top:12px"></div>
+      <div id="mkp-src"></div>
       <div class="row" style="gap:8px">${mkOnMap(r,$("mk-sys").value)?`<button class="btn primary" data-act="mkmap">See on map</button>`:""}${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
     <div class="mkp-cols vd-flat"><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
       <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
   syncMarketPanel();
   api().wiki_text(c.wiki||c.name).then(t=>{ const el=$("mkp-desc"); if(el&&S.mkData?.c===c&&t) el.innerHTML=wikiDesc(t,c.wiki); });
+  mkSources(c);
   const img=await api().wiki_image(c.wiki||c.name); if(S.mkData?.c!==c) return;
   const box=$("mkp-img"); if(box) box.innerHTML=picShown(img,"commodity",c.wiki||c.name); }
+// Where a mined or harvested commodity comes from (the Star Citizen Wiki's resource data), under its
+// description: each place with how it's gathered and how likely, one click to add it to the route (a moon
+// or planet by its orbital marker), and "Show on map" to mark them all.
+const MK_METHOD_COLOR={"Ship mining":"#7fd3ff","ROC mining":"#ffb454","Hand mining":"#57e39b","Harvesting":"#c99bff","Salvage":"#ff9b8a"};
+async function mkSources(c){
+  const box=()=>S.mkData?.c===c?$("mkp-src"):null;
+  if(!S.mkSrc) S.mkSrc={};
+  let r=S.mkSrc[c.name];
+  if(!r){
+    if(box()&&(c.raw||c.mineral||c.harvestable)) box().innerHTML=`<div class="muted" style="font-size:12.5px;margin:8px 0">Looking up where it's found…</div>`;
+    try{ r=await api().commodity_sources(c.name); }catch(e){ r={ok:false}; }
+    if(r.ok) S.mkSrc[c.name]=r; }
+  const el=box(); if(!el) return;
+  if(!r.ok||!r.found){ el.innerHTML=(c.raw||c.mineral||c.harvestable)&&!r.ok?`<div class="muted" style="font-size:12.5px;margin:8px 0">Couldn't reach the Star Citizen Wiki for where it's found.</div>`:""; return; }
+  const methods=[...new Set(r.sources.flatMap(x=>x.methods||[]))];
+  const L=r.sources.slice(0,S.mkSrcAll?200:8);
+  const pct=x=>x.chance!=null&&x.chance>0?`${x.chance<0.01?"<1":Math.round(x.chance*100)}%`:"";
+  el.innerHTML=`<div class="mk-h" style="margin-top:14px">Where to find it${r.from?` <span class="mk-note">as ${esc(r.from)}, refined into ${esc(c.name)}</span>`:""}</div>
+    ${methods.length?`<div class="gr-tags">${methods.map(m=>`<span style="border-color:${MK_METHOD_COLOR[m]||"var(--line)"}">${esc(m)}</span>`).join("")}</div>`:""}
+    ${L.map(x=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.display||x.name)}</a>`:esc(x.display||x.name)}</div>
+      <div class="p" title="How likely a deposit here is this">${pct(x)}</div>
+      ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add ${esc(x.place)} to your route">+</button>`):`<span></span>`}
+      <div class="m">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:"",x.system,(x.methods||[]).join(", "),x.quality?`quality ${x.quality[0]}–${x.quality[1]}`:""].filter(Boolean).join(" · "))}</div></div>`).join("")}
+    <div class="row" style="gap:8px;margin-top:8px">${r.sources.some(x=>x.place||x.body)?`<button class="btn small primary" data-act="mksrcmap">Show on map</button>`:""}
+      ${r.sources.length>8?`<button class="btn small ghost" data-act="mksrcall">${S.mkSrcAll?"Fewer":`All ${r.sources.length} places`}</button>`:""}
+      ${r.web_url?`<button class="btn small ghost" data-ext="${esc(r.web_url)}">Wiki</button>`:""}</div>`; }
+function mkSourceMap(){ const d=S.mkData, r=d&&S.mkSrc?.[d.c.name]; if(!r?.sources) return;
+  const marks={}; for(const x of r.sources){ const n=x.body||x.place; if(!n||marks[n]) continue;
+    if(!S.locMap[n]&&!S.bodyMap[n]) continue;
+    marks[n]={name:n,label:`${(x.methods||[]).join(", ")||"Found here"}${x.chance?` · ${Math.round(x.chance*100)}%`:""}`,color:MK_METHOD_COLOR[(x.methods||[])[0]]||"#7fd3ff"}; }
+  const list=Object.values(marks); if(!list.length) return toast("None of these places are on Quantum's map yet");
+  const sysOf=n=>S.locMap[n]?.system||S.bodyMap[n]?.system, here=list.some(m=>sysOf(m.name)===S.system)?S.system:sysOf(list[0].name);
+  if(here&&here!==S.system) setSystem(here,false);
+  S.mkMap="src"; S.mapMarks=list;
+  fitRoute(true,list.filter(m=>sysOf(m.name)===here).map(m=>m.name));
+  renderMarket(); }
 function syncMarketPanel(){ const on=S.tab==="market";
   $("mk-panel").classList.toggle("show",on&&!S.mkMap&&!!S.mk); $("map-back").classList.toggle("show",on&&!!S.mkMap); }
 // Does anywhere that buys or sells it have a place on the map (in the system picked)? No: no "See on map".
 const mkOnMap=(r,sys)=>[...(r?.buy||[]),...(r?.sell||[])].some(x=>x.place&&S.locMap?.[x.place]&&(!sys||x.system===sys));
 function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnMap(d.r,$("mk-sys").value)) return;
+  if(S.mkMap==="src"){ S.mkMap=false; S.mapMarks=null; return renderMarket(); }      // back from the mining spots
   S.mkMap=!S.mkMap;
   if(S.mkMap){ const sys=$("mk-sys").value, keep=L=>L.filter(x=>x.place&&(!sys||x.system===sys)).slice(0,10);
     const marks=[...keep(d.r.buy).map(x=>({name:x.place,label:`Buy ${shortMoney(x.price)}`,color:"#57e39b"})),
@@ -3493,6 +4026,8 @@ function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnM
   } else S.mapMarks=null;
   renderMarket(); }
 $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
+  if(e.target.closest("[data-act=mksrcmap]")) return mkSourceMap();
+  if(e.target.closest("[data-act=mksrcall]")){ S.mkSrcAll=!S.mkSrcAll; return S.mkData&&mkSources(S.mkData.c); }
   if(e.target.closest("[data-act=mkall]")){ S.mkSel=null; S.mkData=null; $("mk-search").value=""; return openMarket(); }
   const c=e.target.closest("[data-mkc]"); if(c){ S.mkBack={q:$("mk-search").value.trim().toLowerCase(),top:$("mk-panel").scrollTop};      // where Back returns to
     S.mkSel=S.mk.find(x=>String(x.id)===c.dataset.mkc); $("mk-search").value=S.mkSel.name; $("mk-panel").scrollTop=0; return renderMarket(); }
@@ -4664,8 +5199,8 @@ function acctHtml(){
     const keys=`<label class="row" style="gap:8px;margin-top:10px;cursor:pointer"><input type="checkbox" data-a="acctkeys" ${k.stored?"checked":""} ${S.acctKeysBusy?"disabled":""}>
         Keep my UEX keys in my Quantum account${S.acctKeysBusy?` <span class="spin-sm"></span>`:""}</label>
       <div class="muted" style="font-size:12px;margin-top:2px">${k.stored
-        ?"On: your UEX Bearer Token and Secret Key are saved (encrypted) in your account, filled in on any PC you sign in on, and kept up to date when you change them here or on the website."
-        :"Off: your UEX keys stay on this PC only. Turn it on to have them filled in on any PC you sign in on, or enter them on the website."}</div>
+        ?"On: your UEX Bearer Token and Secret Key are kept (encrypted) in your account only. They're never saved on this PC: Quantum gets them from your account each time it starts, on any PC you sign in on."
+        :"Off: your UEX keys are saved on this PC only. Turn it on to keep them in your account instead, so nothing is saved here and they fill in on any PC you sign in on."}</div>
       ${k.error?`<div style="color:#ffd38a;font-size:12px;margin-top:4px">${esc(k.error)}</div>`:""}`;
     return `<div class="row"><span class="dot on"></span><span>Signed in as <b>${esc(a.email||"")}</b></span><span class="spacer"></span>
         <button class="btn small ghost" data-a="acctsignout">Sign out</button></div>${link}${keys}
@@ -4684,6 +5219,40 @@ function acctHtml(){
     <div class="muted" style="font-size:12px;margin-top:10px">New here? <a data-url="${esc(site)}/account/signup" style="cursor:pointer;text-decoration:underline">Create an account</a> on the website (you'll confirm your email), then sign in here.</div>
     <div class="muted" style="font-size:12px;margin-top:6px">Or <a data-a="acctsignin" style="cursor:pointer;text-decoration:underline">sign in with your browser</a> instead, so Quantum never sees your password.</div>`;
 }
+// ---- What used to be Settings' Trade data (UEX) and Backup sections, now on the Profile page (same ids, same
+// actions: settingsAction handles their buttons wherever they are).
+function uexSectionInner(){ const lg=S.live?.log||{}; const g=uexGate(); if(g) return g;
+  return `        <label class="k st-label" for="s-uex"><span>UEX Bearer Token <span class="muted" style="font-weight:400">(your app's access token)</span></span>${connPill(!lg.uex_token?"none":!S.uexStat?"checking":S.uexStat.ok?"ok":"bad")}</label>
+        <div class="row" style="gap:6px"><input class="field" id="s-uex" type="password" value="${esc(S.uexDraft||"")}" oninput="S.uexDraft=this.value" placeholder="${lg.uex_token?"Bearer token saved.":"Paste your UEX Bearer Token"}" title="${lg.uex_token?"Paste a new token to replace the saved one":""}" style="flex:1" autocomplete="off">
+          <button class="btn small" data-a="uexsave">Save</button>${lg.uex_token?`<button class="btn small ghost" data-a="uexclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Prices, stock and trade runs for the Commodities and Trade routes tabs, crowdsourced at UEX.
+          Get a token by creating an app at <a data-url="https://uexcorp.space/api/apps" style="cursor:pointer;text-decoration:underline">uexcorp.space/api/apps</a>. ${S.acct?.keys?.stored?"It's also kept in your Quantum account (above).":"It stays on this PC."}</div>
+        <div id="uex-status" class="muted" style="font-size:12px;margin-top:6px"></div>
+        <label class="k st-label" for="s-drsecret" style="margin-top:14px"><span>UEX Secret Key <span class="muted" style="font-weight:400">(your datarunner key)</span></span>${(()=>{ const k=S.keyStat;
+          if(!S.drHasSecret) return connPill("none");
+          if(k===undefined){ S.keyStat=null; api().uex_key_status().then(x=>{ S.keyStat=x; renderDetail(); }).catch(()=>{}); }
+          return !k?connPill("checking"):k.ok?connPill("ok",`Connected · ${k.username}`):connPill("bad",k.error?"Not accepted":"Not connected",k.error); })()}</label>
+        ${!lg.uex_token&&!S.drHasSecret?`<div class="muted" style="font-size:12px;margin:2px 0 6px;color:#ffd38a">Add and save your UEX Bearer Token above first. The Secret Key can't be saved until the token is in.</div>`:""}
+        <div class="row" style="gap:6px"><input class="field" id="s-drsecret" type="password" value="${esc(S.drSecretDraft||"")}" oninput="S.drSecretDraft=this.value" placeholder="${S.drHasSecret?"Secret key saved.":!lg.uex_token?"Enter your Bearer Token first":"Paste your UEX Secret Key"}" title="${S.drHasSecret?"Paste a new key to replace the saved one":!lg.uex_token?"Save your UEX Bearer Token first":""}" style="flex:1" autocomplete="off" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>
+          <button class="btn small" data-a="drsecret" ${!lg.uex_token&&!S.drHasSecret?"disabled":""}>Save</button>${S.drHasSecret?`<button class="btn small ghost" data-a="drsecretclear">Remove</button>`:""}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">Required for commodity prices, trade routes, components, vehicles, fleet management, backup, and sign in. Find it in your <a data-url="https://uexcorp.space/account" style="cursor:pointer;text-decoration:underline">UEX profile</a>.</div>
+`; }
+function backupInner(){ const b=S.bk; if(b===undefined){ S.bk=null; api().backup_status().then(x=>{ S.bk=x; renderDetail(); }); return "Checking…"; }
+        if(!b) return "";
+        const ago=b.at?fmtAgo(b.at):null;
+        const state=!b.on?"Off: community features are turned off."
+          :!b.has_key?`<span style="color:#ffd38a">Add your UEX Bearer Token above to turn on backups.</span>`
+          :b.off?`Backups are off for this PC.`
+          :b.status==="too_large"?`<span style="color:#ffd38a">Your data is larger than a backup can hold.</span>`
+          :b.status==="requests_limit_reached"?`<span style="color:#ffd38a">The server is busy with this connection; it'll try again.</span>`
+          :b.status==="unreachable"?`<span style="color:#ffd38a">Couldn't reach the Quantum server; it'll try again.</span>`
+          :ago?`<span style="color:#9fe0b4">Backed up ${ago}.</span>`:"Not backed up yet; it'll happen within a minute.";
+        return `Your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up automatically, encrypted on this PC with a key made from your UEX Bearer Token. The Quantum server can't read them, and your token is never sent to it. On a new install or a new PC, enter the same Bearer Token and they come back. Replacing your token? Enter the new one here on a PC that has your data, and the backup moves to it; a backup made with a token you've deleted at UEX can't be opened.
+          <div style="margin-top:8px">${state}</div>
+          ${b.on&&b.has_key?(b.off?`<div class="row" style="gap:6px;margin-top:8px"><button class="btn small" data-a="bkon">Turn backups back on</button></div>`
+            :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
+            <button class="btn small ghost" data-a="bkrestore" ${S.bkBusy?"disabled":""} title="Adds back anything missing here. Never removes or overwrites anything">${S.bkBusy==="restore"?"Restoring…":"Restore missing items"}</button>
+            <button class="btn small ghost" data-a="bkdel" ${S.bkBusy?"disabled":""} style="color:#ffb4b4" title="Removes your backup from the Quantum server and stops backing up">${S.bkDelAsk?"Click again to delete":"Delete my backup"}</button></div>`):""}`;  }
 // UEX keys need a Quantum account: the Trade data (UEX) section stays hidden until you're signed in on this PC.
 // Set to false to let anyone enter keys without an account again.
 const UEX_NEEDS_ACCOUNT=true;
@@ -4709,8 +5278,8 @@ function acctWatch(){
   clearTimeout(S.acctT);
   S.acctT=setTimeout(async()=>{ const x=await api().account_status(); const was=S.acct?.flow?.state; S.acct=x;
     if(x.flow?.state==="waiting") acctWatch();
-    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ if(S.selected?.kind==="settings") renderDetail(); }); }
-      if(S.selected?.kind==="settings") renderDetail(); } },2000);
+    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ renderDetail(); pfPrime(true); }); }
+      renderDetail(); } },2000);
 }
 function connPill(st,label,why){ const t={ok:["ok","Connected"],bad:["bad","Not connected"],offline:["bad","Offline"],off:["off","Disabled"],none:["off","Not set"],checking:["wait","Checking…"]}[st]||["off",st];
   return `<span class="conn ${t[0]}" ${why?`title="${esc(why)}"`:""}><i></i>${esc(label||t[1])}</span>`; }
@@ -4868,12 +5437,13 @@ async function openDatarunner(id){
   const r=await api().dr_prefill(id||null);
   if(!r.ok){ $("dr-panel").innerHTML=`<div class="empty"><strong>Couldn't load UEX data</strong>${esc(r.error)}</div>`; return; }
   S.drHasSecret=r.has_secret;
+  const nextView=S.drNextView; S.drNextView=null;              // opened from the profile (My Reports)
   const same=!!S.dr&&S.dr.pf?.id_terminal===r.id_terminal;
   const keepSizes=same?[...S.dr.sizes]:[];
-  S.dr={pf:r, view:S.dr?.view||"enter", tab:same?S.dr.tab:(r.rows.some(x=>x.side==="buy")||!r.rows.length?"buy":"sell"),
+  S.dr={pf:r, view:nextView||S.dr?.view||"enter", tab:same?S.dr.tab:(r.rows.some(x=>x.side==="buy")||!r.rows.length?"buy":"sell"),
         rows:r.rows.map(x=>({...x, state:"", orig:{price:x.price,scu:x.scu,status:x.status}})), sizes:new Set(keepSizes), focus:0};
   $("dr-mode").className="dr-mode"+(r.live?" live":""); $("dr-mode").hidden=r.live&&r.has_secret;
-  $("dr-mode").innerHTML=r.live?`Add your UEX Secret Key in Settings to send reports.`
+  $("dr-mode").innerHTML=r.live?`Add your UEX Secret Key in your profile (Linked accounts) to send reports.`
     :`<b>Test mode.</b> Reports are checked against UEX's rules and saved to a folder. Nothing is sent to UEX.
       <div class="row"><button class="btn small ghost" id="dr-folder">Open test folder</button></div>`;
   if($("dr-folder")) $("dr-folder").onclick=()=>api().dr_open_folder();
@@ -5300,7 +5870,7 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
   const ladder=`<div class="faq-ranks">${ranks.slice(1).map((r,i)=>`<div class="${p?.rank?.name===r[1]?"on":""}"><b>${esc(r[1])}</b><span>${r[0]}${i===ranks.length-2?"+":"–"+(ranks[i+2][0]-1)} approved</span></div>`).join("")}</div>`;
   const qa=[
     ["What is datarunning?",`<p>Datarunners keep trade data fresh for everyone. You go to a kiosk in game, report what it shows, and once UEX approves it every trader on UEX and Quantum sees the new prices. Quantum also lets you fill in what the map and the item pages are missing: station positions, planet alignments and pictures.</p>
-      <p>You need a free UEX account with datarunner turned on, your UEX Bearer Token and your UEX Secret Key (both in Settings).</p>`],
+      <p>You need a free UEX account with datarunner turned on, your UEX Bearer Token and your UEX Secret Key (both in your profile, under Linked accounts).</p>`],
     ["How do ranks work?",`<p>Your rank goes by how many reports have been approved. Each of these counts as <b>one</b>:</p>
       <ul>${Object.entries(DR_KINDS).map(([k,t])=>`<li>${t}${p?.approved_by?.[k]?` <span class="muted">(you: ${p.approved_by[k]})</span>`:""}</li>`).join("")}</ul>
       <p>So a kiosk report with 14 items that UEX approves is 14 approved reports, even though Quantum shows it as one card in My Reports. A rejected item doesn't count, and it lowers your stars.</p>${ladder}`],
@@ -5642,7 +6212,7 @@ function drDecided(p){ if(p?.decided) return p.decided; const c=p?.contrib||[];
           rejected:(p?.rows?.declined||0)+c.filter(x=>x.status==="rejected").length}; }
 // The datarunner's card: UEX name and avatar, rank, stars, and how far to the next rank.
 function drProfileCard(p){ if(!p?.ok) return "";
-  if(!p.username) return `<div class="dr-prof"><div class="av">?</div><div><b>Your datarunner profile</b><div class="muted" style="font-size:12.5px;margin-top:3px">Add your UEX Secret Key in Settings to see your UEX name, rank and star rating.</div></div></div>`;
+  if(!p.username) return `<div class="dr-prof"><div class="av">?</div><div><b>Your datarunner profile</b><div class="muted" style="font-size:12.5px;margin-top:3px">Add your UEX Secret Key in your profile to see your UEX name, rank and star rating.</div></div></div>`;
   const nx=p.rank.next, prev=[...p.ranks].reverse().find(x=>p.rank.count>=x[0])?.[0]||0;
   const pct=nx?Math.min(100,(p.rank.count-prev)/(nx.at-prev)*100):100, left=nx?nx.at-p.rank.count:0;
   const pic=p.avatar||p.avatar_url;   // downloaded by Quantum, or else straight from UEX
@@ -5710,7 +6280,7 @@ async function renderDrMine(refresh,announce){ const d=S.dr, P=$("dr-panel");
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">${r.approval!=null?`<span class="chip" style="border-color:#57e39b66;color:#9fe0b4">${r.approval}% Approval</span>`:""}<button class="btn small" data-mine="refresh">Refresh</button></div></div>
     ${sum?`<div class="row" style="gap:6px;flex-wrap:wrap;margin:-4px 2px 10px">${sum}</div>`:""}
     ${r.error?`<div class="warnbox">Couldn't get the review status from UEX: ${esc(r.error)}</div>`:""}
-    ${!r.can_check&&r.reports.some(e=>!e.test)?`<div class="warnbox">Add your datarunner secret key in Settings to see what UEX did with your reports.</div>`:""}
+    ${!r.can_check&&r.reports.some(e=>!e.test)?`<div class="warnbox">Add your datarunner secret key in your profile to see what UEX did with your reports.</div>`:""}
     <div class="dr-list">${(()=>{ const items=[...drGroupReports(r.reports).map((g,k)=>({at:g.at,h:card(g,k)})),...(pr?.contrib||[]).map(c=>({at:c.at||0,h:drContribCard(c)}))].sort((a,b)=>b.at-a.at);
       return items.length?items.map(x=>x.h).join(""):`<div class="dr-empty">No reports yet. Your price reports, pictures and station positions show up here with their status.</div>`; })()}</div>`; }
 
@@ -5889,7 +6459,8 @@ async function loadStatic(){
 // the cart becomes one shopping trip in the Cart tab: the fewest stops, in the shortest order from where you are.
 const CART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg>';
 function cartBtn(x,label){ return `<button class="cart-btn ${label?"lab":""}" data-cart="${esc(JSON.stringify(x))}" title="Add ${esc(x.name)} to your cart">${CART_SVG}${label?`<span>${esc(label)}</span>`:""}</button>`; }
-function setCartCount(n){ const c=$("c-cart"); if(!c) return; c.textContent=n||0; c.hidden=!n; }
+function setCartCount(n){ const c=$("c-cart"); if(!c) return; c.textContent=n||0; c.hidden=!n;
+  const r=$("rail-cart-n"); if(r){ r.textContent=n||0; r.hidden=!n; } }
 async function addToCart(items,what){ const r=await api().shop_add(items); if(!r.ok) return toast(r.error);
   setCartCount(r.left); S.cartToastN=(S.cartToastN||0)+1;
   toast(`${what||items[0].name} added to your cart · ${plural(r.left,"item")} in it. Open Cart to see the route`); return r; }
@@ -5926,24 +6497,67 @@ const GEAR={
     sorts:[["name","A–Z"],["time","Quickest to craft"],["ings","Fewest ingredients"]],
     hero:i=>[{label:"Craft time",value:i.time_label||(i.time?`${Math.round(i.time/60)} min`:null)},{label:"Ingredients",value:i.ingredients?.length??null},
       {label:"Grade",value:i.grade||null},{label:"How you get it",value:i.default?"Known":"Missions"}],
-    rows:[]}};
+    rows:[]},
+  // The newer tabs: one way of showing them; what each has to say comes from the wiki's own numbers and rows
+  gadgets:{title:"Gadgets",noun:"gadget",ph:"Name, maker or kind, like “multi-tool”, “cutter” or “Greycat”",
+    cat:i=>i.kind||"Other",catLab:"Kind",
+    key:i=>[i.paints?.length?plural(i.paints.length+1,"paint"):"",...(i.facts||[]).slice(0,2).map(([a,b])=>`${a}: ${b}`)].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["price","Price: low to high"],["mass","Lightest"]],
+    hero:i=>[{label:"Kind",value:i.kind},{label:"Maker",value:i.maker||null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["carry","Carrying",n=>`${Math.round(n).toLocaleString()} µSCU`],["mass","Mass",n=>`${nf(n)} kg`]]},
+  clothing:{title:"Clothing",noun:"piece",ph:"Name, maker or piece, like “jacket” or “Escar”",
+    cat:i=>i.kind||"Other",catLab:"Piece",
+    key:i=>[i.stats?.temp_min!=null?`${i.stats.temp_min}° to ${i.stats.temp_max}°C`:"",i.stats?.carry?`${Math.round(i.stats.carry).toLocaleString()} µSCU`:""].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["carry","Most carrying space"],["cold","Handles the most cold"],["hot","Handles the most heat"],["price","Price: low to high"]],
+    hero:i=>[{label:"Temperature",value:i.stats?.temp_min!=null?`${i.stats.temp_min}° to ${i.stats.temp_max}°C`:null},
+      {label:"Carrying",value:i.stats?.carry?`${Math.round(i.stats.carry).toLocaleString()} µSCU`:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["dr","Damage reduction",n=>GR_PCT(n)],["rad","Radiation protection",n=>`${Math.round(n).toLocaleString()} REM`],["mass","Mass",n=>`${nf(n)} kg`]]},
+  consumables:{title:"Consumables",noun:"item",ph:"Name or kind, like “MedPen”, “burrito” or “drink”",
+    cat:i=>i.kind||"Other",catLab:"Kind",
+    key:i=>[i.stats?.ndr!=null?`NDR ${nf(i.stats.ndr)}`:"",i.stats?.hei!=null?`HEI ${nf(i.stats.hei)}`:"",(i.buffs||i.effects||[]).slice(0,2).join(", ")].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["ndr","Most nutrition (NDR)"],["hei","Most hydration (HEI)"],["price","Price: low to high"]],
+    hero:i=>[{label:"Nutrition (NDR)",value:i.stats?.ndr!=null?nf(i.stats.ndr):null},{label:"Hydration (HEI)",value:i.stats?.hei!=null?nf(i.stats.hei):null},
+      {label:"Kind",value:i.stats?.ndr==null&&i.stats?.hei==null?i.kind:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["mass","Mass",n=>`${nf(n)} kg`]]},
+  utility:{title:"Keys",noun:"key",ph:"Name or kind, like “cryptokey”, “keycard” or “hacking chip”",
+    cat:i=>i.kind||"Other",catLab:"Kind",
+    key:i=>(i.facts||[]).slice(0,2).map(([a,b])=>`${a}: ${b}`).join(" · "),
+    sorts:[["name","A–Z"],["price","Price: low to high"]],
+    hero:i=>[{label:"Kind",value:i.kind},{label:"Maker",value:i.maker||null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["mass","Mass",n=>`${nf(n)} kg`]]}};
+// Tabs that list things you carry (not blueprints), and the kind a cart entry gets for each
+const GR_ITEM={gadgets:1,clothing:1,consumables:1,utility:1};
+const GR_CART={weapons:"weapon",armor:"armor",gadgets:"gadget",clothing:"clothing",consumables:"consumable",utility:"utility"};
 S.gr=S.gr||{};
 const grState=k=>S.gr[k]=S.gr[k]||{data:null,loading:false,error:null,sel:null,view:k==="armor"?"sets":"items"};
 async function openGear(kind){ const st=grState(kind);
   $("gr-panel").classList.add("show"); grSide(kind);
+  if(st.data&&!st.filled){ st.filled=1; grFillFilters(kind); grLogos(kind); }
   if(!st.data&&!st.loading) await grLoad(kind); else grRender(kind); }
 async function grLoad(kind,fresh){ const st=grState(kind); st.loading=true; st.error=null;
   $("gr-panel").innerHTML=qLoader(`Loading ${GEAR[kind].title.toLowerCase()} from the Star Citizen Wiki… (the first time takes a little while)`);
   let r; try{ r=await api().gear_list(kind,!!fresh); }catch(e){ r={ok:false,error:String(e)}; }
-  st.loading=false; if(r.ok){ st.data=r; grFillFilters(kind); } else st.error=r.error;
+  st.loading=false; if(r.ok){ st.data=r; grFillFilters(kind); grLogos(kind); } else st.error=r.error;
   if(S.tab===kind) grRender(kind); }
+// Makers of personal gear (Clark Defense Systems, Kastak Arms, Gemini…) aren't in the ship or component logo
+// lists: once the list is in, the ones without a logo are looked up on the wiki and the page redrawn.
+async function grLogos(kind){ const st=grState(kind); if(kind==="blueprints"||!st.data) return;
+  if(!S.brands||Object.keys(S.brands).length<=Object.keys(LOCAL_BRANDS).length){ loadBrands(()=>grLogos(kind)); if(S.brands===undefined) return; }
+  const seen=new Set(), want=[];
+  for(const i of st.data.items){ const m=(i.maker||"").trim(); if(!m||seen.has(m.toLowerCase())) continue; seen.add(m.toLowerCase());
+    if(!makerLogo(m)) want.push({name:m,code:i.maker_code||""}); }
+  if(!want.length) return;
+  S.logoAsked=S.logoAsked||new Set(); const ask=want.filter(m=>!S.logoAsked.has(m.name)); if(!ask.length) return;
+  for(const m of ask) S.logoAsked.add(m.name);
+  for(let k=0;k<ask.length;k+=25){ let r; try{ r=await api().maker_logos(ask.slice(k,k+25)); }catch(e){ r=null; }
+    const got=r?.logos||{}; if(Object.keys(got).length){ S.brands={...(S.brands||{}),...got}; if(S.tab===kind&&st.sel&&!st.mission) grDetail(kind); } } }
 // The sidebar's controls are made once per tab, so typing in the search box keeps its focus
 function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.dataset.built="1"; const G=GEAR[kind];
   p.innerHTML=`<input class="search" id="gr-q-${kind}" placeholder="${esc(G.ph)}" autocomplete="off">
     ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="sets" class="on">Sets</button><button data-grview="items">Single pieces</button></div>`:""}
     <div class="cp-filters">
       <label><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
-      <label><span>${esc(G.subLab)}</span><select class="field" id="gr-sub-${kind}"><option value="">Any</option></select></label>
+      ${G.subLab?`<label><span>${esc(G.subLab)}</span><select class="field" id="gr-sub-${kind}"><option value="">Any</option></select></label>`:""}
       ${kind!=="blueprints"?`<label><span>Maker</span><select class="field" id="gr-mk-${kind}"><option value="">Any</option></select></label>
       <label><span>Where</span><select class="field" id="gr-av-${kind}"><option value="">Anywhere</option><option value="buy">Sold in shops</option><option value="noshop">Not in shops</option></select></label>`:""}
       <label class="wide"><span>Sort</span><select class="field" id="gr-sort-${kind}">${G.sorts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
@@ -5952,7 +6566,7 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
       <button class="btn small ghost" id="gr-reset-${kind}" hidden>Clear filters</button></div>
     <div id="gr-list-${kind}"></div>
     <div class="uex-credit" id="gr-credit-${kind}"></div>`;
-  const re=()=>{ grState(kind).sel=null; grRender(kind); };
+  const re=()=>{ grState(kind).sel=null; grState(kind).mission=null; grRender(kind); };
   $(`gr-q-${kind}`).addEventListener("input",re);
   for(const id of ["cat","sub","mk","av","sort"]){ const el=$(`gr-${id}-${kind}`); if(el) el.addEventListener("change",re); }
   $(`gr-reset-${kind}`).onclick=()=>{ for(const id of ["q","cat","sub","mk","av"]){ const el=$(`gr-${id}-${kind}`); if(el) el.value=""; } re(); };
@@ -5962,17 +6576,18 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
 function grFillFilters(kind){ const G=GEAR[kind], L=grState(kind).data?.items||[];
   const fill=(id,vals)=>{ const el=$(`gr-${id}-${kind}`); if(!el) return; const cur=el.value;
     el.innerHTML=`<option value="">Any</option>`+[...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join(""); };
-  fill("cat",L.map(G.cat)); fill("sub",L.map(G.sub)); fill("mk",L.map(i=>i.maker)); }
+  fill("cat",L.map(G.cat)); if(G.sub) fill("sub",L.map(G.sub)); fill("mk",L.map(i=>i.maker)); }
 const grPrice=i=>i.buy?.[0]?.price??null;
 function grFiltered(kind){ const G=GEAR[kind], st=grState(kind), L=st.data?.items||[], v=id=>$(`gr-${id}-${kind}`)?.value||"";
   const q=v("q").trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), cat=v("cat"), sub=v("sub"), mk=v("mk"), av=v("av"), sort=v("sort")||"name";
-  const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub(i)} ${i.set||""}`;
-  const out=L.filter(i=>(!cat||G.cat(i)===cat)&&(!sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
+  const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${i.maker_code||""} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`;
+  const out=L.filter(i=>(!cat||G.cat(i)===cat)&&(!sub||!G.sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
     &&(!words.length||(t=>words.every(w=>cpWordHit(t,w)))(text(i).toLowerCase())));
   const num=(i,k)=>i.stats?.[k]??-1e9, pr=i=>grPrice(i)??9e12;
   const by={name:(a,b)=>a.name.localeCompare(b.name),price:(a,b)=>pr(a)-pr(b)||a.name.localeCompare(b.name),
     time:(a,b)=>(a.time??9e9)-(b.time??9e9),ings:(a,b)=>(a.ingredients?.length??99)-(b.ingredients?.length??99),
-    cold:(a,b)=>(a.stats?.temp_min??99)-(b.stats?.temp_min??99),hot:(a,b)=>(b.stats?.temp_max??-99)-(a.stats?.temp_max??-99)};
+    cold:(a,b)=>(a.stats?.temp_min??99)-(b.stats?.temp_min??99),hot:(a,b)=>(b.stats?.temp_max??-99)-(a.stats?.temp_max??-99),
+    mass:(a,b)=>(a.stats?.mass??9e9)-(b.stats?.mass??9e9)||a.name.localeCompare(b.name)};
   out.sort(by[sort]||((a,b)=>num(b,sort)-num(a,sort)||a.name.localeCompare(b.name)));
   return out; }
 // Armor pieces as sets: grouped by name ("ADP Core Woodland" is part of ADP Woodland); a set needs two pieces
@@ -5994,7 +6609,7 @@ function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-$
   $(`gr-count-${kind}`).textContent=sets?`${plural(n,"set")} · ${plural(L.length,"piece")} match`:`${n.toLocaleString()} of ${all.toLocaleString()} ${G.noun}s · click one for its page`;
   $(`gr-credit-${kind}`).innerHTML=`From the <a data-ext="https://api.star-citizen.wiki">Star Citizen Wiki</a>${kind!=="blueprints"?", prices from UEX":""}.${st.data.at?` Fetched ${agoTs(st.data.at)}.`:""}${st.data.stale?" Couldn't refresh: showing the last copy.":""} <a data-grfresh="1" style="cursor:pointer;text-decoration:underline">Refresh</a>`;
   const row=(i,attr)=>`<div class="vh ${st.sel===(i.uuid||i.name)?"hl":""}"><div class="hd" ${attr}><div><div class="nm">${esc(i.name)}</div>
-      <div class="mk">${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"&&!sets?i.slot:"",kind==="weapons"?i.kind:"",i.weight||""].filter(Boolean).join(" · "))}</div></div>
+      <div class="mk">${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"&&!sets?i.slot:"",kind==="weapons"||GR_ITEM[kind]?i.kind:"",GR_ITEM[kind]?"":i.weight||""].filter(Boolean).join(" · "))}</div></div>
       <div class="pr">${kind==="blueprints"?esc(i.time_label||""):grPrice(i)!=null?money(grPrice(i)):`<span class="noshop">Not in shops</span>`}</div></div></div>`;
   if(list) list.innerHTML=sets?sets.slice(0,150).map(s=>`<div class="vh ${st.sel==="set:"+s.name?"hl":""}"><div class="hd" data-gset="${esc(s.name)}"><div><div class="nm">${esc(s.name)}</div>
         <div class="mk">${esc([s.maker,s.weight,s.pieces.map(p=>p.slot).join(", ")].filter(Boolean).join(" · "))}</div></div>
@@ -6008,8 +6623,8 @@ function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-$
   $("gr-panel").innerHTML=`<div class="gh"><b>${esc(G.title)}</b>${sets?`${plural(sets.length,"armor set")}`:`${n.toLocaleString()} shown`} · click one for its page</div>
     ${shown.length?`<div class="grid">${shown.map(i=>sets?`<div class="vg" data-gset="${esc(i.name)}">${i.pieces.some(p=>p.buy?.length)?cartBtn(i.pieces.filter(p=>p.buy?.length).map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:i.name}))):""}<div class="ph" data-gpic="${esc(i.pieces.find(p=>p.slot==="Core")?.name||i.pieces[0].name)}">No picture</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.weight].filter(Boolean).join(" · "))}${i.price!=null?` · ${money(i.price)}`:""}</span><span class="kt">${esc(i.pieces.map(p=>p.slot).join(" · "))}${i.dr?` · up to ${nf(i.dr)}% DR`:""}</span></div></div>`
-      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name}):""}<div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
-        <div class="tx"><b>${esc(i.name)}</b><span>${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"?i.slot:kind==="weapons"?i.kind:i.grade?`grade ${i.grade}`:""].filter(Boolean).join(" · "))}${kind!=="blueprints"?(grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"):""}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
+      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}):""}<div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+        <div class="tx"><b>${esc(i.name)}</b><span>${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"?i.slot:kind==="weapons"||GR_ITEM[kind]?i.kind:i.grade?`grade ${i.grade}`:""].filter(Boolean).join(" · "))}${kind!=="blueprints"?(grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"):""}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
       :`<div class="empty">Nothing matches these filters.</div>`}`;
   fillGearPictures($("gr-panel"));
   if(st.back){ if(st.back.key===st.gridKey) $("gr-panel").scrollTop=st.back.top; st.back=null; } }
@@ -6022,8 +6637,9 @@ async function fillGearPictures(root){ const els=[...root.querySelectorAll("[dat
     for(const r of batch) S.gpics[r]=got[r]||null; paint(); if(!root.isConnected) return; } }
 function grOpenItem(kind,id,set){ const st=grState(kind);
   if(!st.sel) st.back={key:st.gridKey,top:$("gr-panel").scrollTop};          // opened from the grid: Back returns to this spot
-  st.sel=set?"set:"+set:id; grRender(kind); $("gr-panel").scrollTop=0; }
+  st.sel=set?"set:"+set:id; st.mission=null; grRender(kind); $("gr-panel").scrollTop=0; }
 async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.items, g=$("gr-panel");
+  if(st.mission) return grMission(kind);
   const back=`<button class="btn" data-grback="1" style="margin-bottom:14px">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button>`;
   if(String(st.sel).startsWith("set:")){ const name=st.sel.slice(4), s=grSets(L).find(x=>x.name===name); if(!s){ st.sel=null; return grRender(kind); }
     g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
@@ -6044,11 +6660,15 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
     .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
   if(kind==="armor") extra=[["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean)
     .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
+  if(GR_ITEM[kind]) extra=[...(i.effects?.length?[["Effects",i.effects.join(", ")]]:[]),...(i.buffs?.length?[["Buffs",i.buffs.join(", ")]]:[]),
+      ...(i.facts||[]).filter(([a])=>!/^(effects?|buffs?)$/i.test(a)),i.sub&&i.sub!==i.kind?["Type",i.sub]:null,
+      i.paints?.length?["Also comes in",i.paints.map(p=>(p.name.match(/["“”]([^"“”]+)["“”]/)||[,p.name])[1]).join(", ")]:null,i.size!=null&&i.size!==0?["Size",i.size]:null].filter(Boolean)
+    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
   if(kind==="blueprints") return grBlueprint(i,back);
   g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
-    <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
+    <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):GR_ITEM[kind]?i.kind:`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
       ${statBlock(G.hero(i),[{label:"Sold at",value:i.buy?.length?plural(i.buy.length,"shop"):null}])}
-      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
       <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy?.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, a reward, or from crafting.</div>`}</div></div>
@@ -6065,25 +6685,69 @@ async function grBlueprint(i,back){ const g=$("gr-panel"), st=grState("blueprint
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">Blueprint · ${esc(i.category)}${i.version?` · ${esc(i.version)}`:""}</div></div></div>
         ${statBlock(GEAR.blueprints.hero(i),[])}
         <div class="row" style="gap:8px;margin-top:12px">${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}${i.out_tab==="components"?`<button class="btn ghost" data-grcomp="${esc(i.name)}">Find in Components</button>`:""}</div></div></div>
-      <div class="vd-grid vd-flat">
+      <div class="vd-grid vd-flat bp-grid">
         <div class="vd-sec"><div class="mk-h">Ingredients</div>${i.ingredients.length?i.ingredients.map(ing).join(""):`<div class="muted" style="font-size:13px">None listed.</div>`}
           ${i.returns?.length?`<div class="mk-h" style="margin-top:14px">Dismantling gives back</div>${i.returns.map(ing).join("")}`:""}</div>
         <div class="vd-sec"><div class="mk-h">How you get it</div>
           ${i.default?`<div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">Every player knows this blueprint from the start.</div>`:""}
-          ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w">${m.web_url?`<a data-ext="${esc(m.web_url)}">${esc(m.title)}</a>`:esc(m.title)}<div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")
-            :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}
-          ${og?.stats&&rows0(og.stats)?`<div class="mk-h" style="margin-top:14px">What it makes</div>${CP_STATS.filter(([k])=>og.stats[k]!=null&&og.stats[k]!==0&&og.stats[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(og.stats[k]))}</b></div>`).join("")}`:""}</div></div>
+          ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.title}))}" title="What this mission is, where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")
+            :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}</div>
+          ${og?.stats&&rows0(og.stats)?`<div class="vd-sec"><div class="mk-h">What it makes</div>${CP_STATS.filter(([k])=>og.stats[k]!=null&&og.stats[k]!==0&&og.stats[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(og.stats[k]))}</b></div>`).join("")}</div>`:""}</div>
       <div class="uex-credit">From the Star Citizen Wiki's crafting data.</div>`;
     api().gear_image(i.name).then(img=>{ if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }); };
   draw(null);
   const r=await api().blueprint_detail(i.uuid); if(st.sel!==(i.uuid||i.name)) return;
   draw(r.ok?r.blueprint:{unlocks:[]}); }
+// A mission's own page (from a blueprint's How you get it): what it pays, the briefing, where it's offered and
+// where it sends you (each place one click from the route), what it needs first and the blueprints it can give.
+// Back goes to the mission before it, then to the blueprint.
+async function grMission(kind){ const st=grState(kind), g=$("gr-panel"), m=st.mission, from=m.from;
+  const back=`<button class="btn" data-grmback="1" style="margin-bottom:14px">← ${esc(m.prev?m.prev.title:from)}</button>`;
+  if(!m.data){ g.innerHTML=`${back}${qLoader(`Looking up ${esc(m.title||"the mission")} on the Star Citizen Wiki…`)}`;
+    let r; try{ r=await api().mission_page(m.ref,m.code,m.title); }catch(e){ r={ok:false,error:"Couldn't look it up"}; }
+    if(st.mission!==m) return; m.data=r.ok?(r.found?r.info:{missing:true}):{error:r.error}; }
+  const w=m.data, n0=x=>Number(x).toLocaleString(), rng=(a,b,u="")=>a!=null&&b!=null&&a!==b?`${n0(a)}–${n0(b)}${u}`:`${n0(b??a)}${u}`;
+  if(w.error||w.missing){ g.innerHTML=`${back}<div class="empty" style="margin-top:40px"><strong>${esc(m.title||"Mission")}</strong>${w.error?esc(w.error):"The Star Citizen Wiki doesn't have the details of this mission yet."}
+      ${w.error?`<br><br><button class="btn small" data-grmretry="1">Try again</button>`:""}</div>`; return; }
+  const place=x=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.name)}</a>`:esc(x.name)}</div><div class="p"></div>
+      ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add ${esc(x.place)} to your route">+</button>`):`<span></span>`}
+      <div class="m">${x.body?`${esc(x.body)} · reached at ${esc(x.place||"its orbital marker")}`:x.place?"":"Not on Quantum's map yet"}</div></div>`;
+  const places=(rows,g0)=>rows?.length?rows.map(place).join("")+(g0?.more?`<div class="muted" style="font-size:12px;padding:6px 0">+${g0.more} more</div>`:""):"";
+  const chain=L=>L.map(x=>`<div class="mk-row"><div class="w">${x.uuid?`<a data-grmission="${esc(JSON.stringify({ref:x.uuid,title:x.title}))}">${esc(x.title)}</a>`:esc(x.title)}</div><div class="p"></div><span></span></div>`).join("");
+  const offered=places(w.offered_at_rows,w.offered_at), there=places([...(w.pickups_rows||[]),...(w.destinations_rows||[])]);
+  const bps=(w.blueprint_items||[]).map(b=>`<div class="mk-row"><div class="w">${b.bp?`<a data-grbp="${esc(b.bp)}">${esc(b.name)}</a>`:esc(b.name)}<div class="m">Blueprint</div></div><div class="p">${b.chance!=null&&b.chance<1?`${Math.round(b.chance*100)}% chance`:""}</div><span></span></div>`).join("");
+  const items=(w.reward_items||[]).map(x=>`<div class="mk-row"><div class="w">${esc(x)}<div class="m">Item</div></div><div class="p"></div><span></span></div>`).join("");
+  const sec=(h,body)=>body?`<div class="vd-sec"><div class="mk-h">${h}</div>${body}</div>`:"";
+  const tags=[w.type,w.illegal?"Illegal":"Legal",w.combat?"Combat":"",w.shareable?"Shareable":"",w.once_only?"Once only":"",w.prison?"Offered in prison":"",...(w.systems||[])].filter(Boolean);
+  g.innerHTML=`${back}<div class="mkp-head" style="grid-template-columns:1fr"><div class="hd-main"><div class="hd-title"><div><h2>${esc(w.title||m.title)}</h2>
+      <div class="sub">${esc(["Mission",w.giver||w.faction].filter(Boolean).join(" · "))}${w.faction&&w.giver&&w.faction!==w.giver?` · ${esc(w.faction)}`:""}</div></div></div>
+      ${statBlock([{label:"Payout",value:w.reward?`${rng(w.reward[0],w.reward[1])} ${w.currency||"aUEC"}`:null},
+          {label:"Reputation",value:(w.rep||[]).length?`+${n0(w.rep[0].amount)}`:null},{label:"Time",value:w.minutes?`${w.minutes} min`:null},{label:"Rank",value:w.rank>0?`Rank ${w.rank}`:null}],
+        [{label:"Enemies",value:w.enemies?rng(w.enemies[0],w.enemies[1]):null},{label:"Players",value:w.max_players>1?`Up to ${w.max_players}`:null},
+         {label:"Cooldown",value:w.cooldown||null},{label:"Reputation with",value:(w.rep||[]).map(r=>r.faction).filter(Boolean).join(", ")||null}])}
+      <div class="row" style="gap:8px;margin-top:12px">${w.url?`<button class="btn ghost" data-ext="${esc(w.url)}">Wiki</button>`:""}</div></div></div>
+    ${tags.length?`<div class="gr-tags">${tags.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}
+    ${w.description?`<p class="gr-desc mi-text">${esc(w.description)}</p>`:""}
+    <div class="vd-grid vd-flat bp-grid">
+      ${sec("Where it's offered",offered||`<div class="muted" style="font-size:13px;padding:6px 0">The wiki doesn't say where.</div>`)}
+      ${sec("Where it sends you",there)}
+      ${sec("Cargo",(w.cargo||[]).map(o=>`<div class="mk-row"><div class="w">${esc(o.what)}</div><div class="p">${o.scu?rng(o.scu[0],o.scu[1]," SCU"):o.amount?`× ${rng(o.amount[0],o.amount[1])}`:""}</div><span></span>${o.box?`<div class="m">Boxes up to ${o.box} SCU</div>`:""}</div>`).join(""))}
+      ${sec("Rewards",bps+items)}
+      ${sec("Do these first",chain(w.needs_first||[]))}
+      ${sec("Leads to",chain(w.leads_to||[]))}</div>
+    <div class="uex-credit">From the Star Citizen Wiki's mission data (the game files): ranges and possible places for this kind of contract. The one you're offered in game picks from these.</div>`; }
+function grOpenMission(kind,x){ const st=grState(kind), i=st.data?.items.find(y=>(y.uuid||y.name)===st.sel);
+  st.mission={...x,from:st.mission?.from||i?.name||"Back",prev:st.mission||null}; $("gr-panel").scrollTop=0; grMission(kind); }
 $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return; const kind=S.tab; if(!GEAR[kind]) return; const st=grState(kind);
   if(e.target.closest("[data-grretry]")) return grLoad(kind);
-  if(e.target.closest("[data-grback]")){ st.sel=null; grRender(kind); return; }
+  const gm=e.target.closest("[data-grmission]"); if(gm){ let x; try{ x=JSON.parse(gm.dataset.grmission); }catch(_){ return; } return grOpenMission(kind,x); }
+  if(e.target.closest("[data-grmback]")){ st.mission=st.mission?.prev||null; $("gr-panel").scrollTop=0; return st.mission?grMission(kind):grDetail(kind); }
+  if(e.target.closest("[data-grmretry]")){ if(st.mission) st.mission.data=null; return grMission(kind); }
+  const gb=e.target.closest("[data-grbp]"); if(gb&&kind==="blueprints"){ st.mission=null; st.sel=gb.dataset.grbp; grRender(kind); $("gr-panel").scrollTop=0; return; }
+  if(e.target.closest("[data-grback]")){ st.sel=null; st.mission=null; grRender(kind); return; }
   const gc=e.target.closest("[data-grcomp]"); if(gc){ document.querySelector('.tab[data-tab="components"]')?.click(); setTimeout(()=>{ renderCpHome(); const q=$("cp-home-q"); if(q){ q.value=gc.dataset.grcomp; renderCpHome(); } },300); return; }
   if(e.target.closest("[data-grshop]")){ const i=st.data.items.find(x=>(x.uuid||x.name)===st.sel); if(!i) return;
-    const r=await api().shop_add([{name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }
+    const r=await api().shop_add([{name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }
   if(e.target.closest("[data-grshopset]")){ const s=grSets(st.data.items).find(x=>"set:"+x.name===st.sel); if(!s) return;
     return addToCart(s.pieces.map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:s.name})),`${s.name} (${plural(s.pieces.length,"piece")})`); }
   const h=e.target.closest("[data-gi],[data-gset]"); if(h) grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); });
@@ -6092,7 +6756,7 @@ document.addEventListener("click",e=>{ const f=e.target.closest("[data-grfresh]"
 // =================================================================== Shopping list
 // The parts and gear you want, then the trip: fewest stops (or cheapest), in order from where you are. Each stop
 // lists what to buy there; buying it in game ticks it off (Game.log shows shop purchases), or tick it yourself.
-const SH_KIND={component:"Ship part",weapon:"Weapon",armor:"Armor"};
+const SH_KIND={component:"Ship part",weapon:"Weapon",armor:"Armor",gadget:"Gadget",clothing:"Clothing",consumable:"Consumable",utility:"Utility item"};
 async function openShopping(){ $("sh-panel").classList.add("show"); await renderShopping(true); }
 async function renderShopping(autoPlan){ let r=await api().shop_list(); S.slData=r; if(S.tab!=="shopping") return;
   // Opening the cart with things in it that aren't planned yet works out the route straight away
@@ -6146,7 +6810,8 @@ $("sh-panel").addEventListener("change",async e=>{ const b=e.target.closest("[da
 
 function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
-  if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
+  if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click();
+  syncRail(); }
 async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.fix_t, live.player?.approx, live.player?.system, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name]);
@@ -6180,6 +6845,7 @@ async function poll(){
   if((live.update?.version||null)!==(S.updSeen||null)){ S.updSeen=live.update?.version||null; renderUpdateBar(); }
   if((live.game_update?.build||null)!==(S.gameUpdSeen||null)){ S.gameUpdSeen=live.game_update?.build||null; renderGameUpdate(); }
   S.drHasSecret=!!live.datarunner?.has_secret;
+  if(S.pfSec!==S.drHasSecret){ const first=S.pfSec===undefined; S.pfSec=S.drHasSecret; if(!first){ S.drProf=null; setTimeout(()=>pfPrime(true).catch(()=>{}),300); } }   // key added or removed: the rail's picture
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
@@ -6222,6 +6888,7 @@ async function init(){
   await poll(); renderContracts(); requestAnimationFrame(frame);
   setTimeout(()=>ownerCheck().catch(()=>{}),4000);                 // the server owner gets Replace buttons on pictures
   setTimeout(()=>prefetchAssets().catch(()=>{}),1500);            // logos and pictures into the cache from the first start
+  pfPrime(false).catch(()=>{});                                     // your picture and name on the rail
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
   if(S.selected?.kind==="settings"){ if(!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
@@ -6236,6 +6903,11 @@ window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); 
 <script src="city3d-core.js"></script>
 <script src="city3d-NewBabbage.js"></script>
 <script src="city3d-Lorville.js"></script>
+<script src="city3d-Area18.js"></script>
+<script src="city3d-Orison.js"></script>
+<script src="city3d-Levski.js"></script>
+<!-- The game's own station models (optional): downloaded as you get close, in place of the stand-in model. -->
+<script src="stations3d.js"></script>
 <script src="demo.js"></script>
 </body>
 </html>

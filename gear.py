@@ -1,6 +1,6 @@
 """Personal gear and crafting from the Star Citizen Wiki API (api.star-citizen.wiki, community-maintained;
-please credit it): personal (FPS) weapons, armor and blueprints, for Quantum's Weapons, Armor and
-Blueprints tabs.
+please credit it): personal (FPS) weapons, armor, gadgets, clothing, consumables, utility items and
+blueprints, for the tabs of the same names.
 
 Each kind is fetched page by page, trimmed to what the tabs show and cached on disk for a day (an older
 copy is used when the wiki can't be reached). A blueprint's unlocking missions only come with its own
@@ -20,11 +20,26 @@ DAY = 86400
 # What each tab lists: (API path, filter). Armor is every wearable piece; sets are put together from names.
 ARMOR_TYPES = ("Char_Armor_Helmet", "Char_Armor_Torso", "Char_Armor_Arms", "Char_Armor_Legs",
                "Char_Armor_Backpack", "Char_Armor_Undersuit")
+# A kind can take more than one query (the wiki's classification filter matches one pattern at a time):
+# their results are put together, each item once.
 KINDS = {
-    "weapons": ("items", {"filter[type]": "WeaponPersonal"}),
-    "armor": ("items", {"filter[type]": ",".join(ARMOR_TYPES)}),
-    "blueprints": ("blueprints", {}),
+    "weapons": [("items", {"filter[type]": "WeaponPersonal"})],
+    "armor": [("items", {"filter[type]": ",".join(ARMOR_TYPES)})],
+    "blueprints": [("blueprints", {})],
+    # What the Star Citizen Wiki files under Gadgets: multi-tools, tractor beams, rangefinders, the Cambio
+    # SRT, extinguishers, glow sticks… (personal weapons of the Gadget kind) and the mining gadgets.
+    # Multi-tool attachments (cutter, tractor beam, healing, mining) are gadgets too
+    "gadgets": [("items", {"filter[classification]": "FPS.Weapon.Gadget"}), ("items", {"filter[type]": "Gadget"}),
+                ("items", {"filter[classification]": "FPS.WeaponAttachment.Utility"})],
+    "clothing": [("items", {"filter[classification]": "FPS.Clothing"})],
+    # Food, drinks and medical items (MedPens, OxyPens…)
+    "consumables": [("items", {"filter[type]": "Food,Bottle,Drink"}), ("items", {"filter[classification]": "FPS.Consumable"})],
+    # The Keys tab (kept as "utility" inside): hacking chips, cryptokeys and keycards
+    "utility": [("items", {"filter[sub_type]": "Hacking"}), ("items", {"filter[name]": "cryptokey"}),
+                ("items", {"filter[name]": "keycard"}), ("items", {"filter[name]": "key card"})],
 }
+# The newer tabs (Gadgets, Clothing, Consumables, Utility) share one way of trimming an item
+ITEM_KINDS = ("gadgets", "clothing", "consumables", "utility")
 SLOT_OF_TYPE = {"Char_Armor_Helmet": "Helmet", "Char_Armor_Torso": "Core", "Char_Armor_Arms": "Arms",
                 "Char_Armor_Legs": "Legs", "Char_Armor_Backpack": "Backpack", "Char_Armor_Undersuit": "Undersuit"}
 SLOT_ORDER = ["Helmet", "Core", "Arms", "Legs", "Backpack", "Undersuit"]
@@ -53,6 +68,12 @@ def _num(v):
 def _maker(d):
     m = d.get("manufacturer")
     return ((m.get("name") if isinstance(m, dict) else m) or d.get("manufacturer_description") or "").strip()
+
+
+def _maker_code(d):
+    m = d.get("manufacturer")
+    c = (m.get("code") if isinstance(m, dict) else None) or ""
+    return c.strip() if c.strip().upper() not in ("", "UNKN", "UNKNOWN") else None
 
 
 def _prices(d):
@@ -92,7 +113,7 @@ def _pct(v):
 
 def _common(d):
     return {"uuid": d.get("uuid"), "name": (d.get("name") or "").strip(), "class_name": d.get("class_name") or "",
-            "maker": _maker(d), "size": d.get("size"), "mass": _num(d.get("mass")), "rarity": d.get("rarity"),
+            "maker": _maker(d), "maker_code": _maker_code(d), "size": d.get("size"), "mass": _num(d.get("mass")), "rarity": d.get("rarity"),
             "base": bool(d.get("is_base_variant")), "craftable": bool(d.get("is_craftable")),
             "lootable": bool(d.get("is_lootable")), "desc": _en(d.get("description")), "image": _image(d),
             "web_url": d.get("web_url"), "prices": _prices(d)}
@@ -179,7 +200,135 @@ def trim_blueprint(b):
             "version": b.get("game_version")}
 
 
-TRIM = {"weapons": trim_weapon, "armor": trim_armor, "blueprints": trim_blueprint}
+def _facts(d):
+    """The wiki's description rows ("NDR: 25", "Effects: Hydrating"…) as [[name, value]], minus the ones
+    shown elsewhere (maker, item type, size)."""
+    out = []
+    for r in d.get("description_data") or []:
+        if not isinstance(r, dict) or not r.get("name") or r.get("value") in (None, ""):
+            continue
+        n = str(r["name"]).strip()
+        if n.lower() in ("manufacturer", "item type", "type", "size", "class", "grade"):
+            continue
+        out.append([n, str(r["value"]).strip()])
+    return out[:16]
+
+
+GADGET_KIND = [(r"multi.?tool", "Multi-tool"), (r"tractor beam", "Tractor beam"), (r"rangefinder|monocular|telescope", "Rangefinder"),
+               (r"\bsrt\b|repair", "Repair tool"), (r"extinguisher", "Fire extinguisher"), (r"cutting|cutter|torch", "Cutting tool"),
+               (r"glow|flare", "Glow stick"), (r"breach|charge|mine\b", "Explosive"), (r"hologram|decoy", "Hologram"),
+               (r"quikcade|barricade|cover", "Barricade"), (r"medgun|med gun|paramed|cure", "Medical")]
+
+
+def _category(kind, d, t):
+    name, typ = t["name"].lower(), d.get("type") or ""
+    cls = (d.get("classification") or "").lower()
+    if kind == "gadgets":
+        if "weaponattachment" in cls:
+            return "Multi-tool attachment"
+        if typ == "Gadget" or cls.startswith("mining."):
+            return "Mining gadget"
+        return next((lab for rx, lab in GADGET_KIND if re.search(rx, name)), d.get("sub_type_label") or "Other")
+    if kind == "clothing":
+        return d.get("type_label") or (d.get("clothing") or {}).get("type") or "Other"
+    if kind == "consumables":
+        if "medical" in cls or isinstance(d.get("medical"), dict):
+            return "Medical"
+        return {"Food": "Food", "Drink": "Drink", "Bottle": "Drink"}.get(typ) or d.get("type_label") or "Other"
+    if kind == "utility":
+        if re.search(r"cryptokey", name):
+            return "Cryptokey"
+        if re.search(r"key ?card", name):
+            return "Keycard"
+        if d.get("sub_type") == "Hacking" or re.search(r"hack|chip", name):
+            return "Hacking chip"
+        return d.get("type_label") or "Other"
+    return d.get("type_label") or "Other"
+
+
+def trim_item(d, kind):
+    """A gadget, piece of clothing, consumable or utility item: what it is, who makes it, where to buy
+    it, and whatever numbers the wiki gives for it."""
+    out = _common(d)
+    out["kind"] = _category(kind, d, out)
+    out["sub"] = d.get("sub_type_label") if d.get("sub_type_label") not in (None, "", "UNDEFINED", "Undefined") else None
+    out["type"], out["classification"] = d.get("type"), d.get("classification")
+    st = {"mass": _num(d.get("mass"))}
+    if kind == "clothing":
+        a = trim_armor(d)
+        st.update({k: a["stats"].get(k) for k in ("temp_min", "temp_max", "carry", "dr", "rad")})
+    inv = d.get("inventory") or {}
+    if kind != "clothing" and (_num(inv.get("scu_converted")) or _num(inv.get("scu"))):
+        st["carry"] = _num(inv.get("scu_converted")) or inv["scu"] * 1e6
+    f = d.get("food") if isinstance(d.get("food"), dict) else {}
+    if f:
+        st.update({"ndr": _num(f.get("nutritional_density_rating")), "hei": _num(f.get("hydration_efficacy_index"))})
+        out["effects"] = [str(e).replace("_", " ").title() for e in (f.get("effects") or []) if e][:8] or None
+        out["buffs"] = sorted({str(k).replace("_", " ").title() for k in (f.get("buffs") or {})})[:8] or None
+    med = d.get("medical") if isinstance(d.get("medical"), dict) else {}
+    if med:
+        out["buffs"] = sorted({str(k).replace("_", " ").title() for k in (med.get("combat_buffs") or {})})[:8] or None
+    out["stats"] = {k: v for k, v in st.items() if v is not None}
+    out["facts"] = _facts(d)
+    return out
+
+
+TRIM = {"weapons": trim_weapon, "armor": trim_armor, "blueprints": trim_blueprint,
+        **{k: (lambda d, k=k: trim_item(d, k)) for k in ITEM_KINDS}}
+
+
+def _skip(kind, d):
+    """Entries that belong in another tab: gadgets (multi-tools, tractor beams…) aren't weapons, and the
+    utility query's ship things (weapon racks) aren't carried."""
+    if kind == "weapons":
+        return d.get("sub_type") == "Gadget" or (d.get("classification") or "").startswith("FPS.Weapon.Gadget")
+    if kind == "utility":
+        cls = d.get("classification") or ""
+        return d.get("type") in ("WeaponRack", "Container", "Cargo") or cls.startswith(("Ship.", "Vehicle."))
+    return False
+
+
+def _strip_paint(name):
+    """'Pyro RYT "Ghost" Multi-Tool' -> 'Pyro RYT Multi-Tool': the same item in another paint."""
+    return re.sub(r"\s+", " ", re.sub(r'\s*["“”][^"“”]+["“”]\s*', " ", name)).strip()
+
+
+def dedupe(items, kind):
+    """One entry per item. The wiki can list the same item more than once (another game version, an
+    unbuyable copy): they're merged, keeping the one shops sell and every shop price. In Gadgets, paints of
+    an item ('Pyro RYT "Ghost" Multi-Tool') go with it as its paints instead of each being listed."""
+    by, out = {}, []
+    score = lambda t: (bool(t.get("prices")), bool(t.get("base")), len(t.get("stats") or {}) + len(t.get("facts") or []))
+    for t in items:
+        k = t["name"].strip().lower()
+        a = by.get(k)
+        if a is None:
+            by[k] = t
+            out.append(t)
+            continue
+        keep, drop = (a, t) if score(a) >= score(t) else (t, a)
+        seen = {p.get("terminal_id") for p in keep.get("prices") or []}
+        keep["prices"] = (keep.get("prices") or []) + [p for p in drop.get("prices") or [] if p.get("terminal_id") not in seen]
+        keep["prices"].sort(key=lambda p: p.get("price") or 0)
+        keep["alias_uuids"] = sorted({*(keep.get("alias_uuids") or []), *(drop.get("alias_uuids") or []), drop.get("uuid")} - {None, keep.get("uuid")})
+        for f in ("image", "desc", "web_url"):
+            keep[f] = keep.get(f) or drop.get(f)
+        if keep is not a:
+            out[out.index(a)] = keep
+            by[k] = keep
+    if kind == "gadgets":
+        names = {t["name"].strip().lower(): t for t in out}
+        rest = []
+        for t in out:
+            base = _strip_paint(t["name"])
+            b = names.get(base.lower()) if base != t["name"] else None
+            if b is not None and b is not t:
+                b.setdefault("paints", []).append({"name": t["name"], "uuid": t.get("uuid"), "prices": t.get("prices") or []})
+                b["alias_uuids"] = sorted({*(b.get("alias_uuids") or []), t.get("uuid")} - {None})
+                continue
+            rest.append(t)
+        out = rest
+    return out
 
 
 class Gear:
@@ -187,11 +336,10 @@ class Gear:
         self.dir = Path(cache_dir)
 
     def _file(self, name):
-        return self.dir / f"gear_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"
+        return self.dir / f"gear_v3_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v3: one entry per item, Keys tab
 
     def items(self, kind, max_pages=60, fresh=False):
         """Every entry of one kind, trimmed: {"items": [...], "at": when fetched, "stale": bool}."""
-        path, flt = KINDS[kind]
         f = self._file(kind)
         old = None
         if f.exists():
@@ -201,38 +349,79 @@ class Gear:
                     return old
             except Exception:
                 old = None
-        out, page, seen = [], 1, set()
+        out, seen = [], set()
         try:
-            while page <= max_pages:
-                q = dict(flt, **{"page[number]": page, "page[size]": 100})
-                r = _get(f"{API}/{path}?" + urllib.parse.urlencode(q))
-                data = r.get("data") or []
-                for d in data:
-                    if not isinstance(d, dict):
-                        continue
-                    t = TRIM[kind](d)
-                    if not t.get("name") or JUNK.search(f"{t['name']} {t.get('class_name') or t.get('key') or ''}"):
-                        continue
-                    if t["uuid"] in seen:
-                        continue
-                    seen.add(t["uuid"])
-                    out.append(t)
-                last = (r.get("meta") or {}).get("last_page") or page
-                if not data or page >= last:
-                    break
-                page += 1
+            for path, flt in KINDS[kind]:
+                page = 1
+                while page <= max_pages:
+                    q = dict(flt, **{"page[number]": page, "page[size]": 100})
+                    r = _get(f"{API}/{path}?" + urllib.parse.urlencode(q))
+                    data = r.get("data") or []
+                    for d in data:
+                        if not isinstance(d, dict) or _skip(kind, d):
+                            continue
+                        t = TRIM[kind](d)
+                        if not t.get("name") or JUNK.search(f"{t['name']} {t.get('class_name') or t.get('key') or ''}"):
+                            continue
+                        if t["uuid"] in seen:
+                            continue
+                        seen.add(t["uuid"])
+                        out.append(t)
+                    last = (r.get("meta") or {}).get("last_page") or page
+                    if not data or page >= last:
+                        break
+                    page += 1
         except Exception:
             if old is not None:
                 return dict(old, stale=True)
             raise
+        if kind != "blueprints":
+            out = dedupe(out, kind)
         res = {"items": out, "at": time.time(), "stale": False}
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(res), encoding="utf-8")
         return res
 
+    def commodity_sources(self, name):
+        """Where a commodity is mined or harvested, from the wiki's resource data: {name, from, sources,
+        web_url}. A refined commodity (Laranite) uses its ore's places, with "from" naming the ore.
+        Cached for a week; None when the wiki has no such commodity."""
+        f = self._file("cm_" + name.lower())
+        if f.exists():
+            try:
+                old = json.loads(f.read_text(encoding="utf-8"))
+                if time.time() - f.stat().st_mtime < (7 * DAY if old else DAY):     # a miss is asked again next day
+                    return old
+            except Exception:
+                pass
+        key = re.sub(r"[^a-z0-9]", "", name.lower())
+        base = re.sub(r"\s*\((ore|raw|gem|refined)\)\s*$", "", name, flags=re.I).strip()
+        rows = _get(f"{API}/commodities?" + urllib.parse.urlencode({"filter[query]": base, "page[size]": 50})).get("data") or []
+        norm = lambda r: re.sub(r"[^a-z0-9]", "", str(r.get("display_name") or r.get("name") or "").lower())
+        hit = next((r for r in rows if norm(r) == key or re.sub(r"[^a-z0-9]", "", str(r.get("name") or "").lower()) == key), None)
+        if not hit:
+            hit = next((r for r in rows if norm(r).startswith(re.sub(r"[^a-z0-9]", "", base.lower()))), None)
+        out = None
+        if hit and hit.get("uuid"):
+            c = _get(f"{API}/commodities/{urllib.parse.quote(hit['uuid'])}").get("data") or {}
+            src, frm = trim_commodity_sources(c), None
+            if not src:                                   # refined: its ore is what's found
+                for raw in c.get("raw_versions") or []:
+                    if isinstance(raw, dict) and raw.get("uuid"):
+                        rc = _get(f"{API}/commodities/{urllib.parse.quote(raw['uuid'])}").get("data") or {}
+                        src = trim_commodity_sources(rc)
+                        if src:
+                            frm = raw.get("name") or rc.get("name")
+                            break
+            out = {"name": c.get("display_name") or c.get("name") or name, "from": frm, "sources": src,
+                   "web_url": c.get("web_url"), "refined": ((c.get("refined_version") or {}).get("name"))}
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(out), encoding="utf-8")
+        return out
+
     def blueprint(self, uuid):
         """One blueprint's full record: its unlocking missions too. Cached for a week."""
-        f = self._file(f"bp_{uuid}")
+        f = self._file(f"bp2_{uuid}")                 # bp2: unlocks carry the mission's ref (opened in Quantum)
         if f.exists() and time.time() - f.stat().st_mtime < 7 * DAY:
             try:
                 return json.loads(f.read_text(encoding="utf-8"))
@@ -241,11 +430,45 @@ class Gear:
         r = _get(f"{API}/blueprints/{urllib.parse.quote(str(uuid))}").get("data") or {}
         out = trim_blueprint(r)
         out["unlocks"] = [{"title": m.get("title") or m.get("debug_name"), "scope": m.get("reward_scope"),
-                           "chance": _num(m.get("chance")), "web_url": m.get("web_url")}
+                           "chance": _num(m.get("chance")), "web_url": m.get("web_url"),
+                           "code": m.get("debug_name"), "ref": mission_ref(m.get("web_url"))}
                           for m in r.get("unlocking_missions") or [] if isinstance(m, dict)]
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(out), encoding="utf-8")
         return out
+
+
+# How a deposit is gathered, from the wiki's resource group names
+METHOD = [(r"^spaceship", "Ship mining"), (r"^groundvehicle", "ROC mining"), (r"^fps", "Hand mining"),
+          (r"^(harvest|havest|plant)", "Harvesting"), (r"^salvage", "Salvage")]
+
+
+def _method(group):
+    g = re.sub(r"[^a-z]", "", str(group or "").lower())
+    return next((lab for rx, lab in METHOD if re.search(rx, g)), (group or "").replace("_", " ").strip() or None)
+
+
+def trim_commodity_sources(c):
+    """A commodity's record -> where it can be mined or harvested: [{name, display, system, type, parent,
+    methods, chance, quality}] (best chance first)."""
+    out = []
+    for L in c.get("locations") or []:
+        if not isinstance(L, dict) or not L.get("name"):
+            continue
+        methods = sorted({m for m in (_method(r.get("group_name")) for r in L.get("resources") or [] if isinstance(r, dict)) if m})
+        out.append({"name": L["name"], "display": L.get("display_name") or L["name"], "system": L.get("system"),
+                    "type": L.get("type"), "parent": L.get("parent_name"), "methods": methods,
+                    "chance": _num(L.get("relative_probability")) if L.get("relative_probability") else _num(L.get("group_probability")),
+                    "quality": [L.get("quality_min"), L.get("quality_max")] if L.get("quality_max") else None,
+                    "areas": [a.get("name") if isinstance(a, dict) else str(a) for a in (L.get("areas") or [])][:6]})
+    out.sort(key=lambda x: (-(x["chance"] or 0), x["name"]))
+    return out
+
+
+def mission_ref(web_url):
+    """The mission's uuid or slug from its wiki address (…/missions/<ref>?version=…), for /api/missions/<ref>."""
+    m = re.search(r"/missions/([^/?#]+)", str(web_url or ""))
+    return urllib.parse.unquote(m.group(1)) if m else None
 
 
 def armor_sets(pieces):

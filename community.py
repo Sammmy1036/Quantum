@@ -21,6 +21,7 @@ class Community:
     def __init__(self, url_getter, test_getter, session_getter=None, on_signed_out=None):
         self._url, self._test = url_getter, test_getter
         self.place_results = {}       # name -> what the server said about the last position you sent
+        self.align_results = {}       # body -> what the server said about the last alignment you sent
         # Your sign-in on the Quantum server (see login): sent with every request, so the server knows
         # it's really you sending pictures, places and alignments under your UEX name. on_signed_out is
         # called when the server no longer accepts it (expired, or signed out), to sign in again.
@@ -133,6 +134,11 @@ class Community:
         """Link the UEX name this secret key belongs to (the server asks UEX, then forgets the key).
         {status: ok, uex} | invalid_secret_key | banned | signed_out | unreachable ..."""
         return self._acct("/v1/account/link-uex", {"secret": secret}, token=token, timeout=20)
+
+    def account_avatar(self, token, image):
+        """Your profile photo (a small JPEG/PNG data: URL, or None to remove it) kept with your Quantum account,
+        so it follows you to the website and other PCs. {status: ok} | not_found (server without photos yet) ..."""
+        return self._acct("/v1/account/avatar", {"image": image}, token=token, timeout=30)
 
     def health(self):
         if not self.url:
@@ -336,17 +342,30 @@ class Community:
         except Exception as e:
             return {"status": "unreachable", "detail": str(e)}
 
-    def post_alignment(self, entry):
+    def post_alignment(self, entry, on_done=None):
         """Share a planet or moon alignment you made, for this game build, in the background. It counts
-        toward your rank once another datarunner's alignment of that body agrees."""
+        toward your rank once another datarunner's alignment of that body agrees. on_done(True) once the
+        server has taken it (or refused it for good), on_done(False) when it couldn't be reached or asked
+        for a new sign-in, so the caller keeps it and sends it again later."""
         if not self.url or not entry.get("username") or not entry.get("build"):
+            on_done and on_done(False)
             return
+        self.align_results[entry.get("body")] = {"state": "sending", "at": time.time()}
 
         def send():
             try:
-                self._req("/v1/alignments", entry, timeout=15)
+                r = self._req("/v1/alignments", entry, timeout=15)
             except Exception as e:
                 self.last_error = str(e)
+                self.align_results[entry.get("body")] = {"state": "queued", "error": str(e), "at": time.time()}
+                on_done and on_done(False)
+                return
+            st = (r or {}).get("status")
+            # a server error, a lost sign-in or "slow down" is tried again later; anything else is an answer
+            retry = st in (None, "sign_in_needed", "slow_down", "try_later", "requests_limit_reached") or str(st).startswith("http_5")
+            self.align_results[entry.get("body")] = {"state": "done" if st == "ok" else "queued" if retry else "error",
+                                                     "error": None if st == "ok" else st, "at": time.time()}
+            on_done and on_done(not retry)
         threading.Thread(target=send, daemon=True).start()
 
     def alignments(self, build):

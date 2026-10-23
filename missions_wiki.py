@@ -15,6 +15,7 @@ import json
 import re
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -115,6 +116,32 @@ class MissionWiki:
             return None
         return _get(f"{API}/{urllib.parse.quote(best['uuid'])}", timeout=25).get("data")
 
+    # ------------------------------------------------------------ a mission on its own page
+    def page(self, ref=None, code=None, title=None):
+        """The full in-app page for one mission (Blueprints → How you get it): the contract summary plus
+        its briefing, what has to be done first and what it can lead to. ref is the mission's uuid or
+        slug (the last part of its wiki address); without one it's found by its code or title.
+        None if the wiki doesn't have it; raises when the wiki can't be reached."""
+        key = f"page|{ref or ''}|{code or ''}|{title or ''}"
+        with self._lock:
+            e = self._load().get(key)
+        if e and time.time() - e.get("at", 0) < (HIT_TTL if e.get("data") else MISS_TTL):
+            return e.get("data")
+        rec = None
+        if ref:
+            try:
+                rec = _get(f"{API}/{urllib.parse.quote(str(ref))}", timeout=25).get("data")
+            except urllib.error.HTTPError as err:
+                if err.code != 404:
+                    raise
+        if not rec and (code or title):
+            rec = self._find(code, title, None)
+        data = page_summary(rec) if rec else None
+        with self._lock:
+            self._load()[key] = {"at": time.time(), "data": data}
+            self._save()
+        return data
+
 
 # ------------------------------------------------------------ summary
 def _places(group):
@@ -180,3 +207,46 @@ def summarize(m):
         "reward_items": rewards[:12], "blueprints": [b for b in bps if b][:12],
         "url": m.get("web_url"), "version": m.get("version"),
     }
+
+
+def _chain(groups):
+    """prerequisite_groups / unlock_groups -> [{title, uuid}] (each mission once)."""
+    out, seen = [], set()
+    for g in groups or []:
+        for m in (g or {}).get("missions") or []:
+            t = (m or {}).get("title")
+            if t and t not in seen:
+                seen.add(t)
+                out.append({"title": t, "uuid": m.get("uuid")})
+    return out[:20]
+
+
+def _clean_text(t):
+    t = re.sub(r"<[^>]+>", "", str(t or ""))
+    t = re.sub(r"~mission\(([^)|]*)[^)]*\)", lambda x: f"[{x.group(1).strip() or '…'}]", t)   # filled in per contract
+    return re.sub(r"[ \t]+", " ", t.replace("\\n", "\n")).strip()
+
+
+def page_summary(m):
+    """summarize() plus what the mission's own page in Quantum shows."""
+    m = m or {}
+    out = summarize(m)
+    bp_items = []
+    for pool in m.get("blueprints") or []:
+        if not isinstance(pool, dict):
+            continue
+        for i in pool.get("items") or []:
+            if isinstance(i, dict) and i.get("name"):
+                bp_items.append({"name": i["name"], "uuid": i.get("uuid"), "chance": pool.get("drop_chance")})
+    cd = m.get("cooldown") or {}
+    out.update({
+        "uuid": m.get("uuid"), "description": _clean_text(m.get("description"))[:2500] or None,
+        "systems": m.get("star_systems") or [], "once_only": bool(m.get("once_only")),
+        "cooldown": cd.get("label") if isinstance(cd, dict) else None,
+        "prison": bool(m.get("available_in_prison")),
+        "blueprint_items": bp_items[:30],
+        "needs_first": _chain(m.get("prerequisite_groups")),
+        "leads_to": _chain(m.get("unlock_groups")),
+        "pickups": _places(((m.get("merged_locations") or {}).get("Locations"))),
+    })
+    return out
