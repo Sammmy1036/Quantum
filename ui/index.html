@@ -624,7 +624,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .q-loader svg{width:64px;height:64px;filter:drop-shadow(0 0 18px rgba(47,134,255,.35));animation:qpulse 1.8s ease-in-out infinite}
 .q-loader .bar{width:220px;height:4px;border-radius:2px;background:var(--panel-3);overflow:hidden;position:relative}
 .q-loader .bar i{position:absolute;top:0;bottom:0;width:40%;border-radius:2px;background:linear-gradient(90deg,#8fe3ff,#2f86ff);animation:qbar 1.2s ease-in-out infinite}
-.q-loader .txt{font-size:13.5px;color:var(--ink-2)}
+.q-loader .txt{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:.01em;text-align:center;max-width:min(560px,90%);text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .desc{max-width:1400px;color:var(--ink-2);font-size:13.5px;line-height:1.55;margin:8px 0 12px}
 .desc p{margin:0 0 8px}.desc details summary{cursor:pointer;color:var(--route-2);font-size:12.5px;margin-bottom:6px}
 .desc .src{font-size:11px;color:var(--dim)}
@@ -981,6 +981,41 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
   .hd-hero>div+div{border-left:0;border-top:1px solid var(--line-2)}}
 .mk-row,.mkp-cols>*{min-width:0}
 .acct-code{font:600 22px ui-monospace,Consolas,monospace;letter-spacing:.25em;padding:8px 12px;border-radius:8px;background:rgba(47,134,255,.12);border:1px solid rgba(47,134,255,.35);display:inline-block}
+/* Weapons, Armor, Blueprints */
+.gr-view{display:flex;margin:8px 0 2px}.gr-view button{flex:1}
+.gr-desc{color:var(--ink-2);font-size:13.5px;line-height:1.6;margin:0 2px 16px;max-width:900px}
+.gr-piece .w a{cursor:pointer}
+/* Cart */
+.cart-btn{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-3);color:var(--ink-2);cursor:pointer;flex:none;transition:background .15s,color .15s}
+.cart-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cart-btn:hover{background:#13254a;color:#fff;border-color:var(--route,#2f86ff)}
+.cart-btn.added{background:#57e39b;color:#04160c;border-color:#57e39b}
+.cart-btn.lab{width:auto;gap:7px;padding:0 14px;height:auto;min-height:34px;display:inline-flex;align-items:center;background:linear-gradient(135deg,#8fe3ff,#2f86ff 55%,#1747c9);color:#fff;border:0;font-weight:600}
+.vg{position:relative}.vg>.cart-btn{position:absolute;top:8px;right:8px;z-index:2;background:rgba(7,14,28,.82);backdrop-filter:blur(4px)}
+.vh .hd>.cart-btn{margin-left:8px;align-self:center}
+.sw-t td.act .cart-btn{width:26px;height:26px;vertical-align:middle;margin-right:4px}.sw-t td.act .cart-btn svg{width:15px;height:15px}
+.slot .acts .cart-btn{width:28px;height:28px}
+.cart-all svg,[data-grshopset] svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
+.empty svg.inl{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;vertical-align:-3px}
+/* Shopping list */
+.sh-modelab{display:flex;flex-direction:column;flex:1;gap:3px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.sh-item .hd{align-items:center}.sh-item.done .nm{color:var(--dim);text-decoration:line-through}
+.sh-qty{display:flex;align-items:center;gap:4px;flex:none}.sh-qty b{min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.sh-step{display:flex;gap:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;max-width:880px}
+.sh-step.cur{border-color:var(--route,#2f86ff);box-shadow:0 0 0 1px var(--route,#2f86ff) inset}
+.sh-step.past{opacity:.6}
+.sh-num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--panel-3);color:var(--ink)}
+.sh-step.cur .sh-num{background:var(--route,#2f86ff);color:#fff}
+.sh-body{flex:1;min-width:0}
+.sh-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.sh-head b a{cursor:pointer}.sh-head .muted{display:block;font-size:12px}
+.sh-sub{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sh-here{color:#57e39b}
+.sh-items{margin-top:8px;display:grid;gap:4px}
+.sh-buy{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;background:var(--panel);cursor:pointer}
+.sh-buy .n{flex:1;min-width:0}.sh-buy .n small{display:block;color:var(--dim);font-size:11.5px}
+.sh-buy .p{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-2)}
+.sh-buy.got .n{text-decoration:line-through;color:var(--dim)}
+.sh-done{background:#57e39b1a;border:1px solid #57e39b55;color:#9ff0c4;border-radius:10px;padding:10px 14px;margin:0 2px 14px;max-width:880px}
 </style>
 </head>
 <body>
@@ -1008,6 +1043,11 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="tab uex-tab" role="tab" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
       <button class="tab uex-tab" role="tab" data-tab="components" aria-selected="false" hidden>Components</button>
       <button class="tab uex-tab" role="tab" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
+      <span class="tab-break" aria-hidden="true"></span>
+      <button class="tab" role="tab" data-tab="weapons" aria-selected="false" title="Personal (FPS) weapons, from the Star Citizen Wiki">Weapons</button>
+      <button class="tab" role="tab" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
+      <button class="tab" role="tab" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
+      <button class="tab" role="tab" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
     </div>
 
     <section class="pane active" id="pane-route">
@@ -1126,6 +1166,15 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <div id="fl-out"></div>
     </section>
 
+    <section class="pane" id="pane-weapons"></section>
+    <section class="pane" id="pane-armor"></section>
+    <section class="pane" id="pane-blueprints"></section>
+    <section class="pane" id="pane-shopping">
+      <div class="row" style="gap:6px"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
+        <button class="btn primary" id="sh-plan">Update route</button></div>
+      <div id="sh-out"></div>
+    </section>
+
     <div class="status">
       <div class="row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
       <div class="row" id="log-row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
@@ -1147,6 +1196,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="dr-view" class="pic-panel" style="z-index:31"></div>
     <div id="cp-panel" class="pic-panel"></div>
     <div id="fl-panel" class="pic-panel"></div>
+    <div id="gr-panel" class="pic-panel"></div>
+    <div id="sh-panel" class="pic-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
@@ -2548,7 +2599,8 @@ function renderDetail(){
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span>${inSys.length?`<b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}`:`Nothing to align in ${esc(S.system)}`}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
       <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
-        ${(()=>{ const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); }
+        ${(()=>{ if(S.communityStatus&&S.live?.server&&S.live.server.ok!==S.communityStatus.ok) S.communityStatus={...S.communityStatus,ok:!!S.live.server.ok,error:S.live.server.error};
+          const c=S.communityStatus; if(c===undefined){ S.communityStatus=null; api().community_status().then(x=>{ S.communityStatus=x; renderDetail(); }); }
           const on=c?c.enabled!==false&&!!c.url:true, st=!c?"checking":!on?"off":c.ok?"ok":"offline";
           return `<div class="st-label"><b>Quantum server</b>${connPill(st,st==="offline"?"Offline":null,c?.error)}</div>
           <div class="muted" style="font-size:12px;margin-top:6px;line-height:1.5">Community prices, photos, backups, planet alignment, station location alignment.
@@ -2779,7 +2831,7 @@ function renderDetail(){
     if(a==="bknow"||a==="bkrestore"){ S.bkBusy=a==="bknow"?"save":"restore"; renderDetail();
       const r=a==="bknow"?await api().backup_now(true):await api().backup_restore(); S.bkBusy=null;
       if(a==="bknow") toast(r.ok?"Backed up":"Backup failed: "+(r.error||r.status));
-      else { toast(r.ok?(r.added?`Restored ${r.summary}`:"Nothing was missing: you're up to date"):r.error); if(r.ok&&r.added){ await loadStatic(); await poll(); } }
+      else { toast(r.ok?(r.added?`Restored ${r.summary}`:"Nothing was missing: you're up to date"):r.error); if(r.ok&&r.added) await afterRestore(); }
       S.bk=await api().backup_status(); renderDetail(); return; }
     if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
     if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
@@ -2860,6 +2912,8 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.tab!=="market"){ S.mkMap=false; S.mapMarks=null; } syncMarketPanel();
   $("cp-panel").classList.toggle("show",S.tab==="components"); $("fl-panel").classList.toggle("show",S.tab==="fleet");
   if(S.tab==="components") openComponents(); if(S.tab==="fleet") openFleet();
+  $("gr-panel").classList.toggle("show",!!GEAR[S.tab]); if(GEAR[S.tab]) openGear(S.tab);
+  $("sh-panel").classList.toggle("show",S.tab==="shopping"); if(S.tab==="shopping") openShopping();
   $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
@@ -3365,7 +3419,9 @@ async function renderMarketGrid(){
   $("mk-panel").innerHTML=`<div class="gh"><b>Commodities</b>${L.length} · click one for prices and where to trade it</div>
     <div class="grid">${L.map(c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
       <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`).join("")}</div>`;
-  S.mkData=null; syncMarketPanel(); fillPictures($("mk-panel")); }
+  S.mkData=null; syncMarketPanel(); fillPictures($("mk-panel"));
+  // Back from a commodity: the grid where you left it (same search), like the Vehicles tab
+  if(S.mkBack){ if(S.mkBack.q===q) $("mk-panel").scrollTop=S.mkBack.top; S.mkBack=null; } }
 // A picture was approved on the Quantum server: put it in wherever "No picture yet" is showing, and
 // reload the vehicle list (its pictures come with it), so nothing needs a restart.
 async function refreshPictures(){
@@ -3438,7 +3494,8 @@ function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnM
   renderMarket(); }
 $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
   if(e.target.closest("[data-act=mkall]")){ S.mkSel=null; S.mkData=null; $("mk-search").value=""; return openMarket(); }
-  const c=e.target.closest("[data-mkc]"); if(c){ S.mkSel=S.mk.find(x=>String(x.id)===c.dataset.mkc); $("mk-search").value=S.mkSel.name; $("mk-panel").scrollTop=0; return renderMarket(); }
+  const c=e.target.closest("[data-mkc]"); if(c){ S.mkBack={q:$("mk-search").value.trim().toLowerCase(),top:$("mk-panel").scrollTop};      // where Back returns to
+    S.mkSel=S.mk.find(x=>String(x.id)===c.dataset.mkc); $("mk-search").value=S.mkSel.name; $("mk-panel").scrollTop=0; return renderMarket(); }
   await tradeClick(e); };
 $("mk-search").addEventListener("input",()=>{ if(!S.mkSel||$("mk-search").value.trim().toLowerCase()!==S.mkSel.name.toLowerCase()){ if(S.mkSel&&!S.mkByName?.[$("mk-search").value.trim().toLowerCase()]){ S.mkSel=null; S.mkData=null; openMarket(); } else if(!S.mkSel) renderMarketGrid(); } });
 $("map-back").onclick=()=>{ if(S.mkMap) toggleMarketMap(); };
@@ -3642,7 +3699,7 @@ function vehSpots(list,kind){
   return list.map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
     <div class="p ${i===0?"best":""}">${money(x.price)}${kind==="rent"?`<small class="muted" style="font-weight:500"> /day</small>`:""}</div>
     ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
-    <div class="m">${esc(x.system||"")}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
+    <div class="m">${x.shop&&x.shop!==x.where?`${esc(x.shop)} · `:""}${esc(x.system||"")}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
 // ---- Vehicles: every vehicle's picture in place of the map; the sidebar lists categories (by role, ground
 // vehicles, pad size, maker) that filter the pictures down. "All vehicles" takes the filter off again.
 const VH_ICON={ship:'<path d="M12 2.5l3 7 6.5 3-6.5 2-3 7-3-7-6.5-2 6.5-3z"/>',
@@ -3823,7 +3880,7 @@ $("vh-search").addEventListener("input",()=>{ S.vehDetail=null; renderVehicles()
 
 // ---- Components: a landing page of every category first; pick one to browse it with filters, open a
 // part for its numbers and shops, and fit it to a ship in My Fleet.
-const CP_KEY={WeaponGun:["dps","DPS"],Missile:["missile","Damage"],Shield:["shield_hp","Shield HP"],QuantumDrive:["qt_speed","Quantum speed"],
+const CP_KEY={Radar:["aim_range","Aim assist"],MissileLauncher:["missiles","Missiles"],WeaponGun:["dps","DPS"],Missile:["missile","Damage"],Shield:["shield_hp","Shield HP"],QuantumDrive:["qt_speed","Quantum speed"],
   Cooler:["coolant_make","Cooling"],PowerPlant:["power","Power output"]};
 const CP_ICONS=[   // first match wins, so the specific ones ("Missile Racks") come before the general ("Missiles")
   [/bomb\s*rack/i,'<path d="M3 5h18M7 5v2.5M17 5v2.5"/><path d="M7 7.5c1.6 0 2.3 1.7 2.3 4s-1.2 3.9-2.3 4.6c-1.1-.7-2.3-2.3-2.3-4.6S5.4 7.5 7 7.5zM17 7.5c1.6 0 2.3 1.7 2.3 4s-1.2 3.9-2.3 4.6c-1.1-.7-2.3-2.3-2.3-4.6s.7-4 2.3-4z"/><path d="M5.8 16.1L5 19h4l-.8-2.9M15.8 16.1L15 19h4l-.8-2.9"/>'],
@@ -3888,7 +3945,7 @@ const cpWordHit=(t,w)=>w.length>=4?t.includes(w):new RegExp(`(^|[^a-z0-9])${w.re
 // Parts anywhere that match a search: name, maker, category, or a gun's kind ("repeater")
 function cpSearchAll(q){ if(!S.cpIndex||q.length<2) return [];
   const words=q.split(/\s+/).filter(Boolean);
-  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.maker} ${makerAlias(i.maker)} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.every(w=>cpWordHit(t,w)); })
+  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.aka||""} ${i.maker} ${makerAlias(i.maker)} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.every(w=>cpWordHit(t,w)); })
     .sort((a,b)=>((b.name||"").toLowerCase().startsWith(q))-((a.name||"").toLowerCase().startsWith(q))||(a.name||"").localeCompare(b.name||"")); }
 const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
 const cpGrade=i=>String(i.game?.grade||i.grade||"");
@@ -3970,7 +4027,7 @@ function cpFiltered(){ const q=$("cp-search").value.trim().toLowerCase(), size=$
     avail=$("cp-avail").value, ship=$("cp-ship").value, sort=$("cp-sort").value;
   let fits=null; if(ship&&S.cpFit?.ok){ const sh=S.cpFit.ships.find(s=>s.uid===ship); fits=new Set((sh?.slots||[]).map(s=>String(s.size))); }
   const wt=$("cp-wtype").value;
-  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||(t=>q.split(/\s+/).every(w=>cpWordHit(t,w)))(`${i.name} ${i.maker} ${i.game?.maker||""} ${makerAlias(i.game?.maker||i.maker)} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase()))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
+  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||(t=>q.split(/\s+/).every(w=>cpWordHit(t,w)))(`${i.name} ${i.aka||""} ${i.maker} ${i.game?.maker||""} ${makerAlias(i.game?.maker||i.maker)} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase()))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
     &&(!maker||(i.game?.maker||i.maker)===maker)&&(avail!=="buy"||i.buy.length)&&(avail!=="noshop"||!i.buy.length)&&(!fits||fits.has(cpSize(i))));
   const price=i=>i.buy[0]?.price??null, key=CP_KEY[S.cpCat?.slot]?.[0], kv=i=>+(i.game?.stats?.[key])||null;
   const by={price:(a,b)=>(price(a)==null)-(price(b)==null)||(price(a)??0)-(price(b)??0),
@@ -3985,11 +4042,12 @@ function cpFitsShips(i){ const f=S.cpFit; if(!f?.ok||f.cat!==S.cpCat?.id||!f.shi
 function cpFitsLine(i){ const main=cpFitsShips(i)?.find(s=>s.main); return main?`<span class="fits" title="Has a slot this fits (in its primary loadout)">✓ Fits your ${esc(main.name)}</span>`:""; }
 function cpKeyText(i){ const k=CP_KEY[S.cpCat?.slot], v=k&&i.game?.stats?.[k[0]]; if(!v) return "";
   const f=CP_STATS.find(x=>x[0]===k[0]), st=i.game?.stats||{};
-  return `${f?f[2](v):v}${k[0]==="dps"?" DPS":k[0]==="shield_hp"?" HP":k[0]==="missile"?" dmg":""}${k[0]==="qt_speed"?qdTimes(st):""}`; }
+  if(k[0]==="missiles") return `${v} × S${st.missile_size||"?"} missiles`;
+  return `${f?f[2](v):v}${k[0]==="dps"?" DPS":k[0]==="shield_hp"?" HP":k[0]==="missile"?" dmg":""}${k[0]==="qt_speed"?qdTimes(st):""}${k[0]==="shield_hp"?shRegen(st):""}`; }
 function cpCard(i,pinned){ const b=i.buy[0], kt=cpKeyText(i);
   return `<div class="vh ${pinned?"hl":""}"><div class="hd" data-cp="${i.id}" ${pinned?'data-pinned="1"':""}><div>${pinned?`<div class="mk" style="color:var(--route-2);margin-bottom:2px">Selected</div>`:""}<div class="nm">${esc(i.name)}</div>
       <div class="mk">${esc(i.game?.maker||i.maker)}${cpSize(i)?` · size ${esc(cpSize(i))}`:""}${cpGrade(i)?` · grade ${esc(cpGrade(i))}`:""}${kt?` · ${esc(kt)}`:""}</div>${cpFitsLine(i)}</div>
-    <div class="pr">${b?money(b.price):`<span class="noshop">Not in shops</span>`}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div></div>
+    <div class="pr">${b?money(b.price):`<span class="noshop">Not in shops</span>`}${i.buy.length>1?`<small>${i.buy.length} shops</small>`:""}</div>${b?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}</div>
     ${pinned?`<div class="bd"><div class="row" style="gap:6px">${i.wiki?`<button class="btn small ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn small ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}<span class="spacer"></span><button class="btn small ghost" data-unpin="1">Close</button></div></div>`:""}</div>`; }
 async function renderComponents(){
   if(!S.cpItems) return;
@@ -4009,10 +4067,11 @@ function renderComponentGrid(L){ const c=S.cpCat;
   const wts=(S.cpTypes||[]).filter(([k])=>S.cpItems.some(i=>i.wtype===k)), wt=$("cp-wtype").value;
   $("cp-panel").innerHTML=`<div class="gh"><button class="btn small ghost" data-act="cphome">← All categories</button><b>${esc(wt?wtLabel(wt):c.name)}</b>${L.length} shown · click one for its page</div>
     ${c.slot==="WeaponGun"&&wts.length?`<div class="wt-bar"><button class="wt-chip ${!wt?"on":""}" data-wtchip="">${offIcon("weapons")}All guns</button>${wts.map(([k,lab])=>`<button class="wt-chip ${wt===k?"on":""}" data-wtchip="${k}" title="${esc(lab)}">${wtIcon(k)}${esc(lab)}</button>`).join("")}</div>`:""}
-    ${L.length?`<div class="grid">${L.slice(0,200).map(i=>{ const kt=cpKeyText(i); return `<div class="vg" data-cpc="${i.id}"><div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
+    ${L.length?`<div class="grid">${L.slice(0,200).map(i=>{ const kt=cpKeyText(i); return `<div class="vg" data-cpc="${i.id}">${i.buy[0]?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
       <div class="tx"><b>${esc(i.name)}</b><span>${cpSize(i)?`S${esc(cpSize(i))} · `:""}${cpGrade(i)?`${esc(cpGrade(i))} · `:""}${esc(i.game?.maker||i.maker)}${i.buy[0]?` · ${money(i.buy[0].price)}`:" · not in shops"}</span>${kt||i.wtype?`<span class="kt">${i.wtype?`${wtIcon(i.wtype)} ${esc(wtLabel(i.wtype).replace(/s$/,""))}${kt?" · ":""}`:""}${esc(kt)}</span>`:""}${cpFitsLine(i)}</div></div>`; }).join("")}</div>`
       :`<div class="empty">Nothing matches these filters.<br><br><button class="btn small" data-cpreset="1">Clear filters</button></div>`}`;
-  markComponentGrid(); fillPictures($("cp-panel")); }
+  markComponentGrid(); fillPictures($("cp-panel"));
+  if(S.cpBack){ if(S.cpBack.key===S.cpGalKey) $("cp-panel").scrollTop=S.cpBack.top; S.cpBack=null; } }
 function markComponentGrid(){ for(const c of $("cp-panel").querySelectorAll("[data-cpc]")) c.classList.toggle("hl",c.dataset.cpc===String(S.cpSel)); }
 function cpReset(){ for(const k of ["cp-search","cp-size","cp-grade","cp-maker","cp-avail","cp-ship","cp-wtype"]) $(k).value=""; S.cpDetail=null; renderComponents(); }
 $("cp-panel").onclick=async e=>{ if(await tradeClick(e)) return;
@@ -4023,15 +4082,19 @@ $("cp-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const pt=e.target.closest("[data-cppart]"); if(pt) return openCpPart(pt.dataset.cppart);
   const wc=e.target.closest("[data-wtchip]"); if(wc){ $("cp-wtype").value=wc.dataset.wtchip; S.cpDetail=null; return renderComponents(); }
   const fit=e.target.closest("[data-cpfit]"); if(fit) return cpFitTo(fit);
+  if(e.target.closest("[data-cpshop]")){ const i=S.cpItems?.find(x=>String(x.id)===String(S.cpDetail)); if(!i) return;
+    const r=await api().shop_add([{name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }
   if(e.target.closest("[data-act=cpback]")){ S.cpDetail=null; S.cpGalKey=null; return renderComponents(); }
-  const c=e.target.closest("[data-cpc]"); if(!c) return; S.cpSel=c.dataset.cpc; S.cpDetail=c.dataset.cpc; renderComponents(); $("pane-components").scrollTop=0; };
+  const c=e.target.closest("[data-cpc]"); if(!c) return; S.cpBack={key:S.cpGalKey,top:$("cp-panel").scrollTop};
+  S.cpSel=c.dataset.cpc; S.cpDetail=c.dataset.cpc; renderComponents(); $("pane-components").scrollTop=0; };
 // Numbers from the game files are floats, and subtracting two (a comparison's change) leaves tails like
 // 0.40000000000000036: show at most two decimals, and none when they're zeros (12.4, 12.39, 7).
 const nf=n=>typeof n==="number"&&isFinite(n)&&!Number.isInteger(n)?String(+n.toFixed(2)):n;
 // A component's own page in place of the grid: picture, what it is, its numbers, where to buy it, and fitting.
 const CP_STATS=[["dps","DPS",n=>Math.round(n).toLocaleString()],["alpha","Damage per shot",n=>Math.round(n*10)/10],["rpm","Fire rate",n=>`${Math.round(n)} rpm`],
   ["damage_type","Damage type",x=>x],["range","Range",n=>`${Math.round(n).toLocaleString()} m`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],["ammo","Ammo",n=>nf(n)],
-  ["missile","Missile damage",n=>Math.round(n).toLocaleString()],["shield_hp","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n)}/s`],
+  ["missile","Missile damage",n=>Math.round(n).toLocaleString()],["missiles","Missiles held",n=>nf(n)],["aim_range","Aim assist range",n=>`${Math.round(n).toLocaleString()} m`],
+  ["radar_ir","IR sensitivity",n=>nf(n)],["radar_em","EM sensitivity",n=>nf(n)],["radar_cs","Cross section sensitivity",n=>nf(n)],["missile_size","Missile size",n=>`S${n}`],["shield_hp","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n)}/s`],
   ["regen_delay","Regen delay after hit",n=>`${nf(n)} s`],["down_delay","Regen delay when down",n=>`${nf(n)} s`],["qt_speed","Quantum speed",n=>`${fmtBig(n)}/s`],
   ["qt_spool","Spool time",n=>`${nf(n)} s`],["qt_cooldown","Cooldown",n=>`${nf(n)} s`],["qt_fuel","Quantum fuel use",n=>nf(n)],["power","Power output",n=>`${nf(n)} pips`],
   ["coolant_make","Cooling",n=>`${nf(n)}/s`],["power_use","Power use",n=>`${nf(n)} pips`],["em","EM signature",n=>Math.round(n).toLocaleString()],["ir","IR signature",n=>Math.round(n).toLocaleString()],
@@ -4052,7 +4115,7 @@ async function renderComponentDetail(id){
             {label:"Price",value:i.buy[0]?money(i.buy[0].price):"Not in shops"}],
           [{label:"Sold at",value:i.buy.length?plural(i.buy.length,"shop"):null},...(()=>{ const k=(CP_KEY[S.cpCat?.slot]||[])[0], f=CP_STATS.find(x=>x[0]===k);
             return f&&st[k]!=null?[{label:f[1],value:f[2](st[k])}]:[]; })()])}
-        <div class="row" style="gap:8px;margin-top:12px">${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
+        <div class="row" style="gap:8px;margin-top:12px">${i.buy.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null},"Add to cart"):""}${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
     ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px">${esc(i.note)}</div>`:""}
     <div class="vd-grid vd-flat">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
       <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, from crafting, or fitted stock on a ship.</div>`}</div>
@@ -4106,6 +4169,15 @@ async function openFleet(){
   loadBrands(()=>{ if(S.tab==="fleet") renderFleet(); });               // manufacturer logos, shared with the Vehicles tab
   $("fl-dl").innerHTML=(S.veh||[]).map(v=>`<option value="${esc(v.full)}">${esc(v.maker)}${v.scu?` · ${v.scu} SCU`:""}</option>`).join("");
   await renderFleet(); }
+// After a backup restore: drop what the open tabs cached and draw them again, so restored ships, loadouts and
+// trade runs show straight away instead of after clicking to another tab and back.
+async function afterRestore(){
+  S.flLoad=null; S.flSlot=null; S.flOpts=null; S.flCmp=null; S.cpFit=null; S.flLiv={}; S.slData=null;
+  try{ await loadStatic(); await poll(); }catch(e){}
+  if(S.tab==="fleet") await renderFleet();
+  else if(S.tab==="trade"&&S.trView==="mine") await renderRuns();
+  else if(S.tab==="shopping") await renderShopping?.();
+  else if(S.tab==="components"&&S.cpDetail) renderComponents(); }
 async function renderFleet(){
   const fl=await api().fleet_list(); S.fleet=fl.ships;
   if(!S.flSel||!fl.ships.some(x=>x.uid===S.flSel)) S.flSel=fl.main||fl.ships[0]?.uid||null;
@@ -4124,10 +4196,14 @@ const SHIP_STATS=[["dps","DPS (pilot)",n=>Math.round(n).toLocaleString()],["miss
   ["scm","SCM",n=>`${nf(n)} m/s`],["max","Max speed",n=>`${nf(n)} m/s`],["qt_speed","Quantum",n=>`${fmtBig(n)}/s`],["qt_range","QT range",n=>fmtBig(n)],
   ["em","EM",n=>fmtBig(n),true],["ir","IR",n=>fmtBig(n),true]];
 const ITEM_STAT={dps:["DPS",n=>Math.round(n).toLocaleString()],missile:["Damage",n=>Math.round(n).toLocaleString()],shield_hp:["Shield HP",n=>Math.round(n).toLocaleString()],
+  aim_range:["Aim assist",n=>`${Math.round(n).toLocaleString()} m`],
+  missiles:["Missiles",(n,st)=>st?.missile_size?`${n} × S${st.missile_size}`:String(n)],
   qt_speed:["Speed",n=>`${fmtBig(n)}/s`],cooling:["Cooling",n=>`${nf(n)} seg`],power:["Power",n=>`${nf(n)} seg`],scm:["SCM speed",n=>`${Math.round(n)} m/s`]};
 // A quantum drive's spool-up and cooldown times (from the game files), for its slot and its options
+// A shield's regeneration rate, on its slot and in its options (shield HP is the slot's key number)
+const shRegen=st=>st?.shield_regen!=null?` · regen ${Math.round(st.shield_regen).toLocaleString()}/s`:"";
 const qdTimes=st=>(st?.qt_spool!=null?` · spool ${nf(st.qt_spool)} s`:"")+(st?.qt_cooldown!=null?` · cooldown ${nf(st.qt_cooldown)} s`:"");
-const KEY_FOR={WeaponGun:"dps",Missile:"missile",Shield:"shield_hp",QuantumDrive:"qt_speed",Cooler:"cooling",PowerPlant:"power",FlightController:"scm"};
+const KEY_FOR={Radar:"aim_range",WeaponGun:"dps",Missile:"missile",MissileLauncher:"missiles",Shield:"shield_hp",QuantumDrive:"qt_speed",Cooler:"cooling",PowerPlant:"power",FlightController:"scm"};
 const deltaTxt=(d,fmt,lowerBetter)=>{ if(!d) return ""; const good=lowerBetter?d<0:d>0; return `<em class="${good?"up":"down"}">${d>0?"+":"−"}${fmt(Math.abs(d))}</em>`; };
 // Simple line symbols for each power system, in the spirit of the in-game power screen.
 const PWR_ICONS={
@@ -4139,7 +4215,7 @@ const PWR_ICONS={
   LifeSupportGenerator:'<path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>',
   Cooler:'<path d="M12 2v20M4 7l16 10M20 7L4 17"/><path d="M9.5 3.5L12 6l2.5-2.5M9.5 20.5L12 18l2.5 2.5"/>'};
 // My Fleet's slot groups: the game's icon for each kind of part (mining lasers get the drawn one)
-const SLOT_OFF={PowerPlant:"powerPlants",Cooler:"coolers",Shield:"shieldGenerator",QuantumDrive:"quantumDrives",JumpDrive:"jumpModules",Radar:"radar",WeaponGun:"weapons",Missile:"missiles"};
+const SLOT_OFF={MissileLauncher:"missiles",PowerPlant:"powerPlants",Cooler:"coolers",Shield:"shieldGenerator",QuantumDrive:"quantumDrives",JumpDrive:"jumpModules",Radar:"radar",WeaponGun:"weapons",Missile:"missiles"};
 const slotIcon=t=>t==="FlightController"?`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c5-1 9-4 12-9l1.5 1.5C14 13 9 17 3 17z"/><path d="M13 18l8-2M16 9l5 1"/></svg>`:SLOT_OFF[t]?offIcon(SLOT_OFF[t]):t==="WeaponMining"?`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21l7-7"/><path d="M10 14l4-10 6 6-10 4z"/></svg>`:"";
 const PWR_OFF={weapons:"weapons",Shield:"shieldGenerator",Radar:"radar",QuantumDrive:"quantumDrives",Cooler:"coolers"};
 const pwrIcon=t=>PWR_OFF[t]?`<svg class="pwr-ic ofc" viewBox="0 0 16 16" aria-hidden="true">${OFF_ICONS[PWR_OFF[t]]}</svg>`
@@ -4183,14 +4259,15 @@ async function renderShip(uid){
     // One row per slot: size and grade, the part and its maker, its key number, and Change
     return `<div class="slot ${sl.fitted?"fit":""} ${open?"open":""}">
       <div class="top"><span class="sz" title="Size ${esc(sl.size??"?")}">S${esc(sl.size??"?")}</span><span class="gr" title="${grade?`Grade ${esc(grade)}`:"No grade"}">${esc(grade||"–")}</span>
-        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
-        ${val?`<div class="val"><b>${ITEM_STAT[k][1](val)}${sl.fitted&&stockVal?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
-        <div class="acts">${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
+        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.rack_name?` · on ${esc(sl.rack_name)}`:sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.type==="Shield"?shRegen(stats):""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
+        ${val?`<div class="val"><b>${ITEM_STAT[k][1](val,stats)}${sl.fitted&&stockVal&&k!=="missiles"?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
+        <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
   $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
         ${loadoutBar(r.loadouts)}
         <div id="fl-livery" class="lv-row">${liveryHtml(uid)}</div>
+        ${changed?`<div class="row" style="gap:8px;margin:2px 0 8px"><button class="btn small ghost cart-all" data-flshop="1" title="Put every part you've swapped into this loadout in your cart">${CART_SVG}Add this loadout's ${plural(changed,"swapped part")} to cart</button></div>`:""}
         ${stats}
         ${r.power?.pips_gen?`<div class="pwr-row">
           <div class="seg-mini" title="What's powered: Combat = weapons and shields on, quantum drive off. Travel = quantum drive on, weapons and shields off."><button data-pmode="scm" class="${r.power.mode!=="nav"?"on":""}">Combat · SCM</button><button data-pmode="nav" class="${r.power.mode==="nav"?"on":""}">Travel · NAV</button></div>
@@ -4198,7 +4275,8 @@ async function renderShip(uid){
           ${r.power.custom?`<span class="muted" style="font-size:12px">custom power</span>`:""}</div>`:""}</div></div>
     ${r.power?.pips_gen&&S.flPowerOpen?powerPanel(r):""}
     <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
-      return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
+      const ms=list[0].type==="Missile"&&r.missiles, msTxt=ms?` · ${Object.entries(ms.by_size).sort((a,b)=>b[0]-a[0]).map(([z,n])=>`${n} × S${z}`).join(", ")}${ms.loaded<ms.slots?` · ${ms.slots-ms.loaded} empty`:""}`:"";
+      return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}${esc(msTxt)}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
     <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
   if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size);
     // Just opened with Change: bring the slot and its options/comparison into view instead of leaving them below the fold
@@ -4288,7 +4366,10 @@ function cmpDelta(k,a,b){ if(typeof a!=="number"||typeof b!=="number"||a===b) re
 function compareHtml(now,opt,k){
   // A power plant carries its output as both "power" and "power_make" (the same number from two places in the
   // game files), which listed Power output twice: fold them into one "power" row on both sides.
-  const one=o=>{ const st={...o.stats}; if(st.power==null&&st.power_make!=null) st.power=st.power_make; delete st.power_make; return {...o,stats:st}; };
+  // Likewise a part's power draw comes as "power_use" (its power data) and "power_draw" (its stats), and some
+  // parts only have one of them, which listed Power use and Power draw both, one with gaps: fold them into "power_draw".
+  const one=o=>{ const st={...o.stats}; if(st.power==null&&st.power_make!=null) st.power=st.power_make; delete st.power_make;
+    if(st.power_draw==null&&st.power_use!=null) st.power_draw=st.power_use; delete st.power_use; return {...o,stats:st}; };
   now=one(now); opt=one(opt);
   const keys=CMP_STATS.filter(([x])=>now.stats[x]!=null||opt.stats[x]!=null);
   const val=(st,x,f)=>st[x]==null||st[x]===""?`<span class="muted">–</span>`:esc(String(f(st[x])));
@@ -4301,9 +4382,16 @@ function compareHtml(now,opt,k){
     <div class="row" style="gap:6px;justify-content:flex-end"><button class="btn small ghost" data-flcmpclose="1">Close comparison</button><button class="btn small primary" data-flfit="${esc(opt.name)}" data-uuid="${esc(opt.uuid||"")}">Fit ${esc(opt.name)}</button></div></div>`; }
 function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) return;
   if(!r.items.length){ box.innerHTML=`<div class="muted" style="font-size:12.5px">UEX lists nothing else of this kind at this size.</div>`; return; }
-  const k=r.key, sort=S.flSort||(k?"best":"price"), sl=S.flLoad?.slots.find(x=>x.port===S.flSlot), now=slotNow(sl), cur=k&&now?.stats?.[k];
-  const q=(S.flQuery||"").trim().toLowerCase(), lab=k?ITEM_STAT[k][0]:null, fmt=k?ITEM_STAT[k][1]:null;
-  const L=r.items.filter(i=>!q||`${i.name} ${i.maker} ${i.class||""} ${i.grade||""}`.toLowerCase().includes(q)).sort(sort==="best"&&k?(a,b)=>(b.stats[k]||0)-(a.stats[k]||0)
+  const sl=S.flLoad?.slots.find(x=>x.port===S.flSlot), now=slotNow(sl);
+  // Radars rank by aim assist range; with an older component_stats.json that lacks it, by grade (A first),
+  // then the lowest EM, then the most health
+  const byGrade=sl?.type==="Radar"&&!r.items.some(i=>i.stats?.aim_range), k=byGrade?null:r.key, cur=k&&now?.stats?.[k];
+  const ranked=k||byGrade, sort=S.flSort||(ranked?"best":"price");
+  const gradeN=g=>({A:0,B:1,C:2,D:3}[String(g||"").toUpperCase()]??9);
+  const q=(S.flQuery||"").trim().toLowerCase(), lab=k?ITEM_STAT[k][0]:null, fmt=k?ITEM_STAT[k][1]:null, sh=sl?.type==="Shield", rackN=sl?.type==="Missile"&&sl.rack?S.flLoad.slots.filter(x=>x.rack===sl.rack).length:0;
+  const L=r.items.filter(i=>!q||`${i.name} ${i.maker} ${i.class||""} ${i.grade||""}`.toLowerCase().includes(q)).sort(sort==="best"&&byGrade?(a,b)=>gradeN(a.grade)-gradeN(b.grade)||(a.stats.em??9e9)-(b.stats.em??9e9)||(b.stats.health||0)-(a.stats.health||0)
+    :sort==="best"&&k==="missiles"?(a,b)=>((b.stats.missiles||0)*(b.stats.missile_size||1)**2)-((a.stats.missiles||0)*(a.stats.missile_size||1)**2)||(b.stats.missile_size||0)-(a.stats.missile_size||0)
+    :sort==="best"&&k?(a,b)=>(b.stats[k]||0)-(a.stats[k]||0)
     :sort==="stealth"?(a,b)=>((a.stats.em??9e9)+(a.stats.ir??0))-((b.stats.em??9e9)+(b.stats.ir??0))
     :sort==="price_desc"?(a,b)=>(a.price==null)-(b.price==null)||(b.price||0)-(a.price||0)
     :(a,b)=>(a.price==null)-(b.price==null)||(a.price||0)-(b.price||0));
@@ -4311,22 +4399,24 @@ function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) r
   const hadFocus=document.activeElement?.id==="fl-q", sel=S.flCmp&&r.items.find(i=>(i.uuid||i.name)===S.flCmp);
   const isNow=i=>(i.name||"").toLowerCase()===(now?.name||"").toLowerCase(), qd=k==="qt_speed";
   box.innerHTML=`<div class="sw-now"><span class="sw-tag">In this slot now</span><b>${esc(now?.name||"Empty")}</b><span class="muted">${esc(now?.maker||"")}${now?.grade?` · grade ${esc(now.grade)}`:""} · ${now?.yours?"your swap":"stock"}</span>
-      ${k&&cur!=null?`<span class="sw-key">${esc(lab)} <b>${esc(String(fmt(cur)))}</b></span>`:""}${now?.stats?.em!=null?`<span class="sw-key">EM <b>${fmtBig(now.stats.em)}</b></span>`:""}${qd&&now?.stats?.qt_spool!=null?`<span class="sw-key">Spool <b>${nf(now.stats.qt_spool)} s</b></span>`:""}${qd&&now?.stats?.qt_cooldown!=null?`<span class="sw-key">Cooldown <b>${nf(now.stats.qt_cooldown)} s</b></span>`:""}</div>
+      ${k&&cur!=null?`<span class="sw-key">${esc(lab)} <b>${esc(String(fmt(cur,now.stats)))}</b></span>`:""}${sh&&now?.stats?.shield_regen!=null?`<span class="sw-key">Regen <b>${Math.round(now.stats.shield_regen).toLocaleString()}/s</b></span>`:""}${now?.stats?.em!=null?`<span class="sw-key">EM <b>${fmtBig(now.stats.em)}</b></span>`:""}${qd&&now?.stats?.qt_spool!=null?`<span class="sw-key">Spool <b>${nf(now.stats.qt_spool)} s</b></span>`:""}${qd&&now?.stats?.qt_cooldown!=null?`<span class="sw-key">Cooldown <b>${nf(now.stats.qt_cooldown)} s</b></span>`:""}</div>
     <div class="row" style="gap:6px;margin:8px 0"><input class="field" id="fl-q" placeholder="Search by name, maker or class" value="${esc(S.flQuery||"")}" style="flex:1;min-width:160px;padding:4px 8px" autocomplete="off">
       <span class="muted" style="font-size:12px">${L.length} that fit</span>
-      <select class="field" id="fl-sort" style="width:auto;padding:3px 8px">${k?`<option value="best" ${sort==="best"?"selected":""}>Most ${esc(lab)}</option><option value="stealth" ${sort==="stealth"?"selected":""}>Stealthiest (lowest EM/IR)</option>`:""}<option value="price" ${sort==="price"?"selected":""}>Price: Low to High</option><option value="price_desc" ${sort==="price_desc"?"selected":""}>Price: High to Low</option></select></div>
+      <select class="field" id="fl-sort" style="width:auto;padding:3px 8px">${byGrade?`<option value="best" ${sort==="best"?"selected":""}>Best (grade, then lowest EM)</option><option value="stealth" ${sort==="stealth"?"selected":""}>Stealthiest (lowest EM/IR)</option>`:""}${k?`<option value="best" ${sort==="best"?"selected":""}>${k==="missiles"?"Most missile capacity":`Most ${esc(lab)}`}</option><option value="stealth" ${sort==="stealth"?"selected":""}>Stealthiest (lowest EM/IR)</option>`:""}<option value="price" ${sort==="price"?"selected":""}>Price: Low to High</option><option value="price_desc" ${sort==="price_desc"?"selected":""}>Price: High to Low</option></select></div>
+    ${sl?.type==="MissileLauncher"?`<div class="muted" style="font-size:12px;margin:0 2px 8px;line-height:1.5">The rack decides the missiles: more, smaller ones or fewer, bigger ones. A new rack's missile slots start empty; fit missiles to them in the Missiles group below.</div>`:""}
     ${sel&&now?compareHtml(now,sel,k):""}
-    <div class="sw-wrap"><table class="sw-t"><thead><tr><th>Component</th><th>Grade</th>${k?`<th class="num" title="${esc(lab)} of each option">${esc(lab)}</th><th class="num" title="Compared with what's in the slot now">vs now</th>`:""}${qd?`<th class="num" title="Spool-up time before a jump: lower is better">Spool</th><th class="num" title="Cooldown after a jump: lower is better">Cooldown</th>`:""}<th class="num" title="Electromagnetic signature: lower is stealthier">EM</th><th class="num">Price</th><th></th></tr></thead><tbody>
+    <div class="sw-wrap"><table class="sw-t"><thead><tr><th>Component</th><th>Grade</th>${k?`<th class="num" title="${esc(lab)} of each option">${esc(lab)}</th><th class="num" title="Compared with what's in the slot now">vs now</th>`:""}${sh?`<th class="num" title="Shield regeneration per second: higher is better">Regen</th>`:""}${qd?`<th class="num" title="Spool-up time before a jump: lower is better">Spool</th><th class="num" title="Cooldown after a jump: lower is better">Cooldown</th>`:""}<th class="num" title="Electromagnetic signature: lower is stealthier">EM</th><th class="num">Price</th><th></th></tr></thead><tbody>
     ${L.map((i,n)=>{ const v=k?i.stats[k]:null, here=isNow(i), on=sel===i;
       return `<tr class="${on?"on":""} ${here?"here":""}" data-flcmp="${esc(i.uuid||i.name)}" title="Click to compare with what's in the slot now">
-        <td><b>${esc(i.name)}</b>${n===0&&sort==="best"&&v?' <span class="best-tag">best</span>':""}${here?' <span class="now-tag">in slot</span>':""}<div class="sub">${esc(i.maker)}${i.class?` · ${esc(i.class)}`:""}${i.buy[0]?` · ${i.buy[0].place?`<a data-open="${esc(i.buy[0].place)}">${esc(i.buy[0].where)}</a>`:esc(i.buy[0].where)}`:" · not in shops"}</div></td>
+        <td><b>${esc(i.name)}</b>${n===0&&sort==="best"&&(v||byGrade)?' <span class="best-tag">best</span>':""}${here?' <span class="now-tag">in slot</span>':""}<div class="sub">${esc(i.maker)}${i.class?` · ${esc(i.class)}`:""}${i.buy[0]?` · ${i.buy[0].place?`<a data-open="${esc(i.buy[0].place)}">${esc(i.buy[0].where)}</a>`:esc(i.buy[0].where)}`:" · not in shops"}</div></td>
         <td>${i.grade?`<span class="gr-b">${esc(i.grade)}</span>`:"–"}</td>
-        ${k?`<td class="num">${v!=null?`<b>${esc(String(fmt(v)))}</b><div class="bar"><i style="width:${Math.max(3,Math.round((+v||0)/top*100))}%"></i></div>`:"–"}</td><td class="num">${v!=null&&cur!=null&&!here?cmpDelta(k,+cur,+v)||'<span class="muted">same</span>':""}</td>`:""}
+        ${k?`<td class="num">${v!=null?`<b>${esc(String(fmt(v,i.stats)))}</b><div class="bar"><i style="width:${Math.max(3,Math.round((+v||0)/top*100))}%"></i></div>`:"–"}</td><td class="num">${v!=null&&cur!=null&&!here?cmpDelta(k,+cur,+v)||'<span class="muted">same</span>':""}</td>`:""}
+        ${sh?`<td class="num">${i.stats.shield_regen!=null?`${Math.round(i.stats.shield_regen).toLocaleString()}/s${now?.stats?.shield_regen!=null&&!here?`<div>${cmpDelta("shield_regen",+now.stats.shield_regen,+i.stats.shield_regen)}</div>`:""}`:"–"}</td>`:""}
         ${qd?`<td class="num">${i.stats.qt_spool!=null?`${nf(i.stats.qt_spool)} s${now?.stats?.qt_spool!=null&&!here?`<div>${cmpDelta("qt_spool",+now.stats.qt_spool,+i.stats.qt_spool)}</div>`:""}`:"–"}</td>
           <td class="num">${i.stats.qt_cooldown!=null?`${nf(i.stats.qt_cooldown)} s${now?.stats?.qt_cooldown!=null&&!here?`<div>${cmpDelta("qt_cooldown",+now.stats.qt_cooldown,+i.stats.qt_cooldown)}</div>`:""}`:"–"}</td>`:""}
         <td class="num">${i.stats.em!=null?fmtBig(i.stats.em):"–"}</td>
         <td class="num">${i.price?money(i.price):'<span class="muted">–</span>'}</td>
-        <td class="act"><button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}</td></tr>`; }).join("")}
+        <td class="act">${i.buy?.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}${rackN>1?`<button class="btn small ghost" data-flfill="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to all ${rackN} slots on ${esc(sl.rack_name||"this rack")}">All ${rackN}</button>`:""}</td></tr>`; }).join("")}
     </tbody></table></div>`;
   const so=$("fl-sort"); if(so) so.onchange=()=>{ S.flSort=so.value; renderSlotOptions(); };
   const qi=$("fl-q"); if(qi){ qi.oninput=()=>{ S.flQuery=qi.value; const pos=qi.selectionStart; renderSlotOptions(); const n=$("fl-q"); n.focus(); n.setSelectionRange(pos,pos); };
@@ -4353,6 +4443,9 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;
     const r=await api().fleet_loadout_switch(S.flSel,ll.dataset.flload); if(!r.ok) return toast(r.error); S.flSlot=null; S.flOpts=null; S.flLoMode=null; return renderShip(S.flSel); }
   if(e.target.closest("[data-flcmpclose]")){ S.flCmp=null; return renderSlotOptions(); }
+  const fill=e.target.closest("[data-flfill]"); if(fill){ const sl=S.flLoad?.slots.find(x=>x.port===S.flSlot); if(!sl?.rack) return;
+    const r=await api().fleet_fill_rack(S.flSel,sl.rack,fill.dataset.flfill,fill.dataset.uuid||null); if(!r.ok) return toast(r.error);
+    toast(`Fitted ${fill.dataset.flfill} × ${r.count}`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
   const fit=e.target.closest("[data-flfit]"); if(fit){ await api().fleet_set_slot(S.flSel,S.flSlot,fit.dataset.flfit,fit.dataset.uuid||null); toast(`Fitted ${fit.dataset.flfit}`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
   const cm=e.target.closest("[data-flcmp]"); if(cm&&!e.target.closest("a,[data-open]")){ S.flCmp=S.flCmp===cm.dataset.flcmp&&!e.target.closest("button")?null:cm.dataset.flcmp; return renderSlotOptions(); }
   const po=e.target.closest("[data-poff]"); if(po) return toast(po.dataset.poff==="q"?"The quantum drive only takes power in NAV mode. Switch to Travel · NAV first.":"Weapons and shields take no power in NAV mode. Switch to Combat · SCM first.");
@@ -4362,6 +4455,8 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const pm=e.target.closest("[data-pmode]"); if(pm){ await api().fleet_set_power(S.flSel,null,pm.dataset.pmode,null); return renderShip(S.flSel); }
   if(e.target.closest("[data-ptoggle]")){ S.flPowerOpen=!S.flPowerOpen; return renderShip(S.flSel); }
   if(e.target.closest("[data-coolauto]")){ await api().fleet_set_power(S.flSel,null,null,"auto"); return renderShip(S.flSel); }
+  if(e.target.closest("[data-flshop]")){ const r=await api().shop_add_loadout(S.flSel); if(!r.ok) return toast(r.error); setCartCount(r.left);
+    toast(`${plural(r.added,"part")} added to your cart · ${plural(r.left,"item")} in it. Open Cart to see the route`); return; }
   const rs=e.target.closest("[data-flreset]"); if(rs){ await api().fleet_set_slot(S.flSel,rs.dataset.flreset,null); return renderFleet(); } };
 
 // ---- Trade routes: details panel, and your own runs tracked start to finish
@@ -5789,6 +5884,266 @@ async function loadStatic(){
   $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.pos&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
 // The UEX tabs only appear once a UEX token is saved; removing it hides them again.
+// =================================================================== Add to cart
+// A cart button on any part, weapon or armor piece you can buy (Components, My Fleet, Weapons, Armor). What's in
+// the cart becomes one shopping trip in the Cart tab: the fewest stops, in the shortest order from where you are.
+const CART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg>';
+function cartBtn(x,label){ return `<button class="cart-btn ${label?"lab":""}" data-cart="${esc(JSON.stringify(x))}" title="Add ${esc(x.name)} to your cart">${CART_SVG}${label?`<span>${esc(label)}</span>`:""}</button>`; }
+function setCartCount(n){ const c=$("c-cart"); if(!c) return; c.textContent=n||0; c.hidden=!n; }
+async function addToCart(items,what){ const r=await api().shop_add(items); if(!r.ok) return toast(r.error);
+  setCartCount(r.left); S.cartToastN=(S.cartToastN||0)+1;
+  toast(`${what||items[0].name} added to your cart · ${plural(r.left,"item")} in it. Open Cart to see the route`); return r; }
+// Captured first, so a cart button inside a clickable card or table row doesn't also open it
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-cart]"); if(!b) return; e.stopPropagation(); e.preventDefault();
+  let x; try{ x=JSON.parse(b.dataset.cart); }catch(_){ return; }
+  b.classList.add("added"); setTimeout(()=>b.classList.remove("added"),1200);
+  await addToCart(Array.isArray(x)?x:[x],Array.isArray(x)?`${plural(x.length,"item")}`:null); },true);
+
+// =================================================================== Weapons, Armor, Blueprints (Star Citizen Wiki)
+// One way of browsing for all three: the sidebar has search, filters and a list; the panel over the map has
+// the pictures, and a page for whatever you click. Armor can also be looked at as whole sets.
+const GR_PCT=n=>`${nf(n)}%`;
+const GEAR={
+  weapons:{title:"Personal weapons",noun:"weapon",ph:"Name, maker or kind, like “P4-AR” or “sniper”",
+    cat:i=>i.kind||"Other",catLab:"Kind",sub:i=>i.cls||"",subLab:"Ammo",
+    key:i=>[i.stats?.dps!=null?`${Math.round(i.stats.dps).toLocaleString()} DPS`:"",i.stats?.range?`${Math.round(i.stats.range).toLocaleString()} m`:"",i.stats?.mag?`${i.stats.mag} rounds`:""].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["dps","Most DPS"],["alpha","Most damage per shot"],["range","Longest range"],["rpm","Fastest fire rate"],["price","Price: low to high"]],
+    hero:i=>[{label:"DPS",value:i.stats?.dps!=null?Math.round(i.stats.dps).toLocaleString():null},{label:"Per shot",value:i.stats?.alpha!=null?nf(i.stats.alpha):null},
+      {label:"Range",value:i.stats?.range?`${Math.round(i.stats.range).toLocaleString()} m`:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["rpm","Fire rate",n=>`${Math.round(n)} rpm`],["mag","Magazine",n=>`${n} rounds`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],
+      ["pellets","Pellets per shot",n=>n],["mass","Mass",n=>`${nf(n)} kg`]]},
+  armor:{title:"Armor",noun:"piece",ph:"Name or maker, like “ADP”, “Pembroke” or “helmet”",
+    cat:i=>i.slot||"Other",catLab:"Piece",sub:i=>i.weight||"",subLab:"Weight",
+    key:i=>[i.stats?.dr!=null?`${nf(i.stats.dr)}% damage reduction`:"",i.stats?.temp_min!=null?`${i.stats.temp_min}° to ${i.stats.temp_max}°C`:""].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["dr","Most damage reduction"],["carry","Most carrying space"],["cold","Handles the most cold"],["hot","Handles the most heat"],["price","Price: low to high"]],
+    hero:i=>[{label:"Damage reduction",value:i.stats?.dr!=null?GR_PCT(i.stats.dr):null},{label:"Temperature",value:i.stats?.temp_min!=null?`${i.stats.temp_min}° to ${i.stats.temp_max}°C`:null},
+      {label:"Carrying",value:i.stats?.carry?`${Math.round(i.stats.carry).toLocaleString()} µSCU`:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["rad","Radiation protection",n=>`${Math.round(n).toLocaleString()} REM`],["rad_rate","Radiation scrub rate",n=>`${nf(n)} REM/s`],
+      ["em","EM signature",n=>nf(n)],["mass","Mass",n=>`${nf(n)} kg`]]},
+  blueprints:{title:"Blueprints",noun:"blueprint",ph:"What it makes or needs, like “Omnisky” or “Agricium”",
+    cat:i=>i.category||"Other",catLab:"Makes",sub:i=>i.default?"Known from the start":"Unlocked by missions",subLab:"How you get it",
+    key:i=>[i.time_label||"",i.ingredients?.length?plural(i.ingredients.length,"ingredient"):""].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["time","Quickest to craft"],["ings","Fewest ingredients"]],
+    hero:i=>[{label:"Craft time",value:i.time_label||(i.time?`${Math.round(i.time/60)} min`:null)},{label:"Ingredients",value:i.ingredients?.length??null},
+      {label:"Grade",value:i.grade||null},{label:"How you get it",value:i.default?"Known":"Missions"}],
+    rows:[]}};
+S.gr=S.gr||{};
+const grState=k=>S.gr[k]=S.gr[k]||{data:null,loading:false,error:null,sel:null,view:k==="armor"?"sets":"items"};
+async function openGear(kind){ const st=grState(kind);
+  $("gr-panel").classList.add("show"); grSide(kind);
+  if(!st.data&&!st.loading) await grLoad(kind); else grRender(kind); }
+async function grLoad(kind,fresh){ const st=grState(kind); st.loading=true; st.error=null;
+  $("gr-panel").innerHTML=qLoader(`Loading ${GEAR[kind].title.toLowerCase()} from the Star Citizen Wiki… (the first time takes a little while)`);
+  let r; try{ r=await api().gear_list(kind,!!fresh); }catch(e){ r={ok:false,error:String(e)}; }
+  st.loading=false; if(r.ok){ st.data=r; grFillFilters(kind); } else st.error=r.error;
+  if(S.tab===kind) grRender(kind); }
+// The sidebar's controls are made once per tab, so typing in the search box keeps its focus
+function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.dataset.built="1"; const G=GEAR[kind];
+  p.innerHTML=`<input class="search" id="gr-q-${kind}" placeholder="${esc(G.ph)}" autocomplete="off">
+    ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="sets" class="on">Sets</button><button data-grview="items">Single pieces</button></div>`:""}
+    <div class="cp-filters">
+      <label><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
+      <label><span>${esc(G.subLab)}</span><select class="field" id="gr-sub-${kind}"><option value="">Any</option></select></label>
+      ${kind!=="blueprints"?`<label><span>Maker</span><select class="field" id="gr-mk-${kind}"><option value="">Any</option></select></label>
+      <label><span>Where</span><select class="field" id="gr-av-${kind}"><option value="">Anywhere</option><option value="buy">Sold in shops</option><option value="noshop">Not in shops</option></select></label>`:""}
+      <label class="wide"><span>Sort</span><select class="field" id="gr-sort-${kind}">${G.sorts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
+    </div>
+    <div class="row" style="justify-content:space-between;margin:2px 2px 0"><span class="muted" id="gr-count-${kind}" style="font-size:12px"></span>
+      <button class="btn small ghost" id="gr-reset-${kind}" hidden>Clear filters</button></div>
+    <div id="gr-list-${kind}"></div>
+    <div class="uex-credit" id="gr-credit-${kind}"></div>`;
+  const re=()=>{ grState(kind).sel=null; grRender(kind); };
+  $(`gr-q-${kind}`).addEventListener("input",re);
+  for(const id of ["cat","sub","mk","av","sort"]){ const el=$(`gr-${id}-${kind}`); if(el) el.addEventListener("change",re); }
+  $(`gr-reset-${kind}`).onclick=()=>{ for(const id of ["q","cat","sub","mk","av"]){ const el=$(`gr-${id}-${kind}`); if(el) el.value=""; } re(); };
+  p.addEventListener("click",e=>{ const v=e.target.closest("[data-grview]"); if(v){ const st=grState(kind); st.view=v.dataset.grview; st.sel=null;
+      for(const b of p.querySelectorAll("[data-grview]")) b.classList.toggle("on",b===v); return grRender(kind); }
+    const h=e.target.closest("[data-gi],[data-gset]"); if(h){ grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); } }); }
+function grFillFilters(kind){ const G=GEAR[kind], L=grState(kind).data?.items||[];
+  const fill=(id,vals)=>{ const el=$(`gr-${id}-${kind}`); if(!el) return; const cur=el.value;
+    el.innerHTML=`<option value="">Any</option>`+[...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join(""); };
+  fill("cat",L.map(G.cat)); fill("sub",L.map(G.sub)); fill("mk",L.map(i=>i.maker)); }
+const grPrice=i=>i.buy?.[0]?.price??null;
+function grFiltered(kind){ const G=GEAR[kind], st=grState(kind), L=st.data?.items||[], v=id=>$(`gr-${id}-${kind}`)?.value||"";
+  const q=v("q").trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), cat=v("cat"), sub=v("sub"), mk=v("mk"), av=v("av"), sort=v("sort")||"name";
+  const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub(i)} ${i.set||""}`;
+  const out=L.filter(i=>(!cat||G.cat(i)===cat)&&(!sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
+    &&(!words.length||(t=>words.every(w=>cpWordHit(t,w)))(text(i).toLowerCase())));
+  const num=(i,k)=>i.stats?.[k]??-1e9, pr=i=>grPrice(i)??9e12;
+  const by={name:(a,b)=>a.name.localeCompare(b.name),price:(a,b)=>pr(a)-pr(b)||a.name.localeCompare(b.name),
+    time:(a,b)=>(a.time??9e9)-(b.time??9e9),ings:(a,b)=>(a.ingredients?.length??99)-(b.ingredients?.length??99),
+    cold:(a,b)=>(a.stats?.temp_min??99)-(b.stats?.temp_min??99),hot:(a,b)=>(b.stats?.temp_max??-99)-(a.stats?.temp_max??-99)};
+  out.sort(by[sort]||((a,b)=>num(b,sort)-num(a,sort)||a.name.localeCompare(b.name)));
+  return out; }
+// Armor pieces as sets: grouped by name ("ADP Core Woodland" is part of ADP Woodland); a set needs two pieces
+const GR_SLOTS=["Helmet","Core","Arms","Legs","Backpack"];
+function grSets(L){ const m=new Map();
+  for(const p of L){ if(p.slot==="Undersuit") continue; const k=(p.set||p.name).toLowerCase();
+    if(!m.has(k)) m.set(k,{name:p.set||p.name,weight:p.weight,maker:p.maker,pieces:[]}); m.get(k).pieces.push(p); }
+  return [...m.values()].filter(s=>s.pieces.length>=2).map(s=>{ s.pieces.sort((a,b)=>GR_SLOTS.indexOf(a.slot)-GR_SLOTS.indexOf(b.slot));
+    const priced=s.pieces.filter(p=>grPrice(p)!=null); s.price=priced.length===s.pieces.length?priced.reduce((t,p)=>t+grPrice(p),0):null;
+    s.dr=Math.max(...s.pieces.map(p=>p.stats?.dr??0)); return s; }); }
+function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-${kind}`);
+  if(st.error){ $("gr-panel").innerHTML=`<div class="empty" style="margin-top:60px"><strong>${esc(G.title)}</strong>${esc(st.error)}<br><br><button class="btn small" data-grretry="1">Try again</button></div>`; if(list) list.innerHTML=""; return; }
+  if(!st.data){ return; }
+  const L=grFiltered(kind), sets=kind==="armor"&&st.view==="sets"?grSets(L):null;
+  if(sets){ const s=$(`gr-sort-armor`).value; if(s==="price") sets.sort((a,b)=>(a.price??9e12)-(b.price??9e12)); else if(s==="dr") sets.sort((a,b)=>b.dr-a.dr); else sets.sort((a,b)=>a.name.localeCompare(b.name)); }
+  const any=["q","cat","sub","mk","av"].some(id=>$(`gr-${id}-${kind}`)?.value);
+  $(`gr-reset-${kind}`).hidden=!any;
+  const n=sets?sets.length:L.length, all=sets?null:st.data.items.length;
+  $(`gr-count-${kind}`).textContent=sets?`${plural(n,"set")} · ${plural(L.length,"piece")} match`:`${n.toLocaleString()} of ${all.toLocaleString()} ${G.noun}s · click one for its page`;
+  $(`gr-credit-${kind}`).innerHTML=`From the <a data-ext="https://api.star-citizen.wiki">Star Citizen Wiki</a>${kind!=="blueprints"?", prices from UEX":""}.${st.data.at?` Fetched ${agoTs(st.data.at)}.`:""}${st.data.stale?" Couldn't refresh: showing the last copy.":""} <a data-grfresh="1" style="cursor:pointer;text-decoration:underline">Refresh</a>`;
+  const row=(i,attr)=>`<div class="vh ${st.sel===(i.uuid||i.name)?"hl":""}"><div class="hd" ${attr}><div><div class="nm">${esc(i.name)}</div>
+      <div class="mk">${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"&&!sets?i.slot:"",kind==="weapons"?i.kind:"",i.weight||""].filter(Boolean).join(" · "))}</div></div>
+      <div class="pr">${kind==="blueprints"?esc(i.time_label||""):grPrice(i)!=null?money(grPrice(i)):`<span class="noshop">Not in shops</span>`}</div></div></div>`;
+  if(list) list.innerHTML=sets?sets.slice(0,150).map(s=>`<div class="vh ${st.sel==="set:"+s.name?"hl":""}"><div class="hd" data-gset="${esc(s.name)}"><div><div class="nm">${esc(s.name)}</div>
+        <div class="mk">${esc([s.maker,s.weight,s.pieces.map(p=>p.slot).join(", ")].filter(Boolean).join(" · "))}</div></div>
+        <div class="pr">${s.price!=null?money(s.price):`<span class="noshop">Not all in shops</span>`}</div></div></div>`).join("")+(sets.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">${sets.length-150} more on the right</div>`:"")
+    :L.slice(0,150).map(i=>row(i,`data-gi="${esc(i.uuid||i.name)}"`)).join("")+(L.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">${L.length-150} more on the right</div>`:"")
+      ||`<div class="empty">Nothing matches.</div>`;
+  if(st.sel) return grDetail(kind);
+  // the picture grid
+  const shown=sets?sets.slice(0,240):L.slice(0,240);
+  st.gridKey=JSON.stringify([st.view,...["q","cat","sub","mk","av","sort"].map(id=>$(`gr-${id}-${kind}`)?.value||"")]);
+  $("gr-panel").innerHTML=`<div class="gh"><b>${esc(G.title)}</b>${sets?`${plural(sets.length,"armor set")}`:`${n.toLocaleString()} shown`} · click one for its page</div>
+    ${shown.length?`<div class="grid">${shown.map(i=>sets?`<div class="vg" data-gset="${esc(i.name)}">${i.pieces.some(p=>p.buy?.length)?cartBtn(i.pieces.filter(p=>p.buy?.length).map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:i.name}))):""}<div class="ph" data-gpic="${esc(i.pieces.find(p=>p.slot==="Core")?.name||i.pieces[0].name)}">No picture</div>
+        <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.weight].filter(Boolean).join(" · "))}${i.price!=null?` · ${money(i.price)}`:""}</span><span class="kt">${esc(i.pieces.map(p=>p.slot).join(" · "))}${i.dr?` · up to ${nf(i.dr)}% DR`:""}</span></div></div>`
+      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name}):""}<div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+        <div class="tx"><b>${esc(i.name)}</b><span>${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"?i.slot:kind==="weapons"?i.kind:i.grade?`grade ${i.grade}`:""].filter(Boolean).join(" · "))}${kind!=="blueprints"?(grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"):""}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
+      :`<div class="empty">Nothing matches these filters.</div>`}`;
+  fillGearPictures($("gr-panel"));
+  if(st.back){ if(st.back.key===st.gridKey) $("gr-panel").scrollTop=st.back.top; st.back=null; } }
+// Weapon and armor pictures: their wiki pages are looked up apart from ship parts' (see gear_images)
+async function fillGearPictures(root){ const els=[...root.querySelectorAll("[data-gpic]")]; if(!els.length) return;
+  S.gpics=S.gpics||{}; const need=[...new Set(els.map(e=>e.dataset.gpic))].filter(r=>!(r in S.gpics));
+  const paint=()=>{ for(const e of els){ const u=S.gpics[e.dataset.gpic]; if(u&&!e.querySelector("img")) e.innerHTML=`<img src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer">`; } };
+  paint();
+  for(let i=0;i<need.length;i+=24){ const batch=need.slice(i,i+24); let got={}; try{ got=await api().gear_images(batch); }catch(e){}
+    for(const r of batch) S.gpics[r]=got[r]||null; paint(); if(!root.isConnected) return; } }
+function grOpenItem(kind,id,set){ const st=grState(kind);
+  if(!st.sel) st.back={key:st.gridKey,top:$("gr-panel").scrollTop};          // opened from the grid: Back returns to this spot
+  st.sel=set?"set:"+set:id; grRender(kind); $("gr-panel").scrollTop=0; }
+async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.items, g=$("gr-panel");
+  const back=`<button class="btn" data-grback="1" style="margin-bottom:14px">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button>`;
+  if(String(st.sel).startsWith("set:")){ const name=st.sel.slice(4), s=grSets(L).find(x=>x.name===name); if(!s){ st.sel=null; return grRender(kind); }
+    g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${esc(s.name)}</h2><div class="sub">${esc([s.maker,s.weight&&`${s.weight} armor`].filter(Boolean).join(" · "))}</div></div>${titleLogo(s.maker,false,true)}</div>
+        ${statBlock([{label:"Pieces",value:s.pieces.length},{label:"Best damage reduction",value:s.dr?GR_PCT(s.dr):null},{label:"Whole set",value:s.price!=null?money(s.price):"Not all in shops"}],[])}
+        <div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-grshopset="1">${CART_SVG}Add the whole set to cart</button></div></div></div>
+      <div class="vd-grid vd-flat"><div class="vd-sec" style="grid-column:1/-1"><div class="mk-h">The pieces</div>
+        ${s.pieces.map(p=>`<div class="mk-row gr-piece"><div class="w"><a data-gi="${esc(p.uuid)}">${esc(p.name)}</a><div class="m">${esc(p.slot)}${p.stats?.dr!=null?` · ${nf(p.stats.dr)}% damage reduction`:""}${p.stats?.carry?` · ${Math.round(p.stats.carry).toLocaleString()} µSCU`:""}</div></div>
+          <div class="p">${grPrice(p)!=null?money(grPrice(p)):'<span class="noshop">Not in shops</span>'}</div><span></span>
+          <div class="m">${p.buy?.[0]?`${p.buy[0].place?`<a data-open="${esc(p.buy[0].place)}">${esc(p.buy[0].where)}</a>`:esc(p.buy[0].where)}${p.buy[0].shop?` · ${esc(p.buy[0].shop)}`:""}`:"Loot, rewards or crafting"}</div></div>`).join("")}</div></div>
+      <div class="uex-credit">From the Star Citizen Wiki; prices from UEX. Sets are put together from the pieces' names.</div>`;
+    const img=await api().gear_image(s.pieces.find(p=>p.slot==="Core")?.name||s.pieces[0].name); if(st.sel!=="set:"+name) return;
+    const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",s.name); return; }
+  const i=L.find(x=>(x.uuid||x.name)===st.sel); if(!i){ st.sel=null; return grRender(kind); }
+  const st_=i.stats||{}, rows=G.rows.filter(([k])=>st_[k]!=null).map(([k,lab,f])=>`<div class="vd-row"><span>${esc(lab)}</span><b>${esc(String(f(st_[k])))}</b></div>`).join("");
+  let extra="";
+  if(kind==="weapons") extra=[i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.length&&["Fire modes",i.modes.join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean)
+    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
+  if(kind==="armor") extra=[["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean)
+    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
+  if(kind==="blueprints") return grBlueprint(i,back);
+  g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
+    <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
+      ${statBlock(G.hero(i),[{label:"Sold at",value:i.buy?.length?plural(i.buy.length,"shop"):null}])}
+      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
+    ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
+    <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
+      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy?.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, a reward, or from crafting.</div>`}</div></div>
+    <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>`;
+  if(!i.image){ const img=await api().gear_image(i.name); if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }
+  else { const box=$("grd-img"); if(box) box.innerHTML=picShown(i.image,"component",i.name); } }
+// The wiki's descriptions start with "Manufacturer: …", "Item Type: …" lines (shown as stats already): just the prose
+function grDesc(d){ if(!d) return ""; const parts=String(d).replace(/\\n/g,"\n").split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
+  const prose=parts.filter(x=>!/^[A-Za-z ]{2,30}:\s/.test(x)); return (prose.length?prose.join(" "):"").replace(/\s+/g," ").trim(); }
+async function grBlueprint(i,back){ const g=$("gr-panel"), st=grState("blueprints");
+  const ing=x=>`<div class="mk-row"><div class="w">${esc(x.name)}<div class="m">${x.kind==="resource"||(!x.kind&&x.scu!=null)?"Resource":"Item"}</div></div><div class="p">${x.scu!=null?`${nf(x.scu)} SCU`:x.qty!=null?`× ${x.qty}`:""}</div><span></span></div>`;
+  const draw=d=>{ const og=d?.out_game;
+    g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">Blueprint · ${esc(i.category)}${i.version?` · ${esc(i.version)}`:""}</div></div></div>
+        ${statBlock(GEAR.blueprints.hero(i),[])}
+        <div class="row" style="gap:8px;margin-top:12px">${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}${i.out_tab==="components"?`<button class="btn ghost" data-grcomp="${esc(i.name)}">Find in Components</button>`:""}</div></div></div>
+      <div class="vd-grid vd-flat">
+        <div class="vd-sec"><div class="mk-h">Ingredients</div>${i.ingredients.length?i.ingredients.map(ing).join(""):`<div class="muted" style="font-size:13px">None listed.</div>`}
+          ${i.returns?.length?`<div class="mk-h" style="margin-top:14px">Dismantling gives back</div>${i.returns.map(ing).join("")}`:""}</div>
+        <div class="vd-sec"><div class="mk-h">How you get it</div>
+          ${i.default?`<div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">Every player knows this blueprint from the start.</div>`:""}
+          ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w">${m.web_url?`<a data-ext="${esc(m.web_url)}">${esc(m.title)}</a>`:esc(m.title)}<div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")
+            :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}
+          ${og?.stats&&rows0(og.stats)?`<div class="mk-h" style="margin-top:14px">What it makes</div>${CP_STATS.filter(([k])=>og.stats[k]!=null&&og.stats[k]!==0&&og.stats[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(og.stats[k]))}</b></div>`).join("")}`:""}</div></div>
+      <div class="uex-credit">From the Star Citizen Wiki's crafting data.</div>`;
+    api().gear_image(i.name).then(img=>{ if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }); };
+  draw(null);
+  const r=await api().blueprint_detail(i.uuid); if(st.sel!==(i.uuid||i.name)) return;
+  draw(r.ok?r.blueprint:{unlocks:[]}); }
+$("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return; const kind=S.tab; if(!GEAR[kind]) return; const st=grState(kind);
+  if(e.target.closest("[data-grretry]")) return grLoad(kind);
+  if(e.target.closest("[data-grback]")){ st.sel=null; grRender(kind); return; }
+  const gc=e.target.closest("[data-grcomp]"); if(gc){ document.querySelector('.tab[data-tab="components"]')?.click(); setTimeout(()=>{ renderCpHome(); const q=$("cp-home-q"); if(q){ q.value=gc.dataset.grcomp; renderCpHome(); } },300); return; }
+  if(e.target.closest("[data-grshop]")){ const i=st.data.items.find(x=>(x.uuid||x.name)===st.sel); if(!i) return;
+    const r=await api().shop_add([{name:i.name,kind:kind==="weapons"?"weapon":"armor",uuid:i.uuid,class_name:i.class_name}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }
+  if(e.target.closest("[data-grshopset]")){ const s=grSets(st.data.items).find(x=>"set:"+x.name===st.sel); if(!s) return;
+    return addToCart(s.pieces.map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:s.name})),`${s.name} (${plural(s.pieces.length,"piece")})`); }
+  const h=e.target.closest("[data-gi],[data-gset]"); if(h) grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); });
+document.addEventListener("click",e=>{ const f=e.target.closest("[data-grfresh]"); if(f&&GEAR[S.tab]) grLoad(S.tab,true); });
+
+// =================================================================== Shopping list
+// The parts and gear you want, then the trip: fewest stops (or cheapest), in order from where you are. Each stop
+// lists what to buy there; buying it in game ticks it off (Game.log shows shop purchases), or tick it yourself.
+const SH_KIND={component:"Ship part",weapon:"Weapon",armor:"Armor"};
+async function openShopping(){ $("sh-panel").classList.add("show"); await renderShopping(true); }
+async function renderShopping(autoPlan){ let r=await api().shop_list(); S.slData=r; if(S.tab!=="shopping") return;
+  // Opening the cart with things in it that aren't planned yet works out the route straight away
+  if(autoPlan&&!r.plan&&r.left){ $("sh-panel").innerHTML=qLoader("Finding the shops and the quickest way round…"); const p=await api().shop_plan(null);
+    if(p.ok){ r=await api().shop_list(); S.slData=r; } if(S.tab!=="shopping") return; }
+  setCartCount(r.left);
+  const left=x=>Math.max(0,(x.qty||1)-(x.bought||0));
+  $("sh-out").innerHTML=r.items.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${plural(r.items.length,"item")} in your cart · ${r.left} still to buy</div>`
+    +r.items.map(x=>`<div class="vh sh-item ${left(x)?"":"done"}"><div class="hd"><div style="min-width:0"><div class="nm">${left(x)?"":"✓ "}${esc(x.name)}</div>
+        <div class="mk">${esc(SH_KIND[x.kind]||x.kind)}${x.source?` · ${esc(x.source)}`:""} · ${x.price!=null?`from ${money(x.price)}${x.where?` at ${esc(x.where)}`:""}`:"not in shops"}</div></div>
+        <div class="sh-qty"><button class="iconbtn" data-shq="${x.id}" data-d="-1" title="One less">−</button><b title="${x.bought||0} of ${x.qty} bought">${x.bought?`${x.bought}/`:""}${x.qty}</b><button class="iconbtn" data-shq="${x.id}" data-d="1" title="One more">+</button>
+          <button class="iconbtn" data-shdel="${x.id}" title="Take it out of the cart">✕</button></div></div></div>`).join("")
+    +`<div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn small ghost" data-shclear="bought">Remove bought</button><button class="btn small ghost" data-shclear="all">Empty cart</button></div>`
+    :`<div class="empty"><strong>Your cart is empty</strong>Use the ${CART_SVG.replace('<svg','<svg class="inl"')} button on anything you'd like to buy: parts in <b>Components</b> and <b>My Fleet</b> (or every part you've swapped into a loadout at once), and gear in <b>Weapons</b> and <b>Armor</b>.</div>`;
+  $("sh-mode").value=r.mode||"fewest";
+  shRenderPlan(r); }
+function shRenderPlan(r){ const p=r.plan, g=$("sh-panel");
+  if(!r.items.length){ g.innerHTML=`<div class="empty" style="margin-top:60px"><strong>Your cart</strong>Put everything you want for a new ship (or yourself) in the cart, and Quantum works out the quickest trip to buy it all: which shops to stop at, in what order, and what to buy at each.</div>`; return; }
+  if(!p){ g.innerHTML=`<div class="empty" style="margin-top:60px"><strong>${plural(r.left,"item")} to buy</strong>Plan the trip to see which shops to visit and in what order.<br><br><button class="btn primary" data-shplan="1">Plan the trip</button></div>`; return; }
+  const byid=Object.fromEntries(r.items.map(x=>[x.id,x])), cur=r.step, done=cur==null&&p.steps.length;
+  const itemRow=(it,on)=>{ const e=byid[it.id], got=e&&(e.bought||0)>=(e.qty||1);
+    return `<label class="sh-buy ${got?"got":""}"><input type="checkbox" data-shbought="${it.id}" ${got?"checked":""} ${on?"":"disabled"}><span class="n">${esc(it.name)}${it.qty>1?` <b>× ${it.qty}</b>`:""}<small>${esc(SH_KIND[it.kind]||"")}${it.shop?` · ${esc(it.shop)}`:""}</small></span><span class="p">${money(it.cost)}</span></label>`; };
+  const step=(s,i)=>{ const isCur=i===cur, past=cur==null||i<cur, here=r.here&&s.place===r.here;
+    return `<div class="sh-step ${isCur?"cur":""} ${past&&!isCur?"past":""}"><div class="sh-num">${past&&!isCur?"✓":i+1}</div><div class="sh-body">
+      <div class="sh-head"><div><b>${s.place?`<a data-open="${esc(s.place)}">${esc(s.where)}</a>`:esc(s.where)}</b><span class="muted">${esc(s.system||"")}${isCur?(here?" · <b class=\"sh-here\">You're here</b>":" · next stop"):""}</span></div>
+        <div class="sh-sub">${money(s.subtotal)}</div></div>
+      <div class="sh-items">${s.items.map(it=>itemRow(it,true)).join("")}</div>
+      ${isCur?`<div class="row" style="gap:6px;margin-top:8px;justify-content:flex-end">${s.place&&!S.live?.route?.includes(s.place)?`<button class="btn small ghost" data-add="${esc(s.place)}">Add to route</button>`:""}<button class="btn small primary" data-shstep="${i}">Bought everything here · next stop</button></div>`:""}</div></div>`; };
+  g.innerHTML=`<div class="gh"><b>Your shopping route</b>${plural(p.steps.length,"stop")}${p.distance?` · ${fmtDist(p.distance)}${p.from_you?" from where you are":""}`:""} · ${money(p.total)} in all</div>
+    ${done?`<div class="sh-done">✓ All bought. Enjoy the new kit.</div>`:""}
+    <div class="row" style="gap:8px;margin:0 2px 14px;flex-wrap:wrap"><button class="btn small primary" data-shroute="add">Add the stops to my route</button><button class="btn small ghost" data-shroute="replace">Replace my route with them</button>
+      <button class="btn small ghost" data-shplan="1">Plan again${S.live?.player?" from here":""}</button></div>
+    ${p.steps.map(step).join("")}
+    ${p.offmap?.length?`<div class="mk-h" style="margin-top:16px">Also sold at places not on Quantum's map</div>${p.offmap.map(s=>`<div class="sh-step"><div class="sh-num">·</div><div class="sh-body"><div class="sh-head"><div><b>${esc(s.where)}</b><span class="muted">${esc(s.system||"")}</span></div><div class="sh-sub">${money(s.subtotal)}</div></div><div class="sh-items">${s.items.map(it=>itemRow(it,true)).join("")}</div></div></div>`).join("")}`:""}
+    ${p.unavailable?.length?`<div class="mk-h" style="margin-top:16px">Not sold in any shop</div><div class="muted" style="font-size:13px;line-height:1.6;margin:0 2px">${p.unavailable.map(id=>esc(byid[id]?.name||"")).filter(Boolean).join(", ")}: loot, rewards, crafting or stock on a ship.</div>`:""}
+    <div class="uex-credit">${p.mode==="cheapest"?"Each item where it's cheapest.":"As few stops as possible; each item at the cheapest of them."} Prices from UEX, reported by players, so check the terminal before you buy. Purchases you make in game tick themselves off.</div>`; }
+$("sh-mode").addEventListener("change",async()=>{ const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); });
+$("sh-plan").onclick=async()=>{ $("sh-panel").innerHTML=qLoader("Finding the shops and the shortest way round…"); const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); };
+$("sh-out").onclick=async e=>{
+  const q=e.target.closest("[data-shq]"); if(q){ const x=S.slData?.items.find(i=>i.id===q.dataset.shq); if(!x) return; const n=(x.qty||1)+(+q.dataset.d);
+    if(n<1) await api().shop_remove(x.id); else await api().shop_set(x.id,n,null); return renderShopping(); }
+  const d=e.target.closest("[data-shdel]"); if(d){ await api().shop_remove(d.dataset.shdel); return renderShopping(); }
+  const c=e.target.closest("[data-shclear]"); if(c){ if(c.dataset.shclear==="all"&&!S.shClearAsk){ S.shClearAsk=true; c.textContent="Click again to clear everything"; setTimeout(()=>{ S.shClearAsk=false; },3000); return; }
+    S.shClearAsk=false; await api().shop_remove(null,c.dataset.shclear==="bought",c.dataset.shclear==="all"); return renderShopping(); } };
+$("sh-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return;
+  if(e.target.closest("[data-shplan]")){ $("sh-plan").click(); return; }
+  const st=e.target.closest("[data-shstep]"); if(st){ await api().shop_step_done(+st.dataset.shstep); toast("Ticked off. On to the next stop"); return renderShopping(); }
+  const ro=e.target.closest("[data-shroute]"); if(ro){ const r=await api().shop_to_route(ro.dataset.shroute==="replace"); await poll(); toast(r.ok?(ro.dataset.shroute==="replace"?"Your route is now the shopping trip":`Added ${plural(r.added?.length||0,"stop")} to your route`):r.error); return; } });
+$("sh-panel").addEventListener("change",async e=>{ const b=e.target.closest("[data-shbought]"); if(!b) return; const x=S.slData?.items.find(i=>i.id===b.dataset.shbought); if(!x) return;
+  await api().shop_set(x.id,null,b.checked?x.qty:0); renderShopping(); });
+
 function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
   if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click(); }
@@ -5828,8 +6183,23 @@ async function poll(){
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
+  // The shopping list changed in the background (a purchase in game ticked an item off)
+  if(live.shopping) setCartCount(live.shopping.count);
+  if(live.shopping&&live.shopping.ver!==S.shVer){ const first=S.shVer===undefined; S.shVer=live.shopping.ver;
+    if(!first&&live.shopping.note&&live.shopping.note.n!==S.shNoteN){ S.shNoteN=live.shopping.note.n; toast(live.shopping.note.text); }
+    if(first&&live.shopping.note) S.shNoteN=live.shopping.note.n;
+    if(!first&&S.tab==="shopping") renderShopping(); }
+  // The Quantum server going down or coming back (checked in the background, more often while it's down):
+  // Settings shows the new state without being reopened, and a note says when it's back.
+  if(live.server){ const ok=!!live.server.ok;
+    if(S.srvOk!==undefined&&ok!==S.srvOk){
+      if(ok) toast("Quantum server is back online");
+      if(S.communityStatus) S.communityStatus={...S.communityStatus,ok,error:live.server.error};
+      if(S.selected?.kind==="settings") renderDetail();
+      if(ok&&S.tab==="market") openMarket?.(); }
+    S.srvOk=ok; }
   if(!S.bkNext||Date.now()>S.bkNext){ S.bkNext=Date.now()+15000;      // a background restore finished?
-    api().backup_status().then(b=>{ if(b?.note){ toast(b.note); loadStatic().then(()=>{ if(S.tab==="fleet") renderFleet(); }); } if(S.bk) S.bk=b; }); }
+    api().backup_status().then(b=>{ if(b?.note){ toast(b.note); afterRestore(); } if(S.bk) S.bk=b; }); }
   if(S.drMapJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&S.drMapJob.state==="go"&&S.drMapJob.arrived) drMapJobPaint();
   if(S.drAlignJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&S.drAlignJob.arrived&&S.drAlignJob.state!=="sent") drAlignCheck();
   if(S.drPriceJob&&S.tab==="datarunner"&&S.dr?.view==="jobs"&&Date.now()-(S.drPjPaint||0)>20000){ S.drPjPaint=Date.now(); drPriceJobPaint(); }

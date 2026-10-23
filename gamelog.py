@@ -393,6 +393,8 @@ class ContractTracker(threading.Thread):
         self.code_places = {}      # contract type + objective -> place you set (kept across sessions)
         self.gen_places = {}       # contract type + pickup/dropoff -> places the game logged for it
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
+        self.purchases = []        # items you bought at a shop (newest last): {"item", "shop", "where", "at", "n"}
+        self.purchase_n = 0
         self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
         self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
         self.tunnel = None         # last wormhole the log mentioned: {"pair": ("Stanton", "Pyro"), "at"}
@@ -1333,6 +1335,10 @@ class ContractTracker(threading.Thread):
                 shop, where, item = spaced(m.group(2)), spaced(m.group(3)), m.group(4)
                 verb = "Rented" if "Rental" in line else "Bought" if "Buy" in line or "Purchase" in line else None
                 text = f"{verb} a {vehicle_name(item)} at {shop}, {where}" if verb and item else f"At {shop}, {where}"
+                if verb == "Bought" and item:          # for the shopping list: ticks the item off
+                    self.purchase_n += 1
+                    self.purchases = (self.purchases + [{"item": item, "shop": shop, "where": where,
+                                                         "at": log_time(line) or time.time(), "n": self.purchase_n}])[-50:]
                 return self._activity(text, line, place=where)
         if "ATC_DataManager_Port_" in line:
             for name, eid in RE_ATC.findall(line):

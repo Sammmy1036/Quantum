@@ -30,6 +30,8 @@ import community
 import datarunner
 import fleet
 import gateways
+import gear
+import shopping
 import tray
 import services
 import uex
@@ -336,6 +338,7 @@ class Api:
         self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
+        self._gear = gear.Gear(HERE / "uex_cache")          # personal weapons, armor and blueprints (wiki)
         self._renamed.update(getattr(self._db, "merged", {}))   # places listed twice, merged (Port Tressler)
         self._renamed.update(self._apply_uex_stations(offline=True))
         ren = self._renamed
@@ -390,6 +393,7 @@ class Api:
             threading.Thread(target=self._account_refresh, daemon=True).start()
         threading.Thread(target=self._account_loop, daemon=True).start()
         threading.Thread(target=self._sync_places, daemon=True).start()
+        threading.Thread(target=self._watch_server, daemon=True).start()
         threading.Thread(target=self._backup_loop, daemon=True).start()
         threading.Thread(target=self._sync_photos, daemon=True).start()
         threading.Thread(target=self._prefetch_assets, daemon=True).start()
@@ -1246,6 +1250,17 @@ class Api:
             gu = getattr(self, "_game_update", None) or self._settings.get("game_update")
             if gu:
                 live["game_update"] = gu
+            try:
+                self._shop_check_purchases()
+            except Exception as e:
+                print("shopping purchases:", e, flush=True)
+            sv = getattr(self, "_shop_ver", 0)
+            cart = (self._settings.get("shopping") or {}).get("items") or []
+            live["shopping"] = {"ver": sv, "note": getattr(self, "_shop_note", None),
+                                "count": sum(max(0, (e.get("qty") or 1) - (e.get("bought") or 0)) for e in cart)}
+            if getattr(self, "_server_checked", None):           # the Quantum server, as last checked (see _watch_server)
+                live["server"] = {"ok": self._server_ok, "error": self._server_error, "at": self._server_checked,
+                                  "back": getattr(self, "_server_back_at", None)}
             if self._settings_note:
                 live["settings_note"] = self._settings_note
             live["calibration"] = self._calibration
@@ -1915,6 +1930,43 @@ class Api:
         return self._community.place_results.get(gateways.learn_key(name)) or {"state": "none"}
 
     PLACES_SYNC_EVERY = 10 * 60          # s: how often shared station positions are fetched again
+
+    SERVER_CHECK_DOWN = 20               # s between health checks while the Quantum server is down
+    SERVER_CHECK_UP = 120                # s between health checks while it's up
+
+    def _watch_server(self):
+        """Background: keep checking the Quantum server, often while it's down. When it comes back, pick
+        everything up again at once (prices, pictures, shared stations, sign-in, backup) instead of the app
+        staying "offline" until it's restarted."""
+        time.sleep(5)
+        while True:
+            try:
+                h = self._community.health() if self._community.url else {"ok": False, "error": "off"}
+            except Exception as e:
+                h = {"ok": False, "error": str(e)}
+            was = getattr(self, "_server_ok", None)
+            self._server_ok, self._server_checked = bool(h.get("ok")), time.time()
+            self._server_error = None if h.get("ok") else h.get("error")
+            if self._server_ok and was is False:
+                self._server_back_at = time.time()
+                self._sender._event("Quantum server is back online")
+                threading.Thread(target=self._server_back, daemon=True).start()
+            elif was and not self._server_ok:
+                self._sender._event(f"Quantum server unreachable: {self._server_error}")
+            time.sleep(self.SERVER_CHECK_UP if self._server_ok or not self._community.url else self.SERVER_CHECK_DOWN)
+
+    def _server_back(self):
+        """The server is reachable again: refresh what was missed while it was down."""
+        steps = (("sign-in", lambda: self._dr_cfg().get("secret") and not self._session_token() and self._sign_in()),
+                 ("prices", lambda: self._community.prices(fresh=True)),
+                 ("photos", lambda: self._community.photos(fresh=True)),
+                 ("places", self._sync_places_once),
+                 ("backup", lambda: self._backup_creds() and not self._settings.get("backup_off") and self.backup_now()))
+        for name, fn in steps:
+            try:
+                fn()
+            except Exception as e:
+                print(f"server back ({name}):", e, flush=True)
 
     def _sync_places(self):
         """Background: fetch the shared station positions at start, then every 10 minutes, and put any
@@ -4342,19 +4394,41 @@ class Api:
         """id_item -> where it's sold, cheapest first."""
         terms = self._uex.terminals()
         places = self._uex.place_map(self._db.locations)
-        spots = {}
+        spots, by_term = {}, {}
         for r in self._uex.get("items_prices_all")[0]:
             t = terms.get(r.get("id_terminal"))
             if not t or not r.get("price_buy"):
                 continue
+            # UEX can hold more than one price for the same item at the same terminal (an old report next to
+            # a newer one): keep only the newest, so a shop isn't listed twice at two prices.
+            key = (r["id_item"], r["id_terminal"])
+            prev = by_term.get(key)
+            if prev is not None and str(prev["updated"] or "") >= str(r.get("date_modified") or ""):
+                continue
             place = places.get(r["id_terminal"])
-            spots.setdefault(r["id_item"], []).append({
-                "where": uex.where(t), "shop": r.get("terminal_name"), "place": place,
-                "system": t.get("star_system_name"), "price": r["price_buy"],
-                "dist": self._dist_from_you(place), "updated": r.get("date_modified")})
+            row = {"where": uex.where(t), "shop": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)),
+                   "place": place, "system": t.get("star_system_name"), "price": r["price_buy"],
+                   "dist": self._dist_from_you(place), "updated": r.get("date_modified")}
+            lst = spots.setdefault(r["id_item"], [])
+            if prev is not None:
+                lst.remove(prev)
+            lst.append(row)
+            by_term[key] = row
         for v in spots.values():
             v.sort(key=lambda x: x["price"])
         return spots
+
+    @staticmethod
+    def _shop_name(terminal, where):
+        """The shop part of a UEX terminal name ("Centermass - Area 18" -> "Centermass"), so two shops in
+        one city can be told apart in "Where to buy"."""
+        t = str(terminal or "").strip()
+        if not t:
+            return None
+        city = (where or "").split(",")[0].strip().lower()
+        parts = [x.strip() for x in re.split(r"\s+-\s+", t) if x.strip()]
+        keep = [x for x in parts if x.lower() != city and x.lower() not in (where or "").lower()]
+        return " - ".join(keep) or t
 
     COMPONENT_HINTS = ("vehicle", "ship", "cooler", "power plant", "quantum drive", "shield generator", "missile",
                        "turret", "mining laser", "mining module", "gadget", "salvage", "tractor", "radar", "bomb",
@@ -4463,6 +4537,8 @@ class Api:
         nm = (category or "").lower()
         if "jump" in nm:                                  # "Jump Modules": a module, but one you fit like a part
             return "JumpDrive"
+        if "missile rack" in nm or "missile launcher" in nm:
+            return "MissileLauncher"
         if any(k in nm for k in ("rack", "turret", "module", "gadget", "mount", "gimbal", "attachment")):
             return None
         for typ, (_, words) in fleet.SLOT_TYPES.items():
@@ -4496,7 +4572,9 @@ class Api:
                 out["error"] = "The Star Citizen Wiki has no loadout for this ship (or it can't be reached)"
                 return out
             fitted = self._loadout_of(f, "primary")["loadout"]       # the Components tab fits your primary loadout
-            for s_ in fleet.Wiki.loadout(data)["slots"]:
+            lo_ = fleet.Wiki.loadout(data)
+            self._apply_rack_swaps(lo_, fitted)
+            for s_ in lo_["slots"]:
                 if s_["type"] != slot:
                     continue
                 fit = fitted.get(s_["port"])
@@ -4509,6 +4587,32 @@ class Api:
         with ThreadPoolExecutor(max_workers=6) as ex:
             ships = list(ex.map(one, fl))
         return {"ok": True, "slot": slot, "label": fleet.SLOT_TYPES[slot][0], "ships": ships}
+
+    def _aka(self, uuid, name, size=None, g=None):
+        """Another name a part goes by, for search: the game files' full name when it differs from UEX's,
+        which carries the nickname ("SW16BR3 Repeater" is the SW16BR3 “Shredder” Repeater in game, so a
+        search for shredder finds it). Matched by uuid, else name, else the model code ("SW16BR3")."""
+        try:
+            sz = int(size) if str(size or "").strip() not in ("", "0") else None
+        except (TypeError, ValueError):
+            sz = None
+        g = g or self._game.find(uuid, name, sz)
+        if not g:
+            code = next((w for w in re.findall(r"[A-Za-z0-9-]+", name or "") if re.search(r"\d", w) and re.search(r"[A-Za-z]", w)
+                         and len(w) >= 4), None)
+            if code:
+                if not hasattr(self, "_game_codes"):
+                    self._game_codes = {}
+                    for it in self._game.items.values():
+                        for w in re.findall(r"[A-Za-z0-9-]+", it.get("name") or ""):
+                            if re.search(r"\d", w) and re.search(r"[A-Za-z]", w) and len(w) >= 4:
+                                self._game_codes.setdefault(w.lower(), it)
+                g = self._game_codes.get(code.lower())
+        gn = (g or {}).get("name") or ""
+        if not gn or gn.lower() == str(name or "").lower():
+            return ""
+        nick = re.findall(r"[“”\"']([^“”\"']{3,})[“”\"']", gn)
+        return " ".join([gn] + nick)
 
     def _game_view(self, uuid, name, size):
         """A component's numbers from the game files, for its detail page."""
@@ -4623,7 +4727,8 @@ class Api:
                     size = i.get("size")
                     row = {"id": i["id"], "name": i.get("name"), "maker": i.get("company_name") or "",
                            "size": None if str(size or "").strip() in ("", "0") else size, "grade": i.get("quality"),
-                           "cat": c["id"], "cat_name": c.get("name"), "wiki": i.get("wiki"), "uuid": i.get("uuid")}
+                           "cat": c["id"], "cat_name": c.get("name"), "wiki": i.get("wiki"), "uuid": i.get("uuid"),
+                           "aka": self._aka(i.get("uuid"), i.get("name"), size)}
                     if c.get("slot") == "WeaponGun":
                         try:
                             sz = int(size) if str(size or "").strip() not in ("", "0") else None
@@ -4677,7 +4782,8 @@ class Api:
                             "exclusive": bool(i.get("is_exclusive_pledge") or i.get("is_exclusive_subscriber")
                                               or i.get("is_exclusive_concierge")),
                             "note": (i.get("notification") or None), "buy": buy,
-                            "uuid": i.get("uuid"), "game": self._game_view(i.get("uuid"), i.get("name"), size)})
+                            "uuid": i.get("uuid"), "game": self._game_view(i.get("uuid"), i.get("name"), size),
+                            "aka": self._aka(i.get("uuid"), i.get("name"), size)})
             cat_name = next((c.get("name") for c in self._uex.get("categories")[0]
                              if str(c.get("id")) == str(id_category)), "")
             slot = self._slot_type_for(cat_name)
@@ -4694,6 +4800,12 @@ class Api:
             if guns:
                 for x in out:
                     x["wtype"] = self.weapon_type(x["name"], x["game"])
+            if slot == "MissileLauncher":                 # racks aren't in the game-file numbers: what they hold, from the name
+                for x in out:
+                    spec = fleet.rack_spec(x["name"])
+                    if spec.get("missiles") and not x.get("game"):
+                        x["game"] = {"type": "MissileLauncher", "size": x.get("size"), "maker": x.get("maker"),
+                                     "stats": {k: spec[k] for k in ("missiles", "missile_size") if k in spec}}
             out.sort(key=lambda x: (str(x["size"] or ""), x["buy"][0]["price"] if x["buy"] else 9e12, x["name"] or ""))
             return {"ok": True, "items": out, "at": at,
                     "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]] if guns else None}
@@ -5115,6 +5227,74 @@ class Api:
         self._save_settings()
         return {"ok": True}
 
+    def _rack_spec_for(self, name, uuid=None):
+        """How many missiles a rack holds and how big ({"missiles", "missile_size"}): from its name when it
+        says (MSD-341), else its Star Citizen Wiki record (class name and missile ports)."""
+        spec = fleet.rack_spec(name)
+        if not (spec.get("missiles") and spec.get("missile_size")):
+            try:
+                rec = self._wikiapi.item(uuid, name)
+            except Exception:
+                rec = None
+            if rec:
+                spec = {**fleet.rack_spec(rec.get("name"), rec.get("class_name"), rec.get("ports")), **spec}
+        return {k: spec[k] for k in ("missiles", "missile_size") if spec.get(k)}
+
+    def _apply_rack_swaps(self, lo, fits):
+        """Swapped missile racks change the missile slots under them: the stock rack's missiles go and the
+        new rack's come in (as many as it holds, at its missile size, empty until you fit missiles; a fresh
+        rack comes without any). Returns the stock missiles' damage taken off the ship."""
+        removed = 0.0
+        racks = [s for s in lo["slots"] if s["type"] == "MissileLauncher"]
+        for rk in racks:
+            fit = fits.get(rk["port"])
+            fit = {"name": fit} if isinstance(fit, str) else fit
+            if not fit or (fit.get("name") or "").lower() == ((rk.get("stock") or {}).get("name") or "").lower():
+                continue
+            spec = self._rack_spec_for(fit.get("name"), fit.get("uuid"))
+            rk["fitted_stats"] = spec
+            if not spec.get("missiles"):
+                continue                                # don't know what it holds: leave the missiles as they are
+            for s in lo["slots"]:
+                if s.get("rack") == rk["port"]:
+                    st = s.get("stock") or {}
+                    g = self._game.stats(st.get("uuid"), st.get("name"), st.get("size")) or {}
+                    removed += g.get("missile") or (st.get("stats") or {}).get("missile") or 0
+            lo["slots"] = [s for s in lo["slots"] if s.get("rack") != rk["port"]]
+            for n in range(spec["missiles"]):
+                lo["slots"].append({"port": f"{rk['port']}/missile_{n + 1:02d}_attach", "type": "Missile",
+                                    "label": fleet.SLOT_TYPES["Missile"][0], "size": spec.get("missile_size"),
+                                    "where": rk.get("where") or "", "stock": None, "rack": rk["port"],
+                                    "rack_name": fit["name"]})
+        lo["slots"].sort(key=lambda s: (fleet.ORDER.index(s["type"]) if s["type"] in fleet.ORDER else 99,
+                                        -(s["size"] or 0), s["port"]))
+        return removed
+
+    @staticmethod
+    def _missile_summary(slots):
+        """What the racks carry, for My Fleet's missile group: {"racks", "slots", "loaded", "by_size": {size: n}}."""
+        ms = [s for s in slots if s["type"] == "Missile"]
+        by = {}
+        for s in ms:
+            by[str(s.get("size") or "?")] = by.get(str(s.get("size") or "?"), 0) + 1
+        return {"racks": sum(1 for s in slots if s["type"] == "MissileLauncher"), "slots": len(ms),
+                "loaded": sum(1 for s in ms if s.get("fitted") or s.get("stock")), "by_size": by}
+
+    def fleet_fill_rack(self, uid, rack_port, item_name, uuid=None):
+        """Fit one missile to every missile slot on a rack (a fresh rack's 16 empty slots in one go)."""
+        lo = self.fleet_loadout(uid)
+        if not lo.get("ok"):
+            return lo
+        ports = [s["port"] for s in lo["slots"] if s["type"] == "Missile" and s.get("rack") == rack_port]
+        if not ports:
+            return {"ok": False, "error": "That rack has no missile slots"}
+        f = self._ship(uid)
+        fits = self._loadout_of(f)["loadout"]
+        for p_ in ports:
+            fits[p_] = {"name": item_name, "uuid": uuid}
+        self._save_settings()
+        return {"ok": True, "count": len(ports)}
+
     def fleet_loadout(self, uid):
         """The ship's slots stock component in each, and what you've swapped in."""
         f = next((x for x in self._fleet() if x["uid"] == uid), None)
@@ -5127,6 +5307,7 @@ class Api:
         if not data:
             return {"ok": False, "error": f"The Star Citizen Wiki has no loadout for {f['name']} (or it can't be reached)"}
         lo = fleet.Wiki.loadout(data)
+        removed_missile = self._apply_rack_swaps(lo, f.get("loadout") or {})
         for s_ in lo["slots"]:                            
             st = s_.get("stock")
             if st:
@@ -5137,11 +5318,23 @@ class Api:
             fit = (f.get("loadout") or {}).get(s_["port"])
             if isinstance(fit, str):                    
                 fit = {"name": fit}
+            if s_["type"] == "MissileLauncher":         # a swapped rack: its numbers come from _apply_rack_swaps
+                s_["fitted"] = fit["name"] if fit else None
+                if fit and not s_.get("fitted_stats"):
+                    s_["fitted_stats"] = self._rack_spec_for(fit["name"], fit.get("uuid"))
+                continue
+            if fit and s_["type"] == "Missile" and s_.get("size"):
+                gi = self._game.find(fit.get("uuid"), fit["name"], None)
+                if gi and (gi.get("size") or 0) > s_["size"]:
+                    fit = None                          # left over from a rack that took bigger missiles
             s_["fitted"] = fit["name"] if fit else None
             if fit:
                 gi = self._game.find(fit.get("uuid"), fit["name"], s_.get("size"))
                 if gi:
-                    s_["fitted_stats"], s_["fitted_grade"], s_["fitted_maker"] = dict(gi["stats"]), gi.get("grade"), gi.get("maker")
+                    # stats() adds the power numbers (power use, minimum, cooling made) the bare stats lack,
+                    # so a swapped part is powered and cooled the same way its stock one is
+                    full = self._game.stats(gi.get("uuid"), fit["name"], s_.get("size")) or dict(gi["stats"])
+                    s_["fitted_stats"], s_["fitted_grade"], s_["fitted_maker"] = full, gi.get("grade"), gi.get("maker")
                     if s_["type"] == "Cooler":              
                         rec = self._wikiapi.item(gi["uuid"], fit["name"])
                         s_["fitted_stats"].update({k: v for k, v in (fleet.item_stats(rec) if rec else {}).items()
@@ -5151,8 +5344,24 @@ class Api:
                     s_["fitted_stats"] = fleet.item_stats(rec) if rec else {}
                     s_["fitted_grade"] = (rec or {}).get("grade")
                     s_["fitted_maker"] = ((rec or {}).get("manufacturer") or {}).get("name")
+        # The wiki's vehicle record often leaves out the ship's shield regen (and sometimes its shield HP):
+        # add up its stock shield generators' instead, so My Fleet always shows them
+        for ship_k, item_k in (("shield_regen", "shield_regen"), ("shield", "shield_hp")):
+            if not lo["stats"].get(ship_k):
+                tot = sum(((s_.get("stock") or {}).get("stats") or {}).get(item_k) or 0
+                          for s_ in lo["slots"] if s_["type"] == "Shield")
+                if tot:
+                    lo["stats"][ship_k] = tot
         lo["stock_stats"] = dict(lo["stats"])
         lo["stats"], lo["delta"] = fleet.apply_swaps(lo["stats"], lo["slots"])
+        if removed_missile and lo["stats"].get("missile_dmg") is not None:   # missiles on a stock rack you swapped out
+            lo["stats"]["missile_dmg"] = max(0, lo["stats"]["missile_dmg"] - removed_missile)
+            d = (lo["delta"].get("missile_dmg") or 0) - removed_missile
+            if d:
+                lo["delta"]["missile_dmg"] = d
+            else:
+                lo["delta"].pop("missile_dmg", None)
+        lo["missiles"] = self._missile_summary(lo["slots"])
         pw = f.get("power") or {}
         mode = pw.get("mode", "scm")
         for fx in lo.get("fixed") or []:                
@@ -5494,6 +5703,8 @@ class Api:
         when they cover this kind of slot (every part, exact numbers), else UEX's lists."""
         if slot_type == "FlightController":
             return self._flight_options(uid)
+        if slot_type == "MissileLauncher":
+            return self._uex_call(lambda: self._rack_options(size, uid))
         f = next((x for x in self._fleet() if x["uid"] == uid), None) if uid else None
         ground = bool(self._vehicle_rows().get(f["vehicle_id"], {}).get("is_ground_vehicle")) if f else False
         game = self._game.of_kind(slot_type, size, ground)
@@ -5532,6 +5743,74 @@ class Api:
             out += self._wiki_options(slot_type, size, out)          # ones UEX doesn't list (the Helix lasers)
             return {"ok": True, "items": out, "key": fleet.KEY_STAT.get(slot_type)}
         return self._uex_call(run)
+
+    # Racks only made for one ship (the Sabre Firebird's, the MOTH's) aren't offered for other ships
+    def _rack_options(self, size, uid=None):
+        """Missile racks for a missile hardpoint of this size: UEX's (with shop prices) and the wiki's, each
+        with how many missiles it holds and their size."""
+        out, seen = [], set()
+        stock_names = set()
+        if uid:
+            f = self._ship(uid)
+            v = self._vehicle_rows().get(f["vehicle_id"], {}) if f else {}
+            name = v.get("name") or (f or {}).get("name") or ""
+            try:
+                data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
+                                              v.get("name_full"), v.get("wiki_page")]) if f else None
+            except Exception:
+                data = None
+            if data:
+                stock_names = {((s.get("stock") or {}).get("name") or "").lower()
+                               for s in fleet.Wiki.loadout(data)["slots"] if s["type"] == "MissileLauncher"}
+
+        def generic(name, class_name=""):
+            # Behring's MSD racks fit any missile hardpoint of their size; named ship racks only their ship
+            return bool(re.search(r"\bMSD-\d{3}\b", name or "", re.I) or re.search(r"_BEHR_", class_name or "", re.I))
+        try:
+            spots = self._item_spots()
+            cats = [c for c in self._uex.get("categories")[0] if (c.get("type") or "item") == "item"
+                    and self._slot_type_for(c.get("name")) == "MissileLauncher"]
+            for c in cats:
+                for i in self._uex.get("items", {"id_category": int(c["id"])})[0]:
+                    nm = i.get("name") or ""
+                    if not nm or (size and str(i.get("size") or "") not in (str(size), "")):
+                        continue
+                    buy = spots.get(i["id"], [])
+                    if not buy and not generic(nm) and nm.lower() not in stock_names:
+                        continue
+                    seen.add(nm.lower())
+                    if i.get("uuid"):
+                        seen.add(i["uuid"].lower())
+                    out.append({"id": i["id"], "uuid": i.get("uuid"), "name": nm, "maker": i.get("company_name") or "",
+                                "size": i.get("size"), "grade": i.get("quality"),
+                                "stats": {}, "price": buy[0]["price"] if buy else None, "buy": buy[:6]})
+        except uex.UexError:
+            pass
+        try:
+            wiki = self._wikiapi.items_of_type("MissileLauncher")
+        except Exception:
+            wiki = []
+        for w in wiki:
+            nm = w.get("name") or ""
+            if not nm or nm.lower() in seen or (w.get("uuid") or "").lower() in seen:
+                continue
+            if size and str(w.get("size") or "") != str(size):
+                continue
+            if re.search(r"(?i)\b(test|template|placeholder)\b|_ai_|_npc|derelict", f"{w.get('class_name')} {nm}"):
+                continue
+            if not generic(nm, w.get("class_name")) and nm.lower() not in stock_names:
+                continue
+            seen.add(nm.lower())
+            spec = fleet.rack_spec(nm, w.get("class_name"))
+            out.append({"id": w.get("uuid") or nm, "uuid": w.get("uuid"), "name": nm, "maker": w.get("maker") or "",
+                        "size": w.get("size"), "grade": w.get("grade"),
+                        "stats": {k: spec[k] for k in ("missiles", "missile_size") if k in spec},
+                        "price": None, "buy": []})
+        for i in out:
+            if not i["stats"].get("missiles"):
+                i["stats"] = self._rack_spec_for(i["name"], i.get("uuid"))
+        out.sort(key=lambda x: (x["price"] is None, x["price"] or 0, x["name"] or ""))
+        return {"ok": True, "items": out, "key": "missiles", "source": "rack"}
 
     def _game_options(self, slot_type, game):
         """Game-file components joined with UEX shop prices (by UUID, else name)."""
@@ -5613,12 +5892,406 @@ class Api:
         lo = (self._loadout_of(f, loadout) or self._loadout_of(f))["loadout"]
         if item_name and str(item_name).endswith(" (stock)"):    # the stock flight blade: no swap
             item_name = None
+        old = lo.get(port)
+        old = (old.get("name") if isinstance(old, dict) else old) or None
+        if (old or None) != (item_name or None):
+            # A different missile rack holds different missiles: the ones fitted on the old rack go with it
+            for k in [k for k in lo if k.startswith(f"{port}/") and "missile" in k.lower()]:
+                lo.pop(k, None)
         if item_name:
             lo[port] = {"name": item_name, "uuid": uuid}
         else:
             lo.pop(port, None)
         self._save_settings()
         return {"ok": True}
+
+    # ------------------------------------------------------------ personal weapons, armor, blueprints
+    def _wiki_spots(self, prices, terms=None, places=None):
+        """The wiki's copy of UEX shop prices as "where to buy" rows, with Quantum's place for each terminal."""
+        if terms is None:
+            try:
+                terms, places = self._uex.terminals(), self._uex.place_map(self._db.locations)
+            except Exception:
+                terms, places = {}, {}
+        out = []
+        for p in prices or []:
+            t = terms.get(p.get("terminal_id")) if terms else None
+            place = (places or {}).get(p.get("terminal_id"))
+            where = uex.where(t) if t else (p.get("where") or p.get("terminal") or "")
+            out.append({"where": where, "shop": self._shop_name(p.get("terminal") or (t or {}).get("name"), where),
+                        "place": place, "system": p.get("system") or (t or {}).get("star_system_name"),
+                        "price": p["price"], "dist": self._dist_from_you(place), "updated": p.get("updated")})
+        out.sort(key=lambda x: x["price"])
+        return out
+
+    GEAR_KINDS = ("weapons", "armor", "blueprints")
+
+    def gear_list(self, kind, fresh=False):
+        """Everything of one kind from the Star Citizen Wiki for the Weapons, Armor and Blueprints tabs, with
+        where to buy it (UEX's prices, as the wiki has them)."""
+        if kind not in self.GEAR_KINDS:
+            return {"ok": False, "error": "Unknown kind"}
+        try:
+            data = self._gear.items(kind, fresh=bool(fresh))
+        except Exception as e:
+            return {"ok": False, "error": f"Couldn't reach the Star Citizen Wiki ({e}). Try again in a minute"}
+        items = data.get("items") or []
+        if kind != "blueprints":
+            try:
+                terms, places = self._uex.terminals(), self._uex.place_map(self._db.locations)
+            except Exception:
+                terms, places = {}, {}
+            out = []
+            for i in items:
+                i = dict(i)
+                i["buy"] = self._wiki_spots(i.pop("prices", None), terms, places)[:10]
+                out.append(i)
+            items = out
+        else:                                   # what a blueprint makes: the part's numbers when the game files have it
+            for b in items:
+                g = self._game.find(b.get("out_uuid")) if b.get("out_uuid") else None
+                if g:
+                    b["out_tab"] = "components"
+        return {"ok": True, "kind": kind, "items": items, "at": data.get("at"), "stale": bool(data.get("stale"))}
+
+    # Pictures for weapons and armor. These pages sit in the wiki's armor / personal-weapon categories, which
+    # the ship-part pictures skip on purpose ("Citadel" is a shield and an armor set), so they're looked up on
+    # their own, with the page's main picture first and else the picture on the page that best fits the name
+    # (many armor pages keep theirs in a gallery: "ADP Core Black" -> File:Adp_core_black_02.png).
+    @staticmethod
+    def _gear_title(name):
+        return re.sub(r"[“”„″]", '"', re.sub(r"[‘’]", "'", str(name or ""))).strip()
+
+    def _gear_file_pick(self, name, files):
+        words = [w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) > 1]
+        best, score = None, 0
+        for f in files:
+            fl = f.lower()
+            if re.search(r"icon|logo|brand|badge|placeholder|no[_ ]?image|\.svg$", fl):
+                continue
+            sc = sum(1 for w in words if w in fl)
+            if sc > score:
+                best, score = f, sc
+        return best if score >= max(1, min(2, len(words))) else None
+
+    def gear_images(self, refs, size=480):
+        """{name: picture url} for weapon and armor pages (and blueprints' products)."""
+        refs = [r for r in dict.fromkeys(refs or []) if r]
+        titles = {r: self._gear_title(r) for r in refs}
+        try:
+            got = self._wikiapi.pictures(list(set(titles.values())), size=size, any_page=True)
+        except Exception:
+            got = {}
+        out, tries = {}, 0
+        fb = getattr(self, "_gear_pic_fb", None)
+        if fb is None:
+            fb = self._gear_pic_fb = {}
+        for r in refs:
+            t = titles[r]
+            url = got.get(t)
+            if not url and tries < 12:              # no main picture: the best match among the page's files
+                if (t, size) in fb:
+                    url = fb[(t, size)]
+                else:
+                    tries += 1
+                    try:
+                        f = self._gear_file_pick(t, self._wikiapi.page_files([t]))
+                        url = self._wikiapi.file_urls([f], size).get(f) if f else None
+                    except Exception:
+                        url = None
+                    fb[(t, size)] = url
+            over, mine = self._community.photo_overrides(), self._community.photos()
+            k = self._pic_key(r)
+            out[r] = over.get(k) or url or mine.get(k)
+        return out
+
+    def gear_image(self, ref):
+        return self.gear_images([ref], size=720).get(ref)
+
+    def blueprint_detail(self, uuid):
+        """One blueprint with the missions that unlock it, and the numbers of what it makes."""
+        try:
+            b = self._gear.blueprint(uuid)
+        except Exception as e:
+            return {"ok": False, "error": f"Couldn't reach the Star Citizen Wiki ({e})"}
+        out = dict(b)
+        gv = self._game_view(b.get("out_uuid"), b.get("name"), None) if b.get("out_uuid") else None
+        if gv:
+            out["out_game"] = gv
+        return {"ok": True, "blueprint": out}
+
+    # ------------------------------------------------------------ shopping list
+    # The parts and gear you want to buy, and the trip that buys them all: fewest stops (or cheapest), in the
+    # shortest order from where you are. Steps tick off as you buy (Game.log shows shop purchases), or by hand.
+    def _shop(self):
+        sh = self._settings.setdefault("shopping", {})
+        sh.setdefault("items", [])
+        sh.setdefault("mode", "fewest")
+        return sh
+
+    def _shop_changed(self, note=None):
+        self._shop_ver = getattr(self, "_shop_ver", 0) + 1
+        if note:
+            self._shop_note = {"text": note, "n": self._shop_ver}
+        self._save_settings()
+
+    def _uex_part_id(self, uuid, name):
+        """UEX's item id for a ship component (by uuid, else name), for its shop prices."""
+        if time.time() - getattr(self, "_part_ids_at", 0) > 3600 or not getattr(self, "_part_ids", None):
+            ids = {}
+            try:
+                ix = self.uex_component_index()
+                for r in ix.get("items") or [] if ix.get("ok") else []:
+                    if isinstance(r.get("id"), int):
+                        if r.get("uuid"):
+                            ids.setdefault(str(r["uuid"]).lower(), r["id"])
+                        ids.setdefault(str(r.get("name") or "").lower(), r["id"])
+            except Exception as e:
+                print("part ids:", e, flush=True)
+            self._part_ids, self._part_ids_at = ids, time.time()
+        return self._part_ids.get(str(uuid or "").lower()) or self._part_ids.get(str(name or "").lower())
+
+    def _gear_by_uuid(self, kind):
+        try:
+            data = self._gear.items(kind)
+        except Exception:
+            return {}
+        return {str(i.get("uuid")).lower(): i for i in data.get("items") or []}
+
+    def _shop_spots(self, e, cache):
+        """Where one shopping-list entry is sold: [spot]."""
+        if e["id"] in cache:
+            return cache[e["id"]]
+        spots = []
+        if e.get("kind") in ("weapon", "armor"):
+            ix = cache.setdefault("_" + e["kind"], self._gear_by_uuid("weapons" if e["kind"] == "weapon" else "armor"))
+            g = ix.get(str(e.get("uuid") or "").lower())
+            if g:
+                spots = self._wiki_spots(g.get("prices"))
+        else:
+            iid = e.get("uex_id") if isinstance(e.get("uex_id"), int) else self._uex_part_id(e.get("uuid"), e.get("name"))
+            if iid:
+                if "_spots" not in cache:
+                    try:
+                        cache["_spots"] = self._item_spots()
+                    except Exception:
+                        cache["_spots"] = {}
+                spots = cache["_spots"].get(iid, [])
+                e["uex_id"] = iid
+            if not spots:                       # parts only the wiki prices (new ones UEX doesn't list yet)
+                for w in self._wiki_parts_any(e.get("uuid"), e.get("name"), cache):
+                    spots = w.get("buy") or []
+                    if spots:
+                        break
+        cache[e["id"]] = spots
+        return spots
+
+    def _wiki_parts_any(self, uuid, name, cache):
+        out = []
+        for words, wtype, test in self.WIKI_KINDS:
+            rows = cache.setdefault("_w" + wtype, None)
+            if rows is None:
+                try:
+                    rows = cache["_w" + wtype] = self._wiki_parts(wtype, test)
+                except Exception:
+                    rows = cache["_w" + wtype] = []
+            out += [w for w in rows if (uuid and str(w.get("uuid") or "").lower() == str(uuid).lower())
+                    or (name and w["name"].lower() == str(name).lower())]
+        return out
+
+    def shop_list(self):
+        """Your shopping list: each item with its cheapest price and how many shops sell it, and the plan."""
+        sh = self._shop()
+        cache = {}
+        items = []
+        for e in sh["items"]:
+            spots = self._shop_spots(e, cache)
+            best = spots[0] if spots else None
+            items.append(dict(e, price=best["price"] if best else None, where=best["where"] if best else None,
+                              shops=len(spots), on_map=sum(1 for x in spots if x.get("place"))))
+        here = (self._tracker.cur or {}).get("place")
+        left = sum(max(0, (e.get("qty") or 1) - (e.get("bought") or 0)) for e in sh["items"])
+        return {"ok": True, "items": items, "mode": sh["mode"], "plan": sh.get("plan"), "here": here,
+                "left": left, "step": self._shop_step(sh), "ver": getattr(self, "_shop_ver", 0)}
+
+    def _shop_step(self, sh):
+        """Index of the first plan stop with something still to buy (None when done or no plan)."""
+        plan = sh.get("plan") or {}
+        byid = {e["id"]: e for e in sh["items"]}
+        for i, st in enumerate(plan.get("steps") or []):
+            if any(it["id"] in byid and (byid[it["id"]].get("bought") or 0) < (byid[it["id"]].get("qty") or 1)
+                   for it in st["items"]):
+                return i
+        return None
+
+    def shop_add(self, entries):
+        """Add items: [{name, kind ("component" | "weapon" | "armor"), uuid, uex_id, class_name, qty, source}].
+        One already on the list gets its count raised instead."""
+        sh = self._shop()
+        n = 0
+        for x in entries or []:
+            if not isinstance(x, dict) or not (x.get("name") or "").strip():
+                continue
+            e = shopping.new_entry(x["name"].strip(), x.get("kind") or "component", x.get("uuid"), x.get("uex_id"),
+                                   x.get("class_name"), x.get("qty") or 1, x.get("source"))
+            have = next((h for h in sh["items"] if shopping.same_item(h, e)), None)
+            if have:
+                have["qty"] = (have.get("qty") or 1) + e["qty"]
+            else:
+                sh["items"].append(e)
+            n += e["qty"]
+        if n:
+            sh["plan"] = None                   # the list changed: plan again
+            self._shop_changed()
+        left = sum(max(0, (e.get("qty") or 1) - (e.get("bought") or 0)) for e in sh["items"])
+        return {"ok": True, "added": n, "count": len(sh["items"]), "left": left}
+
+    def shop_add_loadout(self, uid):
+        """Every part you've swapped into the ship's loadout shown in My Fleet (not its stock parts)."""
+        lo = self.fleet_loadout(uid)
+        if not lo.get("ok"):
+            return lo
+        want = {}
+        for s_ in lo["slots"]:
+            if not s_.get("fitted") or str(s_["fitted"]).endswith(" (stock)"):
+                continue
+            fit = ((self._ship(uid) or {}).get("loadout") or {}).get(s_["port"])
+            uuid = fit.get("uuid") if isinstance(fit, dict) else None
+            k = (s_["fitted"].lower(), uuid)
+            w = want.setdefault(k, {"name": s_["fitted"], "kind": "component", "uuid": uuid, "qty": 0,
+                                    "source": lo["ship"].get("full")})
+            w["qty"] += 1
+        if not want:
+            return {"ok": False, "error": "This loadout has no swapped parts yet. Change some slots first"}
+        r = self.shop_add(list(want.values()))
+        return dict(r, parts=len(want))
+
+    def shop_set(self, item_id, qty=None, bought=None):
+        sh = self._shop()
+        e = next((x for x in sh["items"] if x["id"] == item_id), None)
+        if not e:
+            return {"ok": False, "error": "That item isn't on your list"}
+        if qty is not None:
+            e["qty"] = max(1, int(qty))
+            e["bought"] = min(e.get("bought") or 0, e["qty"])
+            sh["plan"] = None
+        if bought is not None:
+            e["bought"] = max(0, min(e.get("qty") or 1, int(bought)))
+        self._shop_changed()
+        return {"ok": True}
+
+    def shop_step_done(self, index):
+        """Mark everything at one stop of the plan as bought."""
+        sh = self._shop()
+        steps = (sh.get("plan") or {}).get("steps") or []
+        if not 0 <= int(index) < len(steps):
+            return {"ok": False, "error": "No such stop"}
+        byid = {e["id"]: e for e in sh["items"]}
+        for it in steps[int(index)]["items"]:
+            e = byid.get(it["id"])
+            if e:
+                e["bought"] = e.get("qty") or 1
+        self._shop_changed()
+        return {"ok": True}
+
+    def shop_remove(self, item_id=None, bought_only=False, everything=False):
+        sh = self._shop()
+        before = len(sh["items"])
+        if everything:
+            sh["items"] = []
+        elif bought_only:
+            sh["items"] = [e for e in sh["items"] if (e.get("bought") or 0) < (e.get("qty") or 1)]
+        else:
+            sh["items"] = [e for e in sh["items"] if e["id"] != item_id]
+        if len(sh["items"]) != before:
+            sh["plan"] = None if not sh["items"] or not bought_only else sh.get("plan")
+            self._shop_changed()
+        return {"ok": True}
+
+    def shop_plan(self, mode=None):
+        """Work out the trip: which shops, and in what order from where you are."""
+        sh = self._shop()
+        if mode in shopping.MODES:
+            sh["mode"] = mode
+        if not sh["items"]:
+            return {"ok": False, "error": "Your shopping list is empty"}
+        cache = {}
+        for e in sh["items"]:                   # shop prices first (network), so the map isn't held up meanwhile
+            self._shop_spots(e, cache)
+        t = time.time()
+        with self._lock:
+            p, psys = self._player, self._player_sys
+            locs = self._db.locations
+
+            def dist_of(place):
+                L = locs.get(place)
+                if not L or not p or L.system != psys or not L.pos:
+                    return None
+                return dist(self._db.global_pos(L, t), p)
+
+            def system_of(place):
+                L = locs.get(place)
+                return L.system if L else None
+
+            def order(places):
+                ok = [x for x in places if x in locs]
+                start_sys = psys or (locs[ok[0]].system if ok else None)
+                return self._db.optimize(p, start_sys, ok, t) + [x for x in places if x not in locs] if ok else places
+
+            plan = shopping.plan(sh["items"], lambda e: self._shop_spots(e, cache), dist_of, system_of,
+                                 psys, sh["mode"], order)
+            legs = self._db.route_length(p, psys, [s["place"] for s in plan["steps"] if s["place"] in locs], t) \
+                if plan["steps"] else []
+        plan["distance"] = sum(d for d in legs if d)
+        plan["from_you"] = bool(p)
+        sh["plan"] = plan
+        self._shop_changed()
+        return {"ok": True, "plan": plan}
+
+    def shop_to_route(self, replace=False):
+        """Put the plan's stops on your route, in order (after what's there, or in place of it)."""
+        plan = self._shop().get("plan") or {}
+        sh = self._shop()
+        i = self._shop_step(sh) or 0
+        names = [s["place"] for s in (plan.get("steps") or [])[i:] if s.get("place")]
+        if not names:
+            return {"ok": False, "error": "Plan the trip first"}
+        if replace:
+            self.set_route(names)
+            return {"ok": True, "added": names}
+        return self.add_stops(names, repeat=False)
+
+    PURCHASE_NOISE = {"cooler", "power", "plant", "shield", "generator", "quantum", "drive", "radar", "cannon",
+                      "repeater", "gatling", "missile", "rack", "rifle", "pistol", "shotgun", "smg", "lmg", "sniper",
+                      "helmet", "core", "arms", "legs", "backpack", "undersuit", "armor"}
+
+    def _shop_check_purchases(self):
+        """Purchases in Game.log tick items off the list (once the list was planned or the item added)."""
+        n = getattr(self._tracker, "purchase_n", 0)
+        if n == getattr(self, "_shop_seen_n", None):
+            return
+        first = not hasattr(self, "_shop_seen_n")
+        self._shop_seen_n = n
+        sh = self._settings.get("shopping") or {}
+        items = [e for e in sh.get("items") or [] if (e.get("bought") or 0) < (e.get("qty") or 1)]
+        if first or not items:
+            # what was bought before Quantum started is in the log too: only count what comes after
+            self._shop_seen_at = time.time() if first else getattr(self, "_shop_seen_at", 0)
+            if first:
+                return
+        since = max(getattr(self, "_shop_seen_at", 0), (sh.get("plan") or {}).get("made") or 0)
+        got = []
+        for b in self._tracker.purchases:
+            if b["n"] <= getattr(self, "_shop_done_n", 0) or (b.get("at") or 0) < since - 5:
+                continue
+            self._shop_done_n = b["n"]
+            e = shopping.match_purchase(items, b["item"], self.PURCHASE_NOISE)
+            if e and (e.get("added") or 0) <= (b.get("at") or time.time()) + 5:
+                e["bought"] = min(e.get("qty") or 1, (e.get("bought") or 0) + 1)
+                got.append(e["name"])
+                items = [x for x in items if (x.get("bought") or 0) < (x.get("qty") or 1)]
+        if got:
+            self._shop_changed(f"Bought {', '.join(got)}: ticked off your shopping list")
 
     # ------------------------------------------------------------ my trade runs
     TRADE_STAGES = ("planned", "bought", "transit", "sold")

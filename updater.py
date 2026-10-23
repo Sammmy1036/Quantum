@@ -9,7 +9,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-VERSION = "0.0.1.6"                     
+VERSION = "0.0.1.7"                     
 REPO = "Sammmy1036/Quantum"
 ASSET = re.compile(r"^Quantum-Setup-[\w.\-]+\.exe$", re.I)   
 

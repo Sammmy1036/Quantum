@@ -243,6 +243,8 @@ class Community:
         except Exception:
             self._photos = getattr(self, "_photos", {})
             self._overrides = getattr(self, "_overrides", {})
+            self._photos_at = time.time() - self.PHOTOS_FOR + 30      # server down: try again in 30 s
+            return self._photos
         self._photos_at = time.time()
         return self._photos
 
