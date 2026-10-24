@@ -8,7 +8,7 @@
 
 <p align="center">
   [▶ Watch the demo](https://quantumsc.org/media/Quantum-Demo.mp4)
-  <video src="https://github.com/user-attachments/assets/ec267805-fe17-44b5-abfd-4945736c83d0" width="1000" controls muted></video>
+  <video src="https://github.com/user-attachments/assets/11a8c488-6eb3-40d1-8b66-301771122156" width="1000" controls muted></video>
  </p>
 
 Quantum runs next to Star Citizen on Windows. It reads your `/showlocation` coordinates and the game's own log to show where you are on a live 3D map of the system, plans and guides multi-stop routes, and tracks your hauling contracts from pickup to delivery. It has a browsable catalogue of personal gear and crafting blueprints, where you can build your own gear loadouts for each kind of job. With a free UEX token it also finds profitable trade routes, compares ships and fits components. With a UEX datarunner account you can report terminal prices from inside Quantum, climb the ranks and keep trade data fresh for everyone.
