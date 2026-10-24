@@ -44,12 +44,15 @@ function geometry(m){
   const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.BufferAttribute(pos,3)); g.setAttribute("color",new THREE.BufferAttribute(cc,3));
   g.computeVertexNormals(); g.addGroup(0,ns*3,0); if(ns<nt) g.addGroup(ns*3,(nt-ns)*3,1); return g; }
 
-function build(name){
+// Built a few pieces per frame (about 6 ms at a time), so a big station arriving mid-flight doesn't stall it
+const yieldFrame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
+async function build(name){
   const T=window.QSTATION?.[name]; if(!T?.inst) return null;
   const IN=new Float32Array(bytes(T.inst).buffer), NI=IN.length/13, group=new THREE.Group(), byMesh=new Map();
   for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
-  const M=new THREE.Matrix4(); let lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  const M=new THREE.Matrix4(); let lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9], t0=performance.now();
   for(const [k,list] of byMesh){ const m=T.meshes[k]; if(!m) continue;
+    if(performance.now()-t0>6){ await yieldFrame(); t0=performance.now(); }
     const im=new THREE.InstancedMesh(geometry(m),[MAT.solid,MAT.glow],list.length); let n=0;
     for(const i of list){ const o=i*13+1;
       M.set(IN[o],IN[o+1],IN[o+2],IN[o+3], IN[o+4],IN[o+5],IN[o+6],IN[o+7], IN[o+8],IN[o+9],IN[o+10],IN[o+11], 0,0,0,1);
@@ -72,11 +75,19 @@ function show(o,v,d,t,f){
   if(!index){ getIndex(); return false; }
   const file=index.get(name); if(!file) return false;
   let e=R[name];
-  if(!e){ const picked=typeof S!=="undefined"&&(S.selected?.name===name||S.focus?.name===name);
+  // a download that didn't come through (a dropped connection) is tried again a minute later, up to 4 times
+  if(e?.state==="failed"&&Date.now()>=e.again&&e.tries<4){ e.state="idle"; }
+  if(!e||e.state==="idle"){ const picked=typeof S!=="undefined"&&(S.selected?.name===name||S.focus?.name===name);
     if(d>LOAD_KM*1000&&!picked) return false;
-    e=R[name]={state:"loading"};
-    addScript(`stations/${encodeURIComponent(file)}.js`).then(()=>{ const b=build(name); if(b) Object.assign(e,b,{state:"ready"}); else e.state="none"; })
-      .catch(()=>{ e.state="none"; });
+    // not while the camera glides past on its way somewhere else, nor from down in a 3D city (a station
+    // overhead is a dot from there): it's fetched once the camera settles nearby instead
+    if(!picked&&((typeof S!=="undefined"&&S.anim)||(typeof city3dDown==="function"&&city3dDown()))) return false;
+    e=R[name]=Object.assign(e||{tries:0},{state:"loading"}); e.tries++;
+    const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; };
+    addScript(`stations/${encodeURIComponent(file)}.js`).then(ok=>{
+        if(ok===false) return failed();
+        return build(name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else e.state="none"; }); })
+      .catch(failed);
     return false; }
   if(e.state!=="ready") return false;
   const k=Math.max(1,MIN_PX*d/(e.span*f));                         // scaled up when it would be smaller than MIN_PX

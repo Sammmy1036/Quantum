@@ -80,7 +80,7 @@ class Uex:
         if not self.token:
             if cached:
                 return cached["rows"], cached["at"]
-            raise UexError("Add your UEX token in Settings to load trade data")
+            raise UexError("Add your UEX Bearer Token under Profile › Linked accounts to load trade data")
         try:
             rows = self._fetch(resource, params)
         except UexError:

@@ -1009,6 +1009,23 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 /* Weapons, Armor, Blueprints */
 .gr-view{display:flex;margin:8px 0 2px}.gr-view button{flex:1}
 .vd-grid.bp-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+/* Commodities › Where to find it: its own section under Buy at / Sell at */
+.src-sec{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.src-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.src-sub{color:var(--ink-2);font-size:12.5px;margin-top:5px;line-height:1.45}.src-sub b{color:var(--ink);font-weight:600}
+.src-legend{display:flex;flex-wrap:wrap;gap:14px;margin:12px 0 4px;font-size:12px;color:var(--ink-2)}
+.src-legend span,.src-tags span{display:inline-flex;align-items:center;gap:6px}.src-legend i,.src-tags i{width:8px;height:8px;border-radius:50%;flex:none}
+.src-sys{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.src-sys span{font:500 12px var(--text);letter-spacing:0;text-transform:none;color:var(--dim)}
+.src-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.src-card{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 12px 10px;min-width:0;transition:border-color .15s}
+.src-card:hover{border-color:var(--line-2)}
+.src-top{display:flex;align-items:center;gap:10px}.src-nm{flex:1;min-width:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src-nm a{color:var(--ink);cursor:pointer}.src-nm a:hover{color:var(--route-2)}
+.src-pct{font:600 15px var(--text);color:var(--ink)}.src-top .iconbtn{flex:none}
+.src-bar{height:4px;border-radius:3px;background:var(--panel-3);margin:9px 0 8px;overflow:hidden}.src-bar i{display:block;height:100%;border-radius:3px;background:var(--c)}
+.src-meta{font-size:12px;color:var(--ink-2);min-height:15px}
+.src-tags{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px;font-size:11.5px;color:var(--dim)}
 .gr-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 12px}.gr-tags span{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2);background:var(--panel-2)}
 .mi-text{white-space:pre-line}
 /* ---------- profile ---------- */
@@ -3476,6 +3493,12 @@ function mapWindow(){ if(!tradePanelOpen()) return null; const f=$("trd-map"), b
   const a=f.getBoundingClientRect(), b=base.getBoundingClientRect(); if(!a.width||!a.height) return null;
   return {x:a.left-b.left, y:a.top-b.top, w:a.width, h:a.height}; }
 function viewShift(){ const fr=mapWindow(); if(fr) return fr.x+fr.w/2-W/2;
+  // The place card open on the left: centre what you're looking at in the map that's left beside it
+  // (only when the card reaches up past the middle of the map, where it would cover it)
+  const d=$("detail"), base=$("gl");
+  if(d?.classList.contains("show")&&base){ const a=d.getBoundingClientRect(), b=base.getBoundingClientRect();
+    const right=a.right-b.left, top=a.top-b.top;
+    if(a.width&&right<W*0.6&&top<H*0.62) return right/2; }
   return 0; }   // the next-stop card only covers the top corner: centre the view in the middle of the map
 function fitHalf(){ const half=Math.tan(camera.fov*Math.PI/360);
   const fr=mapWindow(); if(fr) return Math.min(half*fr.h/H, half*fr.w/H)*0.82;
@@ -3946,12 +3969,13 @@ async function renderMarket(){
   const spread=r.buy.length&&r.sell.length?r.sell[0].price-r.buy[0].price:null;
   if(!mkOnMap(r,sys)&&S.mkMap&&S.mkMap!=="src"){ S.mkMap=false; S.mapMarks=null; }     // nothing left to mark (another system picked)
   $("mk-out").innerHTML=`<div class="muted" style="font-size:12px;margin:10px 2px 0">${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${spread!=null?` · best spread ${money(spread)}/SCU`:""}</div>
-    ${mkOnMap(r,sys)||S.mkMap==="src"?`<div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"See on map"}</button></div>`:""}
+    ${mkOnMap(r,sys)||S.mkMap==="src"?`<div class="row" style="gap:6px;margin:10px 0 2px"><button class="btn small" data-act="mkmap">${S.mkMap?"Back to details":"Terminals on map"}</button></div>`:""}
     <div class="mk-h">Buy at <span class="muted" style="text-transform:none;letter-spacing:0">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}
     <div class="mk-h">Sell at <span class="muted" style="text-transform:none;letter-spacing:0">best price first, per SCU</span></div>${rows(r.sell,"sell")}${uexCredit(r.at)}`;
   S.mkData={c,r,rows}; renderMarketPanel(); }
 // The commodity in place of the map: its picture, prices at a glance, and where to buy and sell it.
-// "See on map" swaps back to the map with every place that trades it marked.
+// "Terminals on map" swaps back to the map with every place that trades it marked; "Deposits on map", in Where
+// to find it below the prices, marks where it's mined or harvested instead.
 async function renderMarketPanel(){
   const d=S.mkData; if(!d) return syncMarketPanel(); const {c,r,rows}=d;
   const avg=(L,k)=>L.length?L.reduce((a,x)=>a+(x[k]||x.price),0)/L.length:null;
@@ -3964,10 +3988,10 @@ async function renderMarketPanel(){
           [{label:"Sold at",value:plural(r.buy.length,"terminal")},{label:"Bought at",value:plural(r.sell.length,"terminal")},
            {label:"Average buy",value:ab!=null?money(ab):null},{label:"Average sell",value:av!=null?money(av):null}]); })()}
       <div class="desc" id="mkp-desc" style="margin-top:12px"></div>
-      <div id="mkp-src"></div>
-      <div class="row" style="gap:8px">${mkOnMap(r,$("mk-sys").value)?`<button class="btn primary" data-act="mkmap">See on map</button>`:""}${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px">${mkOnMap(r,$("mk-sys").value)?`<button class="btn primary" data-act="mkmap" title="Every terminal that buys or sells it, marked on the map">Terminals on map</button>`:""}${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
     <div class="mkp-cols vd-flat"><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
-      <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}`;
+      <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}
+    <section id="mkp-src" class="src-sec" hidden></section>`;
   syncMarketPanel();
   api().wiki_text(c.wiki||c.name).then(t=>{ const el=$("mkp-desc"); if(el&&S.mkData?.c===c&&t) el.innerHTML=wikiDesc(t,c.wiki); });
   mkSources(c);
@@ -3981,24 +4005,39 @@ async function mkSources(c){
   const box=()=>S.mkData?.c===c?$("mkp-src"):null;
   if(!S.mkSrc) S.mkSrc={};
   let r=S.mkSrc[c.name];
+  const minable=c.raw||c.mineral||c.harvestable;
   if(!r){
-    if(box()&&(c.raw||c.mineral||c.harvestable)) box().innerHTML=`<div class="muted" style="font-size:12.5px;margin:8px 0">Looking up where it's found…</div>`;
+    if(box()&&minable){ box().hidden=false; box().innerHTML=`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div><div class="src-sub">Looking it up on the Star Citizen Wiki…</div></div></div>`; }
     try{ r=await api().commodity_sources(c.name); }catch(e){ r={ok:false}; }
     if(r.ok) S.mkSrc[c.name]=r; }
   const el=box(); if(!el) return;
-  if(!r.ok||!r.found){ el.innerHTML=(c.raw||c.mineral||c.harvestable)&&!r.ok?`<div class="muted" style="font-size:12.5px;margin:8px 0">Couldn't reach the Star Citizen Wiki for where it's found.</div>`:""; return; }
-  const methods=[...new Set(r.sources.flatMap(x=>x.methods||[]))];
-  const L=r.sources.slice(0,S.mkSrcAll?200:8);
+  if(!r.ok||!r.found){ el.hidden=!(minable&&!r.ok);
+    el.innerHTML=el.hidden?"":`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div><div class="src-sub">Couldn't reach the Star Citizen Wiki just now.</div></div></div>`; return; }
+  const all=r.sources, methods=[...new Set(all.flatMap(x=>x.methods||[]))], systems=[...new Set(all.map(x=>x.system).filter(Boolean))];
+  const L=all.slice(0,S.mkSrcAll?300:9), top=Math.max(...all.map(x=>x.chance||0),0.0001);
+  const qs=all.filter(x=>x.quality), qlo=qs.length?Math.min(...qs.map(x=>x.quality[0])):null, qhi=qs.length?Math.max(...qs.map(x=>x.quality[1])):null;
   const pct=x=>x.chance!=null&&x.chance>0?`${x.chance<0.01?"<1":Math.round(x.chance*100)}%`:"";
-  el.innerHTML=`<div class="mk-h" style="margin-top:14px">Where to find it${r.from?` <span class="mk-note">as ${esc(r.from)}, refined into ${esc(c.name)}</span>`:""}</div>
-    ${methods.length?`<div class="gr-tags">${methods.map(m=>`<span style="border-color:${MK_METHOD_COLOR[m]||"var(--line)"}">${esc(m)}</span>`).join("")}</div>`:""}
-    ${L.map(x=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.display||x.name)}</a>`:esc(x.display||x.name)}</div>
-      <div class="p" title="How likely a deposit here is this">${pct(x)}</div>
-      ${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add ${esc(x.place)} to your route">+</button>`):`<span></span>`}
-      <div class="m">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:"",x.system,(x.methods||[]).join(", "),x.quality?`quality ${x.quality[0]}–${x.quality[1]}`:""].filter(Boolean).join(" · "))}</div></div>`).join("")}
-    <div class="row" style="gap:8px;margin-top:8px">${r.sources.some(x=>x.place||x.body)?`<button class="btn small primary" data-act="mksrcmap">Show on map</button>`:""}
-      ${r.sources.length>8?`<button class="btn small ghost" data-act="mksrcall">${S.mkSrcAll?"Fewer":`All ${r.sources.length} places`}</button>`:""}
-      ${r.web_url?`<button class="btn small ghost" data-ext="${esc(r.web_url)}">Wiki</button>`:""}</div>`; }
+  const col=m=>MK_METHOD_COLOR[m]||"var(--route-2)";
+  const card=x=>{ const m=(x.methods||[])[0], inRoute=x.place&&S.live?.route?.includes(x.place);
+    return `<div class="src-card" style="--c:${col(m)}">
+      <div class="src-top"><div class="src-nm">${x.place?`<a data-open="${esc(x.place)}">${esc(x.display||x.name)}</a>`:esc(x.display||x.name)}</div>
+        <b class="src-pct" title="How likely a deposit here is this">${pct(x)}</b>
+        ${x.place?`<button class="iconbtn ${inRoute?"added":""}" data-add="${esc(x.place)}" title="${inRoute?"In your route":`Add ${esc(x.place)} to your route`}">${inRoute?"✓":"+"}</button>`:""}</div>
+      <div class="src-bar" aria-hidden="true"><i style="width:${Math.max(3,Math.round((x.chance||0)/top*100))}%"></i></div>
+      <div class="src-meta">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:""].filter(Boolean).join(" · "))}</div>
+      <div class="src-tags">${(x.methods||[]).map(mm=>`<span><i style="background:${col(mm)}"></i>${esc(mm)}</span>`).join("")}${x.quality?`<span>Quality ${x.quality[0]}–${x.quality[1]}</span>`:""}</div></div>`; };
+  // grouped by system, keeping the most likely first inside each
+  const groups=[]; for(const x of L){ const k=x.system||"Elsewhere"; let g=groups.find(g=>g.k===k); if(!g) groups.push(g={k,L:[]}); g.L.push(x); }
+  const counts=Object.fromEntries(systems.map(k=>[k,all.filter(x=>x.system===k).length]));
+  el.hidden=false;
+  el.innerHTML=`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div>
+      <div class="src-sub">${r.from?`Mined as <b>${esc(r.from)}</b> and refined into ${esc(c.name)}. `:""}From the Star Citizen Wiki's resource data.</div></div>
+      <div class="row" style="gap:8px">${all.some(x=>x.place||x.body)?`<button class="btn small primary" data-act="mksrcmap" title="Every place it's found, marked on the map">Deposits on map</button>`:""}
+        ${all.length>9?`<button class="btn small ghost" data-act="mksrcall">${S.mkSrcAll?"Show fewer":`All ${all.length} places`}</button>`:""}</div></div>
+    ${statBlock([{label:"Places",value:String(all.length)},{label:"Best odds",value:pct(all.reduce((a,x)=>(x.chance||0)>(a.chance||0)?x:a,all[0]))||"–"},
+      {label:"Quality",value:qlo!=null?`${qlo}–${qhi}`:"–"}],[])}
+    ${methods.length?`<div class="src-legend">${methods.map(m=>`<span><i style="background:${col(m)}"></i>${esc(m)}</span>`).join("")}</div>`:""}
+    ${groups.map(g=>`<div class="src-sys">${esc(g.k)}<span>${plural(counts[g.k]||g.L.length,"place")}</span></div><div class="src-grid">${g.L.map(card).join("")}</div>`).join("")}`; }
 function mkSourceMap(){ const d=S.mkData, r=d&&S.mkSrc?.[d.c.name]; if(!r?.sources) return;
   const marks={}; for(const x of r.sources){ const n=x.body||x.place; if(!n||marks[n]) continue;
     if(!S.locMap[n]&&!S.bodyMap[n]) continue;

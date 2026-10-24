@@ -263,6 +263,25 @@ const dot=(()=>{ const c=document.createElement("canvas"); c.width=c.height=32; 
 const precip=new THREE.Points(pg,new THREE.PointsMaterial({color:0xffffff,map:dot,size:1.2,transparent:true,opacity:0.9,depthWrite:false,fog:false}));
 precip.visible=false; precip.frustumCulled=false; scene.add(precip);
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate=false;            // redrawn only when something it shows moved (see update)
+let shadowKey="", shadowAt=0;
+// How many close-up triangles the cities may draw: set by the frame rate while you're at a city. It starts
+// modest and grows while frames come quickly, and shrinks when they don't, so a dense city (Area 18's
+// towers) can't ask more of the graphics card than it has. Each change bumps the version, which makes the
+// cities pick their close-ups again.
+// Steady, not see-sawing: it comes down quickly when frames are slow, but only goes back up after a long
+// run of quick frames and never soon after coming down (each change re-picks and re-sends the close-ups).
+const nearBudget={tris:5e6, min:1.5e6, max:14e6, ver:0, ema:16, at:0, down:0, last:0};
+window.qNearBudget=()=>nearBudget;
+// What the cities have been doing, for the demo's timing log (demo_perf.log)
+const cityStats={shadowDraws:0, lodPicks:0, lodUploads:0, building:""};
+window.qCityStats=()=>cityStats;
+function budgetFrame(now){ const dt=now-(nearBudget.last||now); nearBudget.last=now;
+  if(!(dt>0&&dt<250)) return;                                     // (a hidden window, or the first frame)
+  const B=nearBudget; B.ema+=(dt-B.ema)*0.06;
+  if(B.ema>26&&B.tris>B.min&&now-B.at>2000){ B.tris=Math.max(B.min,B.tris*0.7); B.ver++; B.at=B.down=now; }     // under ~38 fps
+  else if(B.ema<13&&B.tris<B.max&&now-B.at>4000&&now-B.down>10000){ B.tris=Math.min(B.max,B.tris*1.15); B.ver++; B.at=now; } }   // ~75 fps and up
+window.qShadowStale=()=>{ shadowKey=""; };       // something that casts shadows changed (a close-up swapped in)
 sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0006; sun.shadow.normalBias=1.5; sun.shadow.camera.near=100; sun.shadow.camera.far=70000;
 const opt={precip:true,haze:true};
 const reduceMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -369,19 +388,32 @@ function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={}
     mat.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <logdepthbuf_vertex>","gl_PointSize=max(gl_PointSize,1.6);\n#include <logdepthbuf_vertex>"); };
     FIX=new THREE.Points(g,mat); FIX.frustumCulled=false; FIX.visible=false; inner.add(FIX); }
   // close-up versions near the camera (the biggest-looking copies first, within a triangle budget)
-  const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=12e6; let dirty=true, at=0; const camAt=new THREE.Vector3(1e12,0,0), camL=new THREE.Vector3();
+  const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=12e6; let dirty=true, at=0, cityReach=0, nearOn=false; const camAt=new THREE.Vector3(1e12,0,0), camL=new THREE.Vector3();
+  let budgetVer=-1;
   function update(now){ if(now-at<300) return; at=now;
     camera.getWorldPosition(camL); inner.worldToLocal(camL);
+    if(budgetVer!==nearBudget.ver){ budgetVer=nearBudget.ver; dirty=true; }
     if(!dirty&&camAt.distanceToSquared(camL)<Math.max(40,0.02*camL.length())**2) return; camAt.copy(camL); dirty=false;
     const ents=Object.values(LOD).filter(e=>e.near); if(!ents.length) return;
+    // far out (coming down from space) nothing is close enough for a close-up: skip the sort, and the
+    // re-upload of every building's position, until the camera is within reach of the city
+    const reach=cityReach||(cityReach=Math.max(3000,...ents.map(e=>{ let m=0; for(let i=0;i<e.n;i++){ const q=Math.hypot(e.cen[i*3],e.cen[i*3+1],e.cen[i*3+2])+Math.max(e.rad[i]*(NEAR_K*2+1),NEAR_MIN+e.rad[i])+500; if(q>m) m=q; } return m; })));
+    if(camL.length()>reach&&!nearOn) return;
     const all=[]; ents.forEach((e,ei)=>{ e.nt=e.nt||e.near.geometry.attributes.position.count/3;
       for(let i=0;i<e.n;i++){ const dx=e.cen[i*3]-camL.x, dy=e.cen[i*3+1]-camL.y, dz=e.cen[i*3+2]-camL.z, gap=Math.max(1,Math.sqrt(dx*dx+dy*dy+dz*dz)-e.rad[i]);
         const sc=gap<NEAR_MIN?1e9-gap:e.rad[i]*2/gap; if(sc>1/NEAR_K) all.push([sc,ei,i]); } });
     all.sort((a,b)=>b[0]-a[0]); const pick=ents.map(e=>new Uint8Array(e.n)); let tris=0;
-    for(const [,ei,i] of all){ const t=ents[ei].nt; if(tris+t>NEAR_TRIS) continue; tris+=t; pick[ei][i]=1; }
-    ents.forEach((e,ei)=>{ const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
-      for(let i=0;i<e.n;i++){ const mm=e.mats.subarray(i*16,i*16+16); if(pick[ei][i]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
-      e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; }); }
+    const cap=Math.min(NEAR_TRIS,nearBudget.tris);
+    for(const [,ei,i] of all){ const t=ents[ei].nt; if(tris+t>cap) continue; tris+=t; pick[ei][i]=1; }
+    // only the kinds of building whose close-up set changed are rewritten and sent to the graphics card again
+    // (rewriting all of them every 300 ms on the way down was a steady stutter)
+    let any=false;
+    ents.forEach((e,ei)=>{ const p=pick[ei]; if(e.pick&&e.pick.length===p.length){ let same=true; for(let i=0;i<p.length;i++) if(p[i]!==e.pick[i]){ same=false; break; } if(same){ if(e.near.count) any=true; return; } }
+      e.pick=p; const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
+      for(let i=0;i<e.n;i++){ const mm=e.mats.subarray(i*16,i*16+16); if(p[i]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
+      e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; if(nn) any=true; shadowKey=""; cityStats.lodUploads++; });
+    cityStats.lodPicks++;
+    nearOn=any; }
   const loadNear=async()=>{ if(!nearFile) return; const city=LAY.city;
     if(!window.QCITYNEAR?.[city]) await loadScript(nearFile);
     const NM=window.QCITYNEAR?.[city]?.meshes; if(!NM) return; let c=0;
@@ -475,9 +507,9 @@ function define(spec){
   }
 
   async function build(){
-    st.building=true;
+    st.building=true; cityStats.building=(C.world?"ground of ":"")+C.city;
     try{
-      const F=frameFromData(); if(!F){ st.building=false; return; }
+      const F=frameFromData(); if(!F){ st.building=false; cityStats.building=""; return; }
       const tr=loadTerrain(C.body); if(tr.state==="loading") await tr.ready;     // the real heights, if there are any
       const layout=C.world?null:await loadLayout(C.city);                       // the real buildings, if there are any
       const Rb=F.Rb, FADE=st.FADE;
@@ -577,8 +609,8 @@ function define(spec){
       const old=st.root; if(old){ scene.remove(old); old.traverse(o=>{ o.geometry?.dispose?.(); o.material?.dispose?.(); }); }
       root.visible=!!old?.visible; st.root=root; st.inner=inner; st.F=F;
       st.model=model; st.frame={curve,toFlat};
-      st.built=true; st.building=false; if(owner===st) ui.views(st);
-    } catch(e){ st.building=false; reportErr(C.file||C.city,e); }
+      st.built=true; st.building=false; cityStats.building=""; if(owner===st) ui.views(st);
+    } catch(e){ st.building=false; cityStats.building=""; reportErr(C.file||C.city,e); }
   }
 
   // a point in model coordinates (x, z and its height y), as a place on the planet (planet-fixed)
@@ -615,7 +647,9 @@ function define(spec){
       const lb=[look[0]-B.center[0],look[1]-B.center[1],look[2]-B.center[2]], lr=Math.hypot(...lb);
       const ll=[lb[0]*c+lb[1]*s, -lb[0]*s+lb[1]*c, lb[2]].map(v=>v/lr*B.radius);       // planet-fixed
       const far=!st.F||d3(ll,st.F.up.map(v=>v*B.radius))>C.rebuildDist;
-      if(far&&!st.building&&tr0().state!=="missing"){ st.want=ll; build(); }
+      // (a rebuild waits while the camera is gliding somewhere: the ground under a flight's path is never
+      // looked at, and building it mid-flight was a stall on the way down to a city)
+      if(far&&!st.building&&!(st.F&&S.anim)&&tr0().state!=="missing"){ st.want=ll; build(); }
     } else if(st.FRv!==S.staticVersion){ st.FRv=S.staticVersion; st.FR=st.F||frameFromData(); }   // read once per data load
     const fr=st.F||st.FR; if(!fr) return;
     const upG=rot(fr.up), Ag=rot(fr.A).map((v,i)=>v+B.center[i]);
@@ -695,7 +729,8 @@ function update(t){
   if(!best) best=world;
   for(const st of cities) if(st!==best&&st.root) st.root.visible=false;
   if(best!==owner){ release(); if(best){ owner=best; scene.add(hemi); ui.views(best); } }
-  if(!owner) return;
+  if(!owner){ nearBudget.last=0; return; }
+  budgetFrame(performance.now());
   const st=owner, C=st.C, W=st.W, {B,fr,ang,upG,Ag,camAlt,r,g}=st, M=st.model||{};
   st.root.visible=true; st.FADE.value=r;
   // Looking at a station (or anything else in space), the camera can swing down into the planet's air as it
@@ -731,10 +766,19 @@ function update(t){
 
   // shadows over what you're looking at
   const sd=nrm([stp[0]-O[0],stp[1]-O[1],stp[2]-O[2]]);
+  const wasShadow=sun.castShadow;
   sun.castShadow=day>0.05&&r>0.95&&S.cam.dist<30000;
   if(sun.castShadow){ sun.position.set(sd[0]*30000,sd[1]*30000,sd[2]*30000); sun.target.position.set(0,0,0); sun.target.updateMatrixWorld();
-    const half=Math.min(9000,Math.max(900,S.cam.dist*0.8)), sc=sun.shadow.camera;
-    if(sc.right!==half){ sc.left=-half; sc.right=half; sc.top=half; sc.bottom=-half; sc.updateProjectionMatrix(); } }
+    // the shadowed area in steps (not a new size every frame of a zoom), and the shadow map drawn again only
+    // when the sun, the city's place round the camera's target or that area has changed: circling the city
+    // or sitting still, it isn't redrawn at all, which was a whole second pass over the city every frame
+    const half=Math.min(9000,900*1.3**Math.ceil(Math.log(Math.max(900,S.cam.dist*0.8)/900)/Math.log(1.3))), sc=sun.shadow.camera;
+    if(sc.right!==half){ sc.left=-half; sc.right=half; sc.top=half; sc.bottom=-half; sc.updateProjectionMatrix(); }
+    const p=st.root.position, key=[p.x,p.y,p.z].map(v=>Math.round(v*2)).join()+"|"+Math.round(ang*2e5)+"|"+sd.map(v=>Math.round(v*1e4)).join()+"|"+half;
+    const nowS=performance.now();
+    if(!wasShadow||key!==shadowKey||nowS-shadowAt>2000){
+      // while it's moving, at most every other frame
+      if(!wasShadow||nowS-shadowAt>28){ shadowKey=key; shadowAt=nowS; renderer.shadowMap.needsUpdate=true; cityStats.shadowDraws++; } } }
 
   // keep the camera above the ground
   if(M.hgt&&r>0.9){ const lp=st.inner.worldToLocal(camera.position.clone()), [fx,fy,fz]=st.frame.toFlat(lp.x,lp.y,lp.z), gh=M.hgt(fx,fz)+12;
@@ -855,20 +899,30 @@ function prepare(name){
     if(B&&L?.pos&&B.kind!=="asteroid"&&terrainIndex?.includes(B.name)){ const w=worldFor(B.name);
       if(!w.built&&!w.building){ const r=Math.hypot(...L.pos); w.want=L.pos.map(v=>v/r*B.radius); w.build(); }
       await until(()=>w.built||!w.building); }
-    warm(); return st; })());
+    await warm(); return st; })());
 }
 // Compile every city's shaders for how they'll be drawn (sky light, haze, sun shadows on and off) and
 // upload their geometry, by drawing them once now. The screen is covered (the demo's title card) while
 // this runs; the next frame draws over it.
-function warm(){
-  const shown=[], culled=[], fog0=scene.fog, hadHemi=!!hemi.parent, sh=sun.castShadow;
-  for(const st of cities) if(st.root){ shown.push([st.root,st.root.visible]); st.root.visible=true;
-    st.root.traverse(o=>{ if(o.isMesh&&o.frustumCulled){ o.frustumCulled=false; culled.push(o); } }); }
-  try{ scene.fog=fog; if(!hadHemi) scene.add(hemi);
-    for(const s of [false,true]){ sun.castShadow=s; renderer.compile(scene,camera); renderer.render(scene,camera); } }
-  catch(e){ console.warn("3D city warm-up",e); }
-  finally{ scene.fog=fog0; if(!hadHemi) scene.remove(hemi); sun.castShadow=sh;
-    for(const [r,v] of shown) r.visible=v; for(const o of culled) o.frustumCulled=true; }
+async function warm(){
+  // the shaders first, compiled in the background where the browser can (compileAsync), then one quick draw
+  // of each lighting setup to send the geometry to the graphics card
+  const setUp=()=>{ const undo=[], fog0=scene.fog, hadHemi=!!hemi.parent, sh=sun.castShadow, sv=[dome.visible,precip.visible];
+    for(const st of cities) if(st.root){ undo.push([st.root,st.root.visible]); st.root.visible=true; }
+    const culled=[]; for(const st of cities) if(st.root) st.root.traverse(o=>{ if((o.isMesh||o.isPoints)&&o.frustumCulled){ o.frustumCulled=false; culled.push(o); } });
+    scene.fog=fog; if(!hadHemi) scene.add(hemi); dome.visible=true; precip.visible=true;
+    return ()=>{ scene.fog=fog0; if(!hadHemi) scene.remove(hemi); sun.castShadow=sh; [dome.visible,precip.visible]=sv;
+      for(const [r,v] of undo) r.visible=v; for(const o of culled) o.frustumCulled=true; }; };
+  try{
+    // shaders handed to the driver, then waited for without blocking (where the browser compiles them in the
+    // background: KHR_parallel_shader_compile, which Chrome and Edge's WebView have), up to 8 s
+    const mats=new Set();
+    for(const s of [false,true]){ const undo=setUp(); try{ sun.castShadow=s; const got=renderer.compile(scene,camera); if(got) for(const m of got) mats.add(m); } finally{ undo(); } }
+    const ready=m=>{ try{ const pr=renderer.properties.get(m)?.currentProgram; return !pr||typeof pr.isReady!=="function"||pr.isReady(); }catch(_){ return true; } };
+    const t0=performance.now(); while(performance.now()-t0<8000&&[...mats].some(m=>!ready(m))) await new Promise(r=>setTimeout(r,50));
+    // then one draw of each lighting setup, to send the geometry to the graphics card
+    for(const s of [false,true]){ const undo=setUp(); try{ sun.castShadow=s; if(s) renderer.shadowMap.needsUpdate=true; renderer.render(scene,camera); } finally{ undo(); } await tick(); }
+  }catch(e){ console.warn("3D city warm-up",e); }
 }
 
 // ------------------------------------------------------------------ hook up with the map

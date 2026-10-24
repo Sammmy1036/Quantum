@@ -175,11 +175,12 @@ City3D.define({
     // a railing within a couple of km), or it's within NEAR_MIN of the camera. If that comes to more than
     // NEAR_TRIS close-up triangles in all, the biggest-looking copies get them first.
     const NEAR_K=48, NEAR_MIN=2500, NEAR_TRIS=14e6;
-    let lodS=null, lodE=null, lodI=null, lodOrd=null, lodPick=null;
+    let lodS=null, lodE=null, lodI=null, lodOrd=null, lodPick=null, lodBudgetVer=-1;
     // every so often, move each placement to the close-up or the far version
     const updateLod=now=>{
       if(now-lodAt<300) return; lodAt=now;
       camera.getWorldPosition(camL); inner.worldToLocal(camL);
+      const NB=window.qNearBudget?.(); if(NB&&NB.ver!==lodBudgetVer){ lodBudgetVer=NB.ver; lodDirty=true; }   // the frame rate changed the budget
       if(!lodDirty&&lodCam.distanceToSquared(camL)<Math.max(40,0.02*camL.length())**2) return;   // moved enough to matter (more, the further out)
       lodCam.copy(camL); lodDirty=false;
       const ents=Object.values(LOD).filter(e=>e.near);
@@ -195,12 +196,18 @@ City3D.define({
       lodOrd=lodOrd&&lodOrd.length===c?lodOrd:new Uint32Array(c); let m=0;
       for(let k=0;k<c;k++) if(lodS[k]>1/NEAR_K) lodOrd[m++]=k;
       const ord=Array.from(lodOrd.subarray(0,m)).sort((a,b)=>lodS[b]-lodS[a]);
-      lodPick.fill(0); let tris=0;
-      for(const k of ord){ const t=ents[lodE[k]].nt; if(tris+t>NEAR_TRIS) continue; tris+=t; lodPick[k]=1; }
+      lodPick.fill(0); let tris=0; const cap=Math.min(NEAR_TRIS,window.qNearBudget?.()?.tris??NEAR_TRIS);
+      for(const k of ord){ const t=ents[lodE[k]].nt; if(tris+t>cap) continue; tris+=t; lodPick[k]=1; }
+      // only the models whose close-up set changed are rewritten and sent to the graphics card again (doing
+      // every one each time the camera moved was a steady stutter on the way down)
       c=0;
-      for(const e of ents){ const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
-        for(let i=0;i<e.n;i++,c++){ const mm=e.mats.subarray(i*16,i*16+16); if(lodPick[c]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
-        if(e.far.count!==nf||e.near.count!==nn||nn){ e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; } } };
+      for(const e of ents){ const p=lodPick.subarray(c,c+e.n); c+=e.n;
+        if(e.pick&&e.pick.length===e.n){ let same=true; for(let i=0;i<e.n;i++) if(p[i]!==e.pick[i]){ same=false; break; } if(same) continue; }
+        e.pick=p.slice(); const fa=e.far.instanceMatrix.array, na=e.near.instanceMatrix.array; let nf=0, nn=0;
+        for(let i=0;i<e.n;i++){ const mm=e.mats.subarray(i*16,i*16+16); if(p[i]) na.set(mm,(nn++)*16); else fa.set(mm,(nf++)*16); }
+        e.far.count=nf; e.near.count=nn; e.far.instanceMatrix.needsUpdate=true; e.near.instanceMatrix.needsUpdate=true; window.qShadowStale?.();
+        const cs=window.qCityStats?.(); if(cs) cs.lodUploads++; }
+      const cs=window.qCityStats?.(); if(cs) cs.lodPicks++; };
     if(LAY){
       // both sides drawn: some of the game's pieces are placed mirrored, which turns their faces inside out
       // At night each kind of model gives the light it really would (LIGHT_CLASS below; the same rules as

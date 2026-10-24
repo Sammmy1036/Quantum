@@ -3382,6 +3382,15 @@ class Api:
     def demo_config(self):
         return dict(DEMO)
 
+    def demo_perf_log(self, text):
+        """The demo's timing log (slow frames and what was going on), written next to the app as demo_perf.log
+        so it can be sent in after a recording that stuttered. Replaced each run."""
+        try:
+            (HERE / "demo_perf.log").write_text(str(text)[:2_000_000], encoding="utf-8")
+            return {"ok": True, "path": str(HERE / "demo_perf.log")}
+        except OSError as e:
+            return {"ok": False, "error": str(e)}
+
     def demo_snapshot(self):
         import copy
         with self._lock:
