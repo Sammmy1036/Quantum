@@ -59,7 +59,25 @@ RE_LOCATION = re.compile(r"<RequestLocationInventory>.*?Location\[([^\]]+)\]")
 #   Location[RR_JP_StantonPyro]  -> Pyro Gateway Station, in Stanton
 #   Location[RR_JP_PyroStanton]  -> Stanton Gateway Station (Pyro), in Pyro
 # Coming out of a wormhole you fly through the far station's zone, so this is logged right after a jump.
-RE_JP_CODE = re.compile(r"^RR_JP_(Stanton|Pyro|Nyx|Terra)(Stanton|Pyro|Nyx|Terra)$", re.I)
+RE_JP_CODE = re.compile(r"^RR_JP_(Stanton|Pyro|Nyx|Terra|Magnus|Castra)(Stanton|Pyro|Nyx|Terra|Magnus|Castra)$", re.I)
+# The Stanton-Nyx link is a temporary one through other systems' gates: Stanton's end is the old Magnus
+# gate and Nyx's end is the Castra jump point in the game files. Gate and tunnel names using those mean
+# the system on the other side of the link.
+GATE_ALIAS = {"Magnus": "Nyx", "Castra": "Stanton"}
+
+
+def gate_pair(a, b):
+    """Two system names from a gateway code or tunnel ('pyro', 'magnus') -> ('Pyro', 'Nyx'). The aliases
+    only make sense from the other end of the link (Magnus seen from Stanton is Nyx), so each one is read
+    in the context of the other name."""
+    a, b = a.capitalize(), b.capitalize()
+    if a in GATE_ALIAS and b != GATE_ALIAS[a]:
+        a = GATE_ALIAS[a]
+    if b in GATE_ALIAS and a != GATE_ALIAS[b]:
+        b = GATE_ALIAS[b]
+    if a == "Nyx" and b == "Nyx":
+        b = "Stanton"
+    return a, b
 # The wormhole's own zone, e.g. "zone OOC_JumpPoint_stanton_pyro": you're in (or at the mouth of) the
 # tunnel between those two systems.
 RE_TUNNEL = re.compile(r"OOC_JumpPoint_([A-Za-z]+)_([A-Za-z]+)")
@@ -173,10 +191,11 @@ def is_collection(c) -> bool:
     return "wikelo" in f"{c.code} {c.name}".lower() or any(need_item(o.text) for o in c.objectives)
 
 
-# Contract types Quantum doesn't track for now: Wikelo collections and bounties don't fit the
-# pickup/delivery model well. Their code stays in place for when they're turned back on.
+# Contract types Quantum doesn't track for now: Wikelo collections don't fit the pickup/delivery model
+# well. Their code stays in place for when they're turned back on. Bounties are tracked again: they're
+# combat jobs (no tracking number), with the target's marker as their stop when the log gives one.
 TRACK_COLLECTION = False
-TRACK_BOUNTY = False
+TRACK_BOUNTY = True
 
 
 def is_bounty(c) -> bool:
@@ -206,7 +225,8 @@ def objective_kind(text: str, oid: str = "") -> str:
         return "pickup"
     if o.startswith("dropoff") or t.startswith(("deliver", "drop off", "dropoff")):
         return "dropoff"
-    if t.startswith(("kill", "eliminate", "defeat", "destroy", "neutralize")):
+    if t.startswith(("kill", "eliminate", "defeat", "destroy", "neutralize", "neutralise", "take out", "track down",
+                     "hunt", "locate and", "apprehend", "capture")) or re.search(r"\b(bounty|target)\b", t):
         return "combat"
     return "goto"
 
@@ -398,6 +418,7 @@ class ContractTracker(threading.Thread):
         self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
         self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
         self.tunnel = None         # last wormhole the log mentioned: {"pair": ("Stanton", "Pyro"), "at"}
+        self.last_gate = None      # last gateway station the log put you at: {"in": "Pyro", "to": "Nyx", "at"}
         self._phys = None          # systems seen in the dump being read now
         self._pending = None       # buffered multi-line notification
         self._reopen = False
@@ -1123,9 +1144,22 @@ class ContractTracker(threading.Thread):
         m = RE_JP_CODE.match(code or "")
         if not m:
             return None
-        here, there = m.group(1).capitalize(), m.group(2).capitalize()
+        here, there = gate_pair(m.group(1), m.group(2))
         name = f"{there} Gateway Station" + ("" if here == "Stanton" else f" ({here})")
         return here, name
+
+    @staticmethod
+    def gate_to(name):
+        """'Nyx Gateway Station (Pyro)' -> 'Nyx': where a gateway station or Gateway leads."""
+        m = re.match(r"(Stanton|Pyro|Nyx|Terra) Gateway", name or "", re.I)
+        return m.group(1).capitalize() if m else None
+
+    def gate_of_name(self, name):
+        """A gateway station or Gateway in the map -> (the system it's in, its name). None for anything else."""
+        L = self.nav.locations.get(name)
+        if not L or not self.gate_to(name):
+            return None
+        return L.system, name
 
     def system_of_start(self, start, ts):
         """System of a quantum route's projected start ("Bloom", "Stanton Gateway", "Ruin Station"):
@@ -1145,10 +1179,19 @@ class ContractTracker(threading.Thread):
                 other = [s for s in t["pair"] if s != to]
                 if other and other[0] in cands:
                     return other[0]
-            loaded = [s for s in cands if s in (self.phys_systems or [])]
-            if len(loaded) == 1:
-                return loaded[0]
+            # The gateway station you were last at, in the system this Gateway leads back to: you went
+            # through its wormhole, so you're in the system it leads to. Pyro has two Gateways out
+            # (Stanton and Nyx), and both the far ends are called "Pyro Gateway", so without this a jump
+            # from Pyro to Nyx could be put in Stanton (whose planets the game may still have loaded).
+            g = self.last_gate or {}
+            if g and g.get("in") == to and g.get("to") in cands and 0 <= ts - g["at"] < 7200:
+                return g["to"]
             here = self.where.get("system")
+            loaded = [s for s in cands if s in (self.phys_systems or [])]
+            # Not when you were just in the system this Gateway leads to: right after a wormhole the
+            # old system's planets can still be listed, and the new one's not yet.
+            if len(loaded) == 1 and here != to:
+                return loaded[0]
             return here if here in cands else None
         if start in self.nav.locations:
             return self.nav.locations[start].system
@@ -1309,7 +1352,7 @@ class ContractTracker(threading.Thread):
         if ("LoadingPlatformManager_" in line or "LandingArea_" in line) and (m := RE_HANGAR_SYS.search(line)):
             return self._system_seen(m.group(1).capitalize(), log_time(line) or time.time(), "HANGAR:" + m.group(0))
         if "OOC_JumpPoint_" in line and (m := RE_TUNNEL.search(line)):
-            pair = tuple(x.capitalize() for x in m.groups())
+            pair = gate_pair(*m.groups())
             self.tunnel = {"pair": pair, "at": log_time(line) or time.time()}
             return False
         if "STATE_CURRENT" in line and (m := RE_CHARACTER.search(line)):
@@ -1384,6 +1427,9 @@ class ContractTracker(threading.Thread):
             ts = log_time(line) or time.time()
             place = self.place_for_code(code)
             pbody = self.nav.locations[place].body if place else None
+            gate = jp or (self.gate_of_name(place) if place else None)
+            if gate:
+                self.last_gate = {"in": gate[0], "to": self.gate_to(gate[1]), "at": ts}
             self.where = {"code": code, "system": sysm.group(1).capitalize() if sysm else
                           (self.nav.locations[place].system if place else self.where.get("system")),
                           "body": self._body_by_internal(code.split("_")[0]) or pbody, "at": ts}

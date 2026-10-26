@@ -54,8 +54,13 @@ KNOWN_POS = {
     "Stanton Gateway Station (Nyx)": (-13499931610.0, -23382701964.0, -36662.0),
     "Pyro Gateway Station (Nyx)": (-12000044530.0, 20784580529.0, -38674.0),
     "Nyx Gateway Station (Pyro)": (-35275901220.5, -36052297797.3, 6727.8),     # game files, turned (see above)
+    # Wikelo's other two emporiums, from the game files (Oct 2026). The same file has Kinga 0.8 km from
+    # Sam's /showlocation there, so these are good to fly to; a /showlocation at either still wins.
+    "Wikelo Emporium Dasi Station": (14333387186.508734, 2001161588.504044, 0.0),
+    "Wikelo Emporium Selo Station": (-20156591640.6254, -1263139664.280547, 0.0),
 }
-FROM_GAME_FILES = {"Stanton Gateway Station (Nyx)", "Pyro Gateway Station (Nyx)", "Nyx Gateway Station (Pyro)"}
+FROM_GAME_FILES = {"Stanton Gateway Station (Nyx)", "Pyro Gateway Station (Nyx)", "Nyx Gateway Station (Pyro)",
+                   "Wikelo Emporium Dasi Station", "Wikelo Emporium Selo Station"}
 RENAMED = {"Magnus Gateway": "Nyx Gateway"}   # older Quantum names -> current ones
 
 # The Gateways themselves (the jump points), each tens of km from its station.

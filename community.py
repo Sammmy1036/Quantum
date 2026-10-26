@@ -313,7 +313,10 @@ class Community:
             return None
         try:
             r = self._req("/v1/places", timeout=8)
-            return {"places": r.get("places") or {}, "missing": r.get("missing") or [], "pads": r.get("pads") or {}} \
+            # pending: {name: readings so far} for corrections still waiting on a second datarunner (a
+            # server that doesn't send it yet just means none are listed as jobs)
+            return {"places": r.get("places") or {}, "missing": r.get("missing") or [], "pads": r.get("pads") or {},
+                    "pending": r.get("pending") or {}} \
                 if r.get("status") == "ok" else None
         except Exception as e:
             self.last_error = str(e)
@@ -432,7 +435,9 @@ class Community:
         (accepted, or refused for good), on_done(False) if it never could be reached."""
         if not self.url:
             return
-        msg = {"name": name, "system": entry.get("system"), "username": username,
+        # "fix": a corrected position for a place that's already on the map (not a new one): the server
+        # handles it like any other reading (live once a second datarunner agrees, or a trusted one sends it)
+        msg = {"name": name, "system": entry.get("system"), "username": username, **({"fix": True} if entry.get("fix") else {}),
                **({"body": entry["body"], "local": entry["local"],
                    # the alignment the local spot was worked out with, and the reading itself, so other
                    # users' maps can put it in their own planet's frame

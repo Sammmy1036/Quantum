@@ -412,6 +412,8 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .switch input:checked+span::after{transform:translateX(16px);background:#fff}
 .switch input:focus-visible+span{outline:2px solid var(--you);outline-offset:2px}
 .note{font-size:12px;color:var(--ink-2);background:rgba(75,141,255,.08);border:1px solid rgba(75,141,255,.25);border-radius:7px;padding:8px 10px;line-height:1.5}
+.fixpos{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px;font-size:12.5px}
+.fixpos summary{cursor:pointer;color:var(--dim)} .fixpos summary:hover{color:var(--ink-2)}
 .align-list{display:grid;gap:2px;max-height:300px;overflow:auto;margin:6px 0 10px;font-size:13px}
 .align-list .a{display:grid;grid-template-columns:14px 1fr auto;gap:8px;align-items:baseline;padding:4px 2px;border-bottom:1px solid var(--line)}
 .align-list .a .s{color:var(--dim);font-size:12px}
@@ -1010,6 +1012,17 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .gr-view{display:flex;margin:8px 0 2px}.gr-view button{flex:1}
 .vd-grid.bp-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 /* Commodities › Where to find it: its own section under Buy at / Sell at */
+.gather{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.gather-card{background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:10px;padding:12px 14px;min-width:0}
+.gather-h{display:flex;align-items:center;gap:8px;font:600 13px var(--display);letter-spacing:.02em;margin-bottom:6px}.gather-h i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.gather-t{font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+.gather-v{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}.gather-v a{font-size:11.5px;padding:3px 8px;border-radius:99px;border:1px solid var(--line-2);color:var(--ink-2);cursor:pointer}
+.gather-v a:hover{border-color:var(--c);color:var(--ink)}
+.src-map{margin-left:6px;cursor:pointer;text-decoration:underline;color:var(--route-2)}
+.res-chips{display:flex;flex-wrap:wrap;gap:6px}.res-chips>a,.res-chips>span{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line-2);color:var(--ink-2);cursor:pointer}
+.res-chips>a:hover{color:var(--ink);border-color:var(--route-2)}.res-chips>a span{margin-left:6px;color:var(--dim);font-size:11px}
+.vd-wide{grid-column:1/-1}
+.src-sec.raw{margin-top:18px;padding-top:0;border-top:0}
 .src-sec{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 .src-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .src-sub{color:var(--ink-2);font-size:12.5px;margin-top:5px;line-height:1.45}.src-sub b{color:var(--ink);font-weight:600}
@@ -2008,22 +2021,27 @@ const STATION_DESIGNS=[0,1,2,3].map(v=>{ const rnd=seededRand("station-design-"+
   parts.push([new THREE.TorusGeometry(140,11,8,64),0,at(sx).multiply(rotY(Math.PI/2))]);
   for(let k=0;k<4;k++) parts.push([new THREE.CylinderGeometry(4,4,140,6),3,at(sx).multiply(rotX(k*Math.PI/2)).multiply(at(0,70,0))]);
   return {geos:mergeParts(parts), length:L*1.2}; });
-let stationObjs=[];
+let stationObjs=[], stationGen=0;
 function buildStations(){
-  for(const o of stationObjs){ scene.remove(o.group); window.Stations3D?.hide(o); } stationObjs=[];
+  for(const o of stationObjs){ if(o.group) scene.remove(o.group); window.Stations3D?.hide(o); } stationObjs=[]; const gen=++stationGen;
   for(const L of S.locs||[]){
     if(L.type!=="station"||L.system!==S.system||!L.pos) continue;
     if(L.kind==="surface"){ const b=S.bodyMap[L.body]; if(!b||Math.hypot(...L.pos)<b.radius*1.02) continue; }   // ground stations: no model
     const rnd=seededRand(L.name), d=STATION_DESIGNS[Math.floor(rnd()*STATION_DESIGNS.length)], group=new THREE.Group();
     d.geos.forEach((g,i)=>{ if(g.attributes.position.count) group.add(new THREE.Mesh(g,STATION_MATS[i])); });
     group.quaternion.setFromEuler(new THREE.Euler(rnd()*6.28,rnd()*6.28,rnd()*6.28)); group.visible=false; scene.add(group);
-    stationObjs.push({L,group,len:d.length,spin:(rnd()-0.5)*0.06}); } }
+    stationObjs.push({L,group,len:d.length,spin:(rnd()-0.5)*0.06}); }
+  // Ground sites and anything else the server has the game's model for (Wikelo's emporiums, PAFs,
+  // distribution centres, outposts): no stand-in, just the real model once it's close enough.
+  window.Stations3D?.ready?.().then(()=>{ if(gen!==stationGen) return; const have=new Set(stationObjs.map(o=>o.L.name));
+    for(const L of S.locs||[]) if(L.pos&&L.system===S.system&&!have.has(L.name)&&window.Stations3D.has(L)) stationObjs.push({L,group:null,ground:true}); }); }
 function updateStations(t){ const f=H/2/Math.tan(camera.fov*Math.PI/360), on=S.layers?.station!==false, v=new THREE.Vector3();
-  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ o.group.visible=false; window.Stations3D?.hide(o); continue; }
+  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ if(o.group) o.group.visible=false; window.Stations3D?.hide(o); continue; }
     v.set(g[0]-O[0],g[1]-O[1],g[2]-O[2]); const d=camera.position.distanceTo(v);
-    if(d>1.6e7){ o.group.visible=false; window.Stations3D?.hide(o); continue; }       // whole-system view: just the marker
+    if(d>(o.ground?2e6:1.6e7)){ if(o.group) o.group.visible=false; window.Stations3D?.hide(o); continue; }       // whole-system view: just the marker
     // The game's own model (stations3d.js), once it's downloaded, takes the stand-in's place
     let real=false; try{ real=!!window.Stations3D?.show(o,v,d,t,f); }catch(e){ console.warn(e); }
+    if(!o.group) continue;
     if(real){ o.group.visible=false; continue; }
     o.group.visible=true; o.group.position.copy(v); o.group.scale.setScalar(Math.max(1,48*d/(o.len*f)));
     o.group.rotateX(o.spin*0.016); } }
@@ -2801,7 +2819,7 @@ function renderDetail(){
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
-      <div class="sub">Planet alignment</div>
+      <div class="sub">Alignment</div>
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span>${inSys.length?`<b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}`:`Nothing to align in ${esc(S.system)}`}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
       <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
@@ -2817,7 +2835,7 @@ function renderDetail(){
               <ul><li><b>Backups</b> of your fleet, loadouts, waypoints, planned routes and mapped stations</li>
                 <li>The <b>most up-to-date prices</b>: reports from verified Quantum datarunners show within seconds, long before UEX's review</li>
                 <li><b>Community pictures</b> of ships, components and commodities, and sending your own</li>
-                <li><b>Datarunning through Quantum</b>: your reports still go to UEX, but they won't reach other Quantum users, count toward your profile, rank or Top 10, or unlock Quantum's datarunner jobs</li>
+                <li><b>Datarunning through Quantum</b>: your reports still go to UEX, but they won't reach other Quantum users, count toward your profile, rank or leaderboard spot, or unlock Quantum's datarunner jobs</li>
                 <li><b>Shared planet alignments</b> and <b>station positions</b> other datarunners found</li></ul>
               <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn small" data-a="commcancel">Keep them on</button><button class="btn small danger" data-a="commoff">Turn off community features</button></div></div>`
             :`<div class="row" style="gap:6px;margin-top:8px">${on?`<button class="btn small ghost" data-a="commask">Disable community features</button>`
@@ -2873,8 +2891,8 @@ function renderDetail(){
           text+=` · ${b.checks} check${b.checks>1?"s":""} over ${b.sessions} session${b.sessions>1?"s":""}, ${drift<0.2?"stable":"drift up to "+drift.toFixed(2)+"°"}`; } }
       return `<div class="a"><span class="${mark}">${mark==="ok"?"✓":mark==="warn"?"!":"○"}</span><div><b>${esc(b.name)}</b> <span class="s">${b.kind}</span><div class="s">${text}</div></div>
         ${b.calibrated?`<button class="btn small ghost" data-a="resetcal" data-body="${esc(b.name)}" title="Go back to the community value">Reset</button>`:"<span></span>"}</div>`; }).join("");
-    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Planet alignment</h2>
-      <div class="sub">${esc(S.system)}${st.build?` · game build ${esc(st.build)}`:""}</div>
+    d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Alignment</h2>
+      <div class="sub">${esc(S.system)}${st.build?` · ${gameVerTxt(st)}`:""}</div>
       <div class="hint" style="font-size:13px;color:var(--ink-2)">Each planet is lined up once, from a /showlocation at a known place. Later readings at known places are logged as checks: if they stay near 0°, the alignment holds across sessions and can be shared.</div>
 
       <div class="align-list">${rows||`<div class="muted">${S.system==="Nyx"?"Nothing to line up in Nyx: Nyx I, II and III can't be landed on in the game yet, and Delamar is an asteroid (Levski is a station built into it), so there's no planet surface to take a /showlocation on.":"No landable planets or moons in this system."}</div>`}</div>
@@ -2932,7 +2950,11 @@ function renderDetail(){
         ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
         ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
-        ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}`;
+        ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}
+      ${L.fixable&&!user&&!L.unplaced?`<details class="fixpos"><summary>${L.fixed?`<span style="color:#9fe0b4">Position corrected by ${L.fixed==="mine"?"you":"Quantum datarunners"}</span> · `:""}Wrong spot on the map?</summary>
+        <div class="muted" style="font-size:12.5px;line-height:1.5;margin:6px 0 8px">Go to ${esc(L.name)} (${L.kind==="surface"?"land or stand right at it":"dock there"}), type <b>/showlocation</b> in game chat and press <b>Send the right position</b>.
+          It moves on your map straight away, and for every Quantum user once another datarunner's reading agrees. Trusted datarunners' corrections count at once.</div>
+        <button class="btn small primary" data-a="fixpos" ${readingHere?"":`disabled title="Needs a /showlocation taken here in the last 15 minutes"`}>Send the right position</button></details>`:""}`;
     if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
     if(!L.unplaced){
       if($("d-pad")) $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value;
@@ -2962,6 +2984,14 @@ function renderDetail(){
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
       select({kind:"loc",name:sel.name}); focusLoc(sel.name,true); toast(`${sel.name} is on the map now`); return; }
+    if(a==="fixpos"){ e.target.disabled=true; e.target.textContent="Sending…"; const n=sel.name, r=await api().report_position(n);
+      if(!r.ok){ e.target.disabled=false; e.target.textContent="Send the right position"; return toast(r.error); }
+      await loadStatic(); await poll(); select({kind:"loc",name:n}); focusLoc(n,true);
+      toast(`${n} moved ${r.moved_km<1?Math.round(r.moved_km*1000)+" m":r.moved_km.toFixed(1)+" km"} on your map. Sending it to Quantum…`);
+      for(let k=0;k<40;k++){ await new Promise(res=>setTimeout(res,750)); const pr=await api().place_result(n);
+        if(pr.state==="done"){ toast(pr.shared?`${n}: live for every Quantum user now`:`${n}: sent. It goes live for everyone once another datarunner's reading agrees`); break; }
+        if(pr.state==="queued"||pr.state==="error"){ toast(`${n}: the Quantum server couldn't take it yet. Quantum sends it again later`); break; } }
+      return; }
     if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
     if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
     if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); showRoute(); toast(`Guiding you to ${r.name}`); }
@@ -3277,7 +3307,7 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
     if(!acct) fillUexStatus(false); return; }
   const bk=S.bk, T=S.drTrust, trusted=!!(p?.trust?.trusted||T?.trusted);
   const c=(p?.contrib||[]).slice().sort((x,y)=>(y.at||0)-(x.at||0)).slice(0,6);
-  const what={photo:"Picture",alignment:"Planet alignment",pad:"Landing pad",missing:"Doesn't exist",place:"Station position"};
+  const what={photo:"Picture",alignment:"Alignment",pad:"Landing pad",missing:"Doesn't exist",place:"Station position"};
   const ships=S.pfFleet||[], los=(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0));
   const shipsOn=pfOrdered(ships,x=>x.uid,"ships",true), losOn=pfOrdered(los,x=>x.id,"gearlo",true);
   const link=(k,t)=>`<a data-pfv="${k}" style="cursor:pointer;color:var(--route-2);margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:12px">${t}</a>`;
@@ -3559,7 +3589,8 @@ function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
 function rsCandidates(q){
   q=q.trim().toLowerCase(); if(!q) return [];
   const score=n=>{ const x=n.toLowerCase(); if(x===q) return 0; if(x.startsWith(q)) return 1;
-    if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; return x.includes(q)?3:9; };
+    if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; if(x.includes(q)) return 3;
+    const z=squash(q); return z.length>=4&&squash(x).includes(z)?3:9; };
   const out=[];
   if(!RS.type) for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
   for(const L of S.locs){ if(L.mergedInto) continue;                                  // found as its station
@@ -3933,9 +3964,14 @@ async function openMarket(){
 // All commodities as pictures in place of the map; the search box narrows them.
 async function renderMarketGrid(){
   const q=$("mk-search").value.trim().toLowerCase(), L=(S.mk||[]).filter(c=>!q||`${c.name} ${c.kind||""}`.toLowerCase().includes(q));
-  $("mk-panel").innerHTML=`<div class="gh"><b>Commodities</b>${L.length} · click one for prices and where to trade it</div>
-    <div class="grid">${L.map(c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
-      <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`).join("")}</div>`;
+  // Raw resources (ores, gems, harvestables) are commodities to UEX (their prices are reported like any
+  // other), but they're gathered rather than bought, so they get their own section below the rest.
+  const tile=c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
+      <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`;
+  const raw=L.filter(c=>c.raw), traded=L.filter(c=>!c.raw);
+  $("mk-panel").innerHTML=`<div class="gh"><b>Commodities</b>${traded.length} · click one for prices and where to trade it</div>
+    <div class="grid">${traded.map(tile).join("")}</div>
+    ${raw.length?`<div class="gh" style="margin-top:22px"><b>Raw resources</b>${raw.length} · ores, gems and harvestables: where to find them and how to gather them</div><div class="grid">${raw.map(tile).join("")}</div>`:""}`;
   S.mkData=null; syncMarketPanel(); fillPictures($("mk-panel"));
   // Back from a commodity: the grid where you left it (same search), like the Vehicles tab
   if(S.mkBack){ if(S.mkBack.q===q) $("mk-panel").scrollTop=S.mkBack.top; S.mkBack=null; } }
@@ -3979,6 +4015,9 @@ async function renderMarket(){
 async function renderMarketPanel(){
   const d=S.mkData; if(!d) return syncMarketPanel(); const {c,r,rows}=d;
   const avg=(L,k)=>L.length?L.reduce((a,x)=>a+(x[k]||x.price),0)/L.length:null;
+  // A raw resource (an ore, a gem, something harvested) is about where to find it and how to gather it:
+  // that comes first. A processed commodity is about trading: buy and sell first, where it comes from after.
+  const rawFirst=!!(c.raw||(c.harvestable&&!r.buy.length)||(c.mineral&&!r.buy.length&&!r.sell.length));
   $("mk-panel").innerHTML=`<button class="btn" data-act="mkall" style="margin-bottom:14px">← All commodities</button>
     <div class="mkp-head"><div class="mkp-img" id="mkp-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div></div></div>
@@ -3989,10 +4028,14 @@ async function renderMarketPanel(){
            {label:"Average buy",value:ab!=null?money(ab):null},{label:"Average sell",value:av!=null?money(av):null}]); })()}
       <div class="desc" id="mkp-desc" style="margin-top:12px"></div>
       <div class="row" style="gap:8px">${mkOnMap(r,$("mk-sys").value)?`<button class="btn primary" data-act="mkmap" title="Every terminal that buys or sells it, marked on the map">Terminals on map</button>`:""}${c.wiki?`<button class="btn ghost" data-ext="${esc(c.wiki)}">Wiki</button>`:""}</div></div></div>
-    <div class="mkp-cols vd-flat"><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
-      <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>${uexCredit(r.at)}
-    <section id="mkp-src" class="src-sec" hidden></section>`;
+    ${rawFirst?`<section id="mkp-src" class="src-sec raw" hidden></section>`:""}
+    ${rawFirst&&!r.buy.length&&!r.sell.length?`<div class="muted" style="font-size:12.5px;margin:14px 2px 0">No terminal buys or sells it as it is: ${c.raw?"refine it first, or sell the refined commodity":"it isn't traded at terminals"}.</div>`
+    :`<div class="mkp-cols vd-flat"${rawFirst?' style="margin-top:22px"':""}><div class="vd-sec"><div class="mk-h">Buy at <span class="mk-note">cheapest first, per SCU</span></div>${rows(r.buy,"buy")}</div>
+      <div class="vd-sec"><div class="mk-h">Sell at <span class="mk-note">best price first, per SCU</span></div>${rows(r.sell,"sell")}</div></div>`}${uexCredit(r.at)}
+    ${rawFirst?"":`<section id="mkp-src" class="src-sec" hidden></section>`}`;
   syncMarketPanel();
+  api().known_sources(c.name).then(k=>{ if(!k?.notes?.length||S.mkData?.c!==c) return; const el=$("mkp-desc"); if(!el) return;
+    el.insertAdjacentHTML("afterend",`<div class="known-src" style="margin:10px 0 4px">${knownSourcesHtml(k.notes)}</div>`); }).catch(()=>{});
   api().wiki_text(c.wiki||c.name).then(t=>{ const el=$("mkp-desc"); if(el&&S.mkData?.c===c&&t) el.innerHTML=wikiDesc(t,c.wiki); });
   mkSources(c);
   const img=await api().wiki_image(c.wiki||c.name); if(S.mkData?.c!==c) return;
@@ -4001,6 +4044,45 @@ async function renderMarketPanel(){
 // description: each place with how it's gathered and how likely, one click to add it to the route (a moon
 // or planet by its orbital marker), and "Show on map" to mark them all.
 const MK_METHOD_COLOR={"Ship mining":"#7fd3ff","ROC mining":"#ffb454","Hand mining":"#57e39b","Harvesting":"#c99bff","Salvage":"#ff9b8a"};
+// What each way of gathering takes. "role"/"ground": which vehicles do it (UEX's roles), listed from the
+// vehicles Quantum knows; kinds: the planets' wiki lists that say what's found that way.
+const GATHER={
+  "Ship mining":{kinds:["ship"],role:"Mining",ground:false,
+    how:"A mining ship: its mining laser fractures the rock and extracts the ore into its ore hold. Refine it at a refinery station before you sell most ores."},
+  "ROC mining":{kinds:["roc","hand"],role:"Mining",ground:true,
+    how:"A Greycat ROC or ROC-DS: drive up to gem deposits on the ground and mine them with its arm. It takes the same small deposits you can mine by hand, more of them at a time."},
+  "Hand mining":{kinds:["hand"],
+    how:"On foot with a multi-tool and its OreBit mining attachment (or the Greycat Pyro RYT). Gems go in your backpack or a container; mining gadgets help with tough rocks."},
+  "Harvesting":{kinds:["harvest"],
+    how:"By hand: walk up to it and pick it up. Nothing is needed but space in your backpack. Some only grow in caves."},
+  "Salvage":{role:"Salvage",ground:false,
+    how:"A salvage ship: scraper heads strip hull plating into Recycled Material Composite (RMC), and structural salvage breaks wrecks into Construction Materials. The Cambio SRT does small amounts on foot."}};
+// The wiki's body names -> Quantum's ("Pyro IV" is Pyro4 on the map)
+function wikiBodyName(n){ if(S.bodyMap[n]) return n; const R={I:1,II:2,III:3,IV:4,V:5,VI:6}, m=String(n).match(/^(.+?)\s+([IV]+)$/);
+  if(m&&R[m[2]]&&S.bodyMap[m[1]+R[m[2]]]) return m[1]+R[m[2]]; return Object.keys(S.bodyMap).find(k=>squash(k)===squash(n))||n; }
+async function resCatalog(){ if(S.resCat) return S.resCat; try{ const r=await api().resource_catalog(); if(r.ok) S.resCat=r.kinds; }catch(_){} return S.resCat||{}; }
+const resKey=n=>squash(String(n||"").replace(/\s*\((ore|raw|gem|refined)\)\s*$/i,""));
+// Which ways a resource is gathered, from the planets' lists (when the wiki's resource data has none)
+function gatherOf(cat,name){ const k=resKey(name), out=[];
+  for(const [m,g] of Object.entries(GATHER)) if((g.kinds||[]).some(kd=>Object.keys(cat[kd]||{}).some(n=>squash(n)===k))) out.push(m);
+  return out; }
+function gatherVehicles(m){ const g=GATHER[m]; if(!g?.role) return [];
+  return (S.veh||[]).filter(v=>v.roles?.includes(g.role)&&!!v.ground===!!g.ground&&!v.concept&&!v.addon); }
+function gatherHtml(methods){ if(!methods.length) return "";
+  return `<div class="gather">${methods.map(m=>{ const g=GATHER[m], vs=gatherVehicles(m);
+    return `<div class="gather-card" style="--c:${MK_METHOD_COLOR[m]||"var(--route-2)"}"><div class="gather-h"><i></i>${esc(m)}</div>
+      <div class="gather-t">${esc(g?.how||"")}</div>
+      ${vs.length?`<div class="gather-v">${vs.slice(0,10).map(v=>`<a data-vhopen="${esc(String(v.id))}" title="Open ${esc(v.full)}">${esc(v.full)}</a>`).join("")}</div>`:""}</div>`; }).join("")}</div>`; }
+// Open a vehicle's page from anywhere
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-vhopen]"); if(!a) return; const id=a.dataset.vhopen;
+  document.querySelector('.tab[data-tab="vehicles"]')?.click();
+  setTimeout(async()=>{ for(let k=0;k<40&&!S.veh;k++) await new Promise(r=>setTimeout(r,250)); if(!S.veh) return; S.vehDetail=String(id); renderVehicles(); },80); });
+// Open a commodity's page from anywhere (a resource a ship can mine, say)
+document.addEventListener("click",async e=>{ const a=e.target.closest("[data-mkopen]"); if(!a) return; const k=resKey(a.dataset.mkopen);
+  document.querySelector('.tab[data-tab="market"]')?.click();
+  for(let i=0;i<40&&!S.mk;i++) await new Promise(r=>setTimeout(r,250)); if(!S.mk) return;
+  const c=S.mk.find(x=>resKey(x.name)===k)||S.mk.find(x=>squash(x.name).startsWith(k)); if(!c) return toast(`${a.dataset.mkopen} isn't in UEX's commodity list`);
+  $("mk-search").value=c.name; S.mkSel=c; renderMarket(); });
 async function mkSources(c){
   const box=()=>S.mkData?.c===c?$("mkp-src"):null;
   if(!S.mkSrc) S.mkSrc={};
@@ -4011,10 +4093,23 @@ async function mkSources(c){
     try{ r=await api().commodity_sources(c.name); }catch(e){ r={ok:false}; }
     if(r.ok) S.mkSrc[c.name]=r; }
   const el=box(); if(!el) return;
-  if(!r.ok||!r.found){ el.hidden=!(minable&&!r.ok);
-    el.innerHTML=el.hidden?"":`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div><div class="src-sub">Couldn't reach the Star Citizen Wiki just now.</div></div></div>`; return; }
-  const all=r.sources, methods=[...new Set(all.flatMap(x=>x.methods||[]))], systems=[...new Set(all.map(x=>x.system).filter(Boolean))];
-  const L=all.slice(0,S.mkSrcAll?300:9), top=Math.max(...all.map(x=>x.chance||0),0.0001);
+  if(!r.ok||!r.found){ const cat=await resCatalog(), how=gatherOf(cat,c.name); if(how.length) await trLoadVehicles(); if(!box()) return;
+    const bodies=[...new Map(Object.values(cat).flatMap(o=>Object.entries(o).filter(([n])=>squash(n)===resKey(c.name)).flatMap(([,L])=>L)).map(b=>[b.body,b])).values()];
+    el.hidden=!(how.length||(minable&&!r.ok));
+    el.innerHTML=el.hidden?"":`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div><div class="src-sub">${r.ok?"From the planets' and moons' pages on the Star Citizen Wiki.":"Couldn't reach the Star Citizen Wiki just now."}</div></div></div>
+      ${how.length?`<div class="mk-h" style="margin:4px 0 8px">How to get it</div>${gatherHtml(how)}`:""}
+      ${bodies.length?`<div class="mk-h" style="margin:16px 0 8px">Where</div><div class="src-grid">${bodies.map(b=>{ const bn=wikiBodyName(b.body), om=`OM-1 (${bn})`; return `<div class="src-card"><div class="src-top"><div class="src-nm">${S.bodyMap[bn]?`<a data-showbody="${esc(bn)}">${esc(b.body)}</a>`:esc(b.body)}</div>
+        ${S.locMap[om]?`<button class="iconbtn ${S.live?.route?.includes(om)?"added":""}" data-add="${esc(om)}" title="Add ${esc(b.body)} to your route">+</button>`:""}</div>
+        <div class="src-meta">${esc(b.system)}${b.caves?" · in caves":""}</div></div>`; }).join("")}</div>`:""}`; return; }
+  const t=now()+(S.timeShift||0);
+  // how far each place is from you (its own spot, or the planet's surface), so the list can go nearest first
+  for(const x of r.sources){ const Lc=x.place&&S.locMap[x.place], B=x.body&&S.bodyMap[x.body];
+    let d=null; try{ d=Lc?.pos?distFromYou(globalPos(Lc,t),Lc.system):B?((v=>v==null?null:Math.max(0,v-B.radius))(distFromYou(B.center,B.system))):null; }catch(_){ d=null; }
+    x.dist=d; }
+  const canNear=r.sources.some(x=>x.dist!=null), sort=canNear?(S.mkSrcSort||"near"):"odds";
+  const all=[...r.sources].sort(sort==="near"?(a,b)=>(a.dist??9e15)-(b.dist??9e15)||(b.chance||0)-(a.chance||0):(a,b)=>(b.chance||0)-(a.chance||0)||a.name.localeCompare(b.name));
+  const methods=[...new Set(all.flatMap(x=>x.methods||[]))], systems=[...new Set(all.map(x=>x.system).filter(Boolean))];
+  const L=all.slice(0,S.mkSrcAll?300:12), top=Math.max(...all.map(x=>x.chance||0),0.0001);
   const qs=all.filter(x=>x.quality), qlo=qs.length?Math.min(...qs.map(x=>x.quality[0])):null, qhi=qs.length?Math.max(...qs.map(x=>x.quality[1])):null;
   const pct=x=>x.chance!=null&&x.chance>0?`${x.chance<0.01?"<1":Math.round(x.chance*100)}%`:"";
   const col=m=>MK_METHOD_COLOR[m]||"var(--route-2)";
@@ -4024,16 +4119,21 @@ async function mkSources(c){
         <b class="src-pct" title="How likely a deposit here is this">${pct(x)}</b>
         ${x.place?`<button class="iconbtn ${inRoute?"added":""}" data-add="${esc(x.place)}" title="${inRoute?"In your route":`Add ${esc(x.place)} to your route`}">${inRoute?"✓":"+"}</button>`:""}</div>
       <div class="src-bar" aria-hidden="true"><i style="width:${Math.max(3,Math.round((x.chance||0)/top*100))}%"></i></div>
-      <div class="src-meta">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:""].filter(Boolean).join(" · "))}</div>
+      <div class="src-meta">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:""].filter(Boolean).join(" · "))}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}
+        ${x.body||x.place?`<a class="src-map" data-showbody="${esc(x.body||x.place)}" title="Show it on the map">Map</a>`:""}</div>
       <div class="src-tags">${(x.methods||[]).map(mm=>`<span><i style="background:${col(mm)}"></i>${esc(mm)}</span>`).join("")}${x.quality?`<span>Quality ${x.quality[0]}–${x.quality[1]}</span>`:""}</div></div>`; };
-  // grouped by system, keeping the most likely first inside each
+  // grouped by system (yours first), nearest or most likely first inside each
   const groups=[]; for(const x of L){ const k=x.system||"Elsewhere"; let g=groups.find(g=>g.k===k); if(!g) groups.push(g={k,L:[]}); g.L.push(x); }
+  groups.sort((a,b)=>(b.k===S.system)-(a.k===S.system));
+  const cat=await resCatalog(), how=[...new Set([...methods,...gatherOf(cat,c.name)])]; await trLoadVehicles(); if(!box()) return;
   const counts=Object.fromEntries(systems.map(k=>[k,all.filter(x=>x.system===k).length]));
   el.hidden=false;
   el.innerHTML=`<div class="src-head"><div><div class="mk-h" style="margin:0">Where to find it</div>
       <div class="src-sub">${r.from?`Mined as <b>${esc(r.from)}</b> and refined into ${esc(c.name)}. `:""}From the Star Citizen Wiki's resource data.</div></div>
-      <div class="row" style="gap:8px">${all.some(x=>x.place||x.body)?`<button class="btn small primary" data-act="mksrcmap" title="Every place it's found, marked on the map">Deposits on map</button>`:""}
-        ${all.length>9?`<button class="btn small ghost" data-act="mksrcall">${S.mkSrcAll?"Show fewer":`All ${all.length} places`}</button>`:""}</div></div>
+      <div class="row" style="gap:8px">${canNear?`<div class="seg-mini"><button data-act="mksrcsort" data-v="near" class="${sort==="near"?"on":""}">Nearest</button><button data-act="mksrcsort" data-v="odds" class="${sort==="odds"?"on":""}">Best odds</button></div>`:""}
+        ${all.some(x=>x.place||x.body)?`<button class="btn small primary" data-act="mksrcmap" title="Every place it's found, marked on the map">Deposits on map</button>`:""}
+        ${all.length>12?`<button class="btn small ghost" data-act="mksrcall">${S.mkSrcAll?"Show fewer":`All ${all.length} places`}</button>`:""}</div></div>
+    ${how.length?`<div class="mk-h" style="margin:4px 0 8px">How to get it</div>${gatherHtml(how)}<div class="mk-h" style="margin:16px 0 8px">Where</div>`:""}
     ${statBlock([{label:"Places",value:String(all.length)},{label:"Best odds",value:pct(all.reduce((a,x)=>(x.chance||0)>(a.chance||0)?x:a,all[0]))||"–"},
       {label:"Quality",value:qlo!=null?`${qlo}–${qhi}`:"–"}],[])}
     ${methods.length?`<div class="src-legend">${methods.map(m=>`<span><i style="background:${col(m)}"></i>${esc(m)}</span>`).join("")}</div>`:""}
@@ -4067,6 +4167,11 @@ function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnM
 $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
   if(e.target.closest("[data-act=mksrcmap]")) return mkSourceMap();
   if(e.target.closest("[data-act=mksrcall]")){ S.mkSrcAll=!S.mkSrcAll; return S.mkData&&mkSources(S.mkData.c); }
+  const ss=e.target.closest("[data-act=mksrcsort]"); if(ss){ S.mkSrcSort=ss.dataset.v; return S.mkData&&mkSources(S.mkData.c); }
+  const sb=e.target.closest("[data-showbody]"); if(sb){ const b=sb.dataset.showbody;
+    if(S.bodyMap[b]){ if(S.bodyMap[b].system!==S.system) setSystem(S.bodyMap[b].system,false); S.mkMap="src"; S.mapMarks=[{name:b,label:"Found here",color:"#7fd3ff"}]; renderMarket(); select({kind:"body",name:b}); focusBody(b); }
+    else if(S.locMap[b]?.pos){ S.mkMap="src"; S.mapMarks=[{name:b,label:"Found here",color:"#7fd3ff"}]; renderMarket(); select({kind:"loc",name:b}); focusLoc(b,true); }
+    return; }
   if(e.target.closest("[data-act=mkall]")){ S.mkSel=null; S.mkData=null; $("mk-search").value=""; return openMarket(); }
   const c=e.target.closest("[data-mkc]"); if(c){ S.mkBack={q:$("mk-search").value.trim().toLowerCase(),top:$("mk-panel").scrollTop};      // where Back returns to
     S.mkSel=S.mk.find(x=>String(x.id)===c.dataset.mkc); $("mk-search").value=S.mkSel.name; $("mk-panel").scrollTop=0; return renderMarket(); }
@@ -4376,6 +4481,7 @@ function vehCat(){ const id=S.vehCat?.id||"all";
 const vhSkel=w=>w[0]+w.slice(1).replace(/[aeiouy]/g,"");
 function vhMatch(hay,q){ hay=hay.toLowerCase().replace(/\bmk\s*/g,"mk "); q=q.replace(/\bmk\s*/g,"mk ");
   if(hay.includes(q)) return true;
+  { const z=squash(q); if(z.length>=4&&squash(hay).includes(z)) return true; }
   const toks=hay.split(/[^a-z0-9]+/).filter(Boolean);
   return q.split(/\s+/).filter(Boolean).every(w=>hay.includes(w)||(w.length>=4&&/^[a-z]+$/.test(w)&&toks.some(t=>t.length>=3&&vhSkel(t)===vhSkel(w)))); }
 function vehList(){
@@ -4448,8 +4554,35 @@ async function renderVehicleDetail(id){
       ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
       ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
     </div>
+    <div id="vd-extra"></div>
     <div class="vd-grid vd-shop vd-flat"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div></div>
-    <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`; }
+    <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`;
+  vehExtras(v); }
+// Under a vehicle's specs: what it can mine, harvest or salvage (and where), and what rides in it or what it
+// rides in (snubs and rovers that dock on a ship).
+const carryKey=n=>squash(n).replace(/^(rsi|origin|anvil|kruger|drake|misc|aegis|crusader|greycat|tumbril|argo|consolidatedoutland|cnou)/,"");
+async function vehExtras(v){ const box=()=>S.vehDetail===String(v.id)?$("vd-extra"):null; if(!box()) return;
+  const out=[], roles=v.roles||[];
+  if(roles.includes("Mining")||roles.includes("Salvage")){ const cat=await resCatalog(); if(!box()) return;
+    const kinds=roles.includes("Mining")?(v.ground?["roc","hand"]:["ship"]):[];
+    const res=[...new Set(kinds.flatMap(k=>Object.keys(cat[k]||{})))].sort((a,b)=>a.localeCompare(b));
+    const where=n=>[...new Set(kinds.flatMap(k=>(cat[k]?.[n]||[]).map(b=>b.body)))];
+    const m=roles.includes("Mining")?(v.ground?"ROC mining":"Ship mining"):"Salvage";
+    out.push(`<div class="vd-sec vd-wide"><div class="mk-h">${roles.includes("Mining")?"What it can mine":"What it salvages"}</div>
+      <div class="gather-t" style="margin:2px 0 10px">${esc(GATHER[m].how)}</div>
+      ${res.length?`<div class="res-chips">${res.map(n=>{ const w=where(n); return `<a data-mkopen="${esc(n)}" title="${esc(w.length?`Found on ${w.slice(0,8).join(", ")}${w.length>8?"…":""}`:"")}">${esc(n)}<span>${w.length}</span></a>`; }).join("")}</div>
+        <div class="muted" style="font-size:11.5px;margin-top:8px">The number is how many planets, moons and belts list it (the Star Citizen Wiki). Click one for where to find it and its prices.</div>`
+      :roles.includes("Salvage")?`<div class="res-chips"><a data-mkopen="Recycled Material Composite">Recycled Material Composite</a><a data-mkopen="Construction Materials">Construction Materials</a></div>`:""}</div>`); }
+  let carry={}; try{ carry=(await api().vehicle_carry()).carries||{}; }catch(_){} if(!box()) return;
+  const me=carryKey(v.full), byKey=k=>(S.veh||[]).find(x=>carryKey(x.full)===k);
+  const carries=Object.entries(carry).filter(([c])=>carryKey(c)===me).flatMap(([,L])=>L);
+  const rides=Object.entries(carry).filter(([,L])=>L.some(x=>carryKey(x)===me)).map(([c])=>c);
+  const link=n=>{ const x=byKey(carryKey(n)); return x?`<a data-vhopen="${esc(String(x.id))}">${esc(x.full)}</a>`:`<span>${esc(n)}</span>`; };
+  if(carries.length||rides.length) out.push(`<div class="vd-sec vd-wide"><div class="mk-h">${carries.length?"Carries":"Rides in"}</div>
+      <div class="res-chips">${(carries.length?carries:rides).map(link).join("")}</div>
+      ${carries.length&&rides.length?`<div class="mk-h" style="margin-top:12px">Rides in</div><div class="res-chips">${rides.map(link).join("")}</div>`:""}
+      <div class="muted" style="font-size:11.5px;margin-top:8px">${carries.length?"Docks on it or rides in its garage, as the ship comes.":"Docks on or rides in these ships, as they come."}</div></div>`);
+  const b=box(); if(b) b.innerHTML=out.length?`<div class="vd-grid vd-flat">${out.join("")}</div>`:""; }
 $("vh-search").addEventListener("input",()=>{ S.vehDetail=null; renderVehicles(); });
 
 // ---- Components: a landing page of every category first; pick one to browse it with filters, open a
@@ -4515,11 +4648,14 @@ function makerAlias(m){ m=String(m||""); if(!m) return ""; if(m in makerAliasMem
   return makerAliasMemo[m]=out.join(" ").toLowerCase(); }
 // A search word matches a whole word of the text, or the start of one, so "rsi" doesn't hit the middle of
 // another word, while "atl" still finds "Atlas". Longer words (4+ letters) may match anywhere, as before.
+// Spaces don't count either: "all stop" finds the AllStop and "allstop" finds "All Stop" (4+ letters typed).
+const squash=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+const cpQueryHit=(t,q)=>{ const w=q.split(/\s+/).filter(Boolean); if(w.every(x=>cpWordHit(t,x))) return true; const z=squash(q); return z.length>=4&&squash(t).includes(z); };
 const cpWordHit=(t,w)=>w.length>=4?t.includes(w):new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}`).test(t);
 // Parts anywhere that match a search: name, maker, category, or a gun's kind ("repeater")
 function cpSearchAll(q){ if(!S.cpIndex||q.length<2) return [];
   const words=q.split(/\s+/).filter(Boolean);
-  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.aka||""} ${i.maker} ${makerAlias(i.maker)} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.every(w=>cpWordHit(t,w)); })
+  return S.cpIndex.items.filter(i=>{ const t=`${i.name} ${i.aka||""} ${i.maker} ${makerAlias(i.maker)} ${i.cat_name} ${i.wtype?wtLabel(i.wtype):""} ${i.size?`s${i.size}`:""}`.toLowerCase(); return words.length&&cpQueryHit(t,q); })
     .sort((a,b)=>((b.name||"").toLowerCase().startsWith(q))-((a.name||"").toLowerCase().startsWith(q))||(a.name||"").localeCompare(b.name||"")); }
 const cpSize=i=>{ const v=i.game?.size??i.size; return v==null||v===""?"":String(v); };
 const cpGrade=i=>String(i.game?.grade||i.grade||"");
@@ -4601,7 +4737,7 @@ function cpFiltered(){ const q=$("cp-search").value.trim().toLowerCase(), size=$
     avail=$("cp-avail").value, ship=$("cp-ship").value, sort=$("cp-sort").value;
   let fits=null; if(ship&&S.cpFit?.ok){ const sh=S.cpFit.ships.find(s=>s.uid===ship); fits=new Set((sh?.slots||[]).map(s=>String(s.size))); }
   const wt=$("cp-wtype").value;
-  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||(t=>q.split(/\s+/).every(w=>cpWordHit(t,w)))(`${i.name} ${i.aka||""} ${i.maker} ${i.game?.maker||""} ${makerAlias(i.game?.maker||i.maker)} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase()))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
+  const L=S.cpItems.filter(i=>(!wt||i.wtype===wt)&&(!q||(t=>cpQueryHit(t,q))(`${i.name} ${i.aka||""} ${i.maker} ${i.game?.maker||""} ${makerAlias(i.game?.maker||i.maker)} ${i.wtype?wtLabel(i.wtype):""}`.toLowerCase()))&&(!size||cpSize(i)===size)&&(!grade||cpGrade(i)===grade)
     &&(!maker||(i.game?.maker||i.maker)===maker)&&(avail!=="buy"||i.buy.length)&&(avail!=="noshop"||!i.buy.length)&&(!fits||fits.has(cpSize(i))));
   const price=i=>i.buy[0]?.price??null, key=CP_KEY[S.cpCat?.slot]?.[0], kv=i=>+(i.game?.stats?.[key])||null;
   const by={price:(a,b)=>(price(a)==null)-(price(b)==null)||(price(a)??0)-(price(b)??0),
@@ -5177,7 +5313,7 @@ function renderGameUpdate(){ const b=$("game-update-bar"), g=S.live?.game_update
   if(!g){ b.hidden=true; return; }
   b.hidden=false;
   b.innerHTML=`<div class="row"><b>Star Citizen was updated${g.version?` to ${esc(g.version)}`:""}</b><span class="muted">build ${esc(g.build)}</span><span class="spacer"></span>
-      <button class="btn small primary" data-gup="align">Planet alignment</button><button class="btn small ghost" data-gup="ok">OK</button></div>
+      <button class="btn small primary" data-gup="align">Alignment</button><button class="btn small ghost" data-gup="ok">OK</button></div>
     <div class="muted" style="font-size:12px;margin-top:4px">Planets and moons need lining up again for this version, so they're back in the alignment jobs. Ships, components and paints are being refreshed for anything new.</div>`; }
 document.addEventListener("click",async e=>{ const a=e.target.closest("[data-gup]")?.dataset.gup; if(!a) return;
   await api().game_update_ack(); $("game-update-bar").hidden=true; S.gameUpdSeen=null; if(S.live) S.live.game_update=null;
@@ -5512,7 +5648,7 @@ function renderDrPanel(){ const d=S.dr, r=d.pf, P=$("dr-panel");
     <div class="dr-send" id="dr-send"></div>`;
   renderDrList(); renderDrSend(); drAckGate(); }
 function drViews(){ const d=S.dr;
-  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports</button><button data-drview="top" class="${d.view==="top"?"on":""}">Top 10</button><button data-drview="faq" class="${d.view==="faq"?"on":""}">FAQ</button></div>`; }
+  return `<div class="seg-mini dr-views"><button data-drview="enter" class="${!d.view||d.view==="enter"?"on":""}">Report Prices</button><button data-drview="jobs" class="${d.view==="jobs"?"on":""}">Jobs</button><button data-drview="mine" class="${d.view==="mine"?"on":""}">My Reports</button><button data-drview="top" class="${d.view==="top"?"on":""}">Leaderboard</button><button data-drview="faq" class="${d.view==="faq"?"on":""}">FAQ</button></div>`; }
 // Shown once, before the first report: reports carry the user's UEX name, and bad ones cost them.
 function drAckGate(){ if(S.dr.pf.ack) return;
   const el=drSheet(`<h3>Before you report</h3>
@@ -5722,7 +5858,8 @@ async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true;
     if(done.length){ const last=done[done.length-1];     // still "sending": sent shots leaving isn't a change to review
       d.pf.cooldown=(await api().dr_prefill(d.pf.id_terminal)).cooldown||{};
       d.pf.reports_count=(d.pf.reports_count||0)+done.length;
-      if(!fail&&S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!last.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`); S.drPriceJob=null; }
+      if(!fail&&S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!last.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`);
+        drRelease(`t:${S.drPriceJob.id}`); S.drPriceJob=null; }      // let go of the hold too, or it showed as taken for its full time
       renderDrStats(last.stats); renderDrList(); renderDrSend(); await renderDrShots(); } }
   finally{ S.drSending=false; }
   if(!fail){ const r=done[done.length-1], days=done.reduce((a,x)=>a+(x.refreshed_days||0),0), n=done.length;
@@ -5852,7 +5989,7 @@ async function drPriceJobClick(e){ const a=e.target.closest("[data-pj]"); if(!a)
   if(w==="renew"){ const u=await drAccept(`t:${j.id}`); if(u){ j.until=u; toast(`Held for you for another ${CLAIM_MIN} minutes`); } drPriceJobPaint(); return true; }
   if(w==="arrived"||w==="open"){ j.arrived=true; S.dr.view="enter"; await openDatarunner(j.id); return true; }
   return false; }
-// ---- Top 10: the best Quantum datarunners, from the community server. Ranked like the ranks are:
+// ---- Leaderboard (top 10): the best Quantum datarunners, from the community server. Ranked like the ranks are:
 // most approved reports, then star rating.
 function drAv(x,cls){ const ini=esc((x.username||"?")[0].toUpperCase()), pic=x.avatar||x.avatar_url;
   return `<div class="${cls}">${pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${ini}'}))">`:`<span>${ini}</span>`}</div>`; }
@@ -5877,7 +6014,7 @@ async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
       <div class="n"><b>${x.approved.toLocaleString()}</b><span>approved</span></div><div class="n"><b>${x.sent.toLocaleString()}</b><span>sent</span></div>
       <div class="n"><b>${x.prices}</b><span>prices</span></div><div class="n"><b>${x.terminals}</b><span>terminals</span></div>
       <div class="n"><b>${x.stations}</b><span>stations</span></div><div class="n"><b>${x.week}</b><span>this week</span></div></div>`;
-  P.innerHTML=`${drViews()}<div class="dr-list dr-top10"><div class="dr-top" style="margin-top:4px"><div><h2>Top 10 datarunners</h2>
+  P.innerHTML=`${drViews()}<div class="dr-list dr-top10"><div class="dr-top" style="margin-top:4px"><div><h2>Leaderboard</h2>
       <div class="where">Ranked by approved reports, then star rating. ${r.total?`${r.total} Quantum datarunner${r.total===1?" has":"s have"} an approved report.`:""}</div></div>
       <div style="margin-left:auto"><button class="btn small" data-top="refresh">Refresh</button></div></div>
     ${top.length?`${hero}<div class="top-list">${top.slice(1).map(row).join("")}</div>
@@ -5897,7 +6034,7 @@ function fmtAgo(ts){ const m=Math.round((Date.now()/1000-ts)/60);
 const DR_RANKS=[[0,"Unranked"],[1,"Trainee"],[50,"Runner"],[250,"Field Analyst"],[750,"Trade Analyst"],[2000,"Quantum Analyst"]];
 // What counts as one approved report toward your rank (the server sends your own counts with your profile)
 const DR_KINDS={price:"Price UEX approved (each item on a kiosk report has its own UEX #)",place:"Station position that's live on Quantum",
-  alignment:"Planet alignment that another datarunner's agrees with",photo:"Approved picture"};
+  alignment:"Planet, moon or station alignment that another datarunner's agrees with",photo:"Approved picture"};
 async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-faq")) P.innerHTML=`${drViews()}${qLoader("Loading your rating…")}`;
   let p=S.drProf; if(!p){ try{ p=await api().dr_profile(false); if(p?.ok) S.drProf=p; }catch(e){ p=null; } }
@@ -5921,7 +6058,7 @@ async function renderDrFaq(){ const d=S.dr, P=$("dr-panel");
     ["What are Jobs?",`<p>Jobs are the things that help every trader most right now. Accept one and it's held for you for ${CLAIM_MIN} minutes, so other datarunners don't go to the same place.</p>
       <ul><li><b>Update prices:</b> terminals whose prices are the oldest. Go there, screenshot the kiosk and send what it shows. Every item UEX approves counts.</li>
       <li><b>Map stations:</b> stations UEX lists that aren't on the map yet. Fly there, type /showlocation in game chat and press <b>I'm here: set position</b>. It counts once a second datarunner's reading agrees.</li>
-      <li><b>Planet alignment:</b> planets and moons that haven't been lined up for this game version. Land at any known place on it (a city, outpost or landing zone) and type /showlocation; Quantum lines it up and sends it. It counts once another datarunner's alignment matches yours.</li>
+      <li><b>Alignment:</b> planets and moons that haven't been lined up for this game version: land at any known place on it (a city, outpost or landing zone) and type /showlocation; Quantum lines it up and sends it. Gateways and stations nobody has confirmed in game are listed here too: dock there and send a /showlocation. Each counts once another datarunner's reading matches yours.</li>
       <li><b>Pictures:</b> ships, vehicles, components and commodities that have no picture. Accept the job and send a clear in-game screenshot of it. It counts once it's approved.</li></ul>`],
     ["Why line planets up again after a game update?",`<p>Each game update can shift where a planet's surface is turned, so the map puts you and every outpost slightly off. Alignments are kept per game build: the first two datarunners whose alignments of a planet agree after an update fix it for every Quantum user, and both get the approved report.</p>`],
     ["What makes a good picture?",`<ul><li>Your own in-game screenshot of the item itself, clear and well lit, with no HUD, chat or other players' names in the way.</li><li>One item per picture, filling most of the frame.</li><li>No pictures from other websites, renders or edited images.</li></ul><p>Pictures are reviewed before they go live (trusted contributors' go live straight away for items with no picture yet).</p>`],
@@ -6002,6 +6139,24 @@ function jobAgeTxt(j){ const k=j.rows-j.never, sk=j.stale-j.never, out=[];
     out.push(`<span style="color:#9fe0b4" title="The average age of this terminal's reported prices on UEX">average ${daysTxt(j.avg)}</span>`); }
   if(j.never) out.push(`<span style="color:#ffd38a">${k?`${j.never} never reported`:`${plural(j.never,"price")}, none ever reported`}</span>`);
   return out.join(" · "); }
+function drFreshReading(L){ const pl=S.live?.player; return L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body)); }
+function drMapCard(L){ const reading=drFreshReading;
+  if(L.fix_pending&&!L.placeable) return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a2" title="Reported in the wrong spot">!</div>
+      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}
+        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Place")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}</div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${plural(L.fix_pending,"datarunner")} reported it's in the wrong spot on the map. Go there, type /showlocation, open it on the map and use <b>Wrong spot on the map?</b> to send yours. <span style="color:#7fe7ff">The new spot goes live once your reading agrees.</span></div></div>
+      <div class="go"><button class="btn small ghost" data-jobroute="${esc(L.name)}" title="Add it to your route">+ Route</button></div></div>`;
+  return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="${L.pos?"Position not confirmed in game yet":"No position for this station yet"}">?</div>
+      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}${drClaimChip(`p:${L.name}`)}
+        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
+        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${L.pos?`On the map from ${L.type==="jump"?"game-file":"older"} data, but nobody has confirmed it in game. ${L.type==="jump"?"Stop at the jump point":"Dock there"} and send a /showlocation.`:"Not on the map yet."} Accept the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
+      <div class="go"><button class="btn small ghost" data-url="https://starcitizen.tools/index.php?search=${encodeURIComponent(L.name)}" title="Look it up on the Star Citizen Wiki">Info</button>
+        <button class="btn small ghost nx-btn" data-nx="${esc(L.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===L.name?"Sure? Click again":"Doesn't exist"}</button>${
+        S.drMapJob?.name===L.name?`<span class="chip y">Your job</span>`
+        :drClaimOf(`p:${L.name}`)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
+        :L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Hold it for ${CLAIM_MIN} minutes; Quantum walks you through it">Accept job</button>`
+        :`<button class="btn small" data-mapinfo="${esc(L.name)}" title="What Quantum knows about it so far">${S.drMapInfo===L.name?"Hide details":"Details"}</button>`}</div>
+      ${S.drMapInfo===L.name?`<div style="grid-column:1/-1">${unplacedInfoHtml(L.name)}</div>`:""}</div>`; }
 // ---- Jobs: terminals with the most out-of-date prices, as things to go and do
 async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   if(S.drJobKind==="align") return renderDrAlignJobs();
@@ -6027,23 +6182,11 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   // Stations Quantum can't place yet: go there, /showlocation, and they go on everyone's map.
   // Jobs come in two kinds: mapping stations and updating prices. Once every station is mapped the
   // selector and the "Map a station" list go away and only price jobs are left.
-  const unmapped=(S.locs||[]).filter(L=>!L.pos||(L.verify&&L.placeable)).length, kind=!unmapped&&S.drJobKind==="map"?"all":(S.drJobKind||"all");
-  const checkJobs=(S.locs||[]).filter(L=>L.pos&&L.verify&&L.placeable&&(!S.drJobSys||L.system===S.drJobSys))
-    .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||a.name.localeCompare(b.name));
-  const pl=S.live?.player, mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
+  const unmapped=drUnmappedN(), kind=!unmapped&&S.drJobKind==="map"?"all":(S.drJobKind||"all");
+  const checkJobs=drCheckJobs(S.drJobSys);
+  const mapJobs=(S.locs||[]).filter(L=>!L.pos&&(!S.drJobSys||L.system===S.drJobSys))
     .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name));
-  const reading=L=>L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body));
-  const mapCard=L=>`<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="${L.pos?"Position not confirmed in game yet":"No position for this station yet"}">?</div>
-      <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}${drClaimChip(`p:${L.name}`)}
-        <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
-        <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${L.pos?`On the map from ${L.type==="jump"?"game-file":"older"} data, but nobody has confirmed it in game. ${L.type==="jump"?"Stop at the jump point":"Dock there"} and send a /showlocation.`:"Not on the map yet."} Accept the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
-      <div class="go"><button class="btn small ghost" data-url="https://starcitizen.tools/index.php?search=${encodeURIComponent(L.name)}" title="Look it up on the Star Citizen Wiki">Info</button>
-        <button class="btn small ghost nx-btn" data-nx="${esc(L.name)}" title="UEX lists it, but it isn't in the game">${S.drNx===L.name?"Sure? Click again":"Doesn't exist"}</button>${
-        S.drMapJob?.name===L.name?`<span class="chip y">Your job</span>`
-        :drClaimOf(`p:${L.name}`)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
-        :L.placeable?`<button class="btn small primary" data-mjstart="${esc(L.name)}" title="Hold it for ${CLAIM_MIN} minutes; Quantum walks you through it">Accept job</button>`
-        :`<button class="btn small" data-mapinfo="${esc(L.name)}" title="What Quantum knows about it so far">${S.drMapInfo===L.name?"Hide details":"Details"}</button>`}</div>
-      ${S.drMapInfo===L.name?`<div style="grid-column:1/-1">${unplacedInfoHtml(L.name)}</div>`:""}</div>`;
+  const mapCard=drMapCard;
   P.innerHTML=`${drViews()}<div class="dr-top"><div><h2>Jobs</h2><div class="where">Stations missing from the map and terminals with the oldest prices. Each one you do helps every trader on UEX and Quantum.</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         ${drJobTabs(kind,unmapped)}
@@ -6054,7 +6197,8 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
         :kind==="map"?`<div class="dr-empty">Every station${S.drJobSys?` in ${esc(S.drJobSys)}`:""} is on the map.</div>`:""):""}
       ${kind==="all"?`<div id="dr-all-extra"></div>`:""}
       ${kind!=="map"?`${kind==="all"?`<div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
-      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}`:""}${uexCredit(r.at)}
+      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}
+      ${r.reported?`<div class="muted" style="font-size:12px;margin:4px 2px 8px">✓ ${plural(r.reported,"terminal")} you reported in the last day ${r.reported===1?"is":"are"} left out of your list while UEX reviews ${r.reported===1?"it":"them"}.</div>`:""}`:""}${uexCredit(r.at)}
       <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`;
   if(kind==="all") drAllExtras(); }
 
@@ -6070,24 +6214,35 @@ async function drAllExtras(){ if(!S.drExtra||Date.now()-S.drExtra.at>60000)
     .sort((x,y)=>(x.system!==S.system)-(y.system!==S.system)||rank[x.status]-rank[y.status]||x.body.localeCompare(y.body)):[];
   const mine=drPhotoMine(), ph=(p?.ok?p.jobs:[]).filter(j=>!drPhotoYou(j,mine));
   const more=(k,n)=>n>SHOW?`<button class="btn small ghost" data-jobkind="${k}" style="margin:0 2px 12px">See all ${n}</button>`:"";
-  box.innerHTML=(al.length?`<div class="mk-h">Planet alignment ${h(`${al.length} to line up for game version ${esc(a.build)}`)}</div>${al.slice(0,SHOW).map(ajCard).join("")}${more("align",al.length)}`:"")
+  box.innerHTML=(al.length?`<div class="mk-h">Alignment ${h(`${al.length} to line up for ${gameVerTxt(a)}`)}</div>${al.slice(0,SHOW).map(ajCard).join("")}${more("align",al.length)}`:"")
     +(ph.length?`<div class="mk-h">Pictures ${h(`${plural(ph.length,"thing")} with no picture yet`)}</div>${ph.slice(0,SHOW).map(j=>pjCard(j,mine)).join("")}${more("photos",ph.length)}`:""); }
 
 // How many jobs of each kind there are, so a tab with none hides itself (and comes back when there are).
 function drJobCounts(a,p){ const n=S.drJobN=S.drJobN||{};
   if(a?.ok) n.align=a.jobs.filter(j=>j.status==="open"||j.status==="waiting").length;
   if(p?.ok){ n.photos=p.jobs.length; n.photoKinds=p.counts||{}; }
-  const t=$("dr-job-tabs"); if(t) t.outerHTML=drJobTabs(t.dataset.kind,(S.locs||[]).some(L=>!L.pos)); }
+  const t=$("dr-job-tabs"); if(t) t.outerHTML=drJobTabs(t.dataset.kind,drUnmappedN()); }
 
+// Stations with no position, or a position nobody has confirmed in game: the Map stations tab lists both,
+// so every place that redraws the tabs has to count them the same way (it used to drop the tab when only
+// unconfirmed ones were left, the moment All jobs redrew the tabs).
+function drUnmappedN(){ return (S.locs||[]).filter(L=>!L.pos||(L.verify&&L.placeable)).length; }
+// Gateways and stations on the map from game files or older data that nobody has confirmed in game.
+// They're alignment jobs too (lining a station up, like a planet), so the Alignment tab lists them.
+function drCheckJobs(sys){ return (S.locs||[]).filter(L=>L.pos&&((L.verify&&L.placeable)||L.fix_pending)&&(!sys||L.system===sys))
+  .sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||(b.type==="jump")-(a.type==="jump")||a.name.localeCompare(b.name)); }
+// "4.10.2 LIVE" rather than the raw build number from Game.log (kept in the tooltip).
+function gameVerTxt(r,cap){ const v=r?.version, b=r?.build;
+  return v?`<span title="Game build ${esc(b||"")}">${cap?"Game version ":"game version "}${esc(v)}</span>`:`${cap?"Game build ":"game build "}${esc(b||"?")}`; }
 // Which jobs to list: map stations and price updates (together under All jobs), planet alignments, pictures.
 function drJobTabs(kind,unmapped){
   const n=S.drJobN||{}, has=k=>n[k]!==0||kind===k;       // unknown yet: shown
   const t=[["all","All jobs"],...(unmapped?[["map","Map stations"]]:[]),["prices","Update prices"],
-    ...(has("align")?[["align","Planet alignment"]]:[]),...(has("photos")?[["photos","Pictures"]]:[])];
+    ...(has("align")||drCheckJobs().length?[["align","Alignment"]]:[]),...(has("photos")?[["photos","Pictures"]]:[])];
   return `<div class="seg-mini" id="dr-job-tabs" data-kind="${esc(kind)}" title="Which jobs to list">${t.map(([k,n])=>`<button data-jobkind="${k}" class="${kind===k?"on":""}">${n}</button>`).join("")}</div>`; }
 function drJobsHead(kind,extra,where){
   return `<div class="dr-top"><div><h2>Jobs</h2><div class="where">${where}</div></div>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${drJobTabs(kind,(S.locs||[]).some(L=>!L.pos))}${extra||""}</div></div>`; }
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${drJobTabs(kind,drUnmappedN())}${extra||""}</div></div>`; }
 
 // ---- Planet alignment jobs: every planet and moon for this game version. Land at a known place on it and
 // type /showlocation: Quantum lines it up and sends it. Live for everyone once a second alignment agrees.
@@ -6117,7 +6272,7 @@ function drAlignGuide(){ const aj=S.drAlignJob; if(!aj) return "";
   const sent=!r?"":r.ok?`<b style="color:#9fe0b4">${esc(aj.body)} is lined up on your map</b> from ${esc(r.place)} (${Math.abs(r.correction).toFixed(2)}° correction). ${r.shared
       ?`<span style="color:#7fe7ff">Sent to Quantum: it goes live for everyone once another datarunner's alignment agrees.</span>`:esc(r.note||"")}`
     :`<span style="color:#ffd38a">${esc(r.error||"Couldn't line it up")}</span>`;
-  return `<div class="mapjob" id="dr-alignjob"><div class="hd"><div><div class="lbl">Job started · Planet alignment</div><h3>${esc(aj.body)}</h3>
+  return `<div class="mapjob" id="dr-alignjob"><div class="hd"><div><div class="lbl">Job started · Alignment</div><h3>${esc(aj.body)}</h3>
       <div class="muted" style="font-size:12.5px">${b?.kind==="moon"?"Moon":"Planet"} · ${esc(b?.system||"")}${fin?"":` · held for ${left} more min`}</div></div>
       <div class="acts">${fin?`<button class="btn small" data-aj="done">Done</button>`:`<button class="btn small ghost" data-ajmap="${esc(aj.body)}">Show on map</button><button class="btn small ghost" data-ajrelease="1">Cancel job</button>`}</div></div>
     <ol class="mj-steps">
@@ -6155,13 +6310,16 @@ async function renderDrAlignJobs(){ const d=S.dr, P=$("dr-panel");
   const [r]=await Promise.all([api().dr_align_jobs(), drLoadClaims()]); if(d.view!=="jobs"||S.drJobKind!=="align") return;
   if(!r.ok){ P.innerHTML=`${drViews()}${drJobsHead("align","","Planets and moons to line up for this game version.")}<div class="dr-list dr-jobs special align"><div class="warnbox" style="margin:10px 2px">${esc(r.error)}</div></div>`; return; }
   drJobCounts(r,null); drAlignDone(r);
-  if(!S.drJobN.align&&!drAlignGuide()){ S.drJobKind="all"; return renderDrJobs(); }      // nothing left to line up: the tab hides itself
-  const sys=S.drJobSys&&r.systems.includes(S.drJobSys)?S.drJobSys:"", rank={waiting:0,open:1,mine:2,live:3};
+  const sys=S.drJobSys&&r.systems.includes(S.drJobSys)?S.drJobSys:"", rank={waiting:0,open:1,mine:2,live:3}, chk=drCheckJobs(sys);
+  if(!S.drJobN.align&&!chk.length&&!drAlignGuide()&&!S.drMapJob){ S.drJobKind="all"; return renderDrJobs(); }      // nothing left to line up: the tab hides itself
   const L=r.jobs.filter(j=>!sys||j.system===sys).sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||rank[a.status]-rank[b.status]||a.body.localeCompare(b.body));
   const todo=S.drJobN.align;
   P.innerHTML=`${drViews()}${drJobsHead("align",`<select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===sys?"selected":""}>${esc(x)}</option>`).join("")}</select>`,
-      `Game version ${esc(r.build)} · ${todo?`${todo} ${todo===1?"planet or moon":"planets and moons"} still to line up`:"every planet and moon is lined up"}. Each update can shift where a planet's surface is turned, so they're lined up again per version.`)}
-    <div class="dr-list dr-jobs special align">${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drAlignGuide()}${L.map(ajCard).join("")||`<div class="dr-empty">Nothing to line up here.</div>`}</div>`; }
+      `${gameVerTxt(r,true)} · ${todo?`${todo} ${todo===1?"planet or moon":"planets and moons"} still to line up`:"every planet and moon is lined up"}${chk.length?`, plus ${chk.length} ${chk.length===1?"Gateway or station":"Gateways and stations"} to confirm`:""}. Each update can shift where a planet's surface is turned, so they're lined up again per version.`)}
+    <div class="dr-list dr-jobs special align">${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drAlignGuide()}${drMapJobHtml()}
+      ${L.length?`<div class="mk-h" style="margin-top:2px">Planets and moons</div>${L.map(ajCard).join("")}`:""}
+      ${chk.length?`<div class="mk-h" style="margin-top:10px">Gateways and stations <span class="muted" style="text-transform:none;letter-spacing:0">${chk.length} on the map that nobody has confirmed in game</span></div>${chk.map(drMapCard).join("")}`:""}
+      ${!L.length&&!chk.length?`<div class="dr-empty">Nothing to line up here.</div>`:""}</div>`; }
 
 // ---- Picture jobs: ships, vehicles, components and commodities with no picture anywhere yet.
 // Accept one and the job shows what's needed; the screenshot is checked and looked over before it's sent.
@@ -6229,7 +6387,7 @@ const CB_ST={submitted:["Submitted","#8cc4ff"],in_review:["In Review","#f2c14e"]
   shared:["⚡ Live on Quantum","#7fe7ff"],rejected:["Rejected","#ff6b6b"]};
 function drContribCard(c){ const [label,col]=CB_ST[c.status]||[c.status,"#a8bbd4"], live=c.status==="live"||c.status==="shared";
   const PADN={none:"No pad",vehicle:"Vehicle",small:"Small",medium:"Medium",large:"Large",xl:"XL",hangar:"Hangar"};
-  const what={photo:`Picture · ${esc(c.name)}`,alignment:`Planet alignment · ${esc(c.name)}`,pad:`Landing pad · ${esc(c.name)}`,
+  const what={photo:`Picture · ${esc(c.name)}`,alignment:`Alignment · ${esc(c.name)}`,pad:`Landing pad · ${esc(c.name)}`,
     missing:`Doesn't exist · ${esc(c.name)}`}[c.type]||`Station position · ${esc(c.name)}`;
   const sub=c.type==="photo"?(live?`${esc(c.kind||"item")} picture, shown to every Quantum user`:c.status==="approved"?`${esc(c.kind||"item")} picture, approved; a newer one is shown now`:`${esc(c.kind||"item")} picture, reviewed by Quantum`)
     :c.type==="alignment"?`${c.system?esc(c.system)+" · ":""}game build ${esc(c.build||"?")}${c.place?` · at ${esc(c.place)}`:""} · ${live?"agreed by another datarunner":c.status==="rejected"?"rejected":"waiting for another datarunner's alignment to agree"}`
@@ -6574,7 +6732,7 @@ async function openGear(kind){ const st=grState(kind);
   if(st.data&&!st.filled){ st.filled=1; grFillFilters(kind); grLogos(kind); }
   if(!st.data&&!st.loading) await grLoad(kind); else grRender(kind); }
 async function grLoad(kind,fresh){ const st=grState(kind); st.loading=true; st.error=null;
-  $("gr-panel").innerHTML=qLoader(`Loading ${GEAR[kind].title.toLowerCase()} from the Star Citizen Wiki… (the first time takes a little while)`);
+  $("gr-panel").innerHTML=qLoader(`Loading ${GEAR[kind].title.toLowerCase()} from the Star Citizen Wiki…`);
   let r; try{ r=await api().gear_list(kind,!!fresh); }catch(e){ r={ok:false,error:String(e)}; }
   st.loading=false; if(r.ok){ st.data=r; grFillFilters(kind); grLogos(kind); } else st.error=r.error;
   if(S.tab===kind) grRender(kind); }
@@ -6621,7 +6779,7 @@ function grFiltered(kind){ const G=GEAR[kind], st=grState(kind), L=st.data?.item
   const q=v("q").trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), cat=v("cat"), sub=v("sub"), mk=v("mk"), av=v("av"), sort=v("sort")||"name";
   const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${i.maker_code||""} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`;
   const out=L.filter(i=>(!cat||G.cat(i)===cat)&&(!sub||!G.sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
-    &&(!words.length||(t=>words.every(w=>cpWordHit(t,w)))(text(i).toLowerCase())));
+    &&(!words.length||(t=>cpQueryHit(t,words.join(" ")))(text(i).toLowerCase())));
   const num=(i,k)=>i.stats?.[k]??-1e9, pr=i=>grPrice(i)??9e12;
   const by={name:(a,b)=>a.name.localeCompare(b.name),price:(a,b)=>pr(a)-pr(b)||a.name.localeCompare(b.name),
     time:(a,b)=>(a.time??9e9)-(b.time??9e9),ings:(a,b)=>(a.ingredients?.length??99)-(b.ingredients?.length??99),
@@ -6710,10 +6868,28 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
       <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
-      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy?.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, a reward, or from crafting.</div>`}</div></div>
+      <div class="vd-sec"><div class="mk-h">${i.buy?.length?"Where to buy":"How to get it"}</div>${i.buy?.length?vehSpots(i.buy,"buy")+`<div id="grd-get"></div>`:`<div id="grd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
     <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>`;
+  grObtain(i,kind);
   if(!i.image){ const img=await api().gear_image(i.name); if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }
   else { const box=$("grd-img"); if(box) box.innerHTML=picShown(i.image,"component",i.name); } }
+// How to get gear no shop sells: where players have found it, the blueprint that makes it (and the missions
+// that unlock that blueprint, each opening its own page), and whether the wiki marks it as loot.
+function knownSourcesHtml(notes){ return notes?.length?`<div class="mk-h" style="margin-top:4px">Found at</div>${notes.map(n=>`<div class="mk-row"><div class="w">${esc(n.text)}</div><div class="p"></div>${n.search?`<button class="btn small ghost" data-mapsearch="${esc(n.search)}" title="Find them on the map">Map</button>`:"<span></span>"}</div>`).join("")}`:""; }
+async function grObtain(i,kind){ const st=grState(kind); let r; try{ r=await api().gear_obtain(i.uuid||null,i.name); }catch(e){ r=null; }
+  if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-get"); if(!box) return;
+  const sold=!!i.buy?.length, bp=r?.blueprint, notes=r?.notes||[], out=[];
+  out.push(knownSourcesHtml(notes));
+  if(bp){ out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Craft it</div>
+      <div class="mk-row"><div class="w"><a data-grbpopen="${esc(bp.uuid)}" title="Open the blueprint">${esc(bp.name)} blueprint</a><div class="m">${bp.default?"Every player knows it from the start":bp.unlocks?.length?`Unlocked by ${plural(bp.unlocks.length,"mission")}`:bp.missions?`${plural(bp.missions,"mission")} unlock it`:"How to unlock it isn't on the wiki yet"}${bp.time_label?` · ${esc(bp.time_label)} to craft`:""}</div></div><div class="p"></div><span></span></div>
+      ${(bp.unlocks||[]).slice(0,6).map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.title}))}" title="Where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"Mission")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")}`); }
+  if(!sold&&i.lootable) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Loot</div><div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">The wiki marks it as lootable: it turns up in loot crates and on enemies${notes.length?", like at the places above":""}. Weapon and armor crates are common in bunkers, Contested Zones and derelicts.</div>`);
+  if(!sold&&!out.join("")) out.push(`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows, and the wiki doesn't list a blueprint or mark it as loot. Items like this are usually pledge, event, subscriber or reward items.</div>`);
+  box.innerHTML=out.join(""); }
+// "Map" on a place type (PAF sites, Distribution Centres...): search the map for them
+document.addEventListener("click",e=>{ const m=e.target.closest("[data-mapsearch]"); if(!m) return;
+  document.querySelector('.tab[data-tab="route"]')?.click();
+  setTimeout(()=>{ const q=$("rsearch"); if(!q) return; q.value=m.dataset.mapsearch; q.dispatchEvent(new Event("input",{bubbles:true})); q.focus(); },60); });
 // The wiki's descriptions start with "Manufacturer: …", "Item Type: …" lines (shown as stats already): just the prose
 function grDesc(d){ if(!d) return ""; const parts=String(d).replace(/\\n/g,"\n").split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
   const prose=parts.filter(x=>!/^[A-Za-z ]{2,30}:\s/.test(x)); return (prose.length?prose.join(" "):"").replace(/\s+/g," ").trim(); }
@@ -6782,6 +6958,9 @@ $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
   const gm=e.target.closest("[data-grmission]"); if(gm){ let x; try{ x=JSON.parse(gm.dataset.grmission); }catch(_){ return; } return grOpenMission(kind,x); }
   if(e.target.closest("[data-grmback]")){ st.mission=st.mission?.prev||null; $("gr-panel").scrollTop=0; return st.mission?grMission(kind):grDetail(kind); }
   if(e.target.closest("[data-grmretry]")){ if(st.mission) st.mission.data=null; return grMission(kind); }
+  const go=e.target.closest("[data-grbpopen]"); if(go){ const id=go.dataset.grbpopen; document.querySelector('.tab[data-tab="blueprints"]')?.click();
+    for(let k=0;k<40&&!grState("blueprints").data?.items;k++) await new Promise(r=>setTimeout(r,250));
+    const bs=grState("blueprints"); bs.mission=null; bs.sel=id; grRender("blueprints"); $("gr-panel").scrollTop=0; return; }
   const gb=e.target.closest("[data-grbp]"); if(gb&&kind==="blueprints"){ st.mission=null; st.sel=gb.dataset.grbp; grRender(kind); $("gr-panel").scrollTop=0; return; }
   if(e.target.closest("[data-grback]")){ st.sel=null; st.mission=null; grRender(kind); return; }
   const gc=e.target.closest("[data-grcomp]"); if(gc){ document.querySelector('.tab[data-tab="components"]')?.click(); setTimeout(()=>{ renderCpHome(); const q=$("cp-home-q"); if(q){ q.value=gc.dataset.grcomp; renderCpHome(); } },300); return; }

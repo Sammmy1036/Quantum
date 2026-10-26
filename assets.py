@@ -24,12 +24,13 @@ class AssetCache:
         self._file_locks = {}
         self._server = None
         self._active, self._failed = {}, {}       # path -> {done, total}; path -> when it failed
+        self._unlisted = {}                       # path -> when the manifest was last re-read for it
         self.last_error, self.manifest_ok, self.last_ok = None, None, None
 
     # ---- manifest
-    def manifest(self):
+    def manifest(self, fresh=False):
         with self._lock:
-            if self._manifest is not None and time.time() - self._manifest_at < MANIFEST_TTL:
+            if not fresh and self._manifest is not None and time.time() - self._manifest_at < MANIFEST_TTL:
                 return self._manifest
             saved = self.dir / "manifest.json"
             try:
@@ -115,6 +116,13 @@ class AssetCache:
         if ".." in path.split("/") or not path.startswith(FOLDERS):
             return None
         want = self.manifest().get("files", {}).get(path)
+        if want is None and time.time() - self._unlisted.get(path, 0) > 60:
+            # Not in the manifest this PC read up to 10 minutes ago: the server's may have it by now (a station
+            # model uploaded and the manifest rebuilt while Quantum was running). Asked again at most once a minute.
+            self._unlisted[path] = time.time()
+            want = self.manifest(fresh=True).get("files", {}).get(path)
+            if want is None:
+                self.log(f"asset {path}: not in the server's manifest.json")
         dest = self.dir / path
         with self._lock:
             flock = self._file_locks.setdefault(path, threading.Lock())
@@ -128,16 +136,38 @@ class AssetCache:
             with self._lock:
                 self._active[path] = entry
                 self._failed.pop(path, None)
-            try:
-                data = self._fetch(path, timeout=60, progress=lambda n: entry.__setitem__("done", n),
-                                   version=want["sha256"][:16])
-            except Exception as e:
-                self.log(f"asset download {path}: {e}")
-                self.last_error = f"{path}: {e}"
-                data = None
-            finally:
-                with self._lock:
-                    self._active.pop(path, None)
+            data = None
+            # A big file over a busy connection is sometimes cut off before it starts (a reset during the TLS
+            # handshake): tried again twice, a few seconds apart, before giving up on it for now
+            for attempt in range(3):
+                try:
+                    data = self._fetch(path, timeout=60, progress=lambda n: entry.__setitem__("done", n),
+                                       version=want["sha256"][:16])
+                    break
+                except Exception as e:
+                    if attempt < 2 and not isinstance(getattr(e, "code", None), int):
+                        time.sleep(3 * (attempt + 1))
+                        entry["done"] = 0
+                        continue
+                    self.log(f"asset download {path}: {e}")
+                    self.last_error = f"{path}: {e}"
+                    data = None
+            if data is not None and (len(data) != want["size"] or self._sha(data) != want["sha256"]):
+                # The server's file is newer than the manifest this PC has (it was rebuilt and uploaded while
+                # Quantum was running): fetch the manifest again, and if its entry changed, download once more
+                new = self.manifest(fresh=True).get("files", {}).get(path)
+                if new and new != want and len(data) == new["size"] and self._sha(data) == new["sha256"]:
+                    want = new
+                elif new and new != want:
+                    want, entry["total"], entry["done"] = new, new["size"], 0
+                    try:
+                        data = self._fetch(path, timeout=60, progress=lambda n: entry.__setitem__("done", n),
+                                           version=want["sha256"][:16])
+                    except Exception as e:
+                        self.log(f"asset download {path}: {e}")
+                        data = None
+            with self._lock:
+                self._active.pop(path, None)
             if data is None or len(data) != want["size"] or self._sha(data) != want["sha256"]:
                 if data is not None:
                     self.last_error = (f"{path}: the download didn't match manifest.json (got {len(data):,} bytes, "

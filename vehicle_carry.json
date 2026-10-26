@@ -1,0 +1,11 @@
+{
+  "%doc": "Vehicles that ride inside or dock on other ships, for the Vehicles page (Carries / Fits inside). Neither UEX nor the Star Citizen Wiki's API has this as data, so it's kept here by hand: only pairs CIG builds the ship around (a snub dock, a garage that comes with a vehicle). Names are matched against UEX's full names, case and spacing ignored. Add a pair as 'carrier': ['vehicle', ...].",
+  "carries": {
+    "Origin 890 Jump": ["Origin 85X"],
+    "Anvil Carrack": ["Anvil Pisces C8"],
+    "Anvil Carrack Expedition": ["Anvil Pisces C8X Expedition"],
+    "RSI Constellation Andromeda": ["Kruger P-52 Merlin"],
+    "RSI Constellation Aquila": ["Kruger P-52 Merlin", "RSI Ursa"],
+    "RSI Constellation Phoenix": ["Kruger P-72 Archimedes", "RSI Lynx"]
+  }
+}

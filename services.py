@@ -205,3 +205,36 @@ def pad_from(amenities):
         if best is None or PAD_ORDER.index(size) > PAD_ORDER.index(best):
             best = size
     return best or ("hangar" if hangar else None)
+
+
+# ---- what can be mined or harvested where, from the bodies' own descriptions on the wiki:
+#   "Potential Ship Mineables:\nQuartz\nBorase ...", "Potential Ground Vehicle Mineables:", "Potential Hand
+#   Mineables:", "Potential Harvestables:" (each a list, one per line; "(Caves)" / "(Caves only)" kept apart)
+RESOURCE_HEADS = {"ship mineables": "ship", "ground vehicle mineables": "roc", "hand mineables": "hand",
+                  "harvestables": "harvest"}
+
+
+# Typos in the wiki's lists -> the game's names
+RESOURCE_SPELLING = {"alumium": "Aluminum", "tarantite": "Taranite", "beradon": "Beradom"}
+
+
+def resources(records):
+    """{kind: {resource: [{"body", "system", "caves"}]}} for kind in ship / roc / hand / harvest."""
+    out = {k: {} for k in RESOURCE_HEADS.values()}
+    for r in records or []:
+        desc = (r.get("description") or "").replace("\r", "")
+        body, system = r.get("name") or "", (r.get("system") or "").replace(" System", "")
+        for m in re.finditer(r"Potential ([A-Za-z ]+?):?\s*\n((?:[^\n]+\n?)+)", desc):
+            kind = RESOURCE_HEADS.get(m.group(1).strip().lower())
+            if not kind:
+                continue
+            for line in m.group(2).split("\n"):
+                line = line.strip()
+                if not line or line.lower().startswith("potential"):
+                    break
+                caves = bool(re.search(r"\(caves?(?: only)?\)", line, re.I))
+                name = re.sub(r"\s*\([^)]*\)\s*$", "", line).strip()
+                name = RESOURCE_SPELLING.get(name.lower(), name)
+                if name and len(name) < 40:
+                    out[kind].setdefault(name, []).append({"body": body, "system": system, "caves": caves})
+    return out

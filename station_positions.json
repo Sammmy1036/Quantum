@@ -1,0 +1,158 @@
+{
+ "%doc": "Stations' positions from the game's own system layout, for the ones whose position in Quantum's other data was off. Quantum uses these unless a /showlocation says otherwise.",
+ "stations": {
+  "Wikelo Emporium Kinga Station": {
+   "system": "Stanton",
+   "pos": [
+    23761435428.584,
+    39225377300.445,
+    0.0
+   ],
+   "moved_km": 0.89
+  },
+  "Wikelo Emporium Dasi Station": {
+   "system": "Stanton",
+   "pos": [
+    14333387186.509,
+    2001161588.504,
+    0.0
+   ],
+   "moved_km": 0.56
+  },
+  "Wikelo Emporium Selo Station": {
+   "system": "Stanton",
+   "pos": [
+    -20156592660.255,
+    -1263139609.527,
+    36.381
+   ],
+   "moved_km": 0.74
+  },
+  "Pyro Gateway Station": {
+   "system": "Stanton",
+   "pos": [
+    3310490823.813,
+    -27979334584.28,
+    -2676224685.814
+   ],
+   "moved_km": 97.59
+  },
+  "Nyx Gateway Station": {
+   "system": "Stanton",
+   "pos": [
+    -62284231027.198,
+    23467599566.598,
+    20198394728.38
+   ],
+   "moved_km": 2.06
+  },
+  "Terra Gateway Station": {
+   "system": "Stanton",
+   "pos": [
+    51118173665.837,
+    -5269993091.526,
+    -4339547545.676
+   ],
+   "moved_km": 7.39
+  },
+  "Stanton Gateway Station (Pyro)": {
+   "system": "Pyro",
+   "pos": [
+    34178601512.234,
+    40592016326.893,
+    6727.803
+   ],
+   "moved_km": 5.27
+  },
+  "Nyx Gateway Station (Pyro)": {
+   "system": "Pyro",
+   "pos": [
+    -35275898999.682,
+    -36052299970.242,
+    6727.803
+   ],
+   "moved_km": 3.11
+  },
+  "QV Breaker Station BRK-425": {
+   "system": "Nyx",
+   "pos": [
+    27531021338.264,
+    -39318359348.308,
+    25017.56
+   ],
+   "moved_km": 27.28
+  },
+  "QV Breaker Station BRK-546": {
+   "system": "Nyx",
+   "pos": [
+    16416940601.961,
+    45105191584.147,
+    25017.56
+   ],
+   "moved_km": 27.28
+  },
+  "People's Service Station Theta": {
+   "system": "Nyx",
+   "pos": [
+    40472701119.509,
+    -25806231983.155,
+    40589.752
+   ],
+   "moved_km": 29.47
+  },
+  "QV Breaker Station BRK-127": {
+   "system": "Nyx",
+   "pos": [
+    47270346915.186,
+    -8335019578.961,
+    25017.56
+   ],
+   "moved_km": 27.28
+  },
+  "QV Breaker Station BRK-320": {
+   "system": "Nyx",
+   "pos": [
+    -27531176707.726,
+    39318609901.825,
+    25017.56
+   ],
+   "moved_km": 27.28
+  },
+  "QV Breaker Station BRK-204": {
+   "system": "Nyx",
+   "pos": [
+    -45105011977.3,
+    16416861714.259,
+    25017.56
+   ],
+   "moved_km": 27.28
+  },
+  "People's Service Station Alpha": {
+   "system": "Nyx",
+   "pos": [
+    -45804303544.863,
+    -14351319146.65,
+    29570.487
+   ],
+   "moved_km": 28.82
+  },
+  "People's Service Station Delta": {
+   "system": "Nyx",
+   "pos": [
+    -6432457405.59,
+    -47567013166.587,
+    13905.368
+   ],
+   "moved_km": 0.74
+  },
+  "People's Service Station Lambda": {
+   "system": "Nyx",
+   "pos": [
+    43327760362.641,
+    20656826663.319,
+    25671.461
+   ],
+   "moved_km": 14.76
+  }
+ }
+}

@@ -438,6 +438,24 @@ class Gear:
         return out
 
 
+# Where items no shop sells can be found, as players have reported it (the wiki's data doesn't say where
+# loot spawns). Keyed by lower-case name; each is a list of places. Shown under "How to get it" for gear,
+# and on the commodity's page when it's a commodity. Add to it as more turn up.
+KNOWN_SOURCES = {
+    "paramed amalgam medical device": ["PAF sites (Platform Alignment Facilities)", "Distribution Centres",
+                                       "QV stations in Nyx"],
+}
+# Map searches for the places above, so each can be shown on the map in one click
+SOURCE_SEARCH = {"PAF sites (Platform Alignment Facilities)": "PAF", "Distribution Centres": "Distribution",
+                 "QV stations in Nyx": "QV"}
+
+
+def known_sources(name):
+    """[{text, search}] for an item or commodity players have found somewhere, else []."""
+    key = re.sub(r"\s+", " ", str(name or "").strip().lower())
+    return [{"text": t, "search": SOURCE_SEARCH.get(t)} for t in KNOWN_SOURCES.get(key, [])]
+
+
 # How a deposit is gathered, from the wiki's resource group names
 METHOD = [(r"^spaceship", "Ship mining"), (r"^groundvehicle", "ROC mining"), (r"^fps", "Hand mining"),
           (r"^(harvest|havest|plant)", "Harvesting"), (r"^salvage", "Salvage")]

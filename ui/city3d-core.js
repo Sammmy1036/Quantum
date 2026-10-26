@@ -57,6 +57,33 @@ function loadTerrain(body){ let rec=TERRAIN[body]; if(rec) return rec; rec=TERRA
   else if(terrainIndex&&!hasTerrain(body)){ rec.state="missing"; rec.ready=Promise.resolve(rec); }
   else rec.ready=loadScript(`terrain/${encodeURIComponent(body)}.js`).then(()=>{ take(); return rec; });
   return rec; }
+// How the elevation map lines up with the planet, checked against every surveyed place on it (outposts,
+// PAFs, landing zones... each has its real altitude). A map whose longitudes start somewhere else, run the
+// other way, or whose heights are scaled differently still looks right next to a city, because the city's
+// places pin the ground to their real heights there, but out in the wilds there are no pins and the hills
+// come out in the wrong places. So the map is tried with each way its longitudes could run, and its heights
+// fitted (scale and offset) to the places; the fit is only used when it's clearly better than the map as
+// it is. Done once per planet (when there are enough places to tell).
+function terrainFit(body,rec){ if(rec.fit!==undefined) return rec.fit; rec.fit=null;
+  const B=typeof S!=="undefined"&&S.bodyMap?.[body]; if(!B||!rec.sample) return null; const D=180/Math.PI;
+  const pts=[]; for(const o of S.locs||[]){ if(o.body!==body||o.kind!=="surface"||!o.pos||o.source!=="db"||o.type==="cave"||o.type==="city") continue;
+    const r=Math.hypot(o.pos[0],o.pos[1],o.pos[2]), alt=r-B.radius; if(alt<-1500||alt>12000) continue;
+    pts.push({lat:Math.asin(o.pos[2]/r)*D, lon:Math.atan2(o.pos[1],o.pos[0])*D, alt}); }
+  if(pts.length<12) return null;
+  const med=a=>{ const b=[...a].sort((x,y)=>x-y), m=b.length>>1; return b.length%2?b[m]:(b[m-1]+b[m])/2; };
+  const score=(sg,off)=>{ const h=pts.map(p=>rec.sample(p.lat,sg*p.lon+off)), n=h.length;
+    // least squares alt = a*h + b, then the median miss (robust against a place on a roof or in a pit)
+    const mh=h.reduce((s,v)=>s+v,0)/n, ma=pts.reduce((s,p)=>s+p.alt,0)/n;
+    let sxy=0,sxx=0; for(let i=0;i<n;i++){ sxy+=(h[i]-mh)*(pts[i].alt-ma); sxx+=(h[i]-mh)**2; }
+    let a=sxx>0?sxy/sxx:1; a=Math.max(0.5,Math.min(2,a)); const b=ma-a*mh;
+    return {sg,off,a,b,err:med(pts.map((p,i)=>Math.abs(p.alt-(a*h[i]+b)))), raw:med(pts.map((p,i)=>Math.abs(p.alt-h[i])))}; };
+  const base=score(1,0); let best=base;
+  for(const sg of [1,-1]) for(const off of [0,90,180,270]){ const c=score(sg,off); if(c.err<best.err) best=c; }
+  // only when it's clearly better than the map read as it is
+  if(best.err<0.7*base.raw&&base.raw-best.err>40){ rec.fit=best;
+    console.info(`[terrain] ${body}: lined up with ${pts.length} places (lon×${best.sg}${best.off?` +${best.off}°`:""}, height×${best.a.toFixed(2)}${best.b>=0?"+":""}${Math.round(best.b)} m): median miss ${Math.round(base.raw)} m → ${Math.round(best.err)} m`); }
+  else console.info(`[terrain] ${body}: matches ${pts.length} places as it is (median miss ${Math.round(base.raw)} m)`);
+  return rec.fit; }
 // A city's real building layout: ui/cities/<City>.js, made by tools/build_city.py from the game's object
 // containers, listed in ui/cities/index.js. -> {a0, boxes:Float32Array (8 per box)} or null.
 let cityIndex=null;
@@ -589,7 +616,8 @@ function define(spec){
         const smp=G&&G.m?gridSampler({...G,data:typeof G.m==="string"?G.m.trim().split(/[\s,]+/).map(Number):G.m})
           :tr.state==="ok"?tr.sample:null;
         if(!smp) return null;
-        const up=F.up, e=F.east, n=F.north, D=180/Math.PI;
+        const up=F.up, e=F.east, n=F.north, D=180/Math.PI, fit=!(G&&G.m)?terrainFit(C.body,tr):null;
+        if(fit) return (x,z)=>{ const d=dirAt(x,z); return fit.a*smp(Math.asin(Math.max(-1,Math.min(1,d[2])))*D, fit.sg*Math.atan2(d[1],d[0])*D+fit.off)+fit.b-C.alt0; };
         return (x,z)=>{ const d=dirAt(x,z); return smp(Math.asin(Math.max(-1,Math.min(1,d[2])))*D, Math.atan2(d[1],d[0])*D)-C.alt0; }; }
       // the direction from the planet's centre (planet-fixed) under a point of the model
       function dirAt(x,z){ const s=Math.hypot(x,z), up=F.up; if(s<1e-3) return up;
@@ -780,6 +808,15 @@ function update(t){
       // while it's moving, at most every other frame
       if(!wasShadow||nowS-shadowAt>28){ shadowKey=key; shadowAt=nowS; renderer.shadowMap.needsUpdate=true; cityStats.shadowDraws++; } } }
 
+  // keep what the camera turns round on the ground, not under it. The view's centre sits on the planet's
+  // sphere (its radius), but real ground can be kilometres above that: moons like Daymar have a lot of
+  // relief for their size, so the centre ended up inside a hill, the camera was pushed up out of it every
+  // frame with its tilt forced to straight down, and right-drag couldn't turn or tilt the view. The
+  // centre is lifted onto the ground instead (once; it stays a place on the planet like any other).
+  if(M.hgt&&r>0.9&&S.focus?.kind==="local"&&S.focus.body===C.body&&!S.anim){
+    const lt=st.inner.worldToLocal(new THREE.Vector3(0,0,0)), [tx,ty,tz]=st.frame.toFlat(lt.x,lt.y,lt.z), E=C.extent*0.8;
+    if(Math.abs(tx)<E&&Math.abs(tz)<E){ const gt=M.hgt(tx,tz)+2;
+      if(ty<gt-5){ const q=S.focus.pos, ql=Math.hypot(q[0],q[1],q[2]); if(ql>1){ const k=(ql+(gt-ty))/ql; S.focus={...S.focus,pos:[q[0]*k,q[1]*k,q[2]*k]}; } } } }
   // keep the camera above the ground
   if(M.hgt&&r>0.9){ const lp=st.inner.worldToLocal(camera.position.clone()), [fx,fy,fz]=st.frame.toFlat(lp.x,lp.y,lp.z), gh=M.hgt(fx,fz)+12;
     if(fy<gh){ camera.position.addScaledVector(new THREE.Vector3(...upG),gh-fy); camera.lookAt(0,0,0); camera.updateMatrixWorld();

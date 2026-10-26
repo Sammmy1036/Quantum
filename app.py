@@ -305,8 +305,14 @@ class Api:
         # Citizen Wiki: the shipped snapshot or a newer download. Measured positions win.
         self._starmap_cache = HERE / "uex_cache" / "starmap_snapshot.json"
         try:
-            starmap_import.apply(self._db, starmap_import.load_snapshot(HERE / "nyx_starmap.json", self._starmap_cache),
-                                 keep=self._learned_places())
+            _snap = self._snap = starmap_import.load_snapshot(HERE / "nyx_starmap.json", self._starmap_cache)
+            starmap_import.apply(self._db, _snap, keep=self._learned_places())
+            # Stanton and Pyro: PAFs, OLPs, security posts, depots... the community data lacks, and Pyro's
+            # stations where the game files have them instead of at their Lagrange point
+            starmap_import.apply_extra(self._db, _snap, keep=self._learned_places())
+            # stations' spots from the game's own layout (tools/build_stations.py), where the data above is off
+            self._station_pos = starmap_import.load_positions(HERE / "station_positions.json", RES / "station_positions.json")
+            starmap_import.apply_positions(self._db, self._station_pos, keep=self._learned_places())
             for name in [n for n, L in self._unplaced.items() if n in self._db.locations]:
                 self._unplaced.pop(name, None)               # placed from the game files now
         except Exception:
@@ -610,6 +616,19 @@ class Api:
                 # Your last reading's system, unless the log has named another one since (you went
                 # through a gateway after that reading: the reading's system is the one you left).
                 qsys = last[2]
+            # A route starting at "Pyro Gateway" can't start in Pyro (a Gateway is named after where it
+            # leads): the reading's system there is the one you just left through the wormhole.
+            away = self._tracker.gate_to(q.get("start"))
+            if away and (qsys == away or hint == away):
+                # Which of the other systems: the one whose Gateway back to `away` you're next to
+                near = sorted((dist(L.pos, pos), L.system) for L in self._db.locations.values()
+                              if L.pos and L.kind != "surface" and L.system != away
+                              and self._tracker.gate_to(L.name) == away)
+                there = near[0][1] if near and near[0][0] < 5_000_000 else None
+                if qsys == away:
+                    qsys = there
+                if hint == away:
+                    hint = there
             if qsys in nav_core.SYSTEMS and qsys != hint:
                 self._sys_how = ("log", "quantum jump", q["selected"])
                 return qsys
@@ -893,9 +912,104 @@ class Api:
         self._uex.aliases, self._uex_amen = aliases, amen
         self._uex.forget_places()
         self._add_uex_pending(offline, rows)
+        try:                    # stations UEX just added at their Lagrange point: the game files' spot instead
+            moved = starmap_import.apply_positions(self._db, getattr(self, "_station_pos", None), keep=self._learned_places())
+            if starmap_import.apply_extra(self._db, getattr(self, "_snap", None), keep=self._learned_places()) or moved:
+                for name in [n for n in self._unplaced if n in self._db.locations]:
+                    self._unplaced.pop(name, None)       # on the map from the game files now
+        except Exception:
+            watcher_mod.log_error("starmap extra")
+        self._apply_place_fixes()
         self._db.save()
         self._uex.forget_places()
         return renamed
+
+    # ---- corrected positions for places already on the map
+    # Any place on the map can be reported as in the wrong spot: go there, /showlocation, "Send the right
+    # position". Your own reading moves it on your map at once; the Quantum server makes it everyone's
+    # once a second datarunner's reading agrees (a trusted datarunner's, or the admin's, counts straight
+    # away). Gateways, Wikelo and UEX-only places have their own flow (set_place_here) and aren't touched.
+    FIX_NEAR_SURFACE_M = 100_000          # a correction this far from the marker is a reading somewhere else
+    FIX_NEAR_SPACE_M = 5_000_000
+
+    def _fixable(self, name):
+        L = self._db.locations.get(name)
+        return bool(L and L.source == "db" and L.pos is not None and not gateways.system_of(name)
+                    and name not in getattr(self, "_uex_pending", {}) and not name.startswith(gateways.JUMP_PREFIX)
+                    and L.category not in ("lpoint", "om", "jump"))
+
+    def _apply_place_fixes(self):
+        """Put corrected positions (yours, and the ones datarunners agree on) on the map, and put back the
+        original spot of any place whose correction is gone (withdrawn)."""
+        orig = getattr(self, "_fix_orig", None)
+        if orig is None:
+            orig = self._fix_orig = {}
+        learned = self._learned_places()
+        for name, (kind, pos, body) in list(orig.items()):
+            if name not in learned and name in self._db.locations:
+                L = self._db.locations[name]
+                L.kind, L.pos, L.body = kind, pos, body
+                L.notes = L.notes.split(" · Position corrected")[0]
+                orig.pop(name)
+        for name, e in learned.items():
+            if not self._fixable(name) and name not in orig:
+                continue
+            L = self._db.locations.get(name)
+            if L is None or e.get("system") != L.system:
+                continue
+            if e.get("local") and e.get("body") in self._db.bodies:
+                kind, pos, body = "surface", tuple(learned_local(self._db, e)), e["body"]
+            elif e.get("pos"):
+                kind, pos, body = "space", tuple(e["pos"]), None
+            else:
+                continue
+            orig.setdefault(name, (L.kind, L.pos, L.body))
+            L.kind, L.pos, L.body = kind, pos, body
+            if " · Position corrected" not in L.notes:
+                who = "Quantum datarunners'" if e.get("community") else "your"
+                L.notes = (L.notes or "").rstrip() + f" · Position corrected from {who} /showlocation"
+
+    def report_position(self, name):
+        """This place is in the wrong spot on the map: your last /showlocation, taken there, is its real
+        position. Sent to the Quantum server, where it counts for everyone once a second datarunner's
+        reading agrees (or straight away from a trusted datarunner)."""
+        with self._lock:
+            if not self._fixable(name) and name not in getattr(self, "_fix_orig", {}):
+                return {"ok": False, "error": "This place's position can't be corrected this way"}
+            L = self._db.locations[name]
+            if not self._player or time.time() - self._player_t > 900:
+                return {"ok": False, "error": f"Type /showlocation in game chat while you're at {name}"}
+            if self._player_sys != L.system:
+                return {"ok": False, "error": f"Your last reading is in {self._player_sys}, not {L.system}"}
+            places = gateways.load_learned(PLACES_PATH)
+            orig = getattr(self, "_fix_orig", {}).get(name)
+            kind, opos, obody = orig or (L.kind, L.pos, L.body)
+            now = time.time()
+            if kind == "surface" and obody:
+                b = self._db.bodies.get(obody)
+                near = self._db.body_near(self._player, L.system)
+                if not b or not near or near.name != b.name:
+                    return {"ok": False, "error": f"That reading isn't on {obody}. Take it while you're at {name}"}
+                local = b.to_local(self._player, self._player_t)
+                off = dist(local, opos)
+                if off > self.FIX_NEAR_SURFACE_M:
+                    return {"ok": False, "error": f"That reading is {off / 1000:.0f} km from where {name} is on the map. "
+                                                  "Take it at the place itself (a fix can move it up to 100 km)"}
+                places[name] = {"system": L.system, "body": b.name, "local": list(local), "fix": True,
+                                "offset": b.rotation_offset_deg, "reading": {"pos": list(self._player), "t": self._player_t},
+                                "at": now}
+            else:
+                off = dist(self._player, opos)
+                if off > self.FIX_NEAR_SPACE_M:
+                    return {"ok": False, "error": f"That reading is {off / 1000:,.0f} km from where {name} is on the map. "
+                                                  "Take it while docked there"}
+                places[name] = {"system": L.system, "pos": list(self._player), "fix": True, "at": now}
+            PLACES_PATH.write_text(json.dumps({"places": places}, indent=1), encoding="utf-8")
+            self._share_place(name)
+            self._apply_place_fixes()
+            self._db.save()
+            self._db_changed()
+            return {"ok": True, "name": name, "moved_km": round(off / 1000, 2)}
 
     def _add_uex_pending(self, offline, stations):
         """Trade terminals at places no data has a position for (new Pyro outposts and stations):
@@ -1134,6 +1248,8 @@ class Api:
                               "parent": parent.name if parent and b.kind != "star" else None})
             hidden_keys = self._hidden_keys()
             unverified = gateways.unverified(self._learned_places())     # "Check its position" jobs
+            fix_orig = getattr(self, "_fix_orig", {})
+            fix_mine = {n for n, e in gateways.load_learned(PLACES_PATH).items() if e.get("fix")}
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
                      "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
@@ -1146,6 +1262,10 @@ class Api:
                      "unplaced": l.pos is None,
                      "placeable": gateways.system_of(l.name) is not None or l.name in getattr(self, "_uex_pending", {}),
                      "verify": l.pos is not None and l.name in unverified,
+                     # a wrong spot can be reported for any place on the map (fixed: whose correction it shows)
+                     "fixable": l.name in fix_orig or (l.pos is not None and self._fixable(l.name)),
+                     "fixed": ("mine" if l.name in fix_mine else "community") if l.name in fix_orig else None,
+                     "fix_pending": (getattr(self, "_fix_pending", {}) or {}).get(l.name) if l.name not in fix_mine else None,
                      "near": gateways.near_body(l.name),
                      "pad_shared": self._shared_pad(l.name),
                      **({"amen": self._services[l.name]["amenities"],
@@ -2242,6 +2362,11 @@ class Api:
         if r is None:
             return
         got, missing = r["places"], sorted(r["missing"])
+        pend = {n: c for n, c in (r.get("pending") or {}).items() if isinstance(n, str)}
+        if pend != getattr(self, "_fix_pending", {}):
+            self._fix_pending = pend                  # corrections waiting on a second reading: Check a position jobs
+            with self._lock:
+                self._static_version += 1
         if r.get("pads", {}) != getattr(self, "_community_pads", None):          # pad sizes datarunners agree on
             self._community_pads = r.get("pads", {})
             with self._lock:
@@ -2867,6 +2992,28 @@ class Api:
             if listed == release or listed.startswith(release + "."):
                 version = listed
         return version, env, running
+
+    def _game_version_label(self, build=None):
+        """'4.10.2 LIVE' for the game build Quantum is tagging things with, instead of the raw build number
+        (12913470) the log keys everything on. Remembered per build, so it still reads right once the game
+        is closed."""
+        build = str(build or self._game_build() or "")
+        if not build:
+            return ""
+        labels = self._settings.get("build_labels") or {}
+        if str(self._tracker.build or "") == build:
+            try:
+                version, env, _ = self._dr_game_build()
+            except Exception:
+                version, env = None, ""
+            if version:
+                label = f"{version} {env}".strip()
+                if labels.get(build) != label:
+                    labels = dict(list(labels.items())[-9:], **{build: label})
+                    self._settings["build_labels"] = labels
+                    self._save_settings()
+                return label
+        return labels.get(build, "")
 
     def dr_game_status(self):
         """Just the game-version line of the report form, so the page can refresh it when the game starts."""
@@ -4248,7 +4395,7 @@ class Api:
                          "reporters": a["reporters"] if a else None, "mine_at": mine[b.name]["reading_utc"] if b.name in mine else None,
                          "places": pl[:4], "place_count": len(pl), "you_here": self._player_sys == b.system and bool(
                              self._player and self._db.body_near(self._player, b.system) is b)})
-        return {"ok": True, "build": build, "jobs": jobs, "offline": offline, "you_in": self._player_sys,
+        return {"ok": True, "build": build, "version": self._game_version_label(build), "jobs": jobs, "offline": offline, "you_in": self._player_sys,
                 "systems": sorted({j["system"] for j in jobs})}
 
     def dr_photo_jobs(self, refresh=False):
@@ -4339,12 +4486,19 @@ class Api:
             hk = self._hidden_keys()
             unplaced = {services._key(n): n for n in self._unplaced}
             NEVER = 100000.0                                     # sorts after every real age
+            reported = 0
             for tid, raw in by.items():
                 t = terms[tid]
                 if system and t.get("star_system_name") != system:
                     continue
                 if not uex.is_live(t) or _place_key(uex.place_name(t)) in hk:
                     continue                                 # not in the game: no job to do there
+                # Reported by you in the last day: the job's done. Its prices only get newer once UEX approves
+                # the report (that can take hours), so until then it used to sit in the list as if nobody had
+                # been there. It's left out of your list instead (and counted, so the page can say so).
+                if mine.get(tid, 0) > now - 86400:
+                    reported += 1
+                    continue
                 known = sorted(a for a in raw if a is not None)
                 never = len(raw) - len(known)
                 ages = known + [NEVER] * never
@@ -4371,7 +4525,7 @@ class Api:
                 j.pop("sort"), j.pop("sort_oldest")
             systems = sorted({t.get("star_system_name") for t in terms.values() if t.get("star_system_name")})
             return {"ok": True, "jobs": jobs[:80], "total": len(jobs), "systems": systems, "you_in": self._player_sys,
-                    "at": at}
+                    "at": at, "reported": reported}
         return self._uex_call(run)
 
     # ------------------------------------------------------------ updates
@@ -6234,6 +6388,51 @@ class Api:
             out["out_game"] = gv
         return {"ok": True, "blueprint": out}
 
+    def vehicle_carry(self):
+        """{ok, carries: {carrier: [vehicle, ...]}}: snubs and rovers that dock on or ride in a ship
+        (vehicle_carry.json, kept by hand: no data source has it)."""
+        for base in (HERE, RES):
+            try:
+                d = json.loads((base / "vehicle_carry.json").read_text(encoding="utf-8"))
+                return {"ok": True, "carries": {k: list(v) for k, v in (d.get("carries") or {}).items()}}
+            except Exception:
+                continue
+        return {"ok": True, "carries": {}}
+
+    def resource_catalog(self):
+        """What can be mined or harvested, and where: {ok, kinds: {ship|roc|hand|harvest: {resource:
+        [{body, system, caves}]}}}, from the planets' and moons' own pages on the wiki (services.json)."""
+        c = getattr(self, "_res_cat", None)
+        if c is None or c[0] is not self._service_records:
+            c = self._res_cat = (self._service_records, services.resources(self._service_records))
+        return {"ok": True, "kinds": c[1]}
+
+    def known_sources(self, name):
+        """Where players have found an item or commodity no shop sells (gear.KNOWN_SOURCES)."""
+        return {"ok": True, "notes": gear.known_sources(name)}
+
+    def gear_obtain(self, uuid=None, name=None):
+        """How to get a piece of gear no shop sells: the blueprint that makes it (and the missions that unlock
+        that blueprint), whether it's loot, and where players have found it. {ok, blueprint, notes}."""
+        out = {"ok": True, "blueprint": None, "notes": gear.known_sources(name)}
+        try:
+            bps = self._gear.items("blueprints").get("items") or []
+        except Exception:
+            bps = []
+        u, n = str(uuid or "").lower(), str(name or "").strip().lower()
+        b = next((x for x in bps if u and str(x.get("out_uuid") or "").lower() == u), None) \
+            or next((x for x in bps if n and (x.get("name") or "").strip().lower() == n), None)
+        if b:
+            try:
+                d = self._gear.blueprint(b["uuid"])
+            except Exception:
+                d = {}
+            out["blueprint"] = {"uuid": b.get("uuid"), "name": b.get("name"), "default": b.get("default"),
+                                "missions": b.get("missions"), "unlocks": (d or {}).get("unlocks") or [],
+                                "time_label": b.get("time_label"),
+                                "ingredients": [x.get("name") for x in b.get("ingredients") or []][:6]}
+        return out
+
     # ------------------------------------------------------------ places named by the wiki
     def _named_place(self, name, system=None):
         """A wiki place name -> (place you can add to the route or None, planet or moon or None). A planet
@@ -6946,7 +7145,8 @@ class Api:
                             "checks": len(checks), "sessions": len({e["session"] for e in h if e["session"]}),
                             "worst_check": max((abs(e["residual_deg"]) for e in checks), default=None),
                             "last": h[-1] if h else None})
-            return {"bodies": out, "build": self._tracker.build, "file": str(CAL_PATH)}
+            return {"bodies": out, "build": self._tracker.build, "version": self._game_version_label(self._tracker.build),
+                    "file": str(CAL_PATH)}
 
     def reset_calibration(self, name):
         """Go back to the community value for one body."""
