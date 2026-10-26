@@ -1143,6 +1143,60 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .sh-buy .p{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink-2)}
 .sh-buy.got .n{text-decoration:line-through;color:var(--dim)}
 .sh-done{background:#57e39b1a;border:1px solid #57e39b55;color:#9ff0c4;border-radius:10px;padding:10px 14px;margin:0 2px 14px;max-width:880px}
+/* ---------- Upgrades (CCUs): your ship and the one you want side by side, then the cheapest chain ---------- */
+.cc-pair{display:grid;grid-template-columns:minmax(0,1fr) 54px minmax(0,1fr);gap:14px;align-items:start;margin-bottom:18px}
+.cc-col label{display:block;font:600 11px var(--text);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);margin:0 2px 6px}
+.cc-combo{position:relative;margin-bottom:10px}
+.cc-combo input{width:100%;padding-right:36px}
+.cc-caret{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:28px;height:28px;border:0;background:none;color:var(--ink-2);display:flex;align-items:center;justify-content:center;border-radius:6px}
+.cc-caret:hover{color:var(--ink);background:var(--panel-3)}
+.cc-caret svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cc-list{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;max-height:340px;overflow:auto;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;box-shadow:0 14px 34px -10px rgba(0,0,0,.8);padding:4px 0}
+.cc-grp{position:sticky;top:-4px;background:var(--panel-2);font:600 10.5px var(--text);letter-spacing:.09em;text-transform:uppercase;color:var(--dim);padding:8px 12px 4px}
+.cc-opt{display:flex;justify-content:space-between;gap:12px;padding:7px 12px;cursor:pointer;font-size:13.5px}
+.cc-opt small{color:var(--dim);white-space:nowrap}
+.cc-opt:hover,.cc-opt.act{background:var(--panel-3)}
+.cc-opt.act{box-shadow:inset 3px 0 0 var(--route)}
+.cc-none{padding:12px;color:var(--dim);font-size:13px}
+#cc-out{position:relative;min-height:150px}
+#cc-out>.q-loader{position:static;padding:34px 0 20px}
+/* the Ships section's four tabs on one row */
+.tabs:has(.tab[data-tab="ccu"]:not(.off-group)){flex-wrap:nowrap}
+.tabs:has(.tab[data-tab="ccu"]:not(.off-group)) .tab{padding:6px clamp(8px,2.4cqi,12px)}
+.cc-pic{aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(135deg,var(--panel-3),var(--panel));display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12.5px;position:relative}
+.cc-pic img{width:100%;height:100%;object-fit:cover}
+.cc-pic .cc-cap{position:absolute;left:0;right:0;bottom:0;padding:22px 14px 10px;background:linear-gradient(transparent,rgba(3,6,12,.92));display:flex;align-items:flex-end;gap:10px}
+.cc-cap b{font:600 17px var(--display);color:var(--ink)}
+.cc-cap span{color:var(--ink-2);font-size:12.5px}
+.cc-cap .v{margin-left:auto;font:700 16px var(--display);color:var(--route-2)}
+.cc-arrow{align-self:center;margin-top:20px;display:flex;justify-content:center;color:var(--route-2)}
+.cc-arrow svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cc-res{border:1px solid var(--line-2);border-radius:12px;background:var(--panel-2);padding:16px 18px}
+.cc-sum{display:flex;flex-wrap:wrap;gap:22px;align-items:baseline;margin-bottom:12px}
+.cc-sum .n{font:700 26px var(--display);color:var(--ink)}
+.cc-sum .k{font-size:12px;color:var(--dim)}
+.cc-sum .save .n{color:var(--ok)}
+.cc-step{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.cc-step .i{width:26px;height:26px;border-radius:50%;background:var(--panel-3);display:flex;align-items:center;justify-content:center;font:700 12px var(--text);color:var(--route-2)}
+.cc-step .t{min-width:0}
+.cc-step .t a{color:var(--ink);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+.cc-step .t a:hover{text-decoration-color:var(--route-2)}
+.cc-step .ed{font-size:12px;color:var(--ink-2);margin-top:2px}
+.cc-step .wb{display:inline-block;font:600 10.5px var(--text);letter-spacing:.05em;text-transform:uppercase;color:#f2c14e;border:1px solid rgba(242,193,78,.45);border-radius:999px;padding:1px 7px;margin-left:6px}
+.cc-step .p{font:700 15px var(--display)}
+.cc-warn{border-color:rgba(242,193,78,.4);background:rgba(242,193,78,.06)}
+.cc-warn h3{margin:0 0 6px;font:600 17px var(--display)}
+.cc-foot{margin-top:14px;font-size:12px;color:var(--dim);line-height:1.55}
+.cc-side .note{margin:10px 0}
+.cc-side .note.cc-stale{background:rgba(242,193,78,.07);border-color:rgba(242,193,78,.4)}
+.cc-side label.chk{display:flex;gap:9px;align-items:flex-start;margin:12px 2px;font-size:13px;line-height:1.45;cursor:pointer}
+.cc-side label.chk input{margin-top:3px}
+.cc-mine{display:flex;flex-direction:column;gap:6px}
+.cc-mine button{display:flex;justify-content:space-between;gap:10px;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.cc-mine button:hover{border-color:var(--line-2)}
+.cc-mine button.on{border-color:var(--route);box-shadow:inset 3px 0 0 var(--route)}
+.cc-mine small{color:var(--dim)}
+@container pic (max-width:520px){ .cc-pair{grid-template-columns:1fr} .cc-arrow{margin:0;transform:rotate(90deg)} .cc-step{grid-template-columns:28px minmax(0,1fr) auto} .cc-step .lk{grid-column:2/-1} }
 </style>
 </head>
 <body>
@@ -1156,7 +1210,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <button class="rail-me out" id="rail-me" data-group="profile" aria-label="Your profile" title="Sign in"><span class="av" id="rail-av"></span><i class="on-dot" id="rail-dot" hidden></i></button>
     <button class="rail-btn" data-group="navigate" title="Route, waypoints and contracts"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8 16c4-1 2-7 8-8"/></svg>Navigate</button>
     <button class="rail-btn" data-group="trade" title="Commodities, trade routes and datarunning"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
-    <button class="rail-btn" data-group="ships" title="Your fleet, components and vehicles"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/></svg>Ships</button>
+    <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/></svg>Ships</button>
     <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
     <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
     <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
@@ -1180,6 +1234,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="components" aria-selected="false" hidden>Components</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
+      <button class="tab" role="tab" data-group="ships" data-tab="ccu" aria-selected="false" title="Ship upgrades (CCUs): the cheapest way from the ship you have to the one you want">CCU</button>
       <button class="tab" role="tab" data-group="gear" data-tab="weapons" aria-selected="false" title="Personal (FPS) weapons, from the Star Citizen Wiki">Weapons</button>
       <button class="tab" role="tab" data-group="gear" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
       <button class="tab" role="tab" data-group="gear" data-tab="clothing" aria-selected="false" title="Clothing: hats, shirts, jackets, pants, shoes… from the Star Citizen Wiki">Clothing</button>
@@ -1282,6 +1337,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <div id="vh-nav"></div>
     </section>
 
+    <section class="pane" id="pane-ccu"><div id="cc-side"></div></section>
+
     <section class="pane" id="pane-components">
       <div id="cp-home"></div>
       <div id="cp-browse" hidden>
@@ -1344,6 +1401,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="dr-view" class="pic-panel" style="z-index:31"></div>
     <div id="cp-panel" class="pic-panel"></div>
     <div id="fl-panel" class="pic-panel"></div>
+    <div id="cc-panel" class="pic-panel"></div>
     <div id="gr-panel" class="pic-panel"></div>
     <div id="sh-panel" class="pic-panel"></div>
     <div id="pf-panel" class="pic-panel"></div>
@@ -3053,6 +3111,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("vh-gallery").classList.toggle("show",S.tab==="vehicles"); if(S.tab!=="trade"){ setPreview(null); closeRunDetail(); }
   if(S.tab!=="market"){ S.mkMap=false; S.mapMarks=null; } syncMarketPanel();
   $("cp-panel").classList.toggle("show",S.tab==="components"); $("fl-panel").classList.toggle("show",S.tab==="fleet");
+  $("cc-panel").classList.toggle("show",S.tab==="ccu"); if(S.tab==="ccu") openCcu();
   if(S.tab==="components") openComponents(); if(S.tab==="fleet") openFleet();
   $("gr-panel").classList.toggle("show",!!GEAR[S.tab]); if(GEAR[S.tab]) openGear(S.tab);
   $("sh-panel").classList.toggle("show",S.tab==="shopping"); if(S.tab==="shopping") openShopping();
@@ -3063,7 +3122,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Navigate",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade","datarunner"]},
-  ships:{t:"Ships",tabs:["fleet","components","vehicles"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","utility","gearlo"]},
+  ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","utility","gearlo"]},
   consumables:{t:"Consumables",tabs:["consumables"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
@@ -3079,6 +3138,120 @@ for(const b of document.querySelectorAll("#rail [data-group]")) b.onclick=()=>{ 
 $("rail-settings").onclick=()=>{ if(S.selected?.kind==="settings") return select(null); select({kind:"settings"}); };
 for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",syncRail);
 syncRail();
+
+// =================================================================== Upgrades (CCUs)
+// Pick the ship you have and the one you want: Quantum finds the cheapest chain of upgrades on sale now
+// (RSI's own upgrade prices, via the Star Citizen Wiki). With none on sale, it points to The Impound.
+const usd=n=>n==null?"–":`$${(+n).toLocaleString(undefined,{minimumFractionDigits:+n%1?2:0,maximumFractionDigits:2})}`;
+const IC_ARROW='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>';
+S.cc=S.cc||{from:"",to:"",warbond:true,pics:{}};
+async function openCcu(){
+  if(!S.ccShips){ $("cc-panel").innerHTML=qLoader("Loading ship upgrade prices…"); $("cc-side").innerHTML="";
+    const r=await api().ccu_ships(); if(S.tab!=="ccu"&&!r.ok) return;
+    if(!r.ok){ $("cc-panel").innerHTML=`<div class="empty"><strong>Couldn't load upgrade prices</strong>${esc(r.error)}<div style="margin-top:12px"><button class="btn" data-cc="retry">Try again</button></div></div>`; return; }
+    S.ccShips=r.ships; S.ccAt=r.at; S.ccSource=r.source;
+    if(!S.cc.from){ const m=r.ships.filter(x=>x.mine); const main=S.fleet?.find(f=>f.main); 
+      S.cc.from=(main&&m.find(x=>x.uex_id===main.vehicle_id)?.name)||m[0]?.name||""; } }
+  renderCcu(); }
+const ccShip=n=>S.ccShips?.find(x=>x.name===n);
+function ccPic(x,who){
+  if(!x) return `<div class="cc-pic">${who==="from"?"Pick the ship you have":"Pick the ship you want"}</div>`;
+  const u=x.photo||S.cc.pics[x.name];
+  if(u===undefined&&!x.photo){ S.cc.pics[x.name]=null; api().ccu_photo(x.name).then(r=>{ S.cc.pics[x.name]=r?.photo||""; if(S.tab==="ccu") renderCcu(); }); }
+  return `<div class="cc-pic">${u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:u===null?qPic():"No picture"}
+    <div class="cc-cap"><div><b>${esc(x.name)}</b><br><span>${esc(x.maker)}${x.status?` · ${esc(x.status)}`:""}</span></div><span class="v">${usd(x.value)}</span></div></div>`; }
+function ccLinks(x){ if(!x) return "";
+  const veh=x.uex_id&&!document.querySelector('.tab[data-tab="vehicles"]')?.hidden;
+  return `<span class="row lk" style="gap:6px">${veh?`<button class="btn small ghost" data-ccveh="${x.uex_id}" title="Open it in the Vehicles tab">Ship info</button>`:""}${x.store?`<button class="btn small ghost" data-ext="${esc(x.store)}" title="Its page on the RSI pledge store">RSI page</button>`:""}</span>`; }
+function renderCcuSide(){
+  const mine=(S.ccShips||[]).filter(x=>x.mine);
+  $("cc-side").innerHTML=`<div class="cc-side">
+    <div class="note">Pick the ship you have and the one you want. Quantum finds the cheapest chain of upgrades (CCUs) on sale on the RSI store right now.</div>
+    ${S.ccSource==="wiki"?`<div class="note cc-stale">Couldn't reach RSI's upgrade tool, so these are straight upgrades at each ship's current price, from the Star Citizen Wiki. Warbond and sale upgrades are left out: the wiki's list of those is out of date.</div>`
+      :`<label class="chk"><input type="checkbox" id="cc-wb" ${S.cc.warbond?"checked":""}><span><b>Use Warbond upgrades</b><br><span class="muted">Cheaper, but paid with new money only (no store credit)</span></span></label>`}
+    ${mine.length?`<div class="mk-h">Your ships</div><div class="cc-mine">${mine.map(x=>`<button data-ccfrom="${esc(x.name)}" class="${x.name===S.cc.from?"on":""}"><span>${esc(x.name)}</span><small>${usd(x.value)}</small></button>`).join("")}</div>`
+      :`<div class="muted" style="font-size:12.5px;margin:10px 2px">Ships you add to My Fleet show up here, ready to pick.</div>`}
+    <div class="cc-foot">${S.ccSource==="wiki"?"Prices from the Star Citizen Wiki":"Prices live from RSI's upgrade tool"}${S.ccAt?`, checked ${new Date(S.ccAt*1000).toLocaleString()}`:""}. Sales change daily: check the price on the RSI store before you buy.</div></div>`; }
+async function renderCcu(){
+  if(!S.ccShips) return; renderCcuSide();
+  const ships=S.ccShips, a=ccShip(S.cc.from), b=ccShip(S.cc.to);
+  const ups=a?ships.filter(x=>x.value>a.value):ships;
+  $("cc-panel").innerHTML=`<div class="gh vh-head"><b>Ship upgrades</b><span>The cheapest way from the ship you have to the one you want</span></div>
+    <div class="cc-pair"><div class="cc-col"><label for="cc-from">Your ship</label>${ccCombo("from",ships,a,"Type or pick your ship…")}${ccPic(a,"from")}<div style="margin-top:8px">${ccLinks(a)}</div></div>
+      <div class="cc-arrow">${IC_ARROW}</div>
+      <div class="cc-col"><label for="cc-to">Ship you want</label>${ccCombo("to",ups,b&&ups.includes(b)?b:null,a?`Type or pick a ship worth more than ${usd(a.value)}…`:"Type or pick the ship you want…")}${ccPic(b&&ups.includes(b)?b:null,"to")}<div style="margin-top:8px">${ccLinks(b&&ups.includes(b)?b:null)}</div></div></div>
+    <div id="cc-out"></div>`;
+  if(!a||!b||!ups.includes(b)) return;
+  $("cc-out").innerHTML=qLoader("Checking upgrades with RSI…");
+  const key=[a.name,b.name,S.cc.warbond].join("|"); S.ccKey=key;
+  const r=await api().ccu_path(a.name,b.name,S.cc.warbond); if(S.ccKey!==key) return;
+  $("cc-out").innerHTML=ccResult(r,a,b); }
+function ccResult(r,a,b){
+  const impound=`<div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn go" data-ext="${esc(r.impound)}">Search The Impound for the ${esc(b.name)}</button>${b.store?`<button class="btn ghost" data-ext="${esc(b.store)}">RSI page</button>`:""}</div>
+    <div class="cc-foot">The Impound is a grey-market store that sells ships and upgrades people bought earlier, including ones RSI doesn't sell now. It isn't run by RSI.</div>`;
+  if(r.ok){ const st=r.steps, one=st.length===1;
+    return `<div class="cc-res"><div class="cc-sum"><div><div class="n">${usd(r.total)}</div><div class="k">${one?"one upgrade":`${st.length} upgrades in a row`}</div></div>
+      ${r.saved>0?`<div class="save"><div class="n">${usd(r.saved)}</div><div class="k">saved vs a straight upgrade (${usd(r.direct)})</div></div>`:`<div><div class="n" style="font-size:18px;color:var(--ink-2)">Straight upgrade is cheapest</div><div class="k">no chain beats it right now</div></div>`}</div>
+      ${st.map((x,i)=>{ const to=ccShip(x.to); return `<div class="cc-step"><span class="i">${i+1}</span><div class="t"><div>${esc(x.from)} → <b>${esc(x.to)}</b></div>
+        <div class="ed">${esc(x.edition)}${x.warbond?'<span class="wb">Warbond</span>':""}</div></div><span class="p" ${x.rsi_price||!r.checked?"":`title="RSI didn't confirm this price"`}>${usd(x.price)}${x.rsi_price||!r.checked?"":"*"}</span>${ccLinks(to)}</div>`; }).join("")}
+      <div class="cc-foot">Buy them in order on the RSI store and apply each one to the ship from the step before.${st.some(x=>x.warbond)?" Warbond upgrades can only be paid with new money, not store credit.":""} ${r.checked?(r.prices_checked?" Every step and price checked with RSI's upgrade tool just now.":" Prices with * couldn't be confirmed with RSI: check them on the RSI store."):" These are straight upgrades only, from the Star Citizen Wiki: RSI couldn't be reached to check sale upgrades."} Prices can change.</div></div>`; }
+  if(r.reason==="unavailable"||r.reason==="none") return `<div class="cc-res cc-warn"><h3>No upgrade to the ${esc(b.name)} is on sale right now</h3>
+    <div class="muted" style="line-height:1.55">${r.reason==="unavailable"?(r.warbond_only?"There's a Warbond upgrade to it on sale: tick <b>Use Warbond upgrades</b> to see it.":`RSI isn't selling an upgrade to it at the moment. Ships like this often come back during sales (Invictus, IAE, anniversaries).`):`RSI's upgrade tool doesn't sell an upgrade to it from the ${esc(a.name)}, or from any ship you could upgrade it to first.`}</div>${r.warbond_only?"":impound}</div>`;
+  if(r.reason==="unchecked") return `<div class="cc-res cc-warn"><h3>Couldn't check upgrades with RSI</h3><div class="muted">RSI's upgrade tool didn't answer, so Quantum can't tell which upgrades you can buy from your ship. Try again in a minute.</div><div style="margin-top:12px"><button class="btn" data-cc="again">Try again</button></div></div>`;
+  if(r.reason==="downgrade") return `<div class="cc-res cc-warn"><h3>Upgrades only go up in value</h3><div class="muted">The ${esc(b.name)} (${usd(r.to_value)}) isn't worth more than your ${esc(a.name)} (${usd(r.from_value)}).</div></div>`;
+  return `<div class="cc-res"><div class="muted">${r.reason==="same"?"That's the ship you already have.":"Couldn't find one of those ships."}</div></div>`; }
+// ---- The two ship pickers: type to filter (name or maker, any order), or open the full list with the arrow.
+// Up/Down move, Enter picks, Esc closes. Ships in My Fleet come first, then each maker's, by value.
+S.ccLists=S.ccLists||{};
+const ccKey=t=>String(t||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+function ccCombo(which,list,cur,ph){ S.ccLists[which]=list;
+  return `<div class="cc-combo" data-ccw="${which}"><input class="field" id="cc-${which}" value="${cur?esc(cur.name):""}" placeholder="${esc(ph)}" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="cc-${which}-list">
+    <button type="button" class="cc-caret" tabindex="-1" aria-label="Show every ship"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    <div class="cc-list" id="cc-${which}-list" role="listbox" hidden></div></div>`; }
+function ccMatches(which,q){ const words=ccKey(q).split(" ").filter(Boolean), list=S.ccLists[which]||[];
+  const hit=words.length?list.filter(x=>{ const k=` ${ccKey(x.name+" "+x.maker)} `; return words.every(w=>k.includes(" "+w)||k.includes(w)); }):list;
+  const by=(a,b)=>a.value-b.value||a.name.localeCompare(b.name), mine=hit.filter(x=>x.mine).sort(by), makers={};
+  for(const x of hit) (makers[x.maker||"Other"]=makers[x.maker||"Other"]||[]).push(x);
+  return [...(mine.length?[["In My Fleet",mine]]:[]),...Object.keys(makers).sort().map(m=>[m,makers[m].sort(by)])]; }
+function ccOpen(which,q){ const box=document.querySelector(`.cc-combo[data-ccw="${which}"]`); if(!box) return;
+  const L=box.querySelector(".cc-list"), inp=box.querySelector("input"), groups=ccMatches(which,q), flat=groups.flatMap(g=>g[1]);
+  S.ccOpen={which,flat,act:Math.min(S.ccOpen?.which===which?S.ccOpen.act:0,Math.max(0,flat.length-1))};
+  let i=0;
+  L.innerHTML=flat.length?groups.map(([g,xs])=>`<div class="cc-grp">${esc(g)}</div>${xs.map(x=>`<div class="cc-opt ${i===S.ccOpen.act?"act":""}" role="option" data-ccpick="${esc(x.name)}" data-i="${i++}"><span>${esc(x.name)}</span><small>${usd(x.value)}${x.on_sale?"":" · no upgrade on sale"}</small></div>`).join("")}`).join("")
+    :`<div class="cc-none">No ship matches “${esc(q)}”</div>`;
+  L.hidden=false; inp.setAttribute("aria-expanded","true"); L.querySelector(".cc-opt.act")?.scrollIntoView({block:"nearest"}); }
+function ccClose(which){ const box=document.querySelector(`.cc-combo[data-ccw="${which}"]`); if(!box) return;
+  box.querySelector(".cc-list").hidden=true; box.querySelector("input").setAttribute("aria-expanded","false"); if(S.ccOpen?.which===which) S.ccOpen=null; }
+function ccPick(which,name){ S.cc[which]=name; S.ccOpen=null; renderCcu(); }
+const ccWhich=e=>e.target.closest(".cc-combo")?.dataset.ccw;
+$("cc-panel").addEventListener("focusin",e=>{ const w=ccWhich(e); if(!w||e.target.tagName!=="INPUT") return;
+  e.target.select(); ccOpen(w,""); });
+$("cc-panel").addEventListener("input",e=>{ const w=ccWhich(e); if(!w) return; S.ccOpen=null; ccOpen(w,e.target.value); });
+$("cc-panel").addEventListener("mousedown",e=>{ const w=ccWhich(e); if(!w) return;
+  const o=e.target.closest("[data-ccpick]"); if(o){ e.preventDefault(); return ccPick(w,o.dataset.ccpick); }
+  if(e.target.closest(".cc-caret")){ e.preventDefault(); const inp=e.target.closest(".cc-combo").querySelector("input");
+    if(document.activeElement===inp&&!e.target.closest(".cc-combo").querySelector(".cc-list").hidden) return ccClose(w);
+    inp.focus(); ccOpen(w,""); } });
+$("cc-panel").addEventListener("keydown",e=>{ const w=ccWhich(e); if(!w||e.target.tagName!=="INPUT") return; const o=S.ccOpen;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); if(!o||o.which!==w) return ccOpen(w,e.target.value);
+    o.act=Math.max(0,Math.min(o.flat.length-1,o.act+(e.key==="ArrowDown"?1:-1))); ccOpen(w,e.target.value); }
+  else if(e.key==="Enter"){ e.preventDefault(); const x=o?.which===w?o.flat[o.act]:null; if(x) ccPick(w,x.name); }
+  else if(e.key==="Escape"){ e.preventDefault(); ccClose(w); e.target.value=S.cc[w]||""; e.target.blur(); } });
+$("cc-panel").addEventListener("focusout",e=>{ const w=ccWhich(e); if(!w||e.target.tagName!=="INPUT") return;
+  // A pick redraws the pickers, which takes the focus off this (now old) box: that's no reason to pick again
+  // from what was left in it (it still held the ship picked before, which undid the pick)
+  setTimeout(()=>{ if(document.activeElement===e.target||!e.target.isConnected) return; ccClose(w);
+    // typed a ship's exact name and left the box: that's a pick; anything else goes back to the ship picked before
+    const exact=(S.ccLists[w]||[]).find(x=>ccKey(x.name)===ccKey(e.target.value));
+    if(exact&&exact.name!==S.cc[w]) return ccPick(w,exact.name);
+    e.target.value=S.cc[w]&&(S.ccLists[w]||[]).some(x=>x.name===S.cc[w])?S.cc[w]:""; },120); });
+$("cc-side").onchange=e=>{ if(e.target.id==="cc-wb"){ S.cc.warbond=e.target.checked; renderCcu(); } };
+$("cc-side").onclick=e=>{ const f=e.target.closest("[data-ccfrom]"); if(f){ S.cc.from=f.dataset.ccfrom; renderCcu(); } };
+$("cc-panel").onclick=e=>{
+  const x=e.target.closest("[data-ext]"); if(x) return api().open_url(x.dataset.ext);
+  if(e.target.closest("[data-cc=retry]")){ S.ccShips=null; return openCcu(); }
+  if(e.target.closest("[data-cc=again]")) return renderCcu();
+  const v=e.target.closest("[data-ccveh]"); if(v){ S.vehDetail=String(v.dataset.ccveh); S.vehGalKey=null; document.querySelector('.tab[data-tab="vehicles"]')?.click(); } };
 
 // =================================================================== Gear loadouts
 // Your own sets of personal gear for a kind of job ("Bunker run", "Cave mining"): armor by slot, weapons, gadgets,

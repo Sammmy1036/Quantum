@@ -26,6 +26,7 @@ import webview
 import backup
 import secure
 from dataclasses import asdict
+import ccu
 import community
 import datarunner
 import fleet
@@ -340,6 +341,7 @@ class Api:
         self._uex = uex.Uex(HERE / "uex_cache", self._settings.get("uex_token", ""))
         self._uex_amen = {}
         self._wikiapi = fleet.Wiki(HERE / "uex_cache")
+        self._ccu = ccu.Ccu(HERE / "uex_cache")      # ship upgrade (CCU) prices, from RSI's upgrade tool via the wiki
         self._part_images = {}               # wiki page title (lowercase) -> the wiki API's picture of that part
         self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
@@ -5550,6 +5552,63 @@ class Api:
             return {v["id"]: v for v in with_extra_vehicles(self._uex.get("vehicles", offline=not self._uex.token)[0])}
         except uex.UexError:
             return {}
+
+    # ------------------------------------------------------------ ship upgrades (CCUs)
+    def _ccu_uex(self):
+        """{ccu.key(name): UEX row} so the planner can show UEX's pictures and open a ship's Vehicles page."""
+        out = {}
+        for v in self._vehicle_rows().values():
+            maker = str(v.get("company_name") or "").lower()
+            for n in (v.get("name"), v.get("name_full")):
+                k = ccu.key(n)
+                if k:
+                    out.setdefault(k, v)
+                    if maker and k.startswith(ccu.key(maker) + " "):
+                        out.setdefault(k[len(ccu.key(maker)) + 1:], v)
+        return out
+
+    def ccu_ships(self):
+        """Every ship with a pledge value, cheapest first: its value, whether an upgrade to it is on sale now
+        (and the cheapest), its RSI page, UEX's picture when there is one, and whether it's in My Fleet."""
+        ships, at, err = self._ccu.ships(wait=True)
+        if not ships:
+            return {"ok": False, "error": f"Couldn't load ship upgrade prices from the Star Citizen Wiki ({err or 'no ships'})"}
+        rows = self._ccu_uex()
+        mine = {f.get("vehicle_id") for f in self._fleet()}
+        try:                       # wiki pictures for ships UEX has none for, asked for in one go
+            self._wikiapi.pictures([r for v in rows.values() if not v.get("url_photo")
+                                    for r in (v.get("wiki_page"), v.get("name_full"), v.get("name")) if r], size=720)
+        except Exception:
+            pass
+        out = []
+        for s in ships:
+            v = rows.get(ccu.key(s["name"])) or rows.get(ccu.key(f"{s['maker']} {s['name']}")) or {}
+            o = ccu.offers(s)
+            out.append({"name": s["name"], "maker": s["maker"], "value": s["msrp"], "status": s["status"],
+                        "store": s.get("store") or (store_url(v) if v else None),
+                        "on_sale": bool(o), "best": o[0] if o else None,
+                        "editions": [x for x in s["skus"] if x["available"]],
+                        "uex_id": v.get("id"), "photo": self._vehicle_photo(v) if v else None,
+                        "mine": bool(v) and v.get("id") in mine})
+        self._ccu.warm()                     # ask RSI about sale upgrades now, while ships are being picked
+        return {"ok": True, "ships": out, "at": at, "source": self._ccu.source}
+
+    def ccu_photo(self, name):
+        """The wiki's picture of a ship UEX has none for."""
+        try:
+            return {"ok": True, "photo": self._wikiapi.pictures([name], size=720).get(name)}
+        except Exception:
+            return {"ok": True, "photo": None}
+
+    def ccu_path(self, src, dst, warbond=True):
+        """The cheapest chain of upgrades from src to dst that RSI's own upgrade tool sells (Ccu.path), with
+        The Impound's search for dst when there's none."""
+        r = self._ccu.path(src, dst, warbond=bool(warbond))
+        r["impound"] = ccu.impound_url(dst)
+        if not r["ok"] and r["reason"] in ("unavailable", "none") and warbond is False:
+            alt = self._ccu.path(src, dst, warbond=True)
+            r["warbond_only"] = alt.get("ok", False)
+        return r
 
     def fleet_list(self):
         rows = self._vehicle_rows()
