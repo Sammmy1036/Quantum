@@ -21,7 +21,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
-Third-party code
+Third-party code and fonts
 
 Quantum includes or loads code from other projects, each under its own license:
 
@@ -31,16 +31,19 @@ Quantum includes or loads code from other projects, each under its own license:
     implementation in RFC 8032. Code components of IETF documents are
     available under the Simplified BSD License, Copyright (c) IETF Trust and
     the persons identified as the document authors.
+  - Orbitron (ui/fonts/Orbitron-*.ttf, used by the Location Clock Overlay):
+    SIL Open Font License 1.1, Copyright 2018 The Orbitron Project Authors. See
+    ui/fonts/Orbitron-OFL.txt.
   - Fonts Michroma, Exo 2 and Inter, loaded from Google Fonts at run time:
     SIL Open Font License 1.1.
   - The Settings cog icon (ui/index.html) is drawn from Feather Icons
     (https://feathericons.com), MIT License, Copyright (c) 2013-2023 Cole
     Bemis.
-  - QR code encoder (quantum_api.py, the community server's admin page):
-    written for Quantum, following the approach of Project Nayuki's QR Code
-    generator library (https://www.nayuki.io/page/qr-code-generator-library),
-    MIT License, Copyright (c) Project Nayuki. The QR code standard is ISO/IEC
-    18004; "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
+  - QR code encoder (the community server's admin page): written for
+    Quantum, following the approach of Project Nayuki's QR Code generator
+    library (https://www.nayuki.io/page/qr-code-generator-library), MIT
+    License, Copyright (c) Project Nayuki. "QR Code" is a registered trademark
+    of DENSO WAVE INCORPORATED.
   - Cloudflare Turnstile (quantumsc.org's sign-up and forgotten-password
     pages): a bot check loaded from Cloudflare, under Cloudflare's own terms.
 
@@ -50,203 +53,68 @@ Third-party data and trademarks
 The MIT License above covers Quantum's own code. Data Quantum downloads or
 ships keeps its own terms:
 
-  - Star Citizen Wiki (starcitizen.tools, api.star-citizen.wiki): content,
-    including ship data, loadouts and pictures, personal weapons, armor,
-    clothing, gadgets, keys and consumables, crafting blueprints, missions
-    and where resources are mined or harvested, under CC BY-SA 4.0.
+  - Star Citizen Wiki (starcitizen.tools, api.star-citizen.wiki): ship data,
+    loadouts and pictures, personal gear, consumables, blueprints, missions
+    and resource locations, under CC BY-SA 4.0.
   - UEX Corp (uexcorp.space): prices, trade data, vehicles and items, used
     under UEX's API terms with each user's own token. Datarunner price reports
-    are sent to UEX under each user's own UEX account and UEX's datarunner
-    rules.
+    are sent to UEX under each user's own UEX account and UEX's rules.
   - Valalol / Star-Citizen-Navigation and starnav: community navigation data,
     under their own licenses.
-  - Component statistics extracted from the Star Citizen game files. Jump
-    module statistics come from the Star Citizen Wiki until the game-file
-    extraction includes them.
-  - Manufacturer logos, downloaded at run time from the Star Citizen Wiki
-    (Sc-icon-brand-*.svg and Sc-logo-*.svg files, and the logo files and page
-    pictures of component and personal-gear makers) and, for the Vanduul, from
-    the Star Citizen Fandom wiki. The logos are the property of Cloud Imperium
-    Games and are shown to identify each manufacturer.
-  - 3D city layouts, terrain heights, city lights, planet surface maps and
-    station models (downloaded from the Quantum server as map data) are built
-    from the Star Citizen game files, the property of Cloud Imperium Games,
-    and are used only to show those places on Quantum's map.
-  - Interface icons for component and vehicle types (ui/index.html) are Star
-    Citizen's own in-game icons, the property of Cloud Imperium Games, used to
-    match the game.
+  - Roberts Space Industries (robertsspaceindustries.com): to verify an org,
+    the Quantum server reads that org's public RSI page.
+  - Component statistics extracted from the Star Citizen game files.
+  - Manufacturer logos, downloaded at run time from the Star Citizen Wiki (and,
+    for the Vanduul, the Star Citizen Fandom wiki), the property of Cloud
+    Imperium Games, shown to identify each manufacturer.
+  - 3D city layouts, terrain, city lights, planet surfaces and station models
+    (downloaded from the Quantum server as map data) are built from the Star
+    Citizen game files, the property of Cloud Imperium Games, and are used
+    only to show those places on Quantum's map.
+  - Interface icons for component and vehicle types are Star Citizen's own
+    in-game icons, the property of Cloud Imperium Games, used to match the
+    game.
 
 -------------------------------------------------------------------------------
-Community contributions
+Content users share
 
-Prices, station positions, landing pad sizes, planet alignments, pictures and
-trade routes that Quantum users share through the Quantum community server are
-contributed by those users. By sending a picture, a user confirms they took it
-or otherwise have the right to share it, and agrees that it may be shown to
-other Quantum users. Pictures can be reviewed, rejected, replaced or removed by
-the server owner and their moderators at any time, and the server owner may
-show their own picture in place of any picture, including one from the Star
-Citizen Wiki or UEX. Shared data is provided as
-is, like the rest of the Software, and may be inaccurate or out of date.
+Prices, station positions, pad sizes, planet alignments, pictures, shared
+routes, messages, marketplace listings, org pages, logos and rank icons, and
+public profiles are made by Quantum's users, and each user is responsible for
+what they share. By uploading a picture or logo, a user confirms they have the
+right to share it and agrees that it may be shown to other Quantum users.
 
--------------------------------------------------------------------------------
-Community server sign-in
-
-To keep the community server's data trustworthy, so that nobody can send
-pictures, station positions, planet alignments, shared routes or job claims
-under someone else's name, Quantum signs in to the Quantum community server
-with the user's UEX datarunner secret key. Using these community features
-requires this sign-in; price reports and everything that works with UEX's data
-alone do not.
-
-When Quantum signs in, it sends the secret key to the community server once,
-over HTTPS. The server reads it only to ask UEX which UEX account it belongs
-to, then discards it. The key is never stored or logged in the server, and it
-is not used for anything else. The server returns a session token, which
-Quantum keeps in settings.json and sends with later requests. The server keeps
-only a one-way hash of that token, with the UEX username it belongs to and
-when and from where it was last used. Sign-ins not used for 180 days end on
-their own. Removing or changing the secret key (Profile > Linked accounts), or
-signing out from the profile, signs that computer out, and the server owner
-can end a user's sign-ins at any time, for example when banning an account. 
-The UEX Bearer Token is never sent to the community server, unless the user 
-chooses to keep their UEX keys in their Quantum account (see Quantum accounts below).
-
-A Quantum account linked to a UEX name can stand in for this sign-in: once
-Quantum is signed in to the account, the server accepts that sign-in as the
-linked UEX name.
-
-Anyone running their own community server receives users' secret keys in the
-same way and should handle them with the same care. Users who don't want their
-secret key to reach the community server can turn community features off in
-Settings (Disable community features), or set "community_url" to "off" in
-settings.json; Quantum then uses UEX's data alone.
+The server owner and their moderators can review, reject, replace or remove
+anything shared, take down listings, change a username, and suspend or ban an
+account that misuses the service. Shared data is provided as is, like the rest
+of the Software, and may be inaccurate or out of date.
 
 -------------------------------------------------------------------------------
-Quantum accounts
+Marketplace
 
-A Quantum account is optional; everything in Quantum works without one. An
-account is made on the Quantum website (quantumsc.org) with an email address
-and a password, and becomes active once the email address is confirmed.
-Accounts never confirmed are removed after 7 days.
+The marketplace is for in-game trades paid in aUEC only. Real-money trades
+(dollars, PayPal, gift cards and the like) break Star Citizen's Terms of
+Service and are not allowed; listings that ask for them are taken down.
 
-For each account, the community server keeps:
-
-  - the email address, used to sign in and for account emails (confirming the
-    address, resetting the password, telling the user when their password
-    changes, their account is deleted or their UEX name moves to another
-    account). No newsletters or marketing;
-  - the password as a one-way scrypt hash, never the password itself. Ten wrong
-    passwords in a row lock the account for 15 minutes;
-  - its sign-ins: for each one, a one-way hash of its token, when it began and
-    was last used, its IP address and browser or PC name. A website sign-in
-    lasts until the browser closes (at most 12 hours), or 30 days with "Keep me
-    signed in". Quantum's own sign-in lasts a year and is renewed while it's
-    used. Changing the password ends every other sign-in;
-  - the profile the user fills in: a display name, organization, bio and
-    profile picture (PNG, JPEG or WebP, up to 2 MB). A profile photo set in
-    Quantum while signed in to the account (cropped to a 256-pixel square on
-    the user's computer) is kept as the account's profile picture. The
-    profile is currently shown only to the user themself;
-  - the UEX datarunner name linked to the account, if any;
-  - the user's UEX Bearer Token and Secret Key, only if the user chooses to
-    keep them in the account (below).
-
-Quantum can sign in to an account in two ways: with the email and password
-typed into Quantum (sent once over HTTPS to the community server and never
-stored by Quantum), or through the browser, where Quantum gets a code to
-approve on the website and never sees the password. Either way, Quantum keeps
-only the sign-in token it receives, in settings.json, encrypted with Windows'
-data protection so it can't be used from another computer or Windows account.
-
-UEX keys kept in the account. A user can choose to save their UEX Bearer Token
-and Secret Key in their account, on the website or with the "Keep my UEX keys
-in my Quantum account" switch in Quantum. The setting is off unless the user
-turns it on. UEX checks the keys before they are saved. They are then stored
-encrypted (HMAC-SHA256 in counter mode with an HMAC-SHA256 tag), with an
-encryption key kept in its own file apart from the database, so a copy of the
-database alone can't read them. The website shows only their last 4
-characters. Quantum, signed in to the account on any computer, reads them back
-to fill them in, and saves keys changed on that computer to the account.
-While the setting is on, Quantum does not save the keys on the computer: it
-holds them in memory while it runs and reads them from the account each time
-it starts. Because the server must be able to give the keys back, the server
-(and so its owner) can decrypt them. Users who don't want that should leave the
-setting off. Turning it off, unlinking the UEX name or deleting the account
-removes the saved keys from the server; Quantum then saves the keys it has on
-that computer again. A user whose keys may have been exposed can make new ones
-at UEX at any time.
-
-Signing out. Sign out on the profile signs the computer out of the Quantum
-account and the community server and removes the UEX Bearer Token and Secret
-Key from that computer, so nothing stays connected. The user's ships,
-waypoints, routes, gear loadouts and settings stay on the computer.
-
-Users can download a copy of everything their account holds (the saved UEX
-keys themselves are left out) and delete their account at any time from the
-account page. Deleting removes the account, its sign-ins, profile, profile
-picture and saved keys at once. If a UEX name is linked, the user can also
-choose to delete everything sent under that name, as described below.
+Trades are between the players involved, who meet and hand over items in
+game. Quantum and its server owner are not a party to any trade and give no
+guarantee about any listing, player or trade. Escrow agents are volunteer
+players, not employees of Quantum; the optional escrow fee is paid in aUEC to
+the agent. Ratings and reports help players judge each other, but users trade
+at their own risk.
 
 -------------------------------------------------------------------------------
-Moderation
+Privacy
 
-The community server is run by its owner, who may appoint moderators and
-admins to help. To keep shared data accurate and fair, they can review and
-reject contributions, and suspend (for a set time), ban, or end the sign-ins of
-an account that misuses the service, with a reason the user can see in
-Quantum. Every action taken on the server's admin page is recorded with who
-took it. A user who is suspended or banned can still use everything that works
-with UEX's data alone.
+How Quantum and the Quantum server handle your data (accounts, usernames,
+friends and messages, marketplace, orgs, public profiles, backups and UEX
+keys) is described in the privacy policy at https://quantumsc.org/privacy.
+Anyone running their own community server receives the same kinds of data
+and should handle them with the same care.
 
--------------------------------------------------------------------------------
-What the community server keeps, and deleting it
-
-For each datarunner, the community server keeps their UEX username and avatar
-link, the UEX report IDs and values of the price reports they send through
-Quantum and what UEX decided about them, the pictures, station positions, pad
-sizes, planet alignments, job claims, shared routes and bug reports they send,
-and their sign-ins as described above. Quantum accounts are described under
-Quantum accounts. To protect the service it also keeps,
-for a short time, the IP address and time of requests: rate-limit counters for
-an hour, and a list of recent requests in memory until the server restarts.
-
-A user can delete everything sent under their UEX name themselves, when
-deleting a Quantum account linked to that name, or ask the server owner to
-delete everything the server holds about them. The owner can erase it all from
-the admin page in one step; prices served
-from their reports stop being shown, and their pictures are removed. UEX keeps
-its own copy of the reports it received, under UEX's own terms. Encrypted
-backups are not tied to a username, so users delete theirs themselves from
-Profile > Backup. The record that an erasure was carried out (who did it and
-when) is kept in the admin activity log for up to a year.
-
-On the user's own computer, Quantum keeps a copy of the screenshot each price
-report was sent with for 14 days, then deletes it. It is never sent to the
-community server.
-
--------------------------------------------------------------------------------
-Backups
-
-Quantum can back up a user's fleet (with each ship's loadouts and component
-swaps), waypoints, planned trade routes, mapped stations, personal gear
-loadouts and the layout of their profile (which ships and loadouts it shows) to
-the Quantum community server. Backups are
-encrypted on the user's own computer with a key made from their UEX Bearer
-Token; the server stores them without being able to read them, and the token is
-never sent to it (signing in uses the separate secret key, as described above).
-Anyone who has the token can open the backup, so users should keep their token
-private. A user who keeps their UEX keys in their Quantum account gives the
-server their Bearer Token too, so for that user the server could open their
-backup. Users who want their backup unreadable to the server should leave that
-setting off.
-
-Backups are a convenience, provided as is with no guarantee that they will be
-available or complete. A backup cannot be opened with a different token, so it
-is lost if the user replaces their UEX token. Backups not updated for a year
-may be removed, and the server owner may remove backups or end the service at
-any time. Users can delete their own backup from Profile > Backup. Keep your
-own copy of anything you can't afford to lose.
+Backups are a convenience, provided as is, with no guarantee that they will be
+available or complete. Keep your own copy of anything you can't afford to
+lose.
 
 -------------------------------------------------------------------------------
 Unofficial fan project
