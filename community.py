@@ -140,6 +140,42 @@ class Community:
         so it follows you to the website and other PCs. {status: ok} | not_found (server without photos yet) ..."""
         return self._acct("/v1/account/avatar", {"image": image}, token=token, timeout=30)
 
+    # ---- Marketplace (server: market.py). Browsing works signed out too; everything else needs the account.
+    def market(self, token, path, body=None, timeout=15):
+        r = self._acct("/v1/market/" + path, body, token=token, timeout=timeout)
+        st = r.get("status")
+        if st == "http_401":
+            return {"status": "signed_out"}
+        if st == "http_404" or (st == "not_found" and path.split("?")[0] in ("browse", "mine", "escrow", "create", "contact")):
+            return {"status": "unavailable"}
+        return r
+
+    # ---- Orgs (server: orgs.py)
+    def orgs(self, token, path, body=None, timeout=15):
+        if not token:
+            return {"status": "signed_out"}
+        r = self._acct("/v1/orgs/" + path, body, token=token, timeout=timeout)
+        st = r.get("status")
+        if st == "http_401":
+            return {"status": "signed_out"}
+        if st == "http_404" or (st == "not_found" and path.split("?")[0] in ("mine", "browse", "create")):
+            return {"status": "unavailable"}
+        return r
+
+    # ---- Friends and messages (server: social.py). Every call is signed in to the Quantum account.
+    def social(self, token, path, body=None, timeout=10):
+        """GET (body None) or POST /v1/social/<path>. {status: ok, ...} | signed_out | unavailable (server without
+        the social features, or accounts off) | requests_limit_reached | unreachable ..."""
+        if not token:
+            return {"status": "signed_out"}
+        r = self._acct("/v1/social/" + path, body, token=token, timeout=timeout)
+        st = r.get("status")
+        if st == "http_401":
+            return {"status": "signed_out"}
+        if st in ("http_404", "not_found") and path.split("?")[0] in ("state", "search", "messages", "blocked"):
+            return {"status": "unavailable"}
+        return r
+
     def health(self):
         if not self.url:
             return {"ok": False, "error": "No server set"}

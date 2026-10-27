@@ -528,6 +528,9 @@ class ContractTracker(threading.Thread):
                     continue
                 self._tracking_no(c)          # contracts from before tracking numbers existed
                 d = asdict(c)
+                # The log often announces the drop-off before the pickup. Show them in the order you do
+                # them: pickups first, drop-offs last (stable, so several of each keep their own order).
+                d["objectives"].sort(key=lambda o: {"pickup": 0, "dropoff": 2}.get(o["kind"], 1))
                 cargo = contract_cargo(c.code)
                 d["subtitle"] = cargo
                 for o in d["objectives"]:

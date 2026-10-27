@@ -291,6 +291,18 @@ class Body:
         return lat, lon, r - self.radius_m
 
 
+def local_solar_time(body: Body, local_pos: Vec, star_center: Vec, t: float, sign: float = 1.0) -> float:
+    """Local time of day (0-24, a 24-hour clock stretched over the planet's own day) at a surface spot:
+    12:00 when its star is overhead, 00:00 on the far side. Planets spin about +z, so the angle between
+    the spot and the star in the x/y plane is the hour angle. `sign` flips the direction if the game's
+    spin turns out to be the other way round."""
+    u = rot_z(local_pos, body.angle(t))
+    s = sub(star_center, body.center)
+    h = math.degrees(math.atan2(u[1], u[0]) - math.atan2(s[1], s[0]))
+    h = (h + 180.0) % 360.0 - 180.0
+    return (12.0 + sign * h / 15.0) % 24.0
+
+
 @dataclass
 class Location:
     name: str

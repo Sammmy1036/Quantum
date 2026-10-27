@@ -47,6 +47,7 @@ import nav_core
 import missions_wiki
 import starmap_import
 import overlay
+import city_clock
 from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
 import watcher as watcher_mod
@@ -411,6 +412,14 @@ class Api:
         self._updater.cleanup()
         self._update = None
         threading.Thread(target=self._check_update, daemon=True).start()
+        # City clock: the local time drawn over the game when you arrive in a city (Settings > In-game overlay)
+        self._clock = city_clock.CityClock(RES / "ui" / "fonts")
+        self._clock_city, self._clock_since = None, 0.0
+        threading.Thread(target=self._city_clock_loop, daemon=True).start()
+        # Friends and messages (Social): a background check-in with the server, faster while Social is open
+        self._soc = {"state": None, "top": None, "focus_until": 0.0, "notes": [], "playing": None, "err": None, "wake": threading.Event(),
+                     "lock": threading.Lock()}
+        threading.Thread(target=self._social_loop, daemon=True).start()
         self._dr_session = {"reports": 0, "prices": 0, "terminals": [], "days": 0.0, "started": time.time()}
         self._sender.on_shot = lambda: self._dr_start_job(from_button=False)
         self._sender.configure(shot_hotkey=(self._settings.get("datarunner") or {}).get("shot_hotkey", ""))
@@ -1351,6 +1360,8 @@ class Api:
                             "build": self._game_build() if self._tracker.build else self._settings.get("last_build"),
                             "cleared": self._log_cleared},
                     "where": self._tracker.where,
+                    "social": self._social_badge(),
+                    "city_clock": {**self._clock_cfg(), "available": city_clock.AVAILABLE, "in_city": self._clock_city},
                     "travel": self._travel_view(cur, t) if game_on else None,
                     "arrived": self._arrived_note if game_on else None, "game_off": not game_on,
                     "trade_ver": getattr(self, "_trade_changed", 0)}
@@ -2574,6 +2585,274 @@ class Api:
                                        "banned": "This UEX account can't send reports to Quantum"}.get(
             r.get("status"), "The Quantum server couldn't be reached. Try again in a minute")}
 
+    # ------------------------------------------------------------ social: friends and messages
+    # Signed in to a Quantum account, the app checks in with the server (GET /v1/social/state) every 20 s, or
+    # every 4 s while the Social section is open. That check-in is also what shows you online to your friends.
+    def _social_call(self, path, body=None, timeout=10):
+        return self._community.social(self._account_token(), path, body, timeout)
+
+    def _social_loop(self):
+        so = self._soc
+        while True:
+            fast = time.time() < so["focus_until"]
+            try:
+                if self._account_token() and self._community.url:
+                    self._social_tick()
+                elif so["state"] is not None:
+                    so.update(state=None, top=None)
+            except Exception:
+                watcher_mod.log_error("social")
+            so["wake"].wait(4 if fast else 20)
+            so["wake"].clear()
+
+    def _social_tick(self):
+        with self._soc["lock"]:                  # one check-in at a time, so nothing is notified twice
+            self._social_tick_locked()
+
+    def _social_tick_locked(self):
+        so = self._soc
+        playing = bool(self._game_on()) if os.name == "nt" else False
+        if playing != so["playing"]:            # friends see "In Star Citizen" while the game runs
+            want = self._settings.get("social_status") or "online"
+            if self._social_call("status", {"status": want, "playing": playing}).get("status") == "ok":
+                so["playing"] = playing
+        r = self._social_call("state" + (f"?since={so['top']}" if so["top"] is not None else "?since=0"))
+        st = r.get("status")
+        if st != "ok":
+            so["err"] = st
+            if st in ("signed_out", "unavailable"):
+                so["state"] = {"status": st}
+            return
+        so["err"] = None
+        for m in r.get("new") or []:
+            f = next((x for x in [*(r.get("friends") or []), *(r.get("chats") or [])] if x["id"] == m["sender"]), None)
+            so["notes"].append({"id": m["id"], "from": m["sender"], "name": f["name"] if f else "A friend",
+                                "body": m["body"][:140], "avatar": f.get("avatar") if f else None})
+        so["notes"] = so["notes"][-20:]
+        so["top"] = max(r.get("top") or 0, so["top"] or 0)
+        known = {x["id"] for x in (so["state"] or {}).get("incoming") or []}
+        for q in r.get("incoming") or []:
+            if so["state"] is not None and q["id"] not in known:
+                so["notes"].append({"request": True, "from": q["id"], "name": q["name"], "avatar": q.get("avatar")})
+        so["state"] = r
+
+    def _social_badge(self):
+        s = self._soc["state"] or {}
+        return {"unread": s.get("unread") or 0, "requests": len(s.get("incoming") or []), "market": s.get("market_todo") or 0,
+                "online": sum(1 for f in s.get("friends") or [] if f.get("online"))} if s.get("status") == "ok" else None
+
+    def social_get(self, focus=True):
+        """Friends, requests and anything new since last time (shown as notifications once)."""
+        so = self._soc
+        if focus:
+            fresh = time.time() >= so["focus_until"]
+            so["focus_until"] = time.time() + 30
+            if fresh:
+                so["wake"].set()
+        if not self._account_token():
+            return {"ok": True, "signed_in": False}
+        notes, so["notes"] = so["notes"], []
+        return {"ok": True, "signed_in": True, "state": so["state"], "error": so["err"], "notes": notes,
+                "my_status": self._settings.get("social_status") or "online"}
+
+    def social_refresh(self):
+        self._soc["focus_until"] = time.time() + 30
+        try:
+            self._social_tick()
+        except Exception:
+            watcher_mod.log_error("social")
+        return self.social_get(False)
+
+    # ------------------------------------------------------------ marketplace (server: market.py)
+    _PM_PATH = re.compile(r"^(browse|listing|mine|escrow|create|update|close|renew|delete|remove|contact|buy|trade|rate|report|"
+                          r"escrow/apply|escrow/decide|escrow/appoint|escrow/remove)(\?[\w=&%.,+\-]*)?$")
+    _PM_ERR = {"signed_out": "Sign in to your Quantum account first.", "unreachable": "Couldn't reach the Quantum server. Try again in a moment.",
+               "unavailable": "The Quantum server isn't running the marketplace yet (market.py), so nothing can be listed or bought.", "forbidden": "Only the Quantum owner can do that.",
+               "not_found": "That isn't there any more.", "requests_limit_reached": "That's a lot in a short time. Wait a little and try again."}
+
+    def pm(self, path, body=None):
+        """The marketplace: GET when body is None, otherwise POST. Path as in market.py, e.g. "browse?kind=item"."""
+        path = str(path or "")
+        if not self._PM_PATH.match(path):
+            return {"ok": False, "error": "Unknown request"}
+        r = self._community.market(self._account_token(), path, body if body is None else dict(body), timeout=40 if body and body.get("photo") else 15)
+        ok = r.get("status") == "ok"
+        if ok and body is not None:
+            threading.Thread(target=self._social_tick, daemon=True).start()      # trade badges and chat messages
+        return {**r, "ok": ok, "signed_in": bool(self._account_token()),
+                "error": None if ok else (r.get("message") or self._PM_ERR.get(r.get("status"), "Something went wrong. Try again."))}
+
+    # ------------------------------------------------------------ orgs (server: orgs.py)
+    _ORG_PATH = re.compile(r"^(mine|browse|org|create|update|delete|transfer|invite|invite/respond|invite/cancel|request|"
+                           r"request/respond|member/rank|member/remove|leave|rank/save|rank/delete|rank/move|event/save|"
+                           r"event/delete|rsvp|claim|claim/check|claim/cancel|slot/take|slot/leave|slot/assign|slot/unassign)(\?[\w=&%.,+\-]*)?$")
+
+    def org(self, path, body=None):
+        """Orgs: GET when body is None, otherwise POST. Path as in orgs.py, e.g. "org?id=3"."""
+        path = str(path or "")
+        if not self._ORG_PATH.match(path):
+            return {"ok": False, "error": "Unknown request"}
+        r = self._community.orgs(self._account_token(), path, body if body is None else dict(body),
+                                 timeout=40 if body and body.get("logo") else 15)
+        ok = r.get("status") == "ok"
+        if ok and body is not None:
+            threading.Thread(target=self._social_tick, daemon=True).start()
+        err = {"signed_out": "Sign in to your Quantum account first.", "unreachable": "Couldn't reach the Quantum server. Try again in a moment.",
+               "unavailable": "The Quantum server isn't running orgs yet (orgs.py).", "forbidden": "Your rank can't do that.",
+               "not_found": "That isn't there any more.", "requests_limit_reached": "That's a lot in a short time. Wait a little and try again."}
+        return {**r, "ok": ok, "signed_in": bool(self._account_token()),
+                "error": None if ok else (r.get("message") or err.get(r.get("status"), "Something went wrong. Try again."))}
+
+    _SOCIAL_ERR = {"unreachable": "Couldn't reach the Quantum server. Try again in a moment.",
+                   "requests_limit_reached": "That's a lot in a short time. Wait a little and try again.",
+                   "signed_out": "Sign in to your Quantum account first.",
+                   "not_friends": "You can only message friends.", "too_long": "That message is too long (2,000 characters at most).",
+                   "too_many_friends": "You've reached the friend limit.",
+                   "too_many_pending": "You have a lot of friend requests waiting. Cancel some first.",
+                   "not_found": "That person isn't on Quantum any more.", "unavailable": "The Quantum server doesn't have friends and messages yet."}
+
+    def _social_result(self, r, refresh=True):
+        ok = r.get("status") == "ok"
+        if ok and refresh:
+            threading.Thread(target=self._social_tick, daemon=True).start()
+        return {**r, "ok": ok, "error": None if ok else self._SOCIAL_ERR.get(r.get("status")) or r.get("message") or "Something went wrong. Try again."}
+
+    def social_search(self, q):
+        return self._social_result(self._social_call("search?q=" + urllib.parse.quote(str(q or "")[:40])), refresh=False)
+
+    def social_request(self, member_id):
+        return self._social_result(self._social_call("request", {"id": member_id}))
+
+    def social_respond(self, member_id, accept):
+        return self._social_result(self._social_call("respond", {"id": member_id, "accept": bool(accept)}))
+
+    def social_remove(self, member_id):
+        return self._social_result(self._social_call("remove", {"id": member_id}))
+
+    def social_block(self, member_id, block=True):
+        return self._social_result(self._social_call("block" if block else "unblock", {"id": member_id}))
+
+    def social_blocked(self):
+        return self._social_result(self._social_call("blocked"), refresh=False)
+
+    def social_profile(self, who):
+        """Someone's profile (their id or @username), as you may see it."""
+        return self._social_result(self._social_call("profile?id=" + urllib.parse.quote(str(who or "")[:40])), refresh=False)
+
+    def social_profile_publish(self, data):
+        """Publish what your profile shows other people. The page builds it from your Profile choices: the ships and
+        loadouts you chose (already in order), how to show your orgs and listings, and who may see it."""
+        if not isinstance(data, dict):
+            return {"ok": False, "error": "Nothing to publish"}
+        return self._social_result(self._social_call("profile", data, timeout=20), refresh=False)
+
+    def social_messages(self, member_id, before=None):
+        q = f"messages?with={urllib.parse.quote(str(member_id or ''))}" + (f"&before={int(before)}" if before else "")
+        r = self._social_result(self._social_call(q), refresh=False)
+        s = self._soc["state"] or {}
+        for f in s.get("friends") or []:              # opening it read them: drop the badge now, not at the next check-in
+            if r["ok"] and f["id"] == str(member_id) and f.get("unread"):
+                s["unread"] = max(0, (s.get("unread") or 0) - f["unread"])
+                f["unread"] = 0
+        return r
+
+    def social_send(self, member_id, body):
+        return self._social_result(self._social_call("send", {"to": member_id, "body": str(body or "")[:2000]}), refresh=False)
+
+    def social_username(self, name):
+        """Choose your username (@name): unique, 3-20 letters, numbers, _ and ."""
+        return self._social_result(self._social_call("username", {"username": str(name or "")[:40]}))
+
+    def social_set_status(self, status):
+        if status not in ("online", "away", "invisible"):
+            return {"ok": False, "error": "Unknown status"}
+        self._settings["social_status"] = status
+        self._save_settings()
+        r = self._social_call("status", {"status": status, "playing": bool(self._soc["playing"])})
+        return self._social_result(r)
+
+    # ------------------------------------------------------------ city clock overlay
+    def _clock_cfg(self):
+        c = {"mode": "10", "position": "top", "h24": True, "size": "large", **(self._settings.get("city_clock") or {})}
+        if c["mode"] not in city_clock.MODES:
+            c["mode"] = "10"
+        if c["size"] not in city_clock.SIZES:
+            c["size"] = "large"
+        return c
+
+    def _city_local_hours(self, city, t=None):
+        """Local time of day (0-24) in a city, from its planet's spin and where its star is."""
+        L = self._db.locations.get(city)
+        b = self._db.bodies.get(L.body) if L is not None and L.body else None
+        star = next((s for s in self._db.bodies.values() if s.kind == "star" and b is not None and s.system == b.system), None)
+        if L is None or b is None or star is None or L.kind != "surface" or not b.rotation_period_h:
+            return None
+        return nav_core.local_solar_time(b, tuple(L.pos), tuple(star.center), t or time.time())
+
+    def _city_now(self):
+        """The city the log says you're in right now (its spaceport counts), or None."""
+        if not self._game_on():
+            return None
+        cur = self._tracker.cur or {}
+        if not cur.get("landing") and (cur.get("left") or cur.get("jump")):
+            return None                                   # took off / in quantum: not in a city any more
+        spot, _, how = self._log_spot(cur)
+        if not spot or how not in ("landed", "log"):
+            return None
+        city = spaceport_city(spot) or spot
+        return city if city.split(" (")[0].lower() in nav_core.CITIES and city in self._db.locations else None
+
+    def _city_clock_loop(self):
+        while True:
+            try:
+                with self._lock:
+                    cfg = self._clock_cfg()
+                    city = self._city_now() if cfg["mode"] != "off" else None
+                    now = time.time()
+                    if city != self._clock_city:
+                        self._clock_city, self._clock_since = city, now     # arrived (or left)
+                    hours = self._city_local_hours(city, now) if city else None
+                    body = self._db.locations[city].body if city else None
+                if now < getattr(self, "_clock_preview_until", 0):
+                    time.sleep(1)
+                    continue                                  # a preview from Settings is showing
+                keep = cfg["mode"] == "city" or (cfg["mode"].isdigit() and now - self._clock_since < int(cfg["mode"]))
+                if city and hours is not None and keep:
+                    self._clock.show({"city": city, "body": body, "hours": hours}, cfg["position"], cfg["h24"], cfg["size"])
+                else:
+                    self._clock.hide()
+            except Exception:
+                watcher_mod.log_error("city clock")
+            time.sleep(1)
+
+    def set_city_clock(self, mode=None, position=None, h24=None, size=None):
+        """Location clock overlay: mode off / 5 / 10 / 15 (seconds after arriving) / city (the whole time there)."""
+        with self._lock:
+            c = self._clock_cfg()
+            if mode in city_clock.MODES:
+                c["mode"] = mode
+            if position in city_clock.POSITIONS:
+                c["position"] = position
+            if h24 is not None:
+                c["h24"] = bool(h24)
+            if size in city_clock.SIZES:
+                c["size"] = size
+            self._settings["city_clock"] = c
+            self._save_settings()
+        return {"ok": True, **c}
+
+    def preview_city_clock(self, city="New Babbage"):
+        """Show the clock for a few seconds (once you click back into Star Citizen) to see how it looks."""
+        with self._lock:
+            c = self._clock_cfg()
+            city = city if city in self._db.locations else "New Babbage"
+            hours, body = self._city_local_hours(city), self._db.locations[city].body
+        if hours is None:
+            return {"ok": False, "error": "That city's planet has no day length in the map data"}
+        self._clock_preview_until = time.time() + 15
+        self._clock.show({"city": city, "body": body, "hours": hours}, c["position"], c["h24"], c["size"])
+        return {"ok": True, "available": city_clock.AVAILABLE}
+
     def set_option(self, key, value):
         """Simple on/off settings shown in the Settings panel."""
         if key not in ("clear_log_on_start",):
@@ -3683,6 +3962,9 @@ class Api:
             if (a.get("email"), a.get("uex")) != (r.get("email"), r.get("uex")):
                 a.update(email=r.get("email"), uex=r.get("uex"))
                 self._save_settings()
+            if r.get("username") and (r.get("username"), bool(r.get("username_auto"))) != (a.get("username"), a.get("username_auto")):
+                a.update(username=r["username"], username_auto=bool(r.get("username_auto")))   # your one name in Quantum
+                self._save_settings()
             if r.get("created_at") and r.get("created_at") != a.get("joined"):
                 a["joined"] = r["created_at"]                    # when the account was made (Profile › Joined)
                 self._save_settings()
@@ -3776,7 +4058,7 @@ class Api:
             threading.Thread(target=self._account_refresh, daemon=True).start()
         return {"on": bool(self._community.url), "available": bool(self._account_token()) or (bool(self._community.url) and self._accounts_open()),
                 "signed_in": bool(self._account_token()), "email": a.get("email"), "joined": a.get("joined"),
-                "uex": a.get("uex"), "link_error": a.get("link_error"), "note": a.get("note"),
+                "uex": a.get("uex"), "username": a.get("username"), "link_error": a.get("link_error"), "note": a.get("note"),
                 "has_secret": bool(self._dr_cfg().get("secret")), "has_token": bool(self._uex.token), "flow": dict(self._acct_flow),
                 "site": self._community.url or community.DEFAULT_URL,
                 "keys": {"stored": bool(a.get("keys_stored")), "error": a.get("keys_error"),
@@ -3982,13 +4264,15 @@ class Api:
         return self.account_status()
 
     # What your profile shows of your fleet and gear loadouts: in which order, which ones, and how many.
-    # {"ships": {"order": [uid…], "hidden": [uid…], "count": n}, "gearlo": {...}}
+    # {"ships": {"order": [uid…], "hidden": [uid…], "count": n, "off": bool}, "gearlo": {...}, "orgs": {...},
+    #  "listings": {...}, "sees": "everyone" | "friends" | "nobody", "stats_off": bool}
     def profile_prefs(self):
         return {"ok": True, "prefs": self._settings.get("profile_prefs") or {}}
 
     def profile_prefs_set(self, prefs):
-        out = {}
-        for k in ("ships", "gearlo"):
+        out = {"sees": prefs.get("sees") if isinstance(prefs, dict) and prefs.get("sees") in ("everyone", "friends", "nobody") else "everyone",
+               "stats_off": bool(isinstance(prefs, dict) and prefs.get("stats_off"))}
+        for k in ("ships", "gearlo", "orgs", "listings"):
             v = (prefs or {}).get(k) if isinstance(prefs, dict) else None
             if not isinstance(v, dict):
                 continue

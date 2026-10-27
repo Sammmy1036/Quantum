@@ -1087,6 +1087,30 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-arr.off .w,.pf-arr.off .th{opacity:.5}
 .pf-ov{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 32px;align-items:start;margin-top:18px}
 .pf-ov>.vd-full{grid-column:1/-1}
+.up-name{cursor:pointer}.up-name:hover{color:var(--route-2);text-decoration:underline;text-underline-offset:3px}
+.up-back{position:fixed;inset:0;z-index:900;background:rgba(2,5,12,.72);backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start;padding:40px 24px;overflow:auto}
+.up-card{position:relative;width:min(1080px,100%);background:var(--panel);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);padding:26px 30px 24px}
+.up-x{position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:8px;border:0;background:none;color:var(--ink-2);font-size:24px;line-height:1;cursor:pointer}.up-x:hover{background:var(--panel-3);color:var(--ink)}
+.up-head{display:flex;gap:18px;align-items:center;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.up-head .so-av.xl{width:84px;height:84px;font-size:30px}
+.up-head h2{margin:0;font:600 26px var(--display)}
+.up-meta{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:12.5px;color:var(--dim);margin-top:6px}.up-meta .playing{color:var(--you)}
+.up-acts{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.up-body{margin-top:10px}
+.up-card .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}.up-card .vg{cursor:default}.up-card .vg:hover{transform:none}
+.up-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:6px 0}.up-stats div{display:flex;flex-direction:column;gap:2px}
+.up-stats span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}.up-stats b{font:600 17px var(--display)}
+.up-items{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.up-items span{font-size:11px;color:var(--ink-2);background:var(--panel-3);border-radius:5px;padding:1px 6px}
+.pf-privs{display:flex;flex-direction:column;gap:8px;padding:8px 0}
+.pf-priv{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.pf-priv.on{border-color:var(--route);box-shadow:inset 3px 0 0 var(--route)}.pf-priv input{margin-top:3px}
+.pf-priv b{display:block;font-size:13.5px}.pf-priv small{color:var(--dim);font-size:12.5px}
+.og-howto{max-width:760px;margin:0 0 16px;font-size:13px}.og-howto .og-steps{margin:0}
+.og-mono{font-family:Consolas,ui-monospace,monospace;font-size:12px;color:var(--ink);background:var(--panel-3);border-radius:5px;padding:1px 5px}
+.pf-org{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer}.pf-org:last-child{border-bottom:0}
+.pf-org:hover b{color:var(--route-2)}.pf-org .who{min-width:0}.pf-org b{display:block;font-size:13.5px}.pf-org small{color:var(--dim);font-size:12px}
+.pf-subh{font:600 11px var(--text);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:8px 0 6px}
+.pf-ov .pm-mylist{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}.pf-ov .pm-mini .pm-ph{width:52px}
 @container pic (max-width:980px){.pf-ov{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container pic (max-width:640px){.pf-ov{grid-template-columns:1fr}}
 .pf-ck{display:inline-flex;width:18px;height:18px;border-radius:50%;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:8px;border:1px solid var(--line-2);color:var(--dim);flex:none}
@@ -1126,6 +1150,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .empty svg.inl{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;vertical-align:-3px}
 /* Shopping list */
 .sh-modelab{display:flex;flex-direction:column;flex:1;gap:3px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+#sh-plan{align-self:flex-end;height:32px;padding-top:0;padding-bottom:0}
 .sh-item .hd{align-items:center}.sh-item.done .nm{color:var(--dim);text-decoration:line-through}
 .sh-qty{display:flex;align-items:center;gap:4px;flex:none}.sh-qty b{min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
 .sh-step{display:flex;gap:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;max-width:880px}
@@ -1197,6 +1222,186 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .cc-mine button.on{border-color:var(--route);box-shadow:inset 3px 0 0 var(--route)}
 .cc-mine small{color:var(--dim)}
 @container pic (max-width:520px){ .cc-pair{grid-template-columns:1fr} .cc-arrow{margin:0;transform:rotate(90deg)} .cc-step{grid-template-columns:28px minmax(0,1fr) auto} .cc-step .lk{grid-column:2/-1} }
+/* ---------- Social: friends and messages ---------- */
+.so-av{position:relative;flex:none;width:38px;height:38px;border-radius:50%;background:#14223a;border:1px solid var(--line-2);overflow:hidden;display:inline-flex;align-items:center;justify-content:center;color:#cfe2ff;font:700 13px var(--text)}
+.so-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.so-av.lg{width:46px;height:46px;font-size:16px}
+.so-wrap{position:relative;flex:none;display:inline-flex}
+.so-dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;border:2px solid var(--panel);background:#4a5a74}
+.so-dot.online{background:var(--ok)}.so-dot.away{background:var(--station)}.so-dot.playing{background:var(--you);box-shadow:0 0 6px var(--you)}
+.so-me{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);margin-bottom:10px}
+.so-me .nm{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.so-me select{width:auto;max-width:112px;margin-left:auto;flex:none}
+.so-me .so-tag{display:flex;gap:6px;font:500 11.5px var(--text);color:var(--dim);min-width:0}
+.so-me .so-tag span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.so-me .so-tag a{flex:none}
+.so-me .nm{flex:1}
+.so-h{font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 2px 6px;display:flex;align-items:center;gap:6px}
+.so-h b{color:var(--ink-2);font-weight:600}
+.so-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;cursor:default}
+.so-row.click{cursor:pointer}.so-row.click:hover{background:var(--panel-2)}
+.so-row.on{background:var(--panel-3);box-shadow:inset 3px 0 0 var(--route)}
+.so-row .who{min-width:0;flex:1}
+.so-row .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.so-row .who small{display:block;color:var(--dim);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.so-row .who small.playing{color:var(--you)}
+.so-row .acts{display:flex;gap:6px;flex:none}
+.so-n{background:var(--route);color:#fff;font:700 11px/1 var(--text);border-radius:999px;padding:4px 7px;flex:none}
+.so-empty{color:var(--dim);font-size:12.5px;padding:6px 8px}
+#so-panel{display:none;padding:0}
+#so-panel.show{display:flex;flex-direction:column}
+.so-chat-h{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#0a1426,#070e1c)}
+.so-chat-h .who{min-width:0}.so-chat-h .who b{font:600 16px var(--display);display:block}
+.so-chat-h .who small{color:var(--dim);font-size:12.5px}.so-chat-h .who small.playing{color:var(--you)}
+.so-msgs{flex:1;overflow-y:auto;padding:18px 20px 8px;display:flex;flex-direction:column;gap:4px}
+.so-day{align-self:center;color:var(--dim);font:600 11px var(--text);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 6px}
+.so-b{max-width:min(560px,78%);padding:8px 12px;border-radius:14px;background:var(--panel-3);border:1px solid var(--line-2);white-space:pre-wrap;overflow-wrap:anywhere;align-self:flex-start;line-height:1.4}
+.so-b.mine{align-self:flex-end;background:linear-gradient(135deg,#1f5fd6,#2f86ff);border-color:transparent;color:#fff}
+.so-b time{display:block;font-size:10.5px;opacity:.6;margin-top:3px;text-align:right}
+.so-seen{align-self:flex-end;color:var(--dim);font-size:11px;margin:0 4px 4px}
+.so-compose{display:flex;gap:8px;align-items:flex-end;padding:12px 20px 16px;border-top:1px solid var(--line);background:#060c18}
+.so-compose textarea{flex:1;resize:none;min-height:40px;max-height:140px}
+.so-land{margin:auto;text-align:center;max-width:420px;padding:30px;color:var(--ink-2)}
+.so-land h2{font:600 22px var(--display);color:var(--ink);margin:12px 0 6px}
+.so-land svg{width:54px;height:54px;fill:none;stroke:var(--route-2);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.so-ask{margin:10px 20px 0;padding:10px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* ---------- Market: players' items and services, aUEC only ---------- */
+#pm-panel{padding:22px 24px 34px}
+.pm-top{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;flex-wrap:wrap}
+.pm-top h2{font:600 20px var(--display);margin:0}.pm-top .muted{font-size:13px}
+.pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.pm-flag{position:absolute;right:8px;top:8px;z-index:2;width:28px;height:28px;border-radius:50%;border:1px solid var(--line-2);background:rgba(3,6,12,.75);color:var(--ink-2);font-size:13px;opacity:0;transition:opacity .15s}
+.pm-card:hover .pm-flag,.pm-flag:focus-visible{opacity:1}.pm-flag:hover{color:#ffb3b3;border-color:rgba(255,107,107,.5)}
+.pm-card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:border-color .15s,transform .15s}
+.pm-card:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.pm-ph{aspect-ratio:16/10;background:linear-gradient(135deg,#0c1629,#122038);display:flex;align-items:center;justify-content:center;color:var(--dim);position:relative;overflow:hidden}
+.pm-ph img{width:100%;height:100%;object-fit:cover}
+.pm-ph svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:1.4;opacity:.6}
+.pm-ph .cat{position:absolute;left:8px;top:8px;background:rgba(3,6,12,.75);border:1px solid var(--line-2);border-radius:999px;padding:2px 8px;font-size:11px;color:var(--ink-2)}
+.pm-cb{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.pm-cb b{font-weight:600;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.pm-price{font:700 15px var(--display);color:var(--route-2)}.pm-price small{font:500 12px var(--text);color:var(--ink-2)}
+.pm-meta{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--dim);margin-top:auto;padding-top:6px;min-width:0}
+.pm-meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-star{color:var(--station);white-space:nowrap}
+.pm-badge{display:inline-block;font:600 10.5px var(--text);border-radius:999px;padding:2px 7px;background:var(--panel-3);color:var(--ink-2);border:1px solid var(--line-2);white-space:nowrap}
+.pm-badge.ok{color:#9fe0b4;border-color:rgba(60,207,110,.35);background:rgba(60,207,110,.1)}
+.pm-badge.esc{color:#bcd9ff;border-color:rgba(75,141,255,.4);background:rgba(75,141,255,.12)}
+.pm-badge.warn{color:#ffcf8f;border-color:rgba(255,180,84,.35);background:rgba(255,180,84,.1)}
+.pm-badge.bad{color:#ffb3b3;border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.1)}
+.pm-cats .so-row{padding:6px 8px}.pm-cats .so-row b{font-weight:500}
+.pm-rule{font-size:12px;color:var(--dim);border:1px dashed var(--line-2);border-radius:10px;padding:8px 10px;margin-top:12px;line-height:1.45}
+.pm-detail{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr);gap:22px;max-width:1150px}
+@container pic (max-width:820px){.pm-detail{grid-template-columns:1fr}}
+.pm-detail .pm-ph{border-radius:14px;border:1px solid var(--line)}
+.pm-detail h2{font:600 24px var(--display);margin:4px 0 6px}
+.pm-desc{white-space:pre-wrap;color:var(--ink-2);line-height:1.55;margin:14px 0}
+.pm-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.pm-box .k{font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.pm-seller{display:flex;gap:10px;align-items:center}
+.pm-seller .who b{display:block}.pm-seller .who small{color:var(--dim);font-size:12px}
+.pm-total{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2)}
+.pm-total b{font:700 18px var(--display);color:var(--ink)}
+.pm-chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer;line-height:1.4}
+.pm-chk input{margin-top:3px}
+.pm-form{max-width:760px;display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.pm-form label{display:flex;flex-direction:column;gap:5px;font:600 12.5px var(--text);color:var(--ink-2)}
+.pm-form .wide{grid-column:1/-1}
+.pm-form textarea{resize:vertical;min-height:110px}
+.pm-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+.pm-seg button{background:none;border:0;padding:7px 14px;color:var(--ink-2)}.pm-seg button.on{background:var(--route);color:#fff}
+.pm-photo{display:flex;gap:12px;align-items:center}
+.pm-photo .pm-ph{width:200px;border-radius:10px;border:1px solid var(--line)}
+.pm-trade{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;margin-bottom:12px}
+.pm-trade.todo{border-color:rgba(75,141,255,.55);box-shadow:0 0 0 1px rgba(75,141,255,.15)}
+.pm-trade .pm-ph{border-radius:10px;aspect-ratio:1}
+.pm-trade h3{margin:0;font:600 15px var(--display);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pm-trade .sub{font-size:12.5px;color:var(--ink-2);margin:3px 0 8px}
+.pm-steps{display:flex;gap:4px;margin:6px 0 10px;flex-wrap:wrap}
+.pm-steps span{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--panel-2);color:var(--dim);border:1px solid var(--line)}
+.pm-steps span.on{background:rgba(60,207,110,.12);color:#9fe0b4;border-color:rgba(60,207,110,.35)}
+.pm-steps span.cur{background:rgba(75,141,255,.15);color:#cfe2ff;border-color:rgba(75,141,255,.5)}
+.pm-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pm-log{font-size:12px;color:var(--dim);margin-top:8px}.pm-log summary{cursor:pointer}
+.pm-log div{padding:2px 0}
+.pm-rate button{background:none;border:0;font-size:20px;color:var(--line-2);padding:0 1px;cursor:pointer}.pm-rate button.on{color:var(--station)}
+.pm-sec{font:600 13px var(--text);color:var(--ink-2);margin:20px 2px 10px;display:flex;gap:8px;align-items:center}
+.pm-mylist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.pm-mini{display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer}
+.pm-mini .pm-ph{width:64px;border-radius:8px;flex:none}
+.pm-mini .who{min-width:0}.pm-mini b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-mini small{color:var(--dim);font-size:12px}
+.pm-esc-how{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0 6px}
+.pm-esc-how div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+.pm-esc-how b{display:block;color:var(--ink);font:600 13px var(--display);margin-bottom:3px}
+.pm-esc-how i{font-style:normal;color:var(--route-2);font-weight:700;margin-right:4px}
+/* ---------- Org: player organisations ---------- */
+#og-panel{padding:0}
+.og-hero{display:flex;gap:18px;align-items:center;padding:22px 24px 16px;background:linear-gradient(180deg,#0b1730,#070e1c);border-bottom:1px solid var(--line)}
+.og-logo{width:88px;height:88px;flex:none;border-radius:20px;background:linear-gradient(135deg,#0c1629,#1a2f55);border:1px solid var(--line-2);overflow:hidden;display:flex;align-items:center;justify-content:center;font:700 26px var(--display);color:#cfe2ff;letter-spacing:.04em}
+.og-logo img{width:100%;height:100%;object-fit:cover}
+.og-logo.sm{width:38px;height:38px;border-radius:10px;font-size:12px}
+.og-hero h2{margin:0;font:600 26px var(--display);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.og-tag{font:700 12px var(--text);letter-spacing:.12em;color:var(--route-2);border:1px solid rgba(75,141,255,.45);background:rgba(75,141,255,.1);border-radius:6px;padding:3px 8px}
+.og-slogan{color:var(--ink-2);font-style:italic;margin-top:4px}
+.og-stats{display:flex;gap:18px;margin-top:10px;font-size:12.5px;color:var(--dim);flex-wrap:wrap}.og-stats b{color:var(--ink);font-weight:600}
+.og-tabs{display:flex;gap:4px;padding:10px 24px 0;border-bottom:1px solid var(--line);background:#070e1c;position:sticky;top:0;z-index:2}
+.og-tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px 10px;color:var(--ink-2);font-weight:600}
+.og-tabs button.on{color:var(--ink);border-bottom-color:var(--route)}
+.og-tabs .so-n{margin-left:4px}
+.og-body{padding:20px 24px 34px;max-width:1200px}
+.og-grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:18px}
+@container pic (max-width:860px){.og-grid2{grid-template-columns:1fr}}
+.og-desc{white-space:pre-wrap;color:var(--ink-2);line-height:1.55}
+.og-rank-h{font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:16px 2px 6px;display:flex;gap:8px;align-items:center}
+.og-mem{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px}
+.og-mem:hover{background:var(--panel-2)}
+.og-mem .who{flex:1;min-width:0}.og-mem .who b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.og-mem .who small{color:var(--dim);font-size:12px}.og-mem .who small.playing{color:var(--you)}
+.og-mem select{width:auto;max-width:150px;padding:3px 6px;font-size:12.5px}
+.og-rank{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.og-rank .top{display:flex;gap:10px;align-items:center}
+.og-rank .top b{font:600 15px var(--display)}
+.og-rank .req{white-space:pre-wrap;color:var(--ink-2);font-size:13px;margin-top:6px;line-height:1.5}
+.og-perm{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;margin-right:12px;cursor:pointer}
+.og-form label.og-perm{flex-direction:row;display:flex;align-items:center;gap:8px;font:500 13px var(--text);color:var(--ink);margin:0 0 6px}
+.og-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.og-cal .dow{font:600 11px var(--text);color:var(--dim);text-align:center;padding:4px 0;letter-spacing:.06em;text-transform:uppercase}
+.og-day{min-height:84px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 6px;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.og-day.out{opacity:.4}.og-day.today{border-color:var(--route)}
+.og-day .n{font-size:11.5px;color:var(--dim)}.og-day.today .n{color:var(--route-2);font-weight:700}
+.og-ev{font-size:11px;line-height:1.25;background:rgba(75,141,255,.18);border-left:3px solid var(--route);border-radius:4px;padding:2px 5px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#dbe8ff}
+.og-ev.go{background:rgba(60,207,110,.16);border-left-color:var(--ok)}
+.og-evcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:62px minmax(0,1fr);gap:12px}
+.og-evcard.sel{border-color:rgba(75,141,255,.6)}
+.og-date{text-align:center;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:6px 0;align-self:start}
+.og-date b{display:block;font:700 22px var(--display);line-height:1.1}.og-date span{font:600 11px var(--text);color:var(--route-2);text-transform:uppercase;letter-spacing:.08em}
+.og-evcard h4{margin:0;font:600 15px var(--display);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.og-evcard .meta{font-size:12.5px;color:var(--ink-2);margin:3px 0 6px}
+.og-rsvp button.on{background:var(--route);color:#fff;border-color:transparent}
+.og-form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;max-width:760px}
+.og-form label{display:flex;flex-direction:column;gap:5px;font:600 12.5px var(--text);color:var(--ink-2)}
+.og-form .wide{grid-column:1/-1}.og-form textarea{resize:vertical;min-height:90px}
+.og-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.og-ver{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--text);color:#9fe0b4;border:1px solid rgba(60,207,110,.4);background:rgba(60,207,110,.1);border-radius:6px;padding:3px 8px;letter-spacing:.04em}
+.og-code{font:700 18px ui-monospace,Consolas,monospace;letter-spacing:.12em;background:#030812;border:1px dashed var(--route);color:#cfe2ff;border-radius:10px;padding:10px 14px;text-align:center;width:100%}
+.og-steps{margin:0;padding-left:20px;color:var(--ink-2);font-size:13px;line-height:1.6}
+.og-seats{margin:4px 0 8px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.og-seats .ship{font:600 12px var(--text);color:var(--route-2);background:var(--panel-2);padding:6px 10px;border-top:1px solid var(--line)}
+.og-seats .ship:first-child{border-top:0}
+.og-seat{display:flex;gap:8px;align-items:center;padding:6px 10px;border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.og-seat .role{min-width:84px;font-weight:600}
+.og-seat .ppl{flex:1;display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+.og-seat .ppl span{background:var(--panel-3);border:1px solid var(--line-2);border-radius:999px;padding:1px 8px}
+.og-seat .ppl span.me{border-color:var(--ok);color:#9fe0b4}
+.og-seat .ppl i{color:var(--dim);font-style:normal}
+.og-seat select{width:auto;padding:2px 6px;font-size:12px}
+.og-slotrow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 80px 34px 34px;gap:6px;margin-bottom:6px}
+.og-slotrow.sub input[data-k="ship"]{opacity:.55}
+.og-link{color:var(--route-2);text-decoration:underline;cursor:pointer}
+.og-ricon{border-radius:6px;object-fit:contain;vertical-align:middle;flex:none}
+.og-rank-h .og-ricon{width:18px;height:18px}
+.og-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.og-card:hover{border-color:var(--line-2)}.og-card .who{min-width:0}.og-card b{display:block}.og-card small{color:var(--dim);font-size:12px}
 </style>
 </head>
 <body>
@@ -1214,6 +1419,9 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
     <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
     <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
+    <button class="rail-btn" data-group="exchange" title="Marketplace: buy and sell items and services with other players, for aUEC"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg>Market<b class="rail-n" id="rail-pm-n" hidden>0</b></button>
+    <button class="rail-btn" data-group="org" title="Your orgs: members, ranks, calendar and events"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Org<b class="rail-n" id="rail-og-n" hidden>0</b></button>
+    <button class="rail-btn" data-group="social" title="Friends and messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Social<b class="rail-n" id="rail-so-n" hidden>0</b></button>
     <span class="rail-gap"></span>
     <button class="rail-btn" data-group="cart" title="Your cart: everything you want to buy, and the quickest trip to buy it all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Cart<b class="rail-n" id="rail-cart-n" hidden>0</b></button>
     <button class="rail-btn" id="rail-settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
@@ -1244,6 +1452,11 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="tab" role="tab" data-group="gear" data-tab="gearlo" aria-selected="false" title="Your own gear loadouts: what you wear and carry for each kind of job">Loadouts</button>
       <button class="tab" role="tab" data-group="crafting" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
       <button class="tab" role="tab" data-group="cart" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="exchange" data-tab="pm-items" aria-selected="false" title="Items other players are selling">Items</button>
+      <button class="tab" role="tab" data-group="exchange" data-tab="pm-services" aria-selected="false" title="Services other players offer: protection, hauling, mining…">Services</button>
+      <button class="tab" role="tab" data-group="exchange" data-tab="pm-mine" aria-selected="false" title="Your listings and trades">My Listings <span class="count" id="c-pm-mine" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="org" data-tab="orgs" aria-selected="false">Orgs</button>
+      <button class="tab" role="tab" data-group="social" data-tab="friends" aria-selected="false" title="Your friends, friend requests and messages">Friends <span class="count" id="c-friends" hidden>0</span></button>
       <button class="tab" role="tab" data-group="profile" data-tab="profile" aria-selected="false">Profile</button>
     </div>
 
@@ -1374,8 +1587,13 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <section class="pane" id="pane-utility"></section>
     <section class="pane" id="pane-profile"></section>
     <section class="pane" id="pane-gearlo"></section>
+    <section class="pane" id="pane-friends"></section>
+    <section class="pane" id="pane-orgs"></section>
+    <section class="pane" id="pane-pm-items"></section>
+    <section class="pane" id="pane-pm-services"></section>
+    <section class="pane" id="pane-pm-mine"></section>
     <section class="pane" id="pane-shopping">
-      <div class="row" style="gap:6px"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
+      <div class="row" style="gap:6px;align-items:flex-end"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
         <button class="btn primary" id="sh-plan">Update route</button></div>
       <div id="sh-out"></div>
     </section>
@@ -1406,6 +1624,9 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="sh-panel" class="pic-panel"></div>
     <div id="pf-panel" class="pic-panel"></div>
     <div id="gl-panel" class="pic-panel"></div>
+    <div id="so-panel" class="pic-panel"></div>
+    <div id="pm-panel" class="pic-panel"></div>
+    <div id="og-panel" class="pic-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
@@ -2857,6 +3078,7 @@ async function settingsAction(a,e){
       S.bk=await api().backup_status(); renderDetail(); return; }
     if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
     if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
+    if(a==="ccpreview"){ const r=await api().preview_city_clock(S.live?.city_clock?.in_city||"New Babbage"); toast(r.ok?"Click into Star Citizen now: the clock shows for 15 seconds":r.error); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
 }
 function renderDetail(){
@@ -2909,6 +3131,17 @@ function renderDetail(){
       <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px"><span>Map frame rate while you move it</span><span class="spacer"></span>
         <select class="field" id="s-fps" onchange="setMapFps(this.value)" style="width:auto">${[[30,"30 fps (lightest)"],[60,"60 fps"],[0,"Monitor refresh rate"]].map(([v,l])=>`<option value="${v}" ${S.fpsMax===v?"selected":""}>${l}</option>`).join("")}</select></div>
         <div class="muted" style="font-size:12px;margin-top:6px">When the map is just sitting there it draws 30 times a second (10 when Quantum isn't focused), and stops completely while it's hidden behind the game or under a full-page tab, so it leaves the GPU to Star Citizen.</div></div>
+      ${(()=>{ const cc=S.live?.city_clock; if(!cc) return "";
+        return `<div class="sub">Location Clock Overlay</div>
+      <div class="note" style="margin:4px 0 12px">
+        <div class="setgrid">
+          <span class="k">Show local time</span><select class="field" id="s-ccmode">${[["off","Off"],["5","On arrival, 5 seconds"],["10","On arrival, 10 seconds"],["15","On arrival, 15 seconds"],["city","On, while at location"]].map(([v,l])=>`<option value="${v}" ${cc.mode===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Position</span><select class="field" id="s-ccpos">${[["top","Top"],["upper","Upper third"],["bottom","Lower third"],["top-right","Upper right"],["bottom-right","Lower right"]].map(([v,l])=>`<option value="${v}" ${cc.position===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Size</span><select class="field" id="s-ccsize">${[["large","Large"],["medium","Medium (3/4)"],["small","Small (1/2)"]].map(([v,l])=>`<option value="${v}" ${(cc.size||"large")===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Clock</span><select class="field" id="s-cch24"><option value="1" ${cc.h24?"selected":""}>24-hour</option><option value="0" ${cc.h24?"":"selected"}>12-hour</option></select>
+        </div>
+        <div class="row" style="gap:6px;margin-top:8px"><span class="spacer"></span><button class="btn small ghost" data-a="ccpreview" ${cc.available?"":"disabled"}>Preview in game</button></div>
+        <div class="muted" style="font-size:12px;margin-top:6px">${cc.available?"The location clock overlay displays the name of the location and local time at the location when you land or spawn at certain locations.":"The location clock overlay only works on Windows."}</div></div>`; })()}
       <div class="sub">Help</div>
       <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
         :!S.bugOpen?`<div class="row"><span>Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
@@ -2937,6 +3170,8 @@ function renderDetail(){
     for(const id of ["s-hotkey","s-lochotkey","s-chat","s-chatkey"]) $(id).onchange=save;
     $("s-shothotkey").onchange=async e=>{ const r=await api().dr_set_hotkey(e.target.value); await poll(); renderDetail();
       toast(r.shot_hotkey?`${r.shot_hotkey} takes a terminal screenshot for your UEX report`:"Screenshot key off"); };
+    const ccSave=async()=>{ if(!$("s-ccmode")) return; await api().set_city_clock($("s-ccmode").value,$("s-ccpos").value,$("s-cch24").value==="1",$("s-ccsize").value); await poll(); renderDetail(); toast("Saved"); };
+    for(const id of ["s-ccmode","s-ccpos","s-cch24","s-ccsize"]) if($(id)) $(id).onchange=ccSave;
     $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
       toast(e.target.checked?"Game.log will be cleared when Quantum starts (unless the game is running)":"Game.log will be left as is"); };
   } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
@@ -3117,13 +3352,16 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("sh-panel").classList.toggle("show",S.tab==="shopping"); if(S.tab==="shopping") openShopping();
   $("pf-panel").classList.toggle("show",S.tab==="profile"); if(S.tab==="profile") openProfile();
   $("gl-panel").classList.toggle("show",S.tab==="gearlo"); if(S.tab==="gearlo") openGearLoadouts();
+  $("so-panel").classList.toggle("show",S.tab==="friends"); if(S.tab==="friends") openSocial();
+  $("pm-panel").classList.toggle("show",S.tab.startsWith("pm-")); if(S.tab.startsWith("pm-")) openPm(S.tab);
+  $("og-panel").classList.toggle("show",S.tab==="orgs"); if(S.tab==="orgs") openOrg();
   $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Navigate",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade","datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","utility","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";
@@ -3395,11 +3633,15 @@ const PF_VIEWS=[["overview","Overview",'<rect x="3" y="3" width="7" height="7" r
   ["backup","Backup",'<path d="M7 18a5 5 0 010-10 6 6 0 0111 2 4 4 0 010 8z"/><path d="M12 11v6M9 14l3-3 3 3"/>'],
   ["submissions","Submissions",'<path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/>'],
   ["fleet","My fleet",'<path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/>'],
-  ["gearlo","Gear loadouts",'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>']];
+  ["gearlo","Gear loadouts",'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>'],
+  ["orgs","My orgs",'<rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/>'],
+  ["listings","My listings",'<path d="M4 7h16l-1.5 12h-13zM8 7V5a4 4 0 018 0v2"/>'],
+  ["privacy","Profile privacy",'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>']];
 S.pfView=S.pfView||"overview";
 const pfSignedIn=()=>!!(S.acct?.signed_in||S.drProf?.username||S.drHasSecret);
 const pfPhoto=()=>pfSignedIn()?(S.pfPhoto||S.drProf?.avatar||S.drProf?.avatar_url||null):null;
-const pfName=()=>S.drProf?.username||S.acct?.uex||(S.acct?.email||"").split("@")[0]||"";
+// Your one name in Quantum: your username (made from your UEX name until you choose your own)
+const pfName=()=>S.so?.st?.me?.username||S.acct?.username||S.drProf?.username||S.acct?.uex||"";
 function pfAvatar(){ const u=pfPhoto(), n=pfName();
   return u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:n?`<span>${esc(n[0].toUpperCase())}</span>`:PF_PERSON; }
 const pfDate=x=>{ if(!x) return null; const d=typeof x==="number"?new Date(x<1e12?x*1000:x):new Date(x); return isNaN(d)?null:d.toLocaleDateString([], {year:"numeric",month:"short",day:"numeric"}); };
@@ -3420,7 +3662,7 @@ async function pfPrime(force){ S.pfAt=Date.now(); const jobs=[];
   if(S.live?.log?.uex_token&&(force||!S.pfFleet)) jobs.push(api().fleet_list().then(x=>{ if(x?.ok) S.pfFleet=x.ships; }).catch(()=>{}));
   if(force||!S.gl.list) jobs.push(glLoad().catch(()=>{}));
   if(force||!S.pfPrefs) jobs.push(api().profile_prefs().then(x=>{ S.pfPrefs=x?.prefs||{}; }).catch(()=>{ S.pfPrefs=S.pfPrefs||{}; }));
-  await Promise.allSettled(jobs); S.pfReady=true; syncRailMe(); if(S.tab==="profile") renderProfile(true); }
+  await Promise.allSettled(jobs); S.pfReady=true; syncRailMe(); if(S.tab==="profile") renderProfile(true); pfPublish(); }
 function openProfile(){ renderProfile(true); pfPrime(Date.now()-(S.pfAt||0)>60000); }
 function openProfileView(v){ S.pfView=v||"overview"; if(S.tab==="profile") return renderProfile(true); document.querySelector('.tab[data-tab="profile"]').click(); }
 function renderProfile(force){ if(S.tab!=="profile") return;
@@ -3429,7 +3671,7 @@ function renderProfile(force){ if(S.tab!=="profile") return;
   pfSide(); pfMain(); syncRailMe(); }
 function pfSide(){ const on=pfSignedIn(), p=S.drProf, t=S.drTrust, nm=pfName();
   const trusted=!!(p?.trust?.trusted||t?.trusted), rankI=p?.ranks?p.ranks.findIndex(x=>x[1]===p.rank?.name):-1;
-  const counts={fleet:S.pfFleet?.length||"",gearlo:S.gl.list?.length||""};
+  const counts={fleet:S.pfFleet?.length||"",gearlo:S.gl.list?.length||"",orgs:S.og.mine?.orgs?.length||"",listings:(S.pm.mine?.listings||[]).filter(l=>l.status==="active").length||""};
   $("pane-profile").innerHTML=`<div class="pf-me">
       <div class="pf-av-wrap"><div class="pf-av ${on?"":"out"}">${pfAvatar()}</div>
         <button class="pf-cam" data-pf="photo" aria-label="Change your profile photo" title="Change your profile photo">${IC_CAM}</button></div>
@@ -3467,7 +3709,8 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
       ${p?.ok?drProfileCard(p):`<div class="empty">${S.drHasSecret?"Loading your datarunner profile…":"Add your UEX Secret Key under Linked accounts to see your submissions, rank and rating."}</div>`}
       ${S.drHasSecret&&lg.uex_token?`<div class="row" style="margin:12px 2px"><button class="btn small" data-pf="mine">Open all my price reports</button></div>`:""}
       ${c.length?grid(sec("Pictures, stations and alignments",c.slice(0,40).map(drContribCard).join(""),plural(c.length,"item"),true)):""}`; return; }
-  if(v==="fleet"||v==="gearlo") return pfArrangeView(v);
+  if(v==="fleet"||v==="gearlo"||v==="orgs"||v==="listings") return pfArrangeView(v);
+  if(v==="privacy") return pfPrivacyView();
   // Overview
   if(!on){
     P.innerHTML=`${head("Sign in","Everything in Quantum works without an account")}${grid(
@@ -3494,7 +3737,9 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
           tick(ck.clean.ok,`No rejections in the last ${ck.clean.days} days`,ck.clean.have?`${ck.clean.have} rejected`:"None"),
           tick(ck.approval.ok,`${ck.approval.need}% approval or better`,ck.approval.have!=null?`${ck.approval.have}%`:"–")].join("")
       :`<div class="muted" style="font-size:12.5px">${S.drHasSecret?"Couldn't check your progress with the Quantum server just now.":"Add your UEX Secret Key to start."}</div>`}`;
+  const uexName=S.drProf?.username||S.acct?.uex;
   const keys=`<div class="vd-row"><span>Quantum account</span>${connPill(S.acct?.signed_in?"ok":"none",S.acct?.signed_in?"Connected":null)}</div>
+    ${uexName?`<div class="vd-row"><span>UEX name</span><b>${esc(uexName)}</b></div>`:""}
     <div class="vd-row"><span>UEX Bearer Token</span>${connPill(lg.uex_token?"ok":"none",lg.uex_token?"Connected":null)}</div>
     <div class="vd-row"><span>UEX Secret Key</span>${connPill(S.drHasSecret?"ok":"none",S.drHasSecret?"Connected":null)}</div>`;
   const backupBody=`${row("Status",esc(!bk?"Checking…":!bk.on?"Off":!bk.has_key?"Needs your UEX Bearer Token":bk.off?"Off for this PC":"On"))}${row("Last backup",esc(bk?.at?fmtAgo(bk.at):"Not yet"))}
@@ -3510,37 +3755,163 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
   const gear=los.length?!losOn.shown.length?`<div class="muted" style="font-size:13px;padding:6px 0">No loadouts chosen to show. <a data-pfv="gearlo" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`
       :`<div class="grid" style="margin-top:8px">${losOn.shown.map(glCard).join("")}</div>`
     :`<div class="muted" style="font-size:13px;padding:6px 0">No gear loadouts yet. Make one for each kind of job in Gear › Loadouts. <a data-pfv="opengearlo" style="cursor:pointer;color:var(--route-2)">Make one</a></div>`;
-  P.innerHTML=`${p?.ok&&p.username?drProfileCard(p):head(pfName()||"Your profile",S.acct?.email?esc(S.acct.email):"")}
+  P.innerHTML=`${p?.ok&&p.username?drProfileCard(p,pfName()):head(pfName()||"Your profile",S.acct?.email?esc(S.acct.email):"")}
     ${statBlock([{label:"Joined",value:pfDate(S.acct?.joined||p?.first_seen)||"–"},{label:"Last backup",value:bk?.at?fmtAgo(bk.at):bk?.off?"Off":"Not yet"},
       {label:"Ships",value:lg.uex_token?String(ships.length):"–"},{label:"Gear loadouts",value:String(los.length)}],[])}
     <div class="pf-ov vd-flat">
       ${sec(`Trusted contributor`,trustBody,trusted?`<span style="color:#57e39b">✓ trusted</span>`:"")}
       <div>${sec(`Linked accounts${link("accounts","Manage")}`,keys)}${sec(`Backup${link("backup","More")}`,backupBody)}</div>
       ${sec(`Recent submissions${link("submissions","See all")}`,subs)}
+      ${pfCommunityHtml()}
       ${shipsOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My fleet<span class="mk-note">${ships.length?plural(ships.length,"ship"):""}</span>${lg.uex_token&&ships.length?link("fleet","Arrange"):""}</div>${fleet}</div>`}
       ${losOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My personal loadouts<span class="mk-note">${los.length?plural(los.length,"loadout"):""}</span>${los.length?link("gearlo","Arrange"):""}</div>${gear}</div>`}
     </div>`;
   fillGearPictures(P); }
 const var_dim="var(--dim)";
+// ---- Profile overview: your orgs and what you have up on the marketplace (loaded once, when the overview opens)
+function pfCommunityHtml(){ if(!S.acct?.signed_in) return "";
+  if(S.og.mine===null&&!S.pfOgAsk){ S.pfOgAsk=true; ogLoadMine().then(()=>renderProfile(true)); }
+  if(S.pm.mine===null&&!S.pfPmAsk){ S.pfPmAsk=true; pmLoadMine().then(()=>renderProfile(true)); }
+  const go=(attr,t)=>`<a ${attr} style="cursor:pointer;color:var(--route-2);margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:12px">${t}</a>`;
+  const om=S.og.mine, pm=S.pm.mine, oO=pfOrdered(om?.orgs||[],x=>x.id,"orgs",true), oL=pfOrdered((pm?.listings||[]).filter(l=>l.status==="active"),x=>x.id,"listings",true);
+  const orgs=oO.shown, ls=oL.shown;
+  const items=ls.filter(l=>l.kind!=="service"), svcs=ls.filter(l=>l.kind==="service");
+  const orgBody=!om?`<div class="muted" style="font-size:13px;padding:6px 0">Loading…</div>`:om.error?`<div class="muted" style="font-size:13px;padding:6px 0">${esc(om.error)}</div>`
+    :(om.orgs||[]).length&&!orgs.length?`<div class="muted" style="font-size:13px;padding:6px 0">No orgs chosen to show. <a data-pfv="orgs" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`
+    :orgs.length?orgs.map(o=>`<div class="pf-org" data-pforg="${esc(String(o.id))}">${ogLogo(o,1)}<div class="who"><b>${esc(o.name)}${o.verified?` <span style="color:#9fe0b4" title="Verified with RSI">✓</span>`:""}</b><small>[${esc(o.tag)}]${o.my_rank?` · ${esc(o.my_rank)}`:""}${o.owner?" · Owner":""}</small></div></div>`).join("")
+    :`<div class="muted" style="font-size:13px;padding:6px 0">You're not in an org yet. <a data-pftab="orgs" style="cursor:pointer;color:var(--route-2)">Find or create one</a></div>`;
+  const mini=l=>`<div class="pm-mini" data-pflisting="${esc(String(l.id))}" data-pfkind="${l.kind==="service"?"pm-services":"pm-items"}">${pmPh(l.photo)}<div class="who"><b>${esc(l.title)}</b><small>${l.unit==="quote"?"Quote":pmA(l.price)}${l.kind==="item"?` · ${l.qty} left`:""}</small></div></div>`;
+  const grp=(t,list)=>list.length?`<div class="pf-subh">${t} <span class="muted">${list.length}</span></div><div class="pm-mylist">${list.slice(0,6).map(mini).join("")}</div>`:"";
+  const lsBody=!pm?`<div class="muted" style="font-size:13px;padding:6px 0">Loading…</div>`:pm.error?`<div class="muted" style="font-size:13px;padding:6px 0">${esc(pm.error)}</div>`
+    :oL.all.length&&!ls.length?`<div class="muted" style="font-size:13px;padding:6px 0">No listings chosen to show. <a data-pfv="listings" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`
+    :ls.length?grp("Items for sale",items)+grp("Services",svcs)
+    :`<div class="muted" style="font-size:13px;padding:6px 0">Nothing up for sale. <a data-pftab="pm-items" style="cursor:pointer;color:var(--route-2)">Sell an item</a> or <a data-pftab="pm-services" style="cursor:pointer;color:var(--route-2)">offer a service</a>.</div>`;
+  return `${oO.off?"":`<div class="vd-sec"${oL.off?' style="grid-column:span 3"':""}><div class="mk-h">My orgs${om&&!om.error?`<span class="mk-note">${orgs.length||""}</span>`:""}${go('data-pfv="orgs"',"Arrange")}</div>${orgBody}</div>`}
+    ${oL.off?"":`<div class="vd-sec" style="grid-column:span ${oO.off?3:2}"><div class="mk-h">My listings${ls.length?`<span class="mk-note">${ls.length} shown</span>`:""}${go('data-pfv="listings"',"Arrange")}</div>${lsBody}</div>`}`; }
 // ---- What your profile shows of your fleet and gear loadouts: which ones, in what order, and how many.
 const PF_COUNTS=[1,2,3,4,5,6,7,8,9,10];
 // The saved choices, or the draft being changed on the Arrange page (saved with Save)
 const pfPref=key=>S.pfDraft?.[key]||S.pfPrefs?.[key]||{};
-function pfOrdered(list,idOf,key,saved){ const pr=(saved?S.pfPrefs?.[key]:pfPref(key))||{}, ord=pr.order||[], hid=new Set(pr.hidden||[]), pos=new Map(ord.map((id,i)=>[String(id),i]));
+function pfOrdered(list,idOf,key,saved){ const dflt=key==="orgs"?10:8; const pr=(saved?S.pfPrefs?.[key]:pfPref(key))||{}, ord=pr.order||[], hid=new Set(pr.hidden||[]), pos=new Map(ord.map((id,i)=>[String(id),i]));
   const all=list.map((x,i)=>[x,i]).sort((a,b)=>(pos.get(String(idOf(a[0])))??1e6+a[1])-(pos.get(String(idOf(b[0])))??1e6+b[1])).map(([x])=>x);
-  const count=Math.max(1,Math.min(10,pr.count??8)); return {all, shown:all.filter(x=>!hid.has(String(idOf(x)))).slice(0,count), count, hidden:hid, off:!!pr.off}; }
+  const count=Math.max(1,Math.min(10,pr.count??dflt)); return {all, shown:all.filter(x=>!hid.has(String(idOf(x)))).slice(0,count), count, hidden:hid, off:!!pr.off}; }
 const pfDirty=key=>!!S.pfDraft?.[key]&&JSON.stringify(S.pfDraft[key])!==JSON.stringify(S.pfPrefs?.[key]||{});
-function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, ships=v==="fleet", key=ships?"ships":"gearlo";
-  const list=ships?(S.pfFleet||[]):(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)), idOf=ships?(x=>x.uid):(x=>x.id);
-  const o=pfOrdered(list,idOf,key), noun=ships?"ship":"loadout", dirty=pfDirty(key), sec=ships?"My fleet":"My personal loadouts";
-  const head=`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>${ships?"My fleet on your profile":"Gear loadouts on your profile"}</h2>
+// ---- Profile privacy: who can open your profile, and whether it shows your datarunner stats
+function pfPrivacyView(){ const P=$("pf-panel"), saved=S.pfPrefs||{}, dr=S.pfPrivDraft||{}, sees=dr.sees||saved.sees||"everyone";
+  const statsOff=dr.stats_off??!!saved.stats_off, dirty=(dr.sees&&dr.sees!==(saved.sees||"everyone"))||(dr.stats_off!=null&&dr.stats_off!==!!saved.stats_off);
+  const opt=(v,t,d)=>`<label class="pf-priv ${sees===v?"on":""}"><input type="radio" name="pf-sees" value="${v}" ${sees===v?"checked":""}><span><b>${t}</b><small>${d}</small></span></label>`;
+  P.innerHTML=`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>Profile privacy</h2>
+    <div class="sub">People open your profile by clicking your name in Social, the marketplace and orgs.</div></div></div></div></div>
+    <div class="vd-flat" style="max-width:760px"><div class="vd-sec"><div class="mk-h">Who can see your profile</div>
+      <div class="pf-privs">${opt("everyone","Everyone on Quantum","Anyone signed in to Quantum can see what your profile shows.")}
+        ${opt("friends","Friends only","Others see your name and picture, and that your profile is for friends.")}
+        ${opt("nobody","Only me","Others see your name and picture only.")}</div></div>
+      <div class="vd-sec"><div class="mk-h">What it shows</div>
+        <div class="vd-row"><span>Your datarunner rank, rating and approved reports</span><label class="row" style="gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="pf-stats" ${statsOff?"":"checked"}> ${statsOff?"Hidden":"Shown"}</label></div>
+        ${Object.entries(PF_ARR).map(([v,A])=>{ const off=!!saved[A.key]?.off; return `<div class="vd-row"><span>${A.sec}</span><a data-pfv="${v}" style="cursor:pointer;color:var(--route-2);font-size:13px">${off?"Hidden":"Shown"} · Arrange</a></div>`; }).join("")}</div>
+      <div class="row" style="gap:8px;margin:4px 2px;align-items:center;flex-wrap:wrap"><button class="btn primary" id="pf-privsave" ${dirty?"":"disabled"}>Save Settings</button>
+        ${dirty?`<button class="btn ghost" id="pf-privx">Discard changes</button><span style="font-size:12.5px;color:#ffd38a">Unsaved changes</span>`:`<span class="muted" style="font-size:12.5px">${S.pfPubAt?`Saved · profile updated ${fmtAgo(S.pfPubAt)}`:"No changes"}</span>`}
+        <span class="spacer"></span><a data-pfv="preview" style="cursor:pointer;color:var(--route-2);font-size:13px">See your profile as others do</a></div></div>`;
+  for(const r of P.querySelectorAll('input[name="pf-sees"]')) r.onchange=()=>{ S.pfPrivDraft={...(S.pfPrivDraft||{}),sees:r.value}; renderProfile(true); };
+  $("pf-stats").onchange=e=>{ S.pfPrivDraft={...(S.pfPrivDraft||{}),stats_off:!e.target.checked}; renderProfile(true); };
+  if($("pf-privx")) $("pf-privx").onclick=()=>{ S.pfPrivDraft=null; renderProfile(true); };
+  $("pf-privsave").onclick=async()=>{ const r=await api().profile_prefs_set({...(S.pfPrefs||{}),...(S.pfPrivDraft||{})}).catch(()=>null); if(!r?.ok) return toast("Couldn't save. Try again");
+    S.pfPrefs=r.prefs; S.pfPrivDraft=null; await pfPublish(true); toast("Settings saved"); renderProfile(true); }; }
+// ---- What other people see: published to the Quantum server (your ships and loadouts live on this PC).
+// Sent when the profile has loaded and whenever you change what it shows; skipped when nothing changed.
+async function pfPublish(force){ if(!S.acct?.signed_in||!S.pfPrefs||!S.live?.log) return;
+  const lg=S.live.log, pr=S.pfPrefs;
+  if(lg.uex_token&&!S.pfFleet) return;                       // not loaded yet: don't publish an empty fleet
+  if(!S.gl.list) return;
+  const sh=pfOrdered(S.pfFleet||[],x=>x.uid,"ships",true), gl=pfOrdered((S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)),x=>x.id,"gearlo",true);
+  const body={sees:pr.sees||"everyone", stats_off:!!pr.stats_off, prefs:{orgs:pr.orgs||{}, listings:pr.listings||{}},
+    ships:!lg.uex_token||sh.off?null:sh.shown.map(x=>({name:x.full||x.name||"", maker:x.maker||"", scu:x.scu||null, photo:x.photo||null, main:!!x.main})),
+    gear:gl.off?null:gl.shown.map(lo=>({name:lo.name, scenario:lo.scenario||"", main:!!lo.main, items:glItems(lo).filter(i=>i.name).map(i=>({slot:i.slot, name:i.name, qty:i.qty||1}))}))};
+  const key=JSON.stringify(body); let last=null; try{ last=localStorage.getItem("q-pub"); }catch(_){}
+  if(!force&&last===key&&S.pfPubAt) return;
+  const r=await api().social_profile_publish(body).catch(()=>null);
+  if(r?.ok){ S.pfPubAt=Date.now(); try{ localStorage.setItem("q-pub",key); }catch(_){} } }
+// ---- Someone's profile, opened from their name anywhere in Social, the marketplace and orgs
+async function upOpen(who){ if(!who) return; S.up={who,loading:true}; upRender();
+  const r=await api().social_profile(who).catch(()=>null); if(S.up?.who!==who) return;
+  S.up=r?.ok?{who,d:r}:{who,err:r?.error||"Couldn't load this profile."}; upRender(); }
+function upClose(){ S.up=null; $("up-view")?.remove(); }
+function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
+  if(!V){ V=document.createElement("div"); V.id="up-view"; V.className="up-back"; document.body.appendChild(V);
+    V.onclick=e=>{ if(e.target===V) upClose(); }; }
+  const u=S.up, d=u.d;
+  if(!d){ V.innerHTML=`<div class="up-card"><button class="up-x" data-upx="1" aria-label="Close">×</button><div class="so-empty" style="padding:40px">${u.loading?"Loading…":esc(u.err)}</div></div>`; return upWire(V); }
+  const p=d.person, st=d.stats, lists=d.listings, rt=d.rating;
+  const since=pfDate(d.joined);
+  const rel=d.relation, acts=rel==="me"?`<span class="muted" style="font-size:12.5px">This is how others see your profile</span>`
+    :`${rel==="friends"?`<span class="pm-badge ok">✓ Friends</span>`:rel==="requested"?`<span class="muted" style="font-size:12.5px">Friend request sent</span>`
+      :rel==="incoming"?`<button class="btn small primary" data-upacc="1">Accept friend request</button>`:`<button class="btn small primary" data-upadd="1">Add friend</button>`}
+      ${d.can_message?`<button class="btn small" data-upmsg="1">Message</button>`:""}`;
+  const sec=(t,body,note)=>`<div class="vd-sec vd-full"><div class="mk-h">${t}${note?`<span class="mk-note">${note}</span>`:""}</div>${body}</div>`;
+  let body="";
+  if(d.private){ body=`<div class="empty" style="margin-top:14px"><strong>${d.sees==="friends"?"This profile is for friends":"This profile is private"}</strong>${d.sees==="friends"?`Only ${esc(p.name)}'s friends can see their fleet, loadouts, orgs and listings.`:`${esc(p.name)} keeps their profile to themselves.`}</div>`; }
+  else{
+    if(st) body+=sec("Datarunner",`<div class="up-stats">${[["Rank",esc(st.rank||"–")],["Rating",st.rated?`${(+st.stars).toFixed(1)} ★`:"–"],["Approved reports",(st.approved||0).toLocaleString()],["Trusted",st.trusted?`<span style="color:#57e39b">✓ Trusted datarunner</span>`:"Not yet"]].map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`);
+    if(d.orgs) body+=sec("Orgs",d.orgs.length?`<div class="og-cards">${d.orgs.map(o=>`<div class="og-card" data-upog="${o.id}">${ogLogo(o)}<div class="who"><b>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span> ${ogVer(o)}</b>${o.slogan?`<div class="og-slogan" style="font-size:13px">${esc(o.slogan)}</div>`:""}<small>${esc(o.their_rank||"Member")}${o.owner?" · Owner":""} · ${o.members} member${o.members===1?"":"s"}</small></div></div>`).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">Not in an org.</div>`,d.orgs.length||"");
+    if(lists){ const items=lists.filter(l=>l.kind!=="service"), svcs=lists.filter(l=>l.kind==="service");
+      const mini=l=>`<div class="pm-mini" data-uplist="${l.id}" data-upkind="${l.kind==="service"?"pm-services":"pm-items"}">${pmPh(l.photo)}<div class="who"><b>${esc(l.title)}</b><small>${l.unit==="quote"?"Quote":pmA(l.price)}${l.kind==="item"?` · ${l.qty} left`:""}</small></div></div>`;
+      body+=sec("Listings",lists.length?(items.length?`<div class="pf-subh">Items for sale <span class="muted">${items.length}</span></div><div class="pm-mylist">${items.map(mini).join("")}</div>`:"")+(svcs.length?`<div class="pf-subh">Services <span class="muted">${svcs.length}</span></div><div class="pm-mylist">${svcs.map(mini).join("")}</div>`:"")
+        :`<div class="muted" style="font-size:13px;padding:6px 0">Nothing for sale right now.</div>`,rt?.count?`${pmStars(rt)} · ${rt.sold} sold`:rt?.sold?`${rt.sold} sold`:""); }
+    const vphoto=x=>x.photo||(S.veh||[]).find(v=>(v.full||v.name)===x.name)?.photo;
+    if(d.ships) body+=sec("Fleet",d.ships.length?`<div class="grid" style="margin-top:8px">${d.ships.map(x=>{ const ph=vphoto(x); return `<div class="vg"><div class="ph">${ph?`<img src="${esc(ph)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:"No picture"}</div><div class="tx"><b>${x.main?"★ ":""}${esc(x.name)}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "))}</span></div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No ships to show.</div>`,d.ships.length||"");
+    if(d.gear) body+=sec("Gear loadouts",d.gear.length?`<div class="grid" style="margin-top:8px">${d.gear.map(lo=>{ const pic=["core","helmet","primary","jacket"].map(k=>lo.items.find(i=>i.slot===k)).find(Boolean)||lo.items[0];
+        return `<div class="vg up-lo"><div class="ph" ${pic?`data-gpic="${esc(pic.name)}"`:""}>${pic?"":"Empty loadout"}</div><div class="tx"><b>${lo.main?"★ ":""}${esc(lo.name)}</b><span>${esc([lo.scenario,plural(lo.items.length,"item")].filter(Boolean).join(" · "))}</span>
+          ${lo.items.length?`<div class="up-items">${lo.items.slice(0,12).map(i=>`<span>${esc(i.name)}${i.qty>1?` ×${i.qty}`:""}</span>`).join("")}</div>`:""}</div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No loadouts to show.</div>`,d.gear.length||"");
+    if(!body) body=`<div class="empty" style="margin-top:14px"><strong>Nothing to show yet</strong>${rel==="me"?"Choose what your profile shows under Profile.":`${esc(p.name)} hasn't chosen anything to show.`}</div>`;
+  }
+  V.innerHTML=`<div class="up-card"><button class="up-x" data-upx="1" aria-label="Close">×</button>
+    <div class="up-head">${(p.online!=null&&d.relation!=="me"?soAvDot(p,true):soAv(p,true)).replace('so-av lg','so-av lg xl')}<div class="who"><h2>${esc(p.name)}</h2>
+      <div class="up-meta">${p.online!=null&&rel!=="me"?`<span class="${p.playing?"playing":""}">${esc(soPresence(p))}</span>`:""}${since?`<span>Member since ${since}</span>`:""}${st?.trusted&&!d.private?`<span class="pf-trust">✓ Trusted datarunner</span>`:""}${st?.rank&&!d.private?`<span class="rank-badge">${esc(st.rank)}</span>`:""}</div>
+      <div class="up-acts">${acts}</div></div></div>
+    <div class="vd-flat pf-ov up-body">${body}</div></div>`;
+  fillGearPictures(V); upWire(V); }
+function upWire(V){ const on=(sel,fn)=>{ for(const el of V.querySelectorAll(sel)) el.onclick=e=>{ e.stopPropagation(); fn(el); }; };
+  on("[data-upx]",upClose);
+  const who=()=>S.up?.d?.person?.id;
+  on("[data-upadd]",async el=>{ el.disabled=true; const r=await api().social_request(who()); toast(r.ok?(r.relation==="friends"?"You're friends now":"Friend request sent"):r.error); upOpen(who()); });
+  on("[data-upacc]",async el=>{ el.disabled=true; const r=await api().social_respond(who(),true); toast(r.ok?"You're friends now":r.error); upOpen(who()); });
+  on("[data-upmsg]",()=>{ const id=who(); upClose(); soOpen(id); });
+  on("[data-upog]",el=>{ upClose(); S.og.view="org"; S.og.tab="overview"; S.og.cur=+el.dataset.upog; const t=document.querySelector('.tab[data-tab="orgs"]'); if(S.tab==="orgs") ogOpen(S.og.cur); else t?.click(); });
+  on("[data-uplist]",el=>{ upClose(); document.querySelector(`.tab[data-tab="${el.dataset.upkind}"]`)?.click(); pmOpen(+el.dataset.uplist); }); }
+document.addEventListener("click",e=>{ const n=e.target.closest?.("[data-upid]"); if(!n||!n.dataset.upid) return; e.stopPropagation(); e.preventDefault(); upOpen(n.dataset.upid); },true);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&S.up) upClose(); });
+// The four profile sections you can arrange: what they list, and what they're called
+const PF_ARR={fleet:{key:"ships",noun:"ship",sec:"My fleet",title:"My fleet on your profile",open:["openfleet","Open My Fleet"],empty:"No ships in My Fleet yet."},
+  gearlo:{key:"gearlo",noun:"loadout",sec:"My personal loadouts",title:"Gear loadouts on your profile",open:["opengearlo","Open Gear › Loadouts"],empty:"No gear loadouts yet."},
+  orgs:{key:"orgs",noun:"org",sec:"My orgs",title:"My orgs on your profile",open:["openorgs","Open Org"],empty:"You're not in an org yet."},
+  listings:{key:"listings",noun:"listing",sec:"My listings",title:"My listings on your profile",open:["openmarket","Open My Listings"],empty:"Nothing up for sale right now."}};
+const PF_KEYV={ships:"fleet",gearlo:"gearlo",orgs:"orgs",listings:"listings"};
+function pfArrList(key){
+  if(key==="ships") return {list:S.pfFleet||[],idOf:x=>x.uid};
+  if(key==="gearlo") return {list:(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)),idOf:x=>x.id};
+  if(key==="orgs") return {list:S.og.mine?.orgs||[],idOf:x=>x.id};
+  return {list:(S.pm.mine?.listings||[]).filter(l=>l.status==="active"),idOf:x=>x.id}; }
+function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, A=PF_ARR[v], key=A.key, ships=v==="fleet";
+  if(key==="orgs"&&S.og.mine===null&&!S.pfOgAsk){ S.pfOgAsk=true; ogLoadMine().then(()=>renderProfile(true)); }
+  if(key==="listings"&&S.pm.mine===null&&!S.pfPmAsk){ S.pfPmAsk=true; pmLoadMine().then(()=>renderProfile(true)); }
+  const {list,idOf}=pfArrList(key);
+  const o=pfOrdered(list,idOf,key), noun=A.noun, dirty=pfDirty(key), sec=A.sec;
+  const head=`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>${A.title}</h2>
     <div class="sub">Choose which ${noun}s your profile shows and in what order. Drag a row, or use the arrows, then Save.</div></div></div>
     ${statBlock([{label:"Section",value:o.off?"Hidden":"Shown"},{label:"Shown",value:o.off?"–":`${o.shown.length} of ${list.length}`},{label:"Most at once",value:String(o.count)}],[])}</div></div>`;
   if(ships&&!lg.uex_token){ P.innerHTML=`${head}<div class="empty">Add your UEX Bearer Token under Linked accounts to keep your fleet here.</div>`; return; }
+  if((key==="orgs"||key==="listings")&&!S.acct?.signed_in){ P.innerHTML=`${head}<div class="empty">Sign in to your Quantum account to use orgs and the marketplace.</div>`; return; }
+  if((key==="orgs"&&!S.og.mine)||(key==="listings"&&!S.pm.mine)){ P.innerHTML=`${head}<div class="empty">Loading…</div>`; return; }
   const shownIds=new Set(o.shown.map(x=>String(idOf(x))));
-  const row=(x,i)=>{ const id=String(idOf(x)), hid=o.hidden.has(id), on=shownIds.has(id)&&!o.off, name=ships?(x.full||x.name||""):x.name;
-    const sub=ships?[x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "):[x.scenario,plural(glItems(x).length,"item")].filter(Boolean).join(" · ");
-    const pic=ships?(x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:""):(()=>{ const p=x.slots?.core||x.slots?.helmet||x.slots?.primary||Object.values(x.slots||{})[0]; return p?`<span data-gpic="${esc(p.name)}"></span>`:""; })();
+  const row=(x,i)=>{ const id=String(idOf(x)), hid=o.hidden.has(id), on=shownIds.has(id)&&!o.off;
+    const name=ships?(x.full||x.name||""):key==="orgs"?`${x.name} [${x.tag}]`:key==="listings"?x.title:x.name;
+    const sub=ships?[x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · ")
+      :key==="orgs"?[x.my_rank,x.verified?"Verified with RSI":"Not verified",x.listed===false?"Private org: only its members see it on your profile":""].filter(Boolean).join(" · ")
+      :key==="listings"?[x.kind==="service"?"Service":"Item",x.unit==="quote"?"Quote":pmA(x.price),x.category].filter(Boolean).join(" · ")
+      :[x.scenario,plural(glItems(x).length,"item")].filter(Boolean).join(" · ");
+    const pic=ships?(x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"")
+      :key==="orgs"?ogLogo(x,1):key==="listings"?(x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy">`:"")
+      :(()=>{ const p=x.slots?.core||x.slots?.helmet||x.slots?.primary||Object.values(x.slots||{})[0]; return p?`<span data-gpic="${esc(p.name)}"></span>`:""; })();
     return `<div class="pf-arr ${on?"":"off"}" draggable="true" data-pfdrag="${esc(key)}|${esc(id)}">
       <span class="h" aria-hidden="true">⋮⋮</span><span class="th">${pic}</span>
       <div class="w"><b>${x.main?"★ ":""}${esc(name)}</b><small>${esc(sub)}${o.off?"":hid?" · hidden":on?"":" · over the limit"}</small></div>
@@ -3549,24 +3920,24 @@ function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, ships=v===
   P.innerHTML=`${head}
     <div class="vd-flat"><div class="vd-sec"><div class="mk-h">On your profile</div>
       <div class="vd-row"><span>Show the “${sec}” section</span><label class="row" style="gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" data-pfarr="${key}|section|" ${o.off?"":"checked"}> ${o.off?"Hidden":"Shown"}</label></div>
-      <div class="vd-row"><span>${ships?"Ships":"Loadouts"} to show, at most</span><select class="field" data-pfarr="${key}|count|" style="width:auto" ${o.off?"disabled":""}>${PF_COUNTS.map(n=>`<option value="${n}" ${n===o.count?"selected":""}>${n}</option>`).join("")}</select></div></div></div>
+      <div class="vd-row"><span>${noun[0].toUpperCase()+noun.slice(1)}s to show, at most</span><select class="field" data-pfarr="${key}|count|" style="width:auto" ${o.off?"disabled":""}>${PF_COUNTS.map(n=>`<option value="${n}" ${n===o.count?"selected":""}>${n}</option>`).join("")}</select></div></div></div>
     <div class="row" style="gap:8px;margin:4px 2px 14px;flex-wrap:wrap;align-items:center">
       <button class="btn primary" data-pfarr="${key}|save|" ${dirty?"":"disabled"}>Save</button>
       <button class="btn ghost" data-pfarr="${key}|discard|" ${dirty?"":"disabled"}>Discard changes</button>
       ${dirty?`<span style="font-size:12.5px;color:#ffd38a">Unsaved changes</span>`:`<span class="muted" style="font-size:12.5px">${S.pfSavedAt?.[key]?"Saved":"No changes"}</span>`}
       <span class="spacer"></span><button class="btn small ghost" data-pfarr="${key}|reset|">Back to default</button>
-      <button class="btn small" data-pfv="${ships?"openfleet":"opengearlo"}">${ships?"Open My Fleet":"Open Gear › Loadouts"}</button></div>
-    ${list.length?`<div class="vd-flat" style="${o.off?"opacity:.55":""}"><div class="vd-sec"><div class="mk-h">${ships?"Your ships":"Your loadouts"}<span class="mk-note">top to bottom is left to right on your profile</span></div>${o.all.map(row).join("")}</div></div>`
-      :`<div class="empty">${ships?"No ships in My Fleet yet.":"No gear loadouts yet."}</div>`}`;
-  if(!ships) fillGearPictures(P); }
-async function pfArrange(key,act,id,el){ const v=key==="ships"?"fleet":"gearlo";
-  const list=key==="ships"?(S.pfFleet||[]):(S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)), idOf=key==="ships"?(x=>x.uid):(x=>x.id);
+      <button class="btn small" data-pfv="${A.open[0]}">${A.open[1]}</button></div>
+    ${list.length?`<div class="vd-flat" style="${o.off?"opacity:.55":""}"><div class="vd-sec"><div class="mk-h">Your ${noun}s<span class="mk-note">top to bottom is ${key==="orgs"?"top to bottom":"left to right"} on your profile</span></div>${o.all.map(row).join("")}</div></div>`
+      :`<div class="empty">${A.empty}</div>`}`;
+  if(key==="gearlo") fillGearPictures(P); }
+async function pfArrange(key,act,id,el){ const v=PF_KEYV[key];
+  const {list,idOf}=pfArrList(key);
   if(act==="save"){ if(!pfDirty(key)) return; const next={...(S.pfPrefs||{}),[key]:S.pfDraft[key]};
     const r=await api().profile_prefs_set(next).catch(()=>null); if(!r?.ok) return toast("Couldn't save. Try again");
     S.pfPrefs=r.prefs; delete S.pfDraft[key]; S.pfSavedAt={...(S.pfSavedAt||{}),[key]:Date.now()};
     const o=pfOrdered(list,idOf,key,true);
-    toast(o.off?`Saved: the ${key==="ships"?"My fleet":"My personal loadouts"} section is hidden on your profile`:`Saved: your profile shows ${plural(o.shown.length,key==="ships"?"ship":"loadout")}`);
-    return renderProfile(true); }
+    toast(o.off?`Saved: the ${PF_ARR[v].sec} section is hidden on your profile`:`Saved: your profile shows ${plural(o.shown.length,PF_ARR[v].noun)}`);
+    pfPublish(true); return renderProfile(true); }
   if(act==="discard"){ if(S.pfDraft) delete S.pfDraft[key]; toast("Changes discarded"); return renderProfile(true); }
   const o=pfOrdered(list,idOf,key); let order=o.all.map(x=>String(idOf(x))), hidden=new Set(o.hidden), count=o.count, off=o.off;
   const i=order.indexOf(id);
@@ -3576,7 +3947,7 @@ async function pfArrange(key,act,id,el){ const v=key==="ships"?"fleet":"gearlo";
   else if(act==="section") off=!el.checked;
   else if(act==="count") count=+el.value;
   else if(act==="move"){ const [from,to]=id.split(">"); const a=order.indexOf(from), b=order.indexOf(to); if(a<0||b<0||a===b) return; order.splice(a,1); order.splice(order.indexOf(to)+(a<b?1:0),0,from); }
-  else if(act==="reset"){ order=[]; hidden=new Set(); count=8; off=false; }
+  else if(act==="reset"){ order=[]; hidden=new Set(); count=key==="orgs"?10:8; off=false; }
   else return;
   S.pfDraft={...(S.pfDraft||{}),[key]:{order,hidden:[...hidden],count,off}};
   if(S.tab==="profile"&&S.pfView===v) renderProfile(true); }
@@ -3604,8 +3975,16 @@ async function pfClick(e){
   const v=e.target.closest("[data-pfv]"); if(v){ const k=v.dataset.pfv;
     if(k==="openfleet"){ const t=document.querySelector('.tab[data-tab="fleet"]'); if(t&&!t.hidden) return t.click(); toast("Add your UEX Bearer Token first: My Fleet uses it"); S.pfView="accounts"; return renderProfile(true); }
     if(k==="opengearlo"){ S.gl.sel=null; S.gl.pick=null; return document.querySelector('.tab[data-tab="gearlo"]').click(); }
-    if((S.pfView==="fleet"&&pfDirty("ships"))||(S.pfView==="gearlo"&&pfDirty("gearlo"))) toast("Your changes aren't saved yet: they're kept until you Save or discard them");
+    if(k==="openorgs") return document.querySelector('.tab[data-tab="orgs"]').click();
+    if(k==="openmarket"){ S.pm.filter="listings"; S.pm.view="mine"; return document.querySelector('.tab[data-tab="pm-mine"]').click(); }
+    if(k==="preview"){ const me=S.so?.st?.me?.id; return me?upOpen(me):toast("Sign in to your Quantum account first"); }
+    if(PF_ARR[S.pfView]&&pfDirty(PF_ARR[S.pfView].key)) toast("Your changes aren't saved yet: they're kept until you Save or discard them");
     S.pfView=k; $("pf-panel").scrollTop=0; return renderProfile(true); }
+  const pt=e.target.closest("[data-pftab],[data-pforg],[data-pflisting]"); if(pt){ const tab=t=>document.querySelector(`.tab[data-tab="${t}"]`)?.click();
+    if(pt.dataset.pforg){ S.og.view="org"; S.og.tab="overview"; S.og.cur=isNaN(+pt.dataset.pforg)?pt.dataset.pforg:+pt.dataset.pforg; return tab("orgs"); }
+    if(pt.dataset.pflisting){ tab(pt.dataset.pfkind); return pmOpen(isNaN(+pt.dataset.pflisting)?pt.dataset.pflisting:+pt.dataset.pflisting); }
+    if(pt.dataset.pfmine){ S.pm.filter=pt.dataset.pfmine; S.pm.view="mine"; }
+    return tab(pt.dataset.pftab); }
   const go=e.target.closest("[data-glopen]"); if(go){ S.gl.sel=go.dataset.glopen; S.gl.pick=null; return document.querySelector('.tab[data-tab="gearlo"]').click(); }
   const fs=e.target.closest("[data-pfship]"); if(fs){ const t=document.querySelector('.tab[data-tab="fleet"]'); if(t&&!t.hidden) t.click(); return; }
   const ar=e.target.closest("[data-pfarr]"); if(ar&&ar.tagName!=="SELECT"){ const [key,act,id]=ar.dataset.pfarr.split("|"); return pfArrange(key,act,id,ar); }
@@ -6581,7 +6960,7 @@ function drDecided(p){ if(p?.decided) return p.decided; const c=p?.contrib||[];
   return {approved:(p?.rows?.approved||0)+c.filter(x=>["approved","shared","live"].includes(x.status)).length,
           rejected:(p?.rows?.declined||0)+c.filter(x=>x.status==="rejected").length}; }
 // The datarunner's card: UEX name and avatar, rank, stars, and how far to the next rank.
-function drProfileCard(p){ if(!p?.ok) return "";
+function drProfileCard(p,nm){ if(!p?.ok) return "";
   if(!p.username) return `<div class="dr-prof"><div class="av">?</div><div><b>Your datarunner profile</b><div class="muted" style="font-size:12.5px;margin-top:3px">Add your UEX Secret Key in your profile to see your UEX name, rank and star rating.</div></div></div>`;
   const nx=p.rank.next, prev=[...p.ranks].reverse().find(x=>p.rank.count>=x[0])?.[0]||0;
   const pct=nx?Math.min(100,(p.rank.count-prev)/(nx.at-prev)*100):100, left=nx?nx.at-p.rank.count:0;
@@ -6590,7 +6969,7 @@ function drProfileCard(p){ if(!p?.ok) return "";
   const av=pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${esc((p.username||'?')[0].toUpperCase())}'}))">`:esc((p.username||"?")[0].toUpperCase());
   return `<div class="dr-prof">
     <div class="av" title="${esc(p.avatar_raw?"UEX avatar: "+p.avatar_raw:"No avatar set at UEX")}">${av}</div>
-    <div class="who"><b>${esc(p.username)}</b>${p.name&&p.name!==p.username?`<span class="muted"> · ${esc(p.name)}</span>`:""}
+    <div class="who"><b>${esc(nm||p.username)}</b>${!nm&&p.name&&p.name!==p.username?`<span class="muted"> · ${esc(p.name)}</span>`:""}
       <div class="rk"><span class="rank-badge r${p.ranks.findIndex(x=>x[1]===p.rank.name)}">${esc(p.rank.name)}</span>${p.trust?.trusted?`<span class="trust-badge" title="Your pictures and station positions go live without waiting for review">✓ Trusted contributor</span>`:""}
         ${drStarBar(p.rated?p.stars:0,20)} <b>${p.rated?p.stars.toFixed(1):"0.0"}</b><span class="muted" title="What your star rating is worked out from: every price row, picture and station position that's been decided">${p.rated?` · ${dec.approved} Approved, ${dec.rejected} Rejected`:" · your first approved report sets 5 stars"}</span></div>
       <div class="nx">${nx?`<div class="bar"><i style="width:${pct}%"></i></div><span>${plural(left,"more approved report")} to <b>${esc(nx.name)}</b></span>`:`<span>Highest rank reached. Thank you, datarunner.</span>`}</div></div>
@@ -7203,6 +7582,723 @@ function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
   if(!on&&["market","trade","datarunner","vehicles","components","fleet"].includes(S.tab)) document.querySelector('.tab[data-tab="route"]').click();
   syncRail(); }
+// =================================================================== social: friends and messages
+// The list lives in the sidebar (Friends tab), the conversation in the map area. Python checks in with the
+// Quantum server in the background (every 4 s while this is open, 20 s otherwise); this reads what it has.
+S.so={st:null,signed:null,open:null,conv:null,q:"",results:null,draft:{},ask:null,blocked:null,showBlocked:false,my:"online",err:null};
+const SO_PRES={online:"Online",away:"Away",invisible:"Appear offline"};
+function soAgo(t){ const d=Math.max(0,Date.now()/1000-t); return d<90?"just now":d<3600?`${Math.round(d/60)} min ago`:d<86400?`${Math.round(d/3600)} h ago`:`${Math.round(d/86400)} d ago`; }
+function soInit(n){ return ((n||"?").match(/[A-Za-z0-9]+/g)||["?"]).slice(0,2).map(w=>w[0]).join("").toUpperCase(); }
+function soAv(p,lg){ return `<span class="so-av${lg?" lg":""}">${esc(soInit(p?.name))}${p?.avatar?`<img src="${esc(p.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:""}</span>`; }
+function soDotCls(f){ return f.playing?"playing":f.online?(f.status==="away"?"away":"online"):""; }
+function soAvDot(f,lg){ return `<span class="so-wrap">${soAv(f,lg)}<i class="so-dot ${soDotCls(f)}"></i></span>`; }
+function soPresence(f){ return f.playing?"In Star Citizen":f.online?(f.status==="away"?"Away":"Online"):f.seen?`Last seen ${soAgo(f.seen)}`:"Offline"; }
+function soBadge(b){ const n=b?(b.unread||0)+(b.requests||0):0;
+  const r=$("rail-so-n"); if(r){ r.textContent=n>99?"99+":n; r.hidden=!n; }
+  const c=$("c-friends"); if(c){ c.textContent=b?b.online:0; c.hidden=!b||!b.online; c.title="Friends online"; }
+}
+async function soTick(){ const focus=S.tab==="friends"; let r; try{ r=await api().social_get(focus); }catch(_){ return; }
+  soApply(r); if(focus&&S.so.open) soLoadConv(false); }
+function soApply(r){ if(!r) return; const was=JSON.stringify([S.so.signed,S.so.st]);
+  S.so.signed=!!r.signed_in; S.so.st=r.signed_in?(r.state||S.so.st):null; S.so.err=r.error||null; if(r.my_status) S.so.my=r.my_status;
+  const st=S.so.st; soBadge(st?.status==="ok"?{unread:st.unread||0,requests:(st.incoming||[]).length,online:(st.friends||[]).filter(f=>f.online).length}:null);
+  if(typeof pmTodo==="function") pmTodo(st?.status==="ok"?(st.market_todo||0):0);
+  if(typeof ogTodo==="function") ogTodo(st?.status==="ok"?(st.org_todo||0):0);
+  for(const n of r.notes||[]){
+    if(n.request) toast(`${n.name} sent you a friend request`);
+    else if(!(S.tab==="friends"&&S.so.open===n.from)) toast(`${n.name}: ${n.body}`); }
+  if(S.tab==="friends"&&JSON.stringify([S.so.signed,S.so.st])!==was){ renderSocialLists(); if(!S.so.open||!S.so.conv) renderSocialPanel(); else soHead(); } }
+async function openSocial(){ renderSocialPane(); renderSocialPanel(); soApply(await api().social_get(true));
+  renderSocialPane(); if(S.so.open) soLoadConv(true); }
+// Checks for new messages and requests every 4 s, whichever section is open (cheap: Python already has them)
+if(!S.soWatch) S.soWatch=setInterval(soTick,4000);
+function soFriend(id){ return (S.so.st?.friends||[]).find(f=>f.id===id); }
+function soChat(id){ return (S.so.st?.chats||[]).find(f=>f.id===id); }
+
+// ---- sidebar: you, search, requests, friends
+function renderSocialPane(){ const P=$("pane-friends"); if(!P) return;
+  if(S.so.signed===false){ P.innerHTML=`<div class="note" style="margin-top:4px"><b>Sign in to use friends and messages</b>
+      <div class="muted" style="font-size:12.5px;margin:6px 0 10px">Friends and messages go with your Quantum account, so they follow you to any PC.</div>
+      <button class="btn primary small" onclick="openProfileView('overview')">Sign in</button></div>`; P.dataset.built=""; return; }
+  if(S.so.st?.status==="unavailable"){ P.innerHTML=`<div class="note">The Quantum server doesn't have friends and messages yet.</div>`; P.dataset.built=""; return; }
+  if(!P.dataset.built){ P.dataset.built="1";
+    P.innerHTML=`<div class="so-me" id="so-me"></div>
+      <input class="search" id="so-q" placeholder="Find people by @username or name" autocomplete="off" spellcheck="false">
+      <div id="so-results"></div><div id="so-lists"></div>`;
+    let t; $("so-q").oninput=e=>{ S.so.q=e.target.value; clearTimeout(t); t=setTimeout(soSearch,350); };
+    $("so-q").value=S.so.q||""; }
+  renderSocialLists(); renderSocialResults(); }
+function renderSocialLists(){ const L=$("so-lists"), M=$("so-me"); if(!L||!M) return; const st=S.so.st;
+  if(!st||st.status!=="ok"){ L.innerHTML=`<div class="so-empty">${S.so.err?esc(S.so.err):"Loading…"}</div>`; return; }
+  const me=st.me||{};
+  M.innerHTML=`${soAvDot({name:me.name,avatar:(typeof pfPhoto==="function"?pfPhoto():null),online:S.so.my!=="invisible",status:S.so.my})}<span class="nm">${esc(me.name||"You")}${me.username_auto?`<small class="so-tag" title="Your username: people find you by it"><span>Your username</span><a style="cursor:pointer;text-decoration:underline" data-souname="1">Choose</a></small>`:""}</span>
+    <select class="field" id="so-pres" title="What your friends see">${Object.entries(SO_PRES).map(([k,v])=>`<option value="${k}" ${S.so.my===k?"selected":""}>${v}</option>`).join("")}</select>`;
+  // Your username: offered once to people who got one made for them, and any time from "Change"
+  const un=$("so-uname"), showUn=me.username_auto&&(S.so.unameEdit||!S.so.unameDismissed);
+  if(showUn&&!un) M.insertAdjacentHTML("afterend",`<div class="note" id="so-uname" style="margin:-4px 0 10px;font-size:12.5px">Your username is <b>${esc(me.tag)}</b>. We made it for you. It's your name everywhere in Quantum: how people find you, message you and see you in orgs and the marketplace. You can choose your own once. <b>After that it's permanent.</b>
+    <div class="row" style="gap:6px;margin-top:8px"><span class="muted">@</span><input class="field" id="so-uname-in" maxlength="20" value="${esc(me.username||"")}" style="flex:1" autocomplete="off" spellcheck="false"><button class="btn small primary" id="so-uname-save">Save</button><button class="btn small ghost" id="so-uname-x">Keep it</button></div>
+    <div class="muted" id="so-uname-err" style="font-size:12px;margin-top:6px">3 to 20 characters: letters, numbers, _ and .</div></div>`);
+  else if(!showUn&&un) un.remove();
+  if($("so-uname")){ const save=async keep=>{ const v=keep?me.username:$("so-uname-in").value.trim().replace(/^@/,""); const r=await api().social_username(v);
+      if(!r.ok){ $("so-uname-err").textContent=r.error; $("so-uname-err").style.color="#ffb3b3"; return; }
+      S.so.unameEdit=false; S.so.unameDismissed=true; $("so-uname")?.remove(); toast(keep?"Username kept":`You're @${r.username} now`); soApply(await api().social_refresh()); if(typeof pfRefreshAcct==="function") pfRefreshAcct(); };
+    $("so-uname-save").onclick=()=>save(false); $("so-uname-x").onclick=()=>save(true);
+    $("so-uname-in").onkeydown=e=>{ if(e.key==="Enter") save(false); }; }
+  for(const a of M.querySelectorAll("[data-souname]")) a.onclick=()=>{ S.so.unameEdit=true; S.so.unameDismissed=false; $("so-uname")?.remove(); renderSocialLists(); setTimeout(()=>$("so-uname-in")?.select(),30); };
+  if(me.findable===false&&!$("so-hint")) M.insertAdjacentHTML("afterend",`<div class="note" id="so-hint" style="margin:-4px 0 10px;font-size:12.5px">You have no display name yet, so people can only find you by your ID <b>${esc(me.tag)}</b>.
+    <a data-url="${esc("https://quantumsc.org/account?tab=profile")}" style="cursor:pointer;text-decoration:underline">Set a display name</a> on your account page, or link your UEX name in your profile.</div>`);
+  if(me.findable!==false) $("so-hint")?.remove();
+  for(const u of document.querySelectorAll("#pane-friends [data-url]")) u.onclick=()=>api().open_url(u.dataset.url);
+  $("so-pres").onchange=async e=>{ const r=await api().social_set_status(e.target.value); if(!r.ok) return toast(r.error); S.so.my=e.target.value; toast(e.target.value==="invisible"?"You appear offline to your friends":`You're ${SO_PRES[e.target.value].toLowerCase()}`); };
+  const inc=st.incoming||[], out=st.outgoing||[], fr=st.friends||[], on=fr.filter(f=>f.online);
+  let h="";
+  if(inc.length) h+=`<div class="so-h">Friend requests <b>${inc.length}</b></div>`+inc.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>${p.uex?"UEX: "+esc(p.uex):"Wants to be friends"}</small></div>
+      <div class="acts"><button class="btn small primary" data-soacc="${p.id}">Accept</button><button class="btn small ghost" data-sodec="${p.id}">Decline</button></div></div>`).join("");
+  h+=`<div class="so-h">Friends <b>${on.length?`${on.length} online · `:""}${fr.length}</b></div>`;
+  h+=fr.length?fr.map(f=>`<div class="so-row click ${S.so.open===f.id?"on":""}" data-soopen="${f.id}">${soAvDot(f)}<div class="who"><b>${esc(f.name)}</b><small class="${f.playing?"playing":""}">${esc(soPresence(f))}</small></div>${f.unread?`<span class="so-n">${f.unread}</span>`:""}</div>`).join("")
+    :`<div class="so-empty">No friends yet. Search for people above and send them a request.</div>`;
+  const ch=st.chats||[];
+  if(ch.length) h+=`<div class="so-h">Conversations <b>${ch.length}</b></div>`+ch.map(c=>`<div class="so-row click ${S.so.open===c.id?"on":""}" data-soopen="${c.id}">${soAv(c)}<div class="who"><b>${esc(c.name)}</b><small>${esc(c.why||"Marketplace")}</small></div>${c.unread?`<span class="so-n">${c.unread}</span>`:""}</div>`).join("");
+  if(out.length) h+=`<div class="so-h">Sent requests</div>`+out.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>Waiting · ${soAgo(p.at)}</small></div>
+      <div class="acts"><button class="btn small ghost" data-sorm="${p.id}">Cancel</button></div></div>`).join("");
+  h+=`<div style="margin:16px 2px 4px"><a class="muted" style="font-size:12px;cursor:pointer;text-decoration:underline" data-soblk="1">${S.so.showBlocked?"Hide blocked people":"Blocked people"}</a></div>`;
+  if(S.so.showBlocked) h+=S.so.blocked==null?`<div class="so-empty">Loading…</div>`:S.so.blocked.length?S.so.blocked.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b>${esc(p.name)}</b></div>
+      <div class="acts"><button class="btn small ghost" data-sounb="${p.id}">Unblock</button></div></div>`).join(""):`<div class="so-empty">Nobody blocked.</div>`;
+  L.innerHTML=h; soWire(L); }
+async function soSearch(){ const q=(S.so.q||"").trim(); if(q.replace(/^@/,"").length<(q.startsWith("@")?2:3)){ S.so.results=null; return renderSocialResults(); }
+  const r=await api().social_search(q); if((S.so.q||"").trim()!==q) return;
+  S.so.results=r.ok?r.people:{error:r.error}; renderSocialResults(); }
+function renderSocialResults(){ const R=$("so-results"); if(!R) return; const res=S.so.results;
+  if(!res){ const v=(S.so.q||"").trim(); R.innerHTML=v.length&&v.replace(/^@/,"").length<(v.startsWith("@")?2:3)?`<div class="so-empty">Type at least 3 letters of a name, or @ and 2 letters of a username.</div>`:""; return; }
+  if(res.error){ R.innerHTML=`<div class="so-empty">${esc(res.error)}</div>`; return; }
+  R.innerHTML=`<div class="so-h">People</div>`+(res.length?res.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>${[p.uex?"UEX: "+esc(p.uex):"",p.org?esc(p.org):""].filter(Boolean).join(" · ")||"Quantum member"}</small></div>
+      <div class="acts">${p.relation==="friends"?`<button class="btn small" data-soopen="${p.id}">Message</button>`:p.relation==="sent"?`<span class="muted" style="font-size:12px">Requested</span>`
+        :p.relation==="received"?`<button class="btn small primary" data-soacc="${p.id}">Accept</button>`:`<button class="btn small primary" data-soadd="${p.id}">Add friend</button>`}</div></div>`).join("")
+    :`<div class="so-empty">Nobody by that name or username. They need a Quantum account. Ask them for their @username (it's under their name in Social).</div>`);
+  soWire(R); }
+function soWire(root){
+  for(const b of root.querySelectorAll("[data-soopen]")) b.onclick=()=>soOpen(b.dataset.soopen);
+  const act=(sel,fn,msg)=>{ for(const b of root.querySelectorAll(sel)) b.onclick=async e=>{ e.stopPropagation(); b.disabled=true;
+    const r=await fn(Object.values(b.dataset)[0]); if(!r.ok){ b.disabled=false; return toast(r.error); } if(msg) toast(msg(r));
+    if(S.so.results&&!S.so.results.error) soSearch(); soApply(await api().social_refresh()); }; };
+  act("[data-soadd]",id=>api().social_request(id),r=>r.relation==="friends"?"You're friends now":"Friend request sent");
+  act("[data-soacc]",id=>api().social_respond(id,true),()=>"You're friends now");
+  act("[data-sodec]",id=>api().social_respond(id,false),()=>"Request declined");
+  act("[data-sorm]",id=>api().social_remove(id),()=>"Request cancelled");
+  act("[data-sounb]",async id=>{ const r=await api().social_block(id,false); if(r.ok) S.so.blocked=(S.so.blocked||[]).filter(p=>p.id!==id); return r; },()=>"Unblocked");
+  for(const b of root.querySelectorAll("[data-soblk]")) b.onclick=async()=>{ S.so.showBlocked=!S.so.showBlocked; S.so.blocked=null; renderSocialLists();
+    if(S.so.showBlocked){ const r=await api().social_blocked(); S.so.blocked=r.ok?r.people:[]; renderSocialLists(); } }; }
+
+// ---- the conversation
+function soOpen(id){ if(S.tab!=="friends"){ S.so.open=id; return document.querySelector('.tab[data-tab="friends"]').click(); }
+  if(S.so.open!==id){ S.so.open=id; S.so.conv=null; S.so.ask=null; }
+  renderSocialLists(); renderSocialPanel(); soLoadConv(true); }
+async function soLoadConv(scroll){ const id=S.so.open; if(!id) return; const r=await api().social_messages(id); if(S.so.open!==id) return;
+  if(!r.ok){ if(!S.so.conv){ S.so.conv={error:r.error}; renderSocialPanel(); } return; }
+  const old=S.so.conv&&!S.so.conv.error?S.so.conv:null, byId=new Map((old?.messages||[]).map(m=>[m.id,m]));
+  for(const m of r.messages) byId.set(m.id,m);
+  S.so.conv={with:r.with,friends:r.friends,messages:[...byId.values()].sort((a,b)=>a.id-b.id),more:old?old.more:r.more};
+  const f=soFriend(id)||soChat(id); if(f&&f.unread){ f.unread=0; renderSocialLists(); }
+  if(!old) renderSocialPanel(); else { soHead(); soRenderMsgs(scroll); } }
+function renderSocialPanel(){ const P=$("so-panel"); if(!P) return;
+  const land=(t,x,btn)=>`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg><h2>${t}</h2><div>${x}</div>${btn||""}</div>`;
+  if(S.so.signed===false){ P.innerHTML=land("Friends and messages","Sign in to your Quantum account to add friends, see who's online and in game, and message them.",`<button class="btn primary" style="margin-top:14px" onclick="openProfileView('overview')">Sign in</button>`); return; }
+  const id=S.so.open, c=S.so.conv;
+  if(!id){ const fr=S.so.st?.friends||[], on=fr.filter(f=>f.online).length, play=fr.filter(f=>f.playing).length;
+    P.innerHTML=land("Friends and messages",fr.length?`${on} of ${fr.length} friend${fr.length>1?"s":""} online${play?`, ${play} in Star Citizen`:""}. Pick someone on the left to message them.`
+      :"Find people by @username on the left and send them a friend request. Once they accept, you can message each other."); return; }
+  if(!c){ P.innerHTML=`<div class="so-chat-h" id="so-head"></div><div class="so-msgs"><div class="so-empty" style="margin:auto">Loading…</div></div>`; soHead(); return; }
+  if(c.error){ P.innerHTML=land("Couldn't open this conversation",esc(c.error)); return; }
+  P.innerHTML=`<div class="so-chat-h" id="so-head"></div><div id="so-askbox"></div><div class="so-msgs" id="so-msgs"></div>
+    <div class="so-compose">${c.can_message??c.friends?`<textarea class="field" id="so-text" rows="1" maxlength="2000" placeholder="Message ${esc(c.with.name)}"></textarea><button class="btn primary" id="so-send">Send</button>`
+      :`<div class="muted" style="font-size:12.5px">You can't message ${esc(c.with.name)}: you're not friends and have no marketplace trade together.</div>`}</div>`;
+  soHead(); soRenderMsgs(true);
+  const T=$("so-text"); if(T){ T.value=S.so.draft[id]||""; const fit=()=>{ T.style.height="auto"; T.style.height=Math.min(140,T.scrollHeight)+"px"; }; fit();
+    T.oninput=()=>{ S.so.draft[id]=T.value; fit(); };
+    T.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); soSend(); } };
+    $("so-send").onclick=soSend; setTimeout(()=>T.focus(),30); } }
+function soHead(){ const H=$("so-head"); if(!H) return; const id=S.so.open, w=soFriend(id)||S.so.conv?.with; if(!w) return;
+  const k=JSON.stringify([w,S.so.ask,S.so.conv?.friends]); if(H.dataset.k===k) return; H.dataset.k=k;
+  const isF=!!soFriend(id);
+  H.innerHTML=`${soAvDot(w,true)}<div class="who"><b class="up-name" data-upid="${esc(w.id)}" title="View profile">${esc(w.name)}</b><small class="${w.playing?"playing":""}">${isF?esc(soPresence(w)):esc(soChat(id)?.why||"Not friends")}${w.uex?` · UEX: ${esc(w.uex)}`:""}${w.org?` · ${esc(w.org)}`:""}</small></div>
+    <span class="spacer" style="flex:1"></span>${isF?`<button class="btn small ghost" data-soask="remove">Remove friend</button>`:`<button class="btn small ghost" data-soadd="${id}">Add friend</button>`}<button class="btn small ghost" data-soask="block">Block</button>`;
+  for(const b of H.querySelectorAll("[data-soask]")) b.onclick=()=>{ S.so.ask=b.dataset.soask; soAsk(); };
+  for(const b of H.querySelectorAll("[data-soadd]")) b.onclick=async()=>{ b.disabled=true; const r=await api().social_request(b.dataset.soadd); toast(r.ok?(r.relation==="friends"?"You're friends now":"Friend request sent"):r.error); };
+  soAsk(); }
+function soAsk(){ const A=$("so-askbox"); if(!A) return; const w=S.so.conv?.with||soFriend(S.so.open); const a=S.so.ask;
+  if(!a||!w){ A.innerHTML=""; return; }
+  A.innerHTML=`<div class="so-ask"><span>${a==="block"?`Block <b>${esc(w.name)}</b>? You won't be friends any more, they can't find you or send you requests, and neither of you can message the other.`
+      :`Remove <b>${esc(w.name)}</b> from your friends? You won't be able to message each other until one of you sends a new request.`}</span>
+    <span class="spacer" style="flex:1"></span><button class="btn small" id="so-ask-no">Cancel</button><button class="btn small danger" id="so-ask-yes">${a==="block"?"Block":"Remove"}</button></div>`;
+  $("so-ask-no").onclick=()=>{ S.so.ask=null; soAsk(); };
+  $("so-ask-yes").onclick=async()=>{ const id=S.so.open; const r=a==="block"?await api().social_block(id,true):await api().social_remove(id);
+    if(!r.ok) return toast(r.error); toast(a==="block"?`${w.name} is blocked`:`${w.name} removed from your friends`);
+    S.so.ask=null; S.so.open=null; S.so.conv=null; soApply(await api().social_refresh()); renderSocialLists(); renderSocialPanel(); }; }
+function soRenderMsgs(toBottom){ const M=$("so-msgs"); const c=S.so.conv; if(!M||!c||c.error) return;
+  const k=JSON.stringify([c.messages.length,c.messages.at(-1)?.id,c.messages.at(-1)?.read,c.more]); if(M.dataset.k===k&&!toBottom) return; M.dataset.k=k;
+  const near=M.scrollHeight-M.scrollTop-M.clientHeight<80;
+  const day=t=>new Date(t*1000).toLocaleDateString([], {weekday:"short",day:"numeric",month:"short"});
+  const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+  let h=c.more?`<button class="btn small ghost" style="align-self:center;margin-bottom:8px" id="so-older">Older messages</button>`:"", last="";
+  if(!c.messages.length) h+=`<div class="so-empty" style="margin:auto">No messages yet. Say hi to ${esc(c.with.name)}.</div>`;
+  for(const m of c.messages){ const d=day(m.sent); if(d!==last){ h+=`<div class="so-day">${d===day(Date.now()/1000)?"Today":d}</div>`; last=d; }
+    h+=`<div class="so-b ${m.mine?"mine":""}">${esc(m.body)}<time>${tm(m.sent)}</time></div>`; }
+  const lm=[...c.messages].reverse().find(m=>m.mine); if(lm&&lm===c.messages.at(-1)&&lm.read) h+=`<div class="so-seen">Seen ${soAgo(lm.read)}</div>`;
+  const prevH=M.scrollHeight, prevTop=M.scrollTop; M.innerHTML=h;
+  if(toBottom||near) M.scrollTop=M.scrollHeight; else M.scrollTop=prevTop+(M.scrollHeight-prevH)*0;
+  const o=$("so-older"); if(o) o.onclick=async()=>{ o.disabled=true; const id=S.so.open, first=c.messages[0]?.id; const r=await api().social_messages(id,first);
+    if(S.so.open!==id||!r.ok) return; const h0=M.scrollHeight; c.messages=[...r.messages,...c.messages]; c.more=r.more; soRenderMsgs(false); M.scrollTop=M.scrollHeight-h0; }; }
+async function soSend(){ const T=$("so-text"), id=S.so.open; if(!T||!id) return; const body=T.value.trim(); if(!body) return;
+  $("so-send").disabled=true; const r=await api().social_send(id,body); const b=$("so-send"); if(b) b.disabled=false;
+  if(!r.ok) return toast(r.error);
+  S.so.draft[id]=""; if(S.so.open===id&&$("so-text")){ $("so-text").value=""; $("so-text").style.height="auto"; }
+  if(S.so.conv&&!S.so.conv.error&&S.so.open===id){ S.so.conv.messages.push(r.message); soRenderMsgs(true); } }
+
+// =================================================================== Market: players' items and services (aUEC only)
+// Browsing works signed out; selling, buying, trades and escrow need a Quantum account. The server is market.py.
+S.pm={kind:"item",q:"",cat:"",sort:"new",page:0,data:null,view:"browse",listing:null,form:null,mine:null,esc:null,todo:0,filter:"todo",arm:null};
+const PM_TAB={"pm-items":"item","pm-services":"service"};
+// The same lists as the server (market.py), so the form and filters never come up empty
+const PM_CATS={item:["Armor","Clothing","Commodities and cargo","Crafting","Food and drink","Gadgets and tools","Medical","Mining and salvage","Ship components","Vehicle weapons","Weapons","Other"],
+  service:["Bounty hunting","Escort","Hauling and delivery","Medical","Mining","Protection","Refuelling","Salvage","Towing and repair","Training","Transport","Other"]};
+const pmA=n=>`${Number(n||0).toLocaleString()} aUEC`;
+const pmPrice=l=>l.unit==="quote"?`<span class="pm-price">Ask for a quote</span>`:`<span class="pm-price">${pmA(l.price)}${l.unit&&l.unit!=="each"?` <small>${esc(l.unit)}</small>`:""}</span>`;
+const pmStars=r=>r&&r.stars!=null?`<span class="pm-star" title="${r.count} rating${r.count>1?"s":""}">★ ${r.stars} <span class="muted">(${r.count})</span></span>`:`<span class="muted">New seller</span>`;
+const PM_ICON=`<svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg>`;
+const pmPh=(url,cat)=>`<div class="pm-ph">${url?`<img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()">`:PM_ICON}${cat?`<span class="cat">${esc(cat)}</span>`:""}</div>`;
+async function pmCall(path,body){ let r; try{ r=await api().pm(path,body===undefined?null:body); }catch(e){ r={ok:false,error:"Couldn't reach Quantum"}; } return r; }
+function pmTodo(n){ S.pm.todo=n; const b=$("rail-pm-n"); if(b){ b.textContent=n; b.hidden=!n; } const c=$("c-pm-mine"); if(c){ c.textContent=n; c.hidden=!n; }
+  if(S.pmTodoSeen!==undefined&&n>S.pmTodoSeen) toast("Marketplace: new request (Market › My Listings › Requests)"); S.pmTodoSeen=n; }
+function openPm(tab){ if(PM_TAB[tab]){ if(S.pm.kind!==PM_TAB[tab]){ S.pm.kind=PM_TAB[tab]; S.pm.cat=""; S.pm.page=0; S.pm.data=null; } if(!["listing","form"].includes(S.pm.view)||S.pm.listing?.kind!==S.pm.kind) S.pm.view="browse"; pmPane(); pmLoad(); }
+  else if(tab==="pm-mine"){ S.pm.view="mine"; pmPane(); pmLoadMine(); pmLoadEsc(); }
+  pmRender(); }
+
+// ---- sidebar
+function pmPane(){ const tab=S.tab, P=$("pane-"+tab); if(!P) return;
+  if(PM_TAB[tab]){ const svc=S.pm.kind==="service", cats=S.pm.data?.categories||PM_CATS[S.pm.kind].map(name=>({name,count:0}));
+    P.innerHTML=`<button class="btn primary" style="width:100%;margin-bottom:10px" data-pmnew="1">${svc?"+ Offer a service":"+ Sell an item"}</button>
+      <input class="search pm-q" placeholder="${svc?"Search services, e.g. escort":"Search items, e.g. Arclight"}" value="${esc(S.pm.q)}" autocomplete="off" spellcheck="false">
+      <div class="row" style="gap:8px;margin-top:8px"><span class="muted" style="font-size:12.5px">Sort</span><select class="field pm-sort" style="flex:1">${[["new","Newest"],["cheap","Lowest price"],["dear","Highest price"]].map(([v,t])=>`<option value="${v}" ${S.pm.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>
+      ${S.pm.data?.error?`<div class="note" style="margin-top:10px;font-size:12.5px">${esc(S.pm.data.error)}</div>`:""}
+      <div class="so-h">Categories</div><div class="pm-cats">
+        <div class="so-row click ${!S.pm.cat?"on":""}" data-pmcat=""><div class="who"><b>All ${svc?"services":"items"}</b></div><span class="muted">${cats.reduce((a,c)=>a+c.count,0)||""}</span></div>
+        ${cats.map(c=>`<div class="so-row click ${S.pm.cat===c.name?"on":""}" data-pmcat="${esc(c.name)}"><div class="who"><b>${esc(c.name)}</b></div><span class="muted">${c.count||""}</span></div>`).join("")}</div>
+      <div class="pm-rule"><b>aUEC only.</b> Real money transactions are prohibited (dollars, PayPal, gift cards). These types of transactions break Star Citizen's Terms of Service. Listings which request this type of transaction will be taken down.</div>`;
+    let t; P.querySelector(".pm-q").oninput=e=>{ S.pm.q=e.target.value; clearTimeout(t); t=setTimeout(()=>{ S.pm.page=0; S.pm.view="browse"; pmLoad(); },350); };
+    P.querySelector(".pm-sort").onchange=e=>{ S.pm.sort=e.target.value; S.pm.page=0; S.pm.view="browse"; pmLoad(); };
+    for(const r of P.querySelectorAll("[data-pmcat]")) r.onclick=()=>{ S.pm.cat=r.dataset.pmcat; S.pm.page=0; S.pm.view="browse"; pmPane(); pmLoad(); };
+  } else if(tab==="pm-mine"){ const m=S.pm.mine, ts=m?.trades||[];
+    const n={todo:ts.filter(pmNeedsMe).length,open:ts.filter(t=>["requested","accepted","escrow"].includes(t.status)).length,done:ts.filter(t=>!["requested","accepted","escrow"].includes(t.status)).length,listings:(m?.listings||[]).length};
+    P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn primary" style="flex:1" data-pmnewin="pm-items">+ Sell an item</button><button class="btn primary" style="flex:1" data-pmnewin="pm-services">+ Offer a service</button></div>
+      ${m?.rating?`<div class="so-me"><div class="who" style="min-width:0"><b>Your rating</b><div style="font-size:12.5px;margin-top:2px">${pmStars(m.rating)} <span class="muted">· ${m.rating.sold} sold</span></div></div>${m.agent?`<span class="pm-badge esc" style="margin-left:auto">Escrow agent</span>`:""}</div>`:""}
+      <div class="pm-cats">${[["todo","Requests"],["open","Open trades"],["done","Finished trades"],["listings","My listings"],
+        ...(S.pm.esc&&(S.pm.esc.is_agent||S.pm.esc.owner||S.pm.esc.trusted)?[["escrow",S.pm.esc.owner?"Escrow admin":S.pm.esc.is_agent?"Escrow agent":"Become an escrow agent"]]:[])].map(([k,t])=>`<div class="so-row click ${S.pm.filter===k?"on":""}" data-pmf="${k}"><div class="who"><b>${t}</b></div>${n[k]?`<span class="${k==="todo"?"so-n":"muted"}">${n[k]}</span>`:""}</div>`).join("")}</div>`;
+    for(const r of P.querySelectorAll("[data-pmf]")) r.onclick=()=>{ S.pm.filter=r.dataset.pmf; S.pm.view="mine"; pmPane(); pmRender(); pmLoadMine(); };
+  }
+  for(const b of P.querySelectorAll("[data-pmnew]")) b.onclick=()=>pmNew();
+  // From My Listings: open the right tab first, so an item is always listed under Items and a service under Services
+  for(const b of P.querySelectorAll("[data-pmnewin]")) b.onclick=()=>{ document.querySelector(`.tab[data-tab="${b.dataset.pmnewin}"]`).click(); pmNew(); }; }
+const pmNeedsMe=t=>["requested","accepted","escrow"].includes(t.status)&&t.actions.some(a=>a!=="cancel");
+
+// ---- loading
+async function pmLoad(){ const k=S.pm.kind, q=`browse?kind=${k}&sort=${S.pm.sort}&page=${S.pm.page}${S.pm.cat?"&cat="+encodeURIComponent(S.pm.cat):""}${S.pm.q.trim()?"&q="+encodeURIComponent(S.pm.q.trim()):""}`;
+  S.pm.loading=true; if(S.pm.view==="browse") pmRender(); const r=await pmCall(q); S.pm.loading=false; if(S.pm.kind!==k) return;
+  S.pm.data=r.ok?r:{error:r.error}; if(PM_TAB[S.tab]) pmPane(); if(S.pm.view==="browse") pmRender(); }
+async function pmLoadMine(){ const r=await pmCall("mine"); S.pm.mine=r.ok?r:{error:r.error,signed_in:r.signed_in}; if(r.ok) pmTodo(r.todo);
+  if(S.tab==="pm-mine"){ pmPane(); if(S.pm.view==="mine") pmRender(); } return r; }
+async function pmLoadEsc(){ const r=await pmCall("escrow"); S.pm.esc=r.ok?r:{error:r.error,signed_in:r.signed_in}; if(S.tab==="pm-mine"){ pmPane(); if(S.pm.filter==="escrow") pmRender(); } }
+async function pmOpen(id){ S.pm.view="listing"; S.pm.listing={loading:true,id}; pmRender(); const r=await pmCall(`listing?id=${id}`);
+  S.pm.listing=r.ok?{...r.listing,_min:r.escrow_min,_fee:r.escrow_fee}:{error:r.error}; S.pm.buy={qty:1,escrow:false,agent:"",note:""};
+  S.pm.reporting=!!S.pmReportNext&&r.ok&&!r.listing.mine; S.pmReportNext=false;
+  if(r.ok&&r.listing.escrow_ok&&!S.pm.esc) pmCall("escrow").then(x=>{ if(x.ok){ S.pm.esc=x; if(S.pm.view==="listing") pmRender(); } });
+  pmRender(); }
+
+// ---- main area
+function pmRender(){ const P=$("pm-panel"); if(!P||!S.tab?.startsWith("pm-")) return;
+  const v=S.pm.view; P.innerHTML=v==="listing"?pmListingHtml():v==="form"?pmFormHtml():v==="mine"?pmMineHtml():v==="escrow"?pmEscHtml():pmBrowseHtml();
+  pmWire(P); }
+const pmSignIn=what=>`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg><h2>Sign in to ${what}</h2><div>The marketplace goes with your Quantum account.</div><button class="btn primary" style="margin-top:14px" onclick="openProfileView('overview')">Sign in</button></div>`;
+function pmBrowseHtml(){ const d=S.pm.data, svc=S.pm.kind==="service";
+  const head=`<div class="pm-top"><h2>${S.pm.cat?esc(S.pm.cat):svc?"Services":"Items for sale"}</h2><span class="muted">${d&&!d.error?`${d.total} listing${d.total===1?"":"s"}`:""}${S.pm.q.trim()?` matching “${esc(S.pm.q.trim())}”`:""}</span></div>`;
+  if(!d) return head+`<div class="so-empty">Loading…</div>`;
+  if(d.error) return head+`<div class="note">${esc(d.error)}</div>`;
+  if(!d.listings.length) return head+`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg><h2>Nothing here yet</h2><div>${svc?"Offer your crew's services: protection, hauling, mining, towing…":"Be the first to list something for sale."}</div><button class="btn primary" style="margin-top:14px" data-pmnew="1">${svc?"Offer a service":"Sell an item"}</button></div>`;
+  return head+`<div class="pm-grid">${d.listings.map(l=>`<div class="pm-card" data-pmopen="${l.id}">${l.mine?"":`<button class="pm-flag" data-pmflag="${l.id}" title="Report this ${l.kind==="service"?"service":"listing"}" aria-label="Report">⚑</button>`}${pmPh(l.photo,l.category)}<div class="pm-cb"><b>${esc(l.title)}</b>${pmPrice(l)}
+      ${(l.kind==="item"&&l.qty>1)||l.location?`<span class="muted" style="font-size:12px">${[l.location?"◆ "+esc(l.location):"",l.kind==="item"&&l.qty>1?`${l.qty.toLocaleString()} available`:""].filter(Boolean).join(" · ")}</span>`:""}
+      <div class="pm-meta">${soAv(l.seller)}<span>${esc(l.seller.name)}</span>${pmStars(l.seller.rating)}</div></div></div>`).join("")}</div>
+    ${d.pages>1?`<div class="row" style="justify-content:center;gap:8px;margin-top:16px"><button class="btn small" data-pmpage="-1" ${d.page<1?"disabled":""}>Previous</button><span class="muted">Page ${d.page+1} of ${d.pages}</span><button class="btn small" data-pmpage="1" ${d.page+1>=d.pages?"disabled":""}>Next</button></div>`:""}`; }
+function pmListingHtml(){ const l=S.pm.listing, back=`<button class="btn small ghost" data-pmback="1" style="margin-bottom:14px">← Back to ${l?.kind==="service"?"services":"items"}</button>`;
+  if(!l||l.loading) return back+`<div class="so-empty">Loading…</div>`; if(l.error) return back+`<div class="note">${esc(l.error)}</div>`;
+  const s=l.seller, b=S.pm.buy||{}, qty=Math.max(1,Math.min(l.qty||1,+b.qty||1)), total=l.price*(l.kind==="item"?qty:1), escOk=l.unit!=="quote"&&total>=l._min;
+  const agents=(S.pm.esc?.agents||[]).filter(a=>a.id!==s.id);
+  let side;
+  if(l.mine) side=`<div class="pm-box"><div class="k">Your listing</div><div>${l.status==="active"?`Up until ${new Date(l.expires*1000).toLocaleDateString([], {day:"numeric",month:"short"})}`:`<span class="pm-badge warn">${esc(l.status)}</span>`}${l.open_trades?` · <a data-pmgo="pm-mine" style="cursor:pointer;text-decoration:underline">${l.open_trades} open trade${l.open_trades>1?"s":""}</a>`:""}</div>
+      <div class="pm-acts"><button class="btn small" data-pmedit="1">Edit</button>${l.status==="active"?`<button class="btn small ghost" data-pmclose="1">${S.pm.arm==="close"?"Sure? Click again":"Close listing"}</button>`:`<button class="btn small primary" data-pmrenew="1">Re-list</button>`}
+        <button class="btn small danger" data-pmdel="1" ${l.open_trades?`disabled title="Finish or cancel its open trades first"`:""}>${S.pm.arm==="del"?"Delete for good? Click again":"Delete"}</button></div>
+        ${l.delErr?`<div style="color:#ffb3b3;font-size:12.5px">Couldn't delete it: ${esc(l.delErr)}</div>`:""}</div>`;
+  else if(l.status!=="active") side=`<div class="pm-box"><span class="pm-badge warn">This listing is ${esc(l.status)}</span></div>`;
+  else side=`<div class="pm-box"><div class="k">${l.kind==="service"?"Request this service":"Buy"}</div>
+      ${l.kind==="item"?`<label class="row" style="gap:8px;font-size:13px">Amount <input class="field" type="number" min="1" max="${l.qty}" value="${qty}" data-pmqty="1" style="width:110px"> <span class="muted">of ${l.qty.toLocaleString()}</span></label>`:""}
+      ${l.unit!=="quote"?`<div class="pm-total"><span>Total</span><b>${pmA(total+(b.escrow&&escOk?l._fee:0))}</b></div>`:`<div class="muted" style="font-size:12.5px">The seller quotes a price for your job. Say what you need below.</div>`}
+      ${escOk?`<label class="pm-chk"><input type="checkbox" data-pmesc="1" ${b.escrow?"checked":""}><span>Add escrow <span class="muted">(optional, +${pmA(l._fee)} paid by you)</span><br><span class="muted" style="font-size:12px">The agent holds the item and your aUEC until both of you have what you agreed.</span></span></label>
+        ${b.escrow?`<select class="field" data-pmagent="1"><option value="">Any available agent</option>${agents.map(a=>`<option value="${a.id}" ${String(b.agent)===String(a.id)?"selected":""}>${esc(a.name)} · ${a.completed} completed</option>`).join("")}</select>`:""}`:""}
+      <textarea class="field" rows="3" maxlength="500" data-pmnote="1" placeholder="${l.kind==="service"?"What you need, where and when":"Message to the seller (optional): where to meet, when…"}">${esc(b.note||"")}</textarea>
+      <button class="btn primary" data-pmbuy="1">${l.kind==="service"?"Send request":"Ask to buy"}</button>
+      <button class="btn" data-pmmsg="1">Message ${esc(s.name)}</button>
+      <div class="muted" style="font-size:11.5px;line-height:1.45">Nothing is paid through Quantum: you meet in game and trade there. The seller accepts or declines first.</div></div>`;
+  return back+`<div class="pm-detail"><div>${pmPh(l.photo,l.category)}<h2>${esc(l.title)}</h2><div>${pmPrice(l)}${l.kind==="item"?` <span class="muted" style="font-size:13px">· ${l.qty.toLocaleString()} available</span>`:""}</div>
+      <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">${l.location?`<span class="pm-badge">◆ ${esc(l.location)}</span>`:""}<span class="pm-badge">${esc(l.category)}</span>${l.escrow_ok&&l.unit!=="quote"?`<span class="pm-badge esc">Escrow available</span>`:""}<span class="pm-badge">Listed ${soAgo(l.created)}</span></div>
+      <div class="pm-desc">${esc(l.description||"No description.")}</div>
+      ${!l.mine?`<button class="btn small ghost" data-pmreport="1">⚑ Report this ${l.kind==="service"?"service":"listing"}</button>`:""}
+      ${S.pm.reporting?`<div class="pm-box" style="margin-top:10px"><div class="k">Report</div><select class="field" data-pmrr="1">${[["real_money","Real-money trade"],["scam","Scam or fraud"],["offensive","Offensive"],["wrong_category","Wrong category"],["other","Something else"]].map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}</select>
+        <textarea class="field" rows="2" maxlength="500" data-pmrn="1" placeholder="Anything we should know (optional)"></textarea><div class="pm-acts"><button class="btn small danger" data-pmrsend="1">Send report</button><button class="btn small ghost" data-pmreport="1">Cancel</button></div></div>`:""}
+      ${S.pm.esc?.owner&&!l.mine?`<div style="margin-top:10px"><button class="btn small danger" data-pmtake="1">${S.pm.arm==="take"?"Sure? Click again":"Take down (owner)"}</button></div>`:""}</div>
+    <div style="display:flex;flex-direction:column;gap:12px">${side}
+      <div class="pm-box"><div class="k">${l.kind==="service"?"Provider":"Seller"}</div><div class="pm-seller">${soAv(s,true)}<div class="who"><b class="up-name" data-upid="${esc(s.id||"")}" title="View profile">${esc(s.name)}</b><small>${pmStars(s.rating)} · ${s.rating?.sold||0} sold</small></div></div>
+        <div class="row" style="gap:6px;flex-wrap:wrap">${s.trusted?`<span class="pm-badge ok">Trusted datarunner</span>`:""}${s.agent?`<span class="pm-badge esc">Escrow agent</span>`:""}${s.uex?`<span class="pm-badge">UEX: ${esc(s.uex)}</span>`:""}${s.org?`<span class="pm-badge">${esc(s.org)}</span>`:""}</div></div></div></div>`; }
+function pmFormHtml(){ const f=S.pm.form, svc=f.kind==="service", cats=(svc?S.pm.mine?.service_cats:S.pm.mine?.item_cats)||PM_CATS[f.kind];
+  if(S.pm.mine&&S.pm.mine.signed_in===false) return pmSignIn("sell on the marketplace");
+  const units=svc?[["per job","Per job"],["per hour","Per hour"],["per SCU","Per SCU"],["per trip","Per trip"],["quote","Ask for a quote"]]:[];
+  return `<button class="btn small ghost" data-pmback="1" style="margin-bottom:14px">← Cancel</button><div class="pm-top"><h2>${f.id?"Edit listing":svc?"Offer a service":"Sell an item"}</h2></div>
+    <div class="pm-form">
+      <label class="wide">Title<input class="field" data-pmf="title" maxlength="80" value="${esc(f.title||"")}" placeholder="${svc?"e.g. Armed escort through Pyro":"e.g. Arclight pistol, Grade A quantum drive"}"></label>
+      <label>Category<select class="field" data-pmf="category">${cats.map(c=>`<option ${f.category===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
+      <label>Location<input class="field" data-pmf="location" maxlength="80" value="${esc(f.location||"")}" placeholder="${svc?"e.g. Stanton, Pyro":"e.g. Area 18"}"></label>
+      <label>Price in aUEC<input class="field" data-pmf="price" inputmode="numeric" value="${f.unit==="quote"?"":esc(f.price??"")}" ${f.unit==="quote"?"disabled placeholder='Quoted per job'":"placeholder='e.g. 45000'"}></label>
+      ${svc?`<label>Priced<select class="field" data-pmf="unit">${units.map(([v,t])=>`<option value="${v}" ${f.unit===v?"selected":""}>${t}</option>`).join("")}</select></label>`
+        :`<label>Amount for sale<input class="field" data-pmf="qty" type="number" min="1" value="${esc(f.qty??1)}"></label>`}
+      <label class="wide">Description<textarea class="field" data-pmf="description" maxlength="3000" placeholder="${svc?"What you offer, your ships and crew, when you're available…":"Condition, grade, where to pick it up…"}">${esc(f.description||"")}</textarea></label>
+      <div class="wide"><div class="pm-photo">${pmPh(f.photoData||f.photo)}<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:12.5px">Photo</b><span class="muted" style="font-size:12px">One picture. A screenshot from the game works best.</span>
+        <div class="pm-acts"><button class="btn small" type="button" data-pmpick="1">${f.photoData||f.photo?"Change photo":"Add a photo"}</button>${f.photoData||f.photo?`<button class="btn small ghost" type="button" data-pmnophoto="1">Remove</button>`:""}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-pmfile="1" hidden></div></div></div>
+      <div class="wide pm-rule" style="margin:0"><b>aUEC only.</b> Real money transactions are prohibited (dollars, PayPal, gift cards). These types of transactions break Star Citizen's Terms of Service. Listings which request this type of transaction will be taken down.</div>
+      <div class="wide pm-acts"><button class="btn primary" data-pmsave="1" ${S.pm.saving?"disabled":""}>${S.pm.saving?"Saving…":f.id?"Save changes":"Publish listing"}</button>${S.pm.formErr?`<span style="color:#ffb3b3;font-size:12.5px">${esc(S.pm.formErr)}</span>`:""}</div></div>`; }
+const PM_ACT={accept:["Accept","primary"],decline:["Decline","ghost"],cancel:["Cancel trade","ghost"],done:["Mark as done","primary"],
+  item_in:["Item received from seller","primary"],pay_in:["Payment received from buyer","primary"],release:["Hand over and complete","primary"],refund:["Cancel and return everything","danger"]};
+const PM_ARM=new Set(["decline","cancel","release","refund"]);
+function pmTradeHtml(t){ const other=t.role==="buyer"?t.seller:t.role==="seller"?t.buyer:null;
+  const who=t.role==="buyer"?`Buying from <b>${esc(t.seller.name)}</b>`:t.role==="seller"?`Selling to <b>${esc(t.buyer.name)}</b>`:`Escrow for <b>${esc(t.seller.name)}</b> → <b>${esc(t.buyer.name)}</b>`;
+  const stLabel={requested:["Waiting for the seller",""],accepted:["Meet in game","esc"],escrow:["In escrow","esc"],completed:["Complete","ok"],declined:["Declined","bad"],cancelled:["Cancelled","bad"],expired:["Expired","warn"]}[t.status]||[t.status,""];
+  const steps=t.escrow?[["Requested",1],["Accepted",t.status!=="requested"],[`Item with ${t.agent?.name||"agent"}`,t.item_in],[`aUEC with ${t.agent?.name||"agent"}`,t.pay_in],["Complete",t.status==="completed"]]
+    :[["Requested",1],["Accepted",t.status!=="requested"],["Buyer done",t.buyer_done],["Seller done",t.seller_done],["Complete",t.status==="completed"]];
+  const live=["requested","accepted","escrow"].includes(t.status), cur=live?steps.findIndex(s=>!s[1]):-1;
+  const msg=[other,...(t.role!=="agent"&&t.agent?[t.agent]:[]),...(t.role==="agent"?[t.buyer,t.seller]:[])].filter(Boolean);
+  const hint=t.status==="requested"&&t.role==="seller"?"They're asking to buy. Accept to arrange the trade in game.":
+    t.status==="accepted"?"Meet in game and trade. Each of you marks it done afterwards.":
+    t.status==="escrow"&&t.role==="seller"&&!t.item_in?`Hand the item to ${esc(t.agent?.name)} in game.`:
+    t.status==="escrow"&&t.role==="buyer"&&!t.pay_in?`Pay ${esc(t.agent?.name)} ${pmA(t.total+t.fee)} in game (price + escrow fee).`:
+    t.status==="escrow"&&t.role==="agent"?(t.item_in&&t.pay_in?`Give the item to ${esc(t.buyer.name)} and ${pmA(t.total)} to ${esc(t.seller.name)}, then complete it.`:"Collect the item from the seller and the payment from the buyer."):"";
+  return `<div class="pm-trade ${pmNeedsMe(t)?"todo":""}">${pmPh(t.photo)}<div style="min-width:0">
+    <h3>${esc(t.title)}<span class="pm-badge ${stLabel[1]}">${stLabel[0]}</span>${t.escrow?`<span class="pm-badge esc">Escrow</span>`:""}</h3>
+    <div class="sub">${who} · ${t.kind==="item"?`${t.qty} × `:""}${t.total?pmA(t.total):"Price to agree"}${t.fee?` + ${pmA(t.fee)} escrow fee`:""} · ${soAgo(t.updated)}</div>
+    ${t.note?`<div class="muted" style="font-size:12.5px;margin-bottom:6px">“${esc(t.note)}”</div>`:""}
+    ${live||t.status==="completed"?`<div class="pm-steps">${steps.map((s,i)=>`<span class="${s[1]?"on":i===cur?"cur":""}">${s[1]?"✓ ":""}${esc(s[0])}</span>`).join("")}</div>`:""}
+    ${hint?`<div style="font-size:12.5px;margin-bottom:8px">${hint}</div>`:""}
+    <div class="pm-acts">${t.actions.filter(a=>a!=="rate").map(a=>`<button class="btn small ${PM_ACT[a][1]}" data-pmact="${a}" data-pmt="${t.id}">${S.pm.arm===a+t.id?"Sure? Click again":PM_ACT[a][0]}</button>`).join("")}
+      ${msg.map(p=>`<button class="btn small ghost" data-pmchat="${p.id}">Message ${esc(p.name)}</button>`).join("")}
+      ${t.actions.includes("rate")?`<span class="pm-rate" title="Rate ${esc(other?.name||"")}">${[1,2,3,4,5].map(n=>`<button data-pmrate="${n}" data-pmt="${t.id}" class="${(t.my_rating||0)>=n?"on":""}">★</button>`).join("")}</span><span class="muted" style="font-size:12px">${t.my_rating?"Thanks for rating":"Rate "+esc(other?.name||"them")}</span>`:""}</div>
+    <details class="pm-log"><summary>History</summary>${t.log.map(x=>`<div>${new Date(x.at*1000).toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${esc([t.buyer,t.seller,t.agent].find(p=>p&&p.id===x.who)?.name||"")}: ${esc(x.text)}</div>`).join("")}</details></div></div>`; }
+function pmMineHtml(){ const m=S.pm.mine; if(!m) return `<div class="so-empty">Loading…</div>`;
+  if(m.signed_in===false||m.error==="Sign in to your Quantum account first.") return pmSignIn("trade on the marketplace");
+  if(m.error) return `<div class="note">${esc(m.error)}</div>`;
+  const f=S.pm.filter, open=t=>["requested","accepted","escrow"].includes(t.status);
+  if(f==="escrow") return pmEscHtml();
+  if(f==="listings") return `<div class="pm-top"><h2>My listings</h2><span class="muted">${m.listings.length}</span></div>`+(m.listings.length?`<div class="pm-mylist">${m.listings.map(l=>`<div class="pm-mini" data-pmopen="${l.id}">${pmPh(l.photo)}<div class="who"><b>${esc(l.title)}</b><small>${l.unit==="quote"?"Quote":pmA(l.price)} · ${l.status==="active"?`${l.kind==="item"?l.qty+" left · ":""}up`:esc(l.status)}</small></div></div>`).join("")}</div>`:`<div class="so-empty">You haven't listed anything yet.</div>`);
+  const ts=m.trades.filter(f==="todo"?pmNeedsMe:f==="open"?open:t=>!open(t));
+  const title={todo:"Requests",open:"Open trades",done:"Finished trades"}[f];
+  return `<div class="pm-top"><h2>${title}</h2><span class="muted">${ts.length}</span></div>`+(ts.length?ts.map(pmTradeHtml).join(""):`<div class="so-empty">${f==="todo"?"No requests right now. Trades waiting on you (to accept, confirm or hand over) show up here.":"No trades here yet."}</div>`); }
+function pmEscHtml(){ const e=S.pm.esc; if(!e) return `<div class="so-empty">Loading…</div>`;
+  if(e.signed_in===false||e.error==="Sign in to your Quantum account first.") return pmSignIn("use escrow");
+  if(e.error) return `<div class="note">${esc(e.error)}</div>`;
+  let h=`<div class="pm-top"><h2>Escrow</h2><span class="muted">An optional add-on for trades of ${pmA(e.min)} or more</span></div>
+    <div class="pm-esc-how"><div><b><i>1</i>Ask with escrow</b>Tick “Add escrow” when you ask to buy. The fee is ${pmA(e.fee)}, paid by the buyer.</div>
+      <div><b><i>2</i>Seller → agent</b>Once the seller accepts, they hand the item to the agent in game.</div>
+      <div><b><i>3</i>Buyer → agent</b>The buyer pays the agent the price plus the fee.</div>
+      <div><b><i>4</i>Agent hands over</b>The agent gives the buyer the item and the seller the aUEC, and completes the trade.</div></div>`;
+  const mine=(S.pm.mine?.trades||[]).filter(t=>t.role==="agent");
+  if(e.is_agent){ h+=`<div class="pm-sec">Trades you're handling<span class="pm-badge esc">You're an escrow agent</span></div>`+(mine.filter(t=>["requested","accepted","escrow"].includes(t.status)).map(pmTradeHtml).join("")||`<div class="so-empty">No escrow trades right now.</div>`); }
+  else { const a=e.application;
+    h+=`<div class="pm-sec">Become an escrow agent</div><div class="pm-box" style="max-width:640px">`+(a&&a.status==="pending"?`<div>Your application is <span class="pm-badge warn">waiting for review</span> (sent ${soAgo(a.at)}).</div>`
+      :e.trusted?`${a&&a.status==="declined"?`<div class="muted" style="font-size:12.5px">Your last application was declined. You can apply again.</div>`:""}<div style="font-size:13px">Trusted datarunners can apply. Tell us about yourself: your experience trading, when you play, your org.</div>
+        <textarea class="field" rows="4" maxlength="1000" data-pmapply="1" placeholder="Why you'd make a good escrow agent"></textarea><div><button class="btn primary small" data-pmapplysend="1">Apply</button></div>`
+      :`<div style="font-size:13px">Escrow agents are trusted datarunners. ${e.linked?"Keep sending accurate prices to UEX through Quantum to earn trusted status, then apply here.":"Link your UEX name in your profile and earn trusted status by datarunning through Quantum, then apply here."}</div>`)+`</div>`; }
+  if(e.owner){ h+=`<div class="pm-sec">Owner: applications <span class="muted">${e.queue.length}</span></div>`+(e.queue.length?e.queue.map(q=>`<div class="pm-box" style="max-width:760px;margin-bottom:10px"><div class="pm-seller">${soAv(q.who)}<div class="who"><b>${esc(q.who.name)}</b><small>${pmStars(q.who.rating)} · applied ${soAgo(q.at)}${q.who.uex?` · UEX: ${esc(q.who.uex)}`:""}</small></div></div>
+        ${q.message?`<div style="white-space:pre-wrap;font-size:13px">${esc(q.message)}</div>`:""}<div class="pm-acts"><button class="btn small primary" data-pmdecide="1" data-id="${q.id}">Approve</button><button class="btn small ghost" data-pmdecide="0" data-id="${q.id}">Decline</button><button class="btn small ghost" data-pmchat="${q.who.id}">Message</button></div></div>`).join(""):`<div class="so-empty">No applications waiting.</div>`);
+    h+=`<div class="pm-sec">Owner: agents</div><div class="pm-box" style="max-width:760px">${e.agents.map(a=>`<div class="pm-seller">${soAv(a)}<div class="who" style="flex:1"><b>${esc(a.name)}</b><small>${a.completed} completed · ${a.open} open</small></div>${a.id!==S.so.st?.me?.id?`<button class="btn small ghost" data-pmunagent="${a.id}">${S.pm.arm==="un"+a.id?"Sure? Click again":"Remove"}</button>`:`<span class="muted" style="font-size:12px">You</span>`}</div>`).join("")}
+      <div class="row" style="gap:8px"><input class="field" data-pmappoint="1" placeholder="@username of someone to appoint" style="flex:1"><button class="btn small primary" data-pmappointgo="1">Appoint</button></div></div>`;
+    h+=`<div class="pm-sec">Owner: reported listings <span class="muted">${e.reports.length}</span></div>`+(e.reports.length?`<div class="pm-box" style="max-width:760px">${e.reports.map(r=>`<div class="row" style="gap:8px;flex-wrap:wrap"><span class="pm-badge ${r.reason==="real_money"||r.reason==="scam"?"bad":"warn"}">${esc(r.reason.replace("_"," "))}</span><a style="cursor:pointer;text-decoration:underline" data-pmopen="${r.listing}">${esc(r.title)}</a><span class="muted" style="font-size:12px">${esc(r.status)} · ${soAgo(r.at)}${r.note?` · “${esc(r.note)}”`:""}</span></div>`).join("")}</div>`:`<div class="so-empty">No reports.</div>`); }
+  return h; }
+
+// ---- actions
+function pmNew(){ const kind=S.tab==="pm-services"?"service":"item";
+  S.pm.form={kind,title:"",category:"",description:"",price:"",unit:kind==="service"?"per job":"each",qty:1,location:""}; S.pm.formErr=null; S.pm.view="form";
+  if(!S.pm.mine) pmLoadMine().then(()=>{ if(S.pm.view==="form") pmRender(); }); pmRender(); }
+function pmArm(key,fn){ if(S.pm.arm===key){ S.pm.arm=null; return fn(); } S.pm.arm=key; pmRender(); setTimeout(()=>{ if(S.pm.arm===key){ S.pm.arm=null; pmRender(); } },3500); }
+function pmShrink(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
+  img.onload=()=>{ const k=Math.min(1,1280/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.86)); };
+  img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
+function pmWire(P){
+  const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)) el.onclick=e=>fn(el,e); };
+  on("[data-pmopen]",el=>pmOpen(+el.dataset.pmopen));
+  on("[data-pmflag]",(el,e)=>{ e.stopPropagation(); S.pmReportNext=true; pmOpen(+el.dataset.pmflag); }); on("[data-pmnew]",()=>pmNew());
+  on("[data-pmback]",()=>{ S.pm.view=PM_TAB[S.tab]?"browse":"mine"; S.pm.reporting=false; pmRender(); });
+  on("[data-pmpage]",el=>{ S.pm.page=Math.max(0,S.pm.page+ +el.dataset.pmpage); pmLoad(); $("pm-panel").scrollTop=0; });
+  on("[data-pmgo]",el=>document.querySelector(`.tab[data-tab="${el.dataset.pmgo}"]`)?.click());
+  on("[data-pmchat]",el=>soOpen(el.dataset.pmchat));
+  // listing page
+  const qtyIn=P.querySelector("[data-pmqty]"); if(qtyIn) qtyIn.onchange=()=>{ S.pm.buy.qty=+qtyIn.value||1; pmRender(); };
+  const escIn=P.querySelector("[data-pmesc]"); if(escIn) escIn.onchange=()=>{ S.pm.buy.escrow=escIn.checked; pmRender(); };
+  const agIn=P.querySelector("[data-pmagent]"); if(agIn) agIn.onchange=()=>{ S.pm.buy.agent=agIn.value; };
+  const noteIn=P.querySelector("[data-pmnote]"); if(noteIn) noteIn.oninput=()=>{ S.pm.buy.note=noteIn.value; };
+  on("[data-pmbuy]",async el=>{ const l=S.pm.listing, b=S.pm.buy; el.disabled=true;
+    const r=await pmCall("buy",{listing:l.id,qty:+b.qty||1,escrow:!!b.escrow,agent:b.agent||null,note:b.note||""}); el.disabled=false;
+    if(!r.ok) return toast(r.signed_in===false?"Sign in to your Quantum account to buy":r.error);
+    toast(r.trade.escrow?`Request sent. ${r.trade.agent.name} will handle the escrow once ${r.trade.seller.name} accepts.`:`Request sent to ${r.trade.seller.name}`);
+    S.pm.filter="open"; await pmLoadMine(); document.querySelector('.tab[data-tab="pm-mine"]').click(); });
+  on("[data-pmmsg]",async el=>{ el.disabled=true; const r=await pmCall("contact",{listing:S.pm.listing.id}); el.disabled=false;
+    if(!r.ok) return toast(r.signed_in===false?"Sign in to your Quantum account to message sellers":r.error); soOpen(r.with); });
+  on("[data-pmreport]",()=>{ S.pm.reporting=!S.pm.reporting; pmRender(); });
+  on("[data-pmrsend]",async()=>{ const r=await pmCall("report",{listing:S.pm.listing.id,reason:P.querySelector("[data-pmrr]").value,note:P.querySelector("[data-pmrn]").value});
+    toast(r.ok?"Thanks. The Quantum team will take a look.":r.error); if(r.ok){ S.pm.reporting=false; pmRender(); } });
+  on("[data-pmtake]",()=>pmArm("take",async()=>{ const r=await pmCall("remove",{id:S.pm.listing.id,reason:"Taken down by Quantum"}); toast(r.ok?"Listing taken down":r.error); if(r.ok){ S.pm.view="browse"; pmLoad(); pmLoadEsc(); } }));
+  on("[data-pmedit]",()=>{ const l=S.pm.listing; S.pm.form={...l,photoData:null}; S.pm.formErr=null; S.pm.view="form"; if(!S.pm.mine) pmLoadMine().then(()=>pmRender()); pmRender(); });
+  on("[data-pmclose]",()=>pmArm("close",async()=>{ const r=await pmCall("close",{id:S.pm.listing.id}); toast(r.ok?"Listing closed":r.error); if(r.ok){ pmOpen(S.pm.listing.id); pmLoad(); } }));
+  on("[data-pmdel]",()=>pmArm("del",async()=>{ const r=await pmCall("delete",{id:S.pm.listing.id});
+    if(!r.ok){ S.pm.listing.delErr=r.error==="Unknown request"?"This copy of Quantum can't delete listings yet: update app.py too (or rebuild the exe).":r.error; toast(S.pm.listing.delErr); return pmRender(); }
+    toast("Listing deleted"); S.pm.data=null; pmLoad(); await pmLoadMine(); if(S.tab==="pm-mine"){ S.pm.filter="listings"; S.pm.view="mine"; pmPane(); pmRender(); } else { S.pm.view="browse"; pmRender(); } }));
+  on("[data-pmrenew]",async()=>{ const r=await pmCall("renew",{id:S.pm.listing.id}); toast(r.ok?"Re-listed for 30 days":r.error); if(r.ok){ pmOpen(S.pm.listing.id); pmLoad(); } });
+  // form
+  const f=S.pm.form;
+  for(const el of P.querySelectorAll("[data-pmf]")) el.oninput=el.onchange=()=>{ f[el.dataset.pmf]=el.value; if(el.dataset.pmf==="unit") pmRender(); };
+  on("[data-pmpick]",()=>P.querySelector("[data-pmfile]").click());
+  const fileIn=P.querySelector("[data-pmfile]"); if(fileIn) fileIn.onchange=async()=>{ const file=fileIn.files[0]; if(!file) return;
+    try{ f.photoData=await pmShrink(file); f.photoRemove=false; pmRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
+  on("[data-pmnophoto]",()=>{ f.photoData=null; f.photo=null; f.photoRemove=true; pmRender(); });
+  on("[data-pmsave]",async()=>{ const cat=f.category||P.querySelector('[data-pmf="category"]')?.value;
+    const body={kind:f.kind,title:f.title,category:cat,description:f.description,price:f.unit==="quote"?0:String(f.price||"").replace(/[^\d]/g,""),unit:f.kind==="service"?f.unit:"each",qty:f.qty,location:f.location,photo:f.photoData||null,photo_remove:!!f.photoRemove};
+    if(f.id) body.id=f.id; S.pm.saving=true; S.pm.formErr=null; pmRender();
+    const r=await pmCall(f.id?"update":"create",body); S.pm.saving=false;
+    if(!r.ok){ S.pm.formErr=r.signed_in===false?"Sign in to your Quantum account first.":r.error; return pmRender(); }
+    toast(f.id?"Listing saved":"Your listing is up"); S.pm.kind=r.listing.kind; S.pm.data=null; pmLoad(); pmLoadMine(); pmOpen(r.listing.id); });
+  // trades
+  on("[data-pmact]",el=>{ const a=el.dataset.pmact, id=+el.dataset.pmt;
+    const go=async()=>{ el.disabled=true; const r=await pmCall("trade",{id,action:a}); if(!r.ok){ el.disabled=false; return toast(r.error); }
+      toast({accept:"Accepted",decline:"Declined",cancel:"Trade cancelled",done:"Marked as done",item_in:"Noted: item received",pay_in:"Noted: payment received",release:"Trade complete",refund:"Trade cancelled and returned"}[a]);
+      await pmLoadMine(); };
+    PM_ARM.has(a)?pmArm(a+id,go):go(); });
+  on("[data-pmrate]",async el=>{ const r=await pmCall("rate",{trade:+el.dataset.pmt,stars:+el.dataset.pmrate}); if(!r.ok) return toast(r.error); toast("Thanks for rating"); pmLoadMine(); });
+  // escrow
+  on("[data-pmapplysend]",async el=>{ el.disabled=true; const r=await pmCall("escrow/apply",{message:P.querySelector("[data-pmapply]").value}); el.disabled=false; toast(r.ok?"Application sent":r.error); if(r.ok) pmLoadEsc(); });
+  on("[data-pmdecide]",async el=>{ const r=await pmCall("escrow/decide",{id:+el.dataset.id,approve:el.dataset.pmdecide==="1"}); toast(r.ok?(el.dataset.pmdecide==="1"?"Approved: they're an escrow agent now":"Declined"):r.error); pmLoadEsc(); });
+  on("[data-pmappointgo]",async()=>{ const v=P.querySelector("[data-pmappoint]").value.trim(); if(!v) return; const r=await pmCall("escrow/appoint",{member:v}); toast(r.ok?"Appointed":r.error); if(r.ok) pmLoadEsc(); });
+  on("[data-pmunagent]",el=>pmArm("un"+el.dataset.pmunagent,async()=>{ const r=await pmCall("escrow/remove",{member:el.dataset.pmunagent}); toast(r.ok?"No longer an escrow agent":r.error); pmLoadEsc(); }));
+}
+// The open trades refresh while Mine or Escrow is open (the other side may have moved them on)
+setInterval(()=>{ if(S.tab==="pm-mine"&&S.pm.view==="mine") pmLoadMine(); },10000);
+
+// =================================================================== Org: player organisations (server: orgs.py)
+S.og={mine:null,cur:null,view:null,tab:"overview",data:null,browse:null,q:"",form:null,month:null,ev:null,evForm:null,rankEdit:null,inviteQ:"",inviteRes:null,arm:null,todo:0};
+const OG_PERM={members:"Members: invite, accept, rank and remove members below them",events:"Events: add, change and delete events",ranks:"Ranks: add, edit and reorder ranks below them",org:"Org: change the name, tag, logo, slogan and description"};
+async function ogCall(path,body){ let r; try{ r=await api().org(path,body===undefined?null:body); }catch(e){ r={ok:false,error:"Couldn't reach Quantum"}; } return r; }
+// Links in a verified org's description open in the browser (only verified orgs, so nobody can pose as a real org with a bad link)
+function ogLinks(text,verified){ const t=esc(text||""); if(!verified) return t;
+  return t.replace(/(?<![@\w.\/-])((?:https?:\/\/|www\.)[^\s<]+|(?:discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|gg|io|co|us|uk|de|eu|tv|app|dev|space|xyz|info|me)(?:\/[^\s<]*)?)/gi,
+    m=>{ const clean=m.replace(/[.,;:!?)\]]+$/,""), rest=m.slice(clean.length), url=/^https?:\/\//i.test(clean)?clean.replace(/^http:/i,"https:"):"https://"+clean;
+      return `<a class="og-link" data-ogurl="${url}" title="${url}">${clean}</a>${rest}`; }); }
+const ogRankIcon=(r,size=22)=>r?.icon?`<img class="og-ricon" src="${esc(r.icon)}" alt="" style="width:${size}px;height:${size}px" onerror="this.remove()">`:"";
+function ogIconFile(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
+  img.onload=()=>{ const n=128, c=document.createElement("canvas"); c.width=c.height=n; const k=Math.min(n/img.width,n/img.height), w=img.width*k, h=img.height*k;
+    c.getContext("2d").drawImage(img,(n-w)/2,(n-h)/2,w,h); URL.revokeObjectURL(u); res(c.toDataURL("image/png")); };
+  img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
+const ogVer=o=>o?.verified?`<span class="og-ver" title="Verified with RSI: the owner proved it's their org on robertsspaceindustries.com">✓ RSI</span>`:"";
+const ogLogo=(o,sm)=>`<div class="og-logo${sm?" sm":""}">${o?.logo?`<img src="${esc(o.logo)}" alt="" onerror="this.remove()">`:esc((o?.tag||"?").slice(0,4))}</div>`;
+function ogTodo(n){ S.og.todo=n; const b=$("rail-og-n"); if(b){ b.textContent=n; b.hidden=!n; }
+  if(S.ogTodoSeen!==undefined&&n>S.ogTodoSeen) toast("Org: you have a new invitation or join request"); S.ogTodoSeen=n; }
+const ogTime=t=>new Date(t*1000).toLocaleString([], {weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const ogDur=m=>m>=60?`${Math.floor(m/60)} h${m%60?` ${m%60} min`:""}`:`${m} min`;
+async function openOrg(){ ogPane(); ogRender(); await ogLoadMine();
+  if(!S.og.view){ const first=S.og.mine?.orgs?.[0]; if(first){ S.og.view="org"; ogOpen(first.id); } else { S.og.view="home"; ogRender(); } } else if(S.og.view==="org"&&S.og.cur) ogOpen(S.og.cur,true); }
+async function ogLoadMine(){ const r=await ogCall("mine"); S.og.mine=r.ok?r:{error:r.error,signed_in:r.signed_in}; if(S.tab==="orgs") ogPane(); return r; }
+async function ogOpen(id,quiet){ S.og.cur=id; S.og.view="org"; if(!quiet||S.og.data?.org?.id!==id){ S.og.data=null; S.og.ev=null; S.og.evForm=null; S.og.rankEdit=null; S.og.form=null; } ogPane(); ogRender();
+  const r=await ogCall(`org?id=${id}`); if(S.og.cur!==id) return; S.og.data=r.ok?r:{error:r.error}; if(!r.ok&&r.error) toast(r.error);
+  if(r.ok&&!r.member) S.og.tab="overview"; ogRender(); }
+function ogApply(r){ if(r.ok&&r.org){ S.og.data=r; ogRender(); ogLoadMine(); } else if(!r.ok) toast(r.error); return r; }
+
+// ---- sidebar
+function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
+  if(m&&(m.signed_in===false||m.error==="Sign in to your Quantum account first.")){ P.innerHTML=`<div class="note"><b>Sign in to use orgs</b><div class="muted" style="font-size:12.5px;margin:6px 0 10px">Orgs go with your Quantum account.</div><button class="btn primary small" onclick="openProfileView('overview')">Sign in</button></div>`; return; }
+  if(m?.error){ P.innerHTML=`<div class="note">${esc(m.error)}</div>`; return; }
+  const orgs=m?.orgs||[], inv=m?.invites||[], req=m?.requests||[];
+  P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn primary" style="flex:1" data-ognew="1">+ Create an org</button><button class="btn" style="flex:1" data-ogfind="1">Find orgs</button></div>
+    ${inv.length?`<div class="so-h">Invitations <b>${inv.length}</b></div>${inv.map(i=>`<div class="so-row">${ogLogo(i.org,1)}<div class="who"><b>${esc(i.org.name)} <span class="muted" style="font-weight:400">[${esc(i.org.tag)}]</span></b><small>${i.by?`From ${esc(i.by.name)} · `:""}${i.org.members} member${i.org.members===1?"":"s"}</small></div>
+      <div class="acts"><button class="btn small primary" data-oginv="${i.id}" data-yes="1">Join</button><button class="btn small ghost" data-oginv="${i.id}" data-yes="0">Decline</button></div></div>`).join("")}`:""}
+    <div class="so-h">My orgs <b>${orgs.length}</b></div>
+    ${m?orgs.length?orgs.map(o=>`<div class="so-row click ${S.og.view==="org"&&S.og.cur===o.id?"on":""}" data-ogopen="${o.id}">${ogLogo(o,1)}<div class="who"><b>${esc(o.name)}${o.verified?` <span style="color:#9fe0b4" title="Verified with RSI">✓</span>`:""}</b><small>[${esc(o.tag)}] · ${esc(o.my_rank||"")}</small></div></div>`).join("")
+      :`<div class="so-empty">You're not in an org yet. Create one, or find one to join.</div>`:`<div class="so-empty">Loading…</div>`}
+    ${req.length?`<div class="so-h">Waiting to join</div>${req.map(r=>`<div class="so-row click" data-ogopen="${r.org.id}">${ogLogo(r.org,1)}<div class="who"><b>${esc(r.org.name)}</b><small>Request sent ${soAgo(r.at)}</small></div></div>`).join("")}`:""}`;
+  for(const b of P.querySelectorAll("[data-ogopen]")) b.onclick=()=>{ S.og.tab="overview"; ogOpen(+b.dataset.ogopen); };
+  for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",description:"",recruiting:true}; ogPane(); ogRender(); };
+  for(const b of P.querySelectorAll("[data-ogfind]")) b.onclick=()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); };
+  for(const b of P.querySelectorAll("[data-oginv]")) b.onclick=async()=>{ b.disabled=true; const yes=b.dataset.yes==="1"; const r=await ogCall("invite/respond",{id:+b.dataset.oginv,accept:yes});
+    if(!r.ok) return toast(r.error); toast(yes?"Welcome aboard!":"Invitation declined"); await ogLoadMine(); if(yes){ S.og.tab="overview"; ogOpen(r.org); } }; }
+async function ogBrowse(){ const q=S.og.q; const r=await ogCall("browse"+(q.trim()?"?q="+encodeURIComponent(q.trim()):"")); if(S.og.q!==q) return; S.og.browse=r.ok?r.orgs:{error:r.error}; if(S.og.view==="browse") ogRender(); }
+
+// ---- main area
+function ogRender(){ const P=$("og-panel"); if(!P||S.tab!=="orgs") return; const v=S.og.view;
+  P.innerHTML=v==="create"?ogFormHtml(true):v==="browse"?ogBrowseHtml():v==="org"?ogOrgHtml():ogHomeHtml(); ogWire(P); }
+function ogHomeHtml(){ const m=S.og.mine;
+  if(m&&(m.signed_in===false||m.error==="Sign in to your Quantum account first.")) return `<div class="so-land" style="margin-top:12vh"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/></svg><h2>Sign in to use orgs</h2><div>Create your org, invite your crew, set ranks and plan events.</div><button class="btn primary" style="margin-top:14px" onclick="openProfileView('overview')">Sign in</button></div>`;
+  return `<div class="so-land" style="margin-top:12vh"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/></svg><h2>Orgs</h2><div>Create your org with its logo, slogan and ranks, invite people on Quantum, and plan your ops on a shared calendar.</div>
+    <div class="row" style="gap:8px;justify-content:center;margin-top:14px"><button class="btn primary" data-ognew2="1">Create an org</button><button class="btn" data-ogfind2="1">Find orgs</button></div></div>`; }
+function ogBrowseHtml(){ const b=S.og.browse;
+  return `<div class="og-body"><div class="pm-top"><h2>Find orgs</h2><span class="muted">${S.og.q.trim()?"Search results":"Verified orgs recruiting now"}</span></div>
+    <div class="muted" style="font-size:12.5px;margin:-6px 0 12px">Only orgs verified with RSI are listed here. Other orgs invite people directly.</div>
+    <input class="search" id="og-q" placeholder="Search by name, tag or slogan" value="${esc(S.og.q)}" style="max-width:520px;margin-bottom:14px" autocomplete="off" spellcheck="false">
+    ${!b?`<div class="so-empty">Loading…</div>`:b.error?`<div class="note">${esc(b.error)}</div>`:b.length?`<div class="og-cards">${b.map(o=>`<div class="og-card" data-ogopen2="${o.id}">${ogLogo(o)}<div class="who"><b>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span> ${ogVer(o)}</b>${o.slogan?`<div class="og-slogan" style="font-size:13px">${esc(o.slogan)}</div>`:""}<small>${o.members} member${o.members===1?"":"s"}${o.member?" · You're a member":o.recruiting?" · Recruiting":" · Not recruiting"}</small></div></div>`).join("")}</div>`
+      :`<div class="so-empty">${S.og.q.trim()?"No verified orgs match that.":"No verified orgs are recruiting yet."}</div>`}</div>`; }
+function ogFormHtml(isNew){ const f=S.og.form||{};
+  return `<div class="og-body">${isNew?`<button class="btn small ghost" data-ogback="1" style="margin-bottom:14px">← Cancel</button><div class="pm-top"><h2>Create an org</h2></div>`:""}
+    ${isNew?`<div class="pm-box og-howto"><b>Org creations require verification through RSI's website</b>
+      <div class="muted" style="font-size:12.5px;margin:4px 0 8px">Only orgs verified with RSI are listed as searchable, valid orgs in Quantum. Until it's verified your org still works, but people can only join by invitation.</div>
+      <ol class="og-steps"><li>Your org needs to exist on RSI. Find its <b>SID</b>: the short ID at the end of its RSI address, <span class="og-mono">robertsspaceindustries.com/orgs/<b>SID</b></span>. Enter it below as the <b>Tag</b>.</li>
+        <li>Fill in the rest and press <b>Create org</b>. Quantum gives you a code like <span class="og-mono">QUANTUM-ABCD1234</span> under your org's <b>Settings</b>.</li>
+        <li>On RSI, edit your org (you need to be an admin there). Paste the code anywhere in the <b>Headline</b> (or the history, manifesto or charter) and save.</li>
+        <li>Back in Quantum, press <b>Check now</b> under Settings. Once it's verified your org gets the ✓ RSI badge, shows up in Find orgs, and its name and tag are locked to your RSI org so nobody else can use them. You can then take the code off RSI.</li></ol></div>`:""}
+    <div class="og-form">
+      <label class="wide">Name<input class="field" data-ogf="name" maxlength="48" value="${esc(f.name||"")}" placeholder="e.g. Blue Sun Industries" ${f.verified?"disabled":""}></label>
+      <label>${isNew?"Tag (your org's SID on RSI)":"Tag"}<input class="field" data-ogf="tag" maxlength="10" value="${esc(f.tag||"")}" placeholder="e.g. BSI" style="text-transform:uppercase" ${f.verified?"disabled":""}></label>
+      ${f.verified?`<div class="wide muted" style="font-size:12px;margin-top:-6px">The name and tag come from your verified RSI org.</div>`:""}
+      <label>Recruiting<select class="field" data-ogf="recruiting"><option value="1" ${f.recruiting!==false?"selected":""}>Yes: anyone can ask to join</option><option value="0" ${f.recruiting===false?"selected":""}>No: invite only</option></select></label>
+      <label class="wide">Visibility<select class="field" data-ogf="listed"><option value="1" ${f.listed!==false?"selected":""}>Listed: people can find it in Find orgs (once it's verified)</option><option value="0" ${f.listed===false?"selected":""}>Private: hidden from Find orgs, join by invitation only</option></select></label>
+      <label class="wide">Slogan<input class="field" data-ogf="slogan" maxlength="120" value="${esc(f.slogan||"")}" placeholder="One line people remember"></label>
+      <label class="wide">About the org<textarea class="field" data-ogf="description" maxlength="4000" placeholder="What you do, when you play, what you expect from members…">${esc(f.description||"")}</textarea></label>
+      <div class="wide"><div class="pm-photo">${ogLogo({logo:f.logoData||f.logo,tag:f.tag||"?"})}<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:12.5px">Logo</b><span class="muted" style="font-size:12px">A square picture works best.</span>
+        <div class="pm-acts"><button class="btn small" type="button" data-ogpick="1">${f.logoData||f.logo?"Change logo":"Upload a logo"}</button>${f.logoData||f.logo?`<button class="btn small ghost" type="button" data-ognologo="1">Remove</button>`:""}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-ogfile="1" hidden></div></div></div>
+      <div class="wide pm-acts"><button class="btn primary" data-ogsave="1" ${S.og.saving?"disabled":""}>${S.og.saving?"Saving…":isNew?"Create org":"Save changes"}</button>${S.og.formErr?`<span style="color:#ffb3b3;font-size:12.5px">${esc(S.og.formErr)}</span>`:""}</div></div></div>`; }
+function ogOrgHtml(){ const d=S.og.data; if(!d) return `<div class="og-body"><div class="so-empty">Loading…</div></div>`;
+  if(d.error) return `<div class="og-body"><div class="note">${esc(d.error)}</div></div>`;
+  const o=d.org, perms=new Set(d.perms||[]), now=Date.now()/1000;
+  const up=(d.events||[]).filter(e=>e.starts+(e.minutes||60)*60>now), online=(d.members||[]).filter(m=>m.online).length;
+  const hero=`<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
+    <div class="og-stats"><span><b>${o.members}</b> member${o.members===1?"":"s"}</span>${d.member?`<span><b>${online}</b> online</span><span>Your rank: ${ogRankIcon((d.ranks||[]).find(r=>r.id===d.my_rank),16)} <b>${esc(o.my_rank||"")}</b>${perms.has("owner")?" · Owner":""}</span>${up[0]?`<span>Next: <b>${esc(up[0].title)}</b> ${ogTime(up[0].starts)}</span>`:""}`:`<span>${o.recruiting?"Recruiting":"Invite only"}</span>`}</div></div></div>`;
+  if(!d.member) return hero+`<div class="og-body"><div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div><div class="og-desc">${o.description?ogLinks(o.description,o.verified):"No description yet."}</div>
+      ${d.ranks?.length?`<div class="pm-sec">Ranks</div>${d.ranks.map(r=>`<div class="og-rank"><div class="top">${ogRankIcon(r,28)}<b>${esc(r.name)}</b></div>${r.requirements?`<div class="req">${esc(r.requirements)}</div>`:""}</div>`).join("")}`:""}</div>
+    <div><div class="pm-box">${d.pending==="invite"?`<div>You've been invited to join.</div><button class="btn primary" data-ogjoininv="1">Join ${esc(o.name)}</button>`
+      :d.pending==="request"?`<div>Your request to join is waiting for an answer.</div>`
+      :o.recruiting?`<div class="k">Ask to join</div>
+        ${o.verified?`<div style="font-size:12.5px;line-height:1.5"><b>1. Apply on RSI too</b> <span class="muted">(recommended)</span><br><span class="muted">${esc(o.name)} is a verified RSI org. Joining on RSI shows your membership in game. RSI's Join button is on their org page; you'll need to be signed in to RSI.</span></div>
+          <button class="btn small" data-ogurl="${esc(o.rsi_url)}">Open ${esc(o.tag)} on RSI</button>
+          <div style="font-size:12.5px;margin-top:4px"><b>2. Ask to join on Quantum</b></div>`:""}
+        <input class="field" data-ogreqhandle="1" maxlength="60" placeholder="Your RSI handle${o.verified?" (the name you applied with)":" (optional)"}">
+        <textarea class="field" rows="4" maxlength="1000" data-ogreqmsg="1" placeholder="Say hi: what you play, when you're on, what you'd bring"></textarea><button class="btn primary" data-ogreq="1">Ask to join</button>`
+      :`<div class="muted">${esc(o.name)} is invite only right now.</div>`}</div></div></div></div>`;
+  const reqs=(d.pending||[]).filter(p=>p.kind==="request").length;
+  const tabs=[["overview","Overview"],["members","Members"],["ranks","Ranks"],["calendar","Calendar"],["settings","Settings"]];
+  const t=S.og.tab;
+  const body=t==="members"?ogMembersHtml(d):t==="ranks"?ogRanksHtml(d):t==="calendar"?ogCalHtml(d):t==="settings"?ogSettingsHtml(d):ogOverviewHtml(d,up);
+  return hero+`<div class="og-tabs">${tabs.map(([k,n])=>`<button data-ogtab="${k}" class="${t===k?"on":""}">${n}${k==="members"&&reqs?`<span class="so-n">${reqs}</span>`:""}</button>`).join("")}</div><div class="og-body">${body}</div>`; }
+function ogOverviewHtml(d,up){ const on=d.members.filter(m=>m.online);
+  return `<div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div><div class="og-desc">${d.org.description?ogLinks(d.org.description,d.org.verified):"No description yet."}</div>
+      <div class="pm-sec">Coming up</div>${up.length?up.slice(0,4).map(e=>ogEvCard(e,d)).join(""):`<div class="so-empty">Nothing planned yet.${new Set(d.perms).has("events")?" Add an event under Calendar.":""}</div>`}</div>
+    <div><div class="pm-box"><div class="k">Online now · ${on.length}</div>${on.length?on.map(m=>{ const rk=d.ranks.find(r=>r.id===m.rank); return `<div class="pm-seller">${soAvDot(m)}<div class="who" style="flex:1;min-width:0"><b class="up-name" data-upid="${esc(m.id)}">${esc(m.name)}</b><small class="${m.playing?"playing":""}">${esc(soPresence(m))}</small></div>${rk?`<span class="row" style="gap:6px;font-size:12.5px;color:var(--ink-2);flex:none">${ogRankIcon(rk,22)}${esc(rk.name)}</span>`:""}</div>`; }).join(""):`<div class="muted" style="font-size:12.5px">Nobody's online right now.</div>`}</div></div></div>`; }
+function ogEvCard(e,d){ const dt=new Date(e.starts*1000), perms=new Set(d.perms), past=e.starts+(e.minutes||60)*60<Date.now()/1000;
+  return `<div class="og-evcard ${S.og.ev===e.id?"sel":""}" id="og-ev-${e.id}"><div class="og-date"><span>${dt.toLocaleDateString([], {month:"short"})}</span><b>${dt.getDate()}</b><span style="color:var(--dim)">${dt.toLocaleDateString([], {weekday:"short"})}</span></div>
+    <div style="min-width:0"><h4>${esc(e.title)} <span class="pm-badge">${esc(e.kind||"Other")}</span>${past?`<span class="pm-badge">Past</span>`:""}</h4>
+      <div class="meta">${dt.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} · ${ogDur(e.minutes||60)}${e.location?` · ◆ ${esc(e.location)}`:""} · by ${esc(e.by)}</div>
+      ${e.description?`<div class="og-desc" style="font-size:13px;margin-bottom:6px">${esc(e.description)}</div>`:""}
+      ${ogSeatsHtml(e,d,past)}
+      <div class="muted" style="font-size:12.5px;margin-bottom:8px">Going ${e.going.length}${e.max?` of ${e.max}`:""}${e.going.length?`: ${e.going.map(esc).join(", ")}`:""}${e.maybe.length?` · Maybe: ${e.maybe.map(esc).join(", ")}`:""}</div>
+      <div class="pm-acts">${past?"":`<span class="og-rsvp pm-acts">${[["going","Going"],["maybe","Maybe"],["no","Can't make it"]].map(([k,n])=>`<button class="btn small ${e.mine===k?"on":""}" data-ogrsvp="${e.id}" data-st="${k}">${n}</button>`).join("")}</span>`}
+        ${perms.has("events")?`<button class="btn small ghost" data-ogevedit="${e.id}">Edit</button><button class="btn small ghost" data-ogevdel="${e.id}">${S.og.arm==="ev"+e.id?"Delete? Click again":"Delete"}</button>`:""}</div></div></div>`; }
+function ogSeatsHtml(e,d,past){ const sl=e.slots||[]; if(!sl.length) return "";
+  const can=new Set(d.perms).has("events"), seated=new Set(sl.flatMap(s=>s.people.map(p=>p.id))), mineSeat=sl.find(s=>s.people.some(p=>p.id===d.me));
+  const free=d.members.filter(m=>!seated.has(m.id));
+  let h=`<div class="og-seats">`, last;
+  for(const s of sl){ const ship=s.ship||"";
+    if(ship!==last){ h+=`<div class="ship">${ship?esc(ship):"Other roles"}</div>`; last=ship; }
+    const open=s.seats-s.people.length;
+    h+=`<div class="og-seat"><span class="role">${esc(s.role)}</span><span class="ppl">${s.people.map(p=>`<span class="${p.id===d.me?"me":""}">${esc(p.name||"")}${can&&!past?` <a style="cursor:pointer" title="Take them off this seat" data-ogunseat="${s.id}" data-m="${p.id}">×</a>`:""}</span>`).join("")}${open>0?`<i>${open} open</i>`:""}</span>
+      ${past?"":`${open>0&&!s.people.some(p=>p.id===d.me)?`<button class="btn small" data-ogseat="${s.id}">${mineSeat?"Switch here":"Take seat"}</button>`:""}${s.people.some(p=>p.id===d.me)?`<button class="btn small ghost" data-ogunseatme="${e.id}">Leave seat</button>`:""}
+      ${can&&open>0&&free.length?`<select class="field" data-ogassign="${s.id}"><option value="">Assign…</option>${free.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("")}</select>`:""}`}</div>`; }
+  return h+`</div>`; }
+function ogMembersHtml(d){ const perms=new Set(d.perms), my=d.my_position, can=perms.has("members"), ranks=d.ranks;
+  let h="";
+  if(can){ const pend=d.pending||[];
+    h+=`<div class="pm-box" style="margin-bottom:16px"><div class="k">Invite people on Quantum</div><div class="row" style="gap:8px"><input class="field" id="og-inv-q" placeholder="@username or name" value="${esc(S.og.inviteQ)}" style="flex:1" autocomplete="off"></div>
+      ${S.og.inviteRes?S.og.inviteRes.error?`<div class="muted">${esc(S.og.inviteRes.error)}</div>`:S.og.inviteRes.length?S.og.inviteRes.map(p=>{ const inOrg=d.members.some(m=>m.id===p.id), sent=pend.some(x=>x.who?.id===p.id&&x.kind==="invite");
+        return `<div class="so-row">${soAv(p)}<div class="who"><b>${esc(p.name)}</b><small>${p.uex?"UEX: "+esc(p.uex):"Quantum member"}</small></div><div class="acts">${inOrg?`<span class="muted" style="font-size:12px">Member</span>`:sent?`<span class="muted" style="font-size:12px">Invited</span>`:`<button class="btn small primary" data-oginvite="${p.id}">Invite</button>`}</div></div>`; }).join(""):`<div class="muted" style="font-size:12.5px">Nobody by that name on Quantum.</div>`:""}
+      ${pend.length?`<div class="k" style="margin-top:6px">Waiting</div>${pend.map(p=>`<div class="so-row">${soAv(p.who)}<div class="who"><b>${esc(p.who?.name||"")}</b><small>${p.kind==="request"?`Asked to join ${soAgo(p.at)}${p.rsi_handle?` · RSI: <a style="cursor:pointer;text-decoration:underline" data-ogurl="https://robertsspaceindustries.com/citizens/${esc(p.rsi_handle)}">${esc(p.rsi_handle)}</a>`:""}${p.message?`: “${esc(p.message)}”`:""}`:`Invited ${soAgo(p.at)}${p.by?` by ${esc(p.by)}`:""}`}</small></div>
+        <div class="acts">${p.kind==="request"?`<button class="btn small primary" data-ogreqok="${p.id}" data-yes="1">Accept</button><button class="btn small ghost" data-ogreqok="${p.id}" data-yes="0">Decline</button>`:`<button class="btn small ghost" data-ogcancel="${p.id}">Cancel</button>`}</div></div>`).join("")}`:""}</div>`; }
+  for(const r of ranks){ const ms=d.members.filter(m=>m.rank===r.id); if(!ms.length) continue;
+    h+=`<div class="og-rank-h">${ogRankIcon(r,18)}${esc(r.name)} <span class="muted">${ms.length}</span></div>`+ms.map(m=>{ const manage=can&&!m.owner&&m.id!==d.me&&(my<0||m.position>my);
+      return `<div class="og-mem">${soAvDot(m)}<div class="who"><b><span class="up-name" data-upid="${esc(m.id)}">${esc(m.name)}</span>${m.owner?` <span class="pm-badge esc">Owner</span>`:""}</b><small class="${m.playing?"playing":""}">${esc(soPresence(m))} · joined ${new Date(m.joined*1000).toLocaleDateString([], {day:"numeric",month:"short",year:"numeric"})}</small></div>
+        ${manage?`<select class="field" data-ogsetrank="${m.id}">${ranks.filter(x=>my<0||x.position>my).map(x=>`<option value="${x.id}" ${x.id===m.rank?"selected":""}>${esc(x.name)}</option>`).join("")}</select><button class="btn small ghost" data-ogkick="${m.id}">${S.og.arm==="kick"+m.id?"Remove? Click again":"Remove"}</button>`:""}
+        ${m.id!==d.me?`<button class="btn small ghost" data-ogchat="${m.id}">Message</button>`:""}</div>`; }).join(""); }
+  return h; }
+function ogRanksHtml(d){ const perms=new Set(d.perms), can=perms.has("ranks"), my=d.my_position, re=S.og.rankEdit;
+  const editor=r=>`<div class="og-rank"><div class="og-form" style="max-width:none"><label class="wide">Rank name<input class="field" data-ogr="name" maxlength="40" value="${esc(r.name||"")}"></label>
+      <label class="wide">Requirements to reach this rank<textarea class="field" data-ogr="requirements" maxlength="1000" placeholder="e.g. Own a cargo ship of 96 SCU or more&#10;10 hauling contracts with the org">${esc(r.requirements||"")}</textarea></label>
+      <div class="wide"><div class="muted" style="font-size:12px;margin-bottom:6px">This rank can manage:</div>${Object.entries(OG_PERM).filter(([k])=>perms.has(k)).map(([k,t])=>`<label class="og-perm"><input type="checkbox" data-ogrp="${k}" ${(r.perms||[]).includes(k)?"checked":""}> ${esc(t)}</label>`).join("")}</div>
+      <div class="wide"><div class="pm-photo" style="gap:10px"><div class="og-logo sm" style="width:52px;height:52px">${r.iconData||r.icon?`<img src="${esc(r.iconData||r.icon)}" alt="" style="object-fit:contain">`:"—"}</div>
+        <div style="display:flex;flex-direction:column;gap:5px"><b style="font-size:12.5px">Rank picture <span class="muted" style="font-weight:400">(optional: PNG, JPEG or ICO)</span></b>
+        <div class="pm-acts"><button class="btn small" type="button" data-ogrpick="1">${r.iconData||r.icon?"Change":"Upload"}</button>${r.iconData||r.icon?`<button class="btn small ghost" type="button" data-ogrnoicon="1">Remove</button>`:""}</div>
+        <input type="file" accept=".png,.jpg,.jpeg,.ico,image/png,image/jpeg,image/x-icon,image/vnd.microsoft.icon" data-ogrfile="1" hidden></div></div></div>
+      ${S.og.rankErr?`<div class="wide" style="color:#ffb3b3;font-size:12.5px">${esc(S.og.rankErr)}</div>`:""}
+      <div class="wide pm-acts"><button class="btn small primary" data-ogrsave="1">Save rank</button><button class="btn small ghost" data-ogrcancel="1">Cancel</button></div></div></div>`;
+  const max=d.ranks_max||20, full=d.ranks.length>=max;
+  let h=`<div class="pm-top"><h2>Ranks</h2><span class="muted">${d.ranks.length} of ${max} · top to bottom. New members start at the bottom rank.</span>${can?`<span class="spacer" style="flex:1"></span>${full?`<span class="muted" style="font-size:12.5px">The most ranks an org can have is ${max}</span>`:""}<button class="btn small primary" data-ogradd="1" ${full?`disabled title="The most ranks an org can have is ${max}"`:""}>+ Add rank</button>`:""}</div>`;
+  if(re&&!re.id) h+=editor(re);
+  h+=d.ranks.map((r,i)=>re&&re.id===r.id?editor(re):`<div class="og-rank"><div class="top">${ogRankIcon(r,30)}<b>${esc(r.name)}</b><span class="muted" style="font-size:12.5px">${r.count} member${r.count===1?"":"s"}</span><span class="spacer" style="flex:1"></span>
+      ${can&&(my<0||r.position>my)?`${i>1?`<button class="btn small ghost" data-ogrmove="${r.id}" data-dir="up" title="Move up">↑</button>`:""}${i>0&&i<d.ranks.length-1?`<button class="btn small ghost" data-ogrmove="${r.id}" data-dir="down" title="Move down">↓</button>`:""}<button class="btn small ghost" data-ogredit="${r.id}">Edit</button>${i>0?`<button class="btn small ghost" data-ogrdel="${r.id}">${S.og.arm==="r"+r.id?"Delete? Click again":"Delete"}</button>`:""}`:""}</div>
+      ${r.requirements?`<div class="req">${esc(r.requirements)}</div>`:`<div class="req muted">No requirements listed.</div>`}
+      ${r.perms.length?`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">${r.perms.map(p=>`<span class="pm-badge esc">Manages ${esc(p)}</span>`).join("")}</div>`:""}</div>`).join("");
+  return h; }
+function ogCalHtml(d){ const perms=new Set(d.perms), now=new Date(); S.og.month=S.og.month||new Date(now.getFullYear(),now.getMonth(),1);
+  const m0=S.og.month, first=new Date(m0.getFullYear(),m0.getMonth(),1), start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
+  const days=[...Array(42)].map((_,i)=>{ const x=new Date(start); x.setDate(start.getDate()+i); return x; });
+  const evs=d.events||[], key=x=>x.toDateString();
+  const byDay={}; for(const e of evs){ const k=key(new Date(e.starts*1000)); (byDay[k]=byDay[k]||[]).push(e); }
+  let h=`<div class="pm-top"><h2>${m0.toLocaleDateString([], {month:"long",year:"numeric"})}</h2><button class="btn small ghost" data-ogmon="-1">←</button><button class="btn small ghost" data-ogmon="0">Today</button><button class="btn small ghost" data-ogmon="1">→</button>
+    <span class="spacer" style="flex:1"></span>${perms.has("events")?`<button class="btn small primary" data-ogevnew="1">+ New event</button>`:""}</div>`;
+  if(S.og.evForm) h+=ogEvFormHtml(d);
+  h+=`<div class="og-cal">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(x=>`<div class="dow">${x}</div>`).join("")}${days.map(x=>`<div class="og-day ${x.getMonth()!==m0.getMonth()?"out":""} ${key(x)===key(now)?"today":""}"><span class="n">${x.getDate()}</span>${(byDay[key(x)]||[]).map(e=>`<div class="og-ev ${e.mine==="going"?"go":""}" data-ogev="${e.id}" title="${esc(e.title)}">${new Date(e.starts*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})} ${esc(e.title)}</div>`).join("")}</div>`).join("")}</div>`;
+  const nowS=Date.now()/1000, up=evs.filter(e=>e.starts+(e.minutes||60)*60>nowS);
+  h+=`<div class="pm-sec">Upcoming</div>`+(up.length?up.map(e=>ogEvCard(e,d)).join(""):`<div class="so-empty">Nothing planned yet.</div>`);
+  return h; }
+function ogEvFormHtml(d){ const f=S.og.evForm, pad=n=>String(n).padStart(2,"0"), dt=new Date((f.starts||Date.now()/1000+86400)*1000);
+  const local=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  return `<div class="pm-box" style="margin-bottom:16px;max-width:820px"><div class="k">${f.id?"Edit event":"New event"}</div><div class="og-form" style="max-width:none">
+    <label class="wide">Title<input class="field" data-oge="title" maxlength="80" value="${esc(f.title||"")}" placeholder="e.g. Pyro convoy run"></label>
+    <label>Type<select class="field" data-oge="kind">${(d.kinds||[]).map(k=>`<option ${f.kind===k?"selected":""}>${esc(k)}</option>`).join("")}</select></label>
+    <label>Starts (your time)<input class="field" type="datetime-local" data-oge="when" value="${local}"></label>
+    <label>Length<select class="field" data-oge="minutes">${[30,60,90,120,180,240,360,480].map(m=>`<option value="${m}" ${(f.minutes||60)===m?"selected":""}>${ogDur(m)}</option>`).join("")}</select></label>
+    <label>Spots (optional)<input class="field" type="number" min="1" data-oge="max" value="${esc(f.max??"")}" placeholder="No limit"></label>
+    <label class="wide">Where<input class="field" data-oge="location" maxlength="80" value="${esc(f.location||"")}" placeholder="e.g. Pyro Gateway, Area 18 hangar"></label>
+    <label class="wide">Details<textarea class="field" data-oge="description" maxlength="3000" placeholder="What to bring, ships, roles…">${esc(f.description||"")}</textarea></label>
+    <div class="wide"><div style="font:600 12.5px var(--text);color:var(--ink-2);margin-bottom:6px">Ships and roles <span class="muted" style="font-weight:400">(optional: seats people take, or you assign)</span></div>
+      ${(f.slots||[]).length?`<div class="og-slotrow muted" style="font-size:11.5px;margin-bottom:2px"><span>Ship (leave empty for a role without a ship)</span><span>Role (pick one or type your own)</span><span>Seats</span><span></span><span></span></div>`:""}
+      ${(f.slots||[]).map((x,i,a)=>{ const sub=x.g&&i>0&&a[i-1].g===x.g, last=x.g&&!(a[i+1]&&a[i+1].g===x.g);
+        return `<div class="og-slotrow ${sub?"sub":""}"><input class="field" list="og-ships" data-ogs="${i}" data-k="ship" value="${esc(x.ship||"")}" placeholder="${sub?"":"e.g. C2 Hercules"}" ${sub?'tabindex="-1" title="Same ship as above"':""}><input class="field" list="og-roles" data-ogs="${i}" data-k="role" value="${esc(x.role||"")}" maxlength="30" placeholder="Pick or type a role"><input class="field" type="number" min="1" max="100" data-ogs="${i}" data-k="seats" value="${x.seats||1}"><button class="btn small ghost" data-ogsdel="${i}" title="Remove">×</button>${last?`<button class="btn small" type="button" data-ogsmore="${i}" title="Add another role on this ship">+</button>`:"<span></span>"}</div>`; }).join("")}
+      <datalist id="og-roles">${(d.roles||[]).map(r=>`<option value="${esc(r)}">`).join("")}</datalist>
+      <datalist id="og-ships">${[...new Set((S.veh||[]).filter(v=>!v.concept).map(v=>v.full||v.name).filter(Boolean))].sort().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+      <div class="pm-acts"><button class="btn small" type="button" data-ogsship="1">+ Add a ship</button><button class="btn small ghost" type="button" data-ogsadd="1">+ Add a role without a ship</button></div></div>
+    <div class="wide pm-acts"><button class="btn small primary" data-ogesave="1">${f.id?"Save event":"Add to calendar"}</button><button class="btn small ghost" data-ogecancel="1">Cancel</button></div></div></div>`; }
+function ogSettingsHtml(d){ const perms=new Set(d.perms), o=d.org;
+  if(!S.og.form||S.og.form.id!==o.id) S.og.form={id:o.id,name:o.name,tag:o.tag,slogan:o.slogan||"",description:o.description||"",recruiting:o.recruiting,listed:o.listed!==false,logo:o.logo,verified:o.verified};
+  let h="";
+  if(perms.has("owner")){ const c=d.claim;
+    h+=`<div class="pm-sec" style="margin-top:0">RSI verification</div><div class="pm-box" style="max-width:760px;margin-bottom:6px">`+(o.verified
+      ?`<div class="row" style="gap:8px;flex-wrap:wrap">${ogVer(o)}<span>Verified as <b>${esc(o.rsi_sid)}</b> on RSI. Your name and tag are locked to your RSI org.</span><span class="spacer" style="flex:1"></span><button class="btn small ghost" data-ogurl="${esc(o.rsi_url)}">Open on RSI</button></div>`
+      :c?`<div style="font-size:13px">Prove <b>${esc(c.sid)}</b> on RSI is yours: put this code on your RSI org page.</div>
+        <input class="og-code" readonly value="${esc(c.code)}" onclick="this.select()" title="Click to select, then Ctrl+C">
+        <ol class="og-steps"><li>Open your org on RSI and edit it (you need to be an admin there).</li><li>Paste the code anywhere in the <b>Headline</b> (or the history, manifesto or charter) and save.</li><li>Come back and press <b>Check now</b>. Once it's verified you can take the code off again.</li></ol>
+        <div class="pm-acts"><button class="btn small" data-ogurl="${esc(c.rsi_url)}">Open ${esc(c.sid)} on RSI</button><button class="btn small primary" data-ogcheck="1" ${S.og.checking?"disabled":""}>${S.og.checking?"Checking RSI…":"Check now"}</button><button class="btn small ghost" data-ogclaimx="1">Cancel</button>${c.checked?`<span class="muted" style="font-size:12px">Last checked ${soAgo(c.checked)}</span>`:""}</div>`
+      :`<div style="font-size:13px">Is this your org on RSI? Verify it to get the ✓ RSI badge, show up in Find orgs, make links in your description clickable, and lock your RSI name and SID to this org so nobody else can use them on Quantum.</div>
+        <div class="row" style="gap:8px"><input class="field" id="og-claim-sid" maxlength="10" placeholder="Your org's SID on RSI" style="flex:1;text-transform:uppercase"><button class="btn small primary" data-ogclaim="1">Verify with RSI</button></div>`)+`</div>`; }
+  if(perms.has("org")) h+=`<div class="pm-sec"${perms.has("owner")?"":' style="margin-top:0"'}>Org details</div>`+ogFormHtml(false).replace('<div class="og-body">','<div>');
+  if(perms.has("owner")){ const others=d.members.filter(m=>m.id!==d.me);
+    h+=`<div class="pm-sec">Owner</div><div class="pm-box" style="max-width:760px"><div class="k">Hand the org over</div><div class="row" style="gap:8px"><select class="field" id="og-xfer" style="flex:1">${others.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("")||"<option value=''>No other members yet</option>"}</select><button class="btn small" data-ogxfer="1" ${others.length?"":"disabled"}>${S.og.arm==="xfer"?"Sure? Click again":"Make owner"}</button></div>
+      <div class="k" style="margin-top:8px">Delete the org</div><div class="row" style="gap:8px"><span class="muted" style="font-size:12.5px;flex:1">Removes the org, its ranks and its calendar for everyone. Members are told.</span><button class="btn small danger" data-ogdel="1">${S.og.arm==="del"?"Delete for good? Click again":"Delete org"}</button></div></div>`; }
+  else h+=`<div class="pm-sec">Membership</div><div class="pm-box" style="max-width:760px"><div class="row" style="gap:8px"><span style="flex:1">Leave ${esc(o.name)}</span><button class="btn small danger" data-ogleave="1">${S.og.arm==="leave"?"Leave? Click again":"Leave org"}</button></div></div>`;
+  return h; }
+
+// ---- actions
+function ogArm(key,fn){ if(S.og.arm===key){ S.og.arm=null; return fn(); } S.og.arm=key; ogRender(); setTimeout(()=>{ if(S.og.arm===key){ S.og.arm=null; ogRender(); } },3500); }
+function ogWire(P){ const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)) el.onclick=e=>fn(el,e); }, d=S.og.data, oid=d?.org?.id;
+  on("[data-ognew2]",()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",description:"",recruiting:true}; ogPane(); ogRender(); });
+  on("[data-ogfind2]",()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); });
+  on("[data-ogback]",()=>{ S.og.view=S.og.cur?"org":"home"; S.og.formErr=null; ogPane(); ogRender(); });
+  on("[data-ogopen2]",el=>{ S.og.tab="overview"; ogOpen(+el.dataset.ogopen2); });
+  const q=P.querySelector("#og-q"); if(q){ let t; q.oninput=()=>{ S.og.q=q.value; clearTimeout(t); t=setTimeout(ogBrowse,350); }; }
+  on("[data-ogtab]",el=>{ S.og.tab=el.dataset.ogtab; ogRender(); if(S.og.cur) ogOpen(S.og.cur,true); });
+  on("[data-ogchat]",el=>soOpen(el.dataset.ogchat));
+  // org form (create and settings)
+  const f=S.og.form;
+  for(const el of P.querySelectorAll("[data-ogf]")) el.oninput=el.onchange=()=>{ f[el.dataset.ogf]=["recruiting","listed"].includes(el.dataset.ogf)?el.value==="1":el.value; };
+  on("[data-ogpick]",()=>P.querySelector("[data-ogfile]").click());
+  const fi=P.querySelector("[data-ogfile]"); if(fi) fi.onchange=async()=>{ const file=fi.files[0]; if(!file) return; try{ f.logoData=await pmShrink(file); f.logoRemove=false; ogRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
+  on("[data-ognologo]",()=>{ f.logoData=null; f.logo=null; f.logoRemove=true; ogRender(); });
+  on("[data-ogsave]",async()=>{ S.og.saving=true; S.og.formErr=null; ogRender();
+    const body={name:f.name,tag:f.tag,slogan:f.slogan,description:f.description,recruiting:f.recruiting!==false,listed:f.listed!==false,logo:f.logoData||null,logo_remove:!!f.logoRemove};
+    const r=f.id?await ogCall("update",{...body,id:f.id}):await ogCall("create",body); S.og.saving=false;
+    if(!r.ok){ S.og.formErr=r.error; return ogRender(); }
+    toast(f.id?"Saved":r.claim?`${r.org.name} is created. Put the code on your RSI org page, then press Check now.`:r.rsi==="missing"?`${r.org.name} is created. ${r.org.tag} isn't an org on RSI, so it can't be verified yet: see Settings.`:r.rsi==="unreachable"?`${r.org.name} is created. RSI couldn't be reached to start verifying: try Verify with RSI under Settings.`:`${r.org.name} is created. Invite your crew under Members.`); S.og.form=null; S.og.view="org"; S.og.cur=r.org.id; S.og.data=r; S.og.tab=f.id||r.claim||r.rsi?"settings":"members"; await ogLoadMine(); ogRender(); });
+  // joining
+  on("[data-ogreq]",async el=>{ el.disabled=true; const r=await ogCall("request",{org:oid,message:P.querySelector("[data-ogreqmsg]").value,rsi_handle:P.querySelector("[data-ogreqhandle]")?.value||""}); if(!r.ok){ el.disabled=false; return toast(r.error); }
+    toast(r.org?"Welcome aboard!":"Request sent. You'll get a message when they answer."); await ogLoadMine(); ogOpen(oid); });
+  on("[data-ogjoininv]",async()=>{ const inv=(S.og.mine?.invites||[]).find(i=>i.org.id===oid); if(!inv) return; const r=await ogCall("invite/respond",{id:inv.id,accept:true}); if(!r.ok) return toast(r.error); toast("Welcome aboard!"); await ogLoadMine(); ogOpen(oid); });
+  // members
+  const iq=P.querySelector("#og-inv-q"); if(iq){ let t; iq.oninput=()=>{ S.og.inviteQ=iq.value; clearTimeout(t); t=setTimeout(async()=>{ const v=S.og.inviteQ.trim(); if(v.replace(/^@/,"").length<(v.startsWith("@")?2:3)){ S.og.inviteRes=null; return ogRender(); }
+      const r=await api().social_search(v); if(S.og.inviteQ.trim()!==v) return; S.og.inviteRes=r.ok?r.people:{error:r.error}; ogRender(); const x=$("og-inv-q"); if(x){ x.focus(); x.setSelectionRange(x.value.length,x.value.length); } },350); }; }
+  on("[data-oginvite]",async el=>{ el.disabled=true; const r=await ogCall("invite",{org:oid,member:el.dataset.oginvite}); if(!r.ok){ el.disabled=false; return toast(r.error); } toast(r.org?"They'd asked to join: they're in now":"Invitation sent"); ogOpen(oid,true); });
+  on("[data-ogreqok]",async el=>{ const yes=el.dataset.yes==="1"; const r=await ogCall("request/respond",{id:+el.dataset.ogreqok,accept:yes}); if(!r.ok) return toast(r.error); toast(yes?"Accepted: they're in":"Declined"); ogOpen(oid,true); });
+  on("[data-ogcancel]",async el=>{ const r=await ogCall("invite/cancel",{id:+el.dataset.ogcancel}); if(!r.ok) return toast(r.error); toast("Invitation cancelled"); ogOpen(oid,true); });
+  for(const el of P.querySelectorAll("[data-ogsetrank]")) el.onchange=async()=>{ const r=await ogCall("member/rank",{org:oid,member:el.dataset.ogsetrank,rank:+el.value}); if(ogApply(r).ok) toast("Rank changed"); };
+  on("[data-ogkick]",el=>ogArm("kick"+el.dataset.ogkick,async()=>{ const r=await ogCall("member/remove",{org:oid,member:el.dataset.ogkick}); if(ogApply(r).ok) toast("Removed from the org"); }));
+  // ranks
+  const re=S.og.rankEdit;
+  const showEditor=()=>setTimeout(()=>P.querySelector('[data-ogr="name"]')?.closest(".og-rank")?.scrollIntoView({behavior:"smooth",block:"center"}),30);
+  on("[data-ogradd]",()=>{ S.og.rankErr=null; S.og.rankEdit={name:"",requirements:"",perms:[]}; ogRender(); showEditor(); P.querySelector('[data-ogr="name"]')?.focus(); });
+  on("[data-ogredit]",el=>{ S.og.rankErr=null; const r=d.ranks.find(x=>x.id===+el.dataset.ogredit); S.og.rankEdit={...r,perms:[...r.perms]}; ogRender(); showEditor(); });
+  on("[data-ogrcancel]",()=>{ S.og.rankErr=null; S.og.rankEdit=null; ogRender(); });
+  on("[data-ogrpick]",()=>P.querySelector("[data-ogrfile]").click());
+  const rf=P.querySelector("[data-ogrfile]"); if(rf) rf.onchange=async()=>{ const file=rf.files[0]; if(!file) return;
+    for(const k of ["name","requirements"]){ const el=P.querySelector(`[data-ogr="${k}"]`); if(el) re[k]=el.value; }
+    try{ re.iconData=await ogIconFile(file); re.iconRemove=false; ogRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
+  on("[data-ogrnoicon]",()=>{ for(const k of ["name","requirements"]){ const el=P.querySelector(`[data-ogr="${k}"]`); if(el) re[k]=el.value; } re.iconData=null; re.icon=null; re.iconRemove=true; ogRender(); });
+  for(const el of P.querySelectorAll("[data-ogr]")) el.oninput=()=>{ re[el.dataset.ogr]=el.value; };
+  for(const el of P.querySelectorAll("[data-ogrp]")) el.onchange=()=>{ const k=el.dataset.ogrp; re.perms=el.checked?[...new Set([...re.perms,k])]:re.perms.filter(x=>x!==k); };
+  on("[data-ogrsave]",async el=>{ el.disabled=true; const r=await ogCall("rank/save",{org:oid,id:re.id||null,name:re.name,requirements:re.requirements,perms:re.perms,icon:re.iconData||null,icon_remove:!!re.iconRemove});
+    if(r.ok){ S.og.rankErr=null; S.og.rankEdit=null; ogApply(r); toast("Rank saved"); } else { el.disabled=false; S.og.rankErr=r.error; toast(r.error); ogRender(); showEditor(); } });
+  on("[data-ogrmove]",async el=>ogApply(await ogCall("rank/move",{org:oid,id:+el.dataset.ogrmove,dir:el.dataset.dir})));
+  on("[data-ogrdel]",el=>ogArm("r"+el.dataset.ogrdel,async()=>{ if(ogApply(await ogCall("rank/delete",{org:oid,id:+el.dataset.ogrdel})).ok) toast("Rank deleted: its members moved down one rank"); }));
+  // calendar
+  on("[data-ogmon]",el=>{ const n=+el.dataset.ogmon, m=S.og.month; S.og.month=n?new Date(m.getFullYear(),m.getMonth()+n,1):null; ogRender(); });
+  on("[data-ogev]",el=>{ S.og.ev=+el.dataset.ogev; ogRender(); document.getElementById("og-ev-"+el.dataset.ogev)?.scrollIntoView({behavior:"smooth",block:"center"}); });
+  on("[data-ogevnew]",()=>{ S.og.evForm={kind:"Operation",minutes:60}; ogRender(); });
+  on("[data-ogevedit]",el=>{ S.og.tab="calendar"; const e=d.events.find(x=>x.id===+el.dataset.ogevedit); S.og.evForm={...e,slots:(e.slots||[]).map(x=>({id:x.id,ship:x.ship||"",role:x.role,seats:x.seats,g:x.ship?"s:"+x.ship:null}))}; ogRender(); $("og-panel").scrollTop=0; });
+  on("[data-ogecancel]",()=>{ S.og.evForm=null; ogRender(); });
+  // seats builder: keep what's typed in the other fields across re-renders
+  const evKeep=()=>{ const ef=S.og.evForm; if(!ef) return; for(const k of ["title","kind","minutes","max","location","description"]){ const el=P.querySelector(`[data-oge="${k}"]`); if(el) ef[k]=k==="minutes"?+el.value:el.value; }
+    const w=P.querySelector('[data-oge="when"]'); if(w&&!isNaN(new Date(w.value))) ef.starts=Math.floor(new Date(w.value)/1000); };
+  for(const el of P.querySelectorAll("[data-ogs]")) el.oninput=el.onchange=()=>{ const i=+el.dataset.ogs, sl=S.og.evForm.slots, x=sl[i], old=x.ship||"";
+    x[el.dataset.k]=el.dataset.k==="seats"?+el.value||1:el.value;
+    if(el.dataset.k==="ship"&&x.g){ sl.forEach((y,j)=>{ if(j!==i&&y.g===x.g){ y.ship=x.ship; const o=P.querySelector(`[data-ogs="${j}"][data-k="ship"]`); if(o) o.value=x.ship; } }); } };
+  on("[data-ogsadd]",()=>{ evKeep(); (S.og.evForm.slots=S.og.evForm.slots||[]).push({ship:"",role:"",seats:1}); ogRender(); });
+  // "+ Add a ship" starts with one Pilot seat; the + at the end of a ship's rows adds another role on that ship
+  on("[data-ogsship]",()=>{ evKeep(); const sl=S.og.evForm.slots=S.og.evForm.slots||[]; sl.push({ship:"",role:"Pilot",seats:1,g:"g"+Date.now()}); ogRender();
+    const ins=P.ownerDocument.querySelectorAll('#og-panel [data-k="ship"]'); ins[ins.length-1]?.focus(); });
+  on("[data-ogsmore]",el=>{ evKeep(); const sl=S.og.evForm.slots, i=+el.dataset.ogsmore; sl.splice(i+1,0,{ship:sl[i].ship,role:"",seats:1,g:sl[i].g}); ogRender();
+    P.ownerDocument.querySelector(`#og-panel [data-ogs="${i+1}"][data-k="role"]`)?.focus(); });
+  on("[data-ogsdel]",el=>{ evKeep(); S.og.evForm.slots.splice(+el.dataset.ogsdel,1); ogRender(); });
+  on("[data-ogesave]",async()=>{ const g=k=>P.querySelector(`[data-oge="${k}"]`).value, when=new Date(g("when"));
+    if(isNaN(when)) return toast("Pick when it starts");
+    const slots=(S.og.evForm.slots||[]).map(x=>({id:x.id||null,ship:(x.ship||"").trim()||null,role:(x.role||"").trim()||"Crew",seats:+x.seats||1}));
+    const r=await ogCall("event/save",{org:oid,id:S.og.evForm.id||null,title:g("title"),kind:g("kind"),starts:Math.floor(when/1000),minutes:+g("minutes"),max:g("max")?+g("max"):null,location:g("location"),description:g("description"),slots});
+    if(ogApply(r).ok){ toast(S.og.evForm.id?"Event saved":"Added to the calendar"); S.og.evForm=null; S.og.month=new Date(when.getFullYear(),when.getMonth(),1); ogRender(); } });
+  on("[data-ogevdel]",el=>ogArm("ev"+el.dataset.ogevdel,async()=>{ if(ogApply(await ogCall("event/delete",{org:oid,id:+el.dataset.ogevdel})).ok) toast("Event deleted"); }));
+  on("[data-ogrsvp]",async el=>{ const r=await ogCall("rsvp",{event:+el.dataset.ogrsvp,status:el.dataset.st}); ogApply(r); });
+  on("[data-ogseat]",async el=>{ const r=await ogCall("slot/take",{slot:+el.dataset.ogseat}); if(ogApply(r).ok) toast("Seat taken: you're down as going"); });
+  on("[data-ogunseatme]",async el=>{ if(ogApply(await ogCall("slot/leave",{event:+el.dataset.ogunseatme})).ok) toast("You left your seat"); });
+  on("[data-ogunseat]",async el=>{ if(ogApply(await ogCall("slot/unassign",{slot:+el.dataset.ogunseat,member:el.dataset.m})).ok) toast("Taken off the seat"); });
+  for(const el of P.querySelectorAll("[data-ogassign]")) el.onchange=async()=>{ if(!el.value) return; const r=await ogCall("slot/assign",{slot:+el.dataset.ogassign,member:el.value}); if(ogApply(r).ok) toast("Assigned: they've been told"); };
+  // RSI verification
+  on("[data-ogurl]",el=>api().open_url(el.dataset.ogurl));
+  on("[data-ogclaim]",async el=>{ const sid=(P.querySelector("#og-claim-sid")?.value||"").trim(); if(!sid) return toast("Enter your org's SID from RSI");
+    el.disabled=true; const r=await ogCall("claim",{org:oid,sid}); el.disabled=false; if(ogApply(r).ok) toast("Now put the code on your RSI org page"); });
+  on("[data-ogcheck]",async()=>{ S.og.checking=true; ogRender(); const r=await ogCall("claim/check",{org:oid}); S.og.checking=false;
+    if(r.ok){ S.og.form=null; ogApply(r); toast(`Verified! ${r.org.name} [${r.org.tag}] is official on Quantum.`); } else { toast(r.error); ogOpen(oid,true); } });
+  on("[data-ogclaimx]",async()=>ogApply(await ogCall("claim/cancel",{org:oid})));
+  // settings
+  on("[data-ogxfer]",()=>ogArm("xfer",async()=>{ const to=P.querySelector("#og-xfer").value; if(!to) return; if(ogApply(await ogCall("transfer",{org:oid,member:to})).ok) toast("Ownership handed over"); }));
+  on("[data-ogdel]",()=>ogArm("del",async()=>{ const r=await ogCall("delete",{id:oid}); if(!r.ok) return toast(r.error); toast("Org deleted"); S.og.cur=null; S.og.data=null; S.og.view=null; openOrg(); }));
+  on("[data-ogleave]",()=>ogArm("leave",async()=>{ const r=await ogCall("leave",{org:oid}); if(!r.ok) return toast(r.error); toast("You left the org"); S.og.cur=null; S.og.data=null; S.og.view=null; openOrg(); }));
+}
+// The open org refreshes now and then (people come online, RSVP, join)
+setInterval(()=>{ if(S.tab==="orgs"&&S.og.view==="org"&&S.og.cur&&!S.og.evForm&&!S.og.rankEdit&&S.og.tab!=="settings"&&!document.activeElement?.closest?.("#og-panel input,#og-panel textarea,#og-panel select")) ogOpen(S.og.cur,true); },20000);
+
 async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
   const fk=JSON.stringify([live.player?.fix_t, live.player?.approx, live.player?.system, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name]);
