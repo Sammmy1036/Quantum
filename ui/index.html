@@ -3730,7 +3730,7 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
   // The trusted-contributor checklist, met or not, from the server's own criteria
   const ck=T?.info?.checks, tick=(ok,label,val)=>`<div class="vd-row"><span><i class="pf-ck ${ok?"ok":""}" aria-label="${ok?"Met":"Not met yet"}">${ok?"✓":""}</i>${label}</span><b>${val}</b></div>`;
   const trustBody=`<div style="font-size:13px;line-height:1.55;color:var(--ink-2);padding:6px 0 8px">${T?.info?.revoked?"Trust was turned off for your account by the server owner."
-      :trusted?`Your pictures and station positions go live for everyone straight away${T?.info?.owner?" (you're the server owner)":""}. It's checked all the time, so a rejection takes it away until you're clean again.`
+      :trusted?`As a trusted contributor your pictures and station positions go live straight away. Failing to maintain the below criteria can result in losing your trusted contributor status.`
       :"Meet all of these and you're trusted: your pictures and station positions go live without waiting for review."}</div>
     ${ck?[tick(ck.reports.ok,`${ck.reports.need} approved price reports`,`${ck.reports.have} / ${ck.reports.need}`),
           tick(ck.days.ok,`${ck.days.need} days since your first approved report`,`${ck.days.have} / ${ck.days.need}`),
@@ -3739,9 +3739,9 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
       :`<div class="muted" style="font-size:12.5px">${S.drHasSecret?"Couldn't check your progress with the Quantum server just now.":"Add your UEX Secret Key to start."}</div>`}`;
   const uexName=S.drProf?.username||S.acct?.uex;
   const keys=`<div class="vd-row"><span>Quantum account</span>${connPill(S.acct?.signed_in?"ok":"none",S.acct?.signed_in?"Connected":null)}</div>
-    ${uexName?`<div class="vd-row"><span>UEX name</span><b>${esc(uexName)}</b></div>`:""}
     <div class="vd-row"><span>UEX Bearer Token</span>${connPill(lg.uex_token?"ok":"none",lg.uex_token?"Connected":null)}</div>
-    <div class="vd-row"><span>UEX Secret Key</span>${connPill(S.drHasSecret?"ok":"none",S.drHasSecret?"Connected":null)}</div>`;
+    <div class="vd-row"><span>UEX Secret Key</span>${connPill(S.drHasSecret?"ok":"none",S.drHasSecret?"Connected":null)}</div>
+    ${uexName?`<div class="vd-row"><span>UEX name</span><b>${esc(uexName)}</b></div>`:""}`;
   const backupBody=`${row("Status",esc(!bk?"Checking…":!bk.on?"Off":!bk.has_key?"Needs your UEX Bearer Token":bk.off?"Off for this PC":"On"))}${row("Last backup",esc(bk?.at?fmtAgo(bk.at):"Not yet"))}
     ${bk?.on&&bk?.has_key&&!bk.off?`<div class="row" style="gap:6px;margin-top:10px"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button></div>`:""}`;
   const subs=c.length?c.map(x=>{ const [l,col]=CB_ST[x.status]||[x.status||"",var_dim];
@@ -3756,7 +3756,7 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
       :`<div class="grid" style="margin-top:8px">${losOn.shown.map(glCard).join("")}</div>`
     :`<div class="muted" style="font-size:13px;padding:6px 0">No gear loadouts yet. Make one for each kind of job in Gear › Loadouts. <a data-pfv="opengearlo" style="cursor:pointer;color:var(--route-2)">Make one</a></div>`;
   P.innerHTML=`${p?.ok&&p.username?drProfileCard(p,pfName()):head(pfName()||"Your profile",S.acct?.email?esc(S.acct.email):"")}
-    ${statBlock([{label:"Joined",value:pfDate(S.acct?.joined||p?.first_seen)||"–"},{label:"Last backup",value:bk?.at?fmtAgo(bk.at):bk?.off?"Off":"Not yet"},
+    ${statBlock([{label:"Joined",value:pfDate(S.acct?.joined||p?.first_seen)||"–"},{label:"Last online",value:!S.acct?.signed_in?"–":S.so?.my==="invisible"?"Invisible":S.so?.my==="away"?"Away":"Online now"},
       {label:"Ships",value:lg.uex_token?String(ships.length):"–"},{label:"Gear loadouts",value:String(los.length)}],[])}
     <div class="pf-ov vd-flat">
       ${sec(`Trusted contributor`,trustBody,trusted?`<span style="color:#57e39b">✓ trusted</span>`:"")}
@@ -3830,7 +3830,7 @@ async function pfPublish(force){ if(!S.acct?.signed_in||!S.pfPrefs||!S.live?.log
   const key=JSON.stringify(body); let last=null; try{ last=localStorage.getItem("q-pub"); }catch(_){}
   if(!force&&last===key&&S.pfPubAt) return;
   const r=await api().social_profile_publish(body).catch(()=>null);
-  if(r?.ok){ S.pfPubAt=Date.now(); try{ localStorage.setItem("q-pub",key); }catch(_){} } }
+  if(r?.ok){ S.pfPubAt=Date.now()/1000; try{ localStorage.setItem("q-pub",key); }catch(_){} } }
 // ---- Someone's profile, opened from their name anywhere in Social, the marketplace and orgs
 async function upOpen(who){ if(!who) return; S.up={who,loading:true}; upRender();
   const r=await api().social_profile(who).catch(()=>null); if(S.up?.who!==who) return;
@@ -3866,7 +3866,7 @@ function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
   }
   V.innerHTML=`<div class="up-card"><button class="up-x" data-upx="1" aria-label="Close">×</button>
     <div class="up-head">${(p.online!=null&&d.relation!=="me"?soAvDot(p,true):soAv(p,true)).replace('so-av lg','so-av lg xl')}<div class="who"><h2>${esc(p.name)}</h2>
-      <div class="up-meta">${p.online!=null&&rel!=="me"?`<span class="${p.playing?"playing":""}">${esc(soPresence(p))}</span>`:""}${since?`<span>Member since ${since}</span>`:""}${st?.trusted&&!d.private?`<span class="pf-trust">✓ Trusted datarunner</span>`:""}${st?.rank&&!d.private?`<span class="rank-badge">${esc(st.rank)}</span>`:""}</div>
+      <div class="up-meta">${p.online!=null&&rel!=="me"?`<span class="${p.playing?"playing":""}">${esc(soPresence(p))}</span>`:d.online_now&&rel!=="me"?`<span>Online now</span>`:d.last_online&&rel!=="me"?`<span>Last online ${esc(fmtAgo(d.last_online))}</span>`:""}${since?`<span>Member since ${since}</span>`:""}${st?.trusted&&!d.private?`<span class="pf-trust">✓ Trusted datarunner</span>`:""}${st?.rank&&!d.private?`<span class="rank-badge">${esc(st.rank)}</span>`:""}</div>
       <div class="up-acts">${acts}</div></div></div>
     <div class="vd-flat pf-ov up-body">${body}</div></div>`;
   fillGearPictures(V); upWire(V); }
@@ -5974,7 +5974,9 @@ function backupInner(){ const b=S.bk; if(b===undefined){ S.bk=null; api().backup
           :b.status==="requests_limit_reached"?`<span style="color:#ffd38a">The server is busy with this connection; it'll try again.</span>`
           :b.status==="unreachable"?`<span style="color:#ffd38a">Couldn't reach the Quantum server; it'll try again.</span>`
           :ago?`<span style="color:#9fe0b4">Backed up ${ago}.</span>`:"Not backed up yet; it'll happen within a minute.";
-        return `Your fleet and component swaps, waypoints, planned trade routes and mapped stations are backed up automatically, encrypted on this PC with a key made from your UEX Bearer Token. The Quantum server can't read them, and your token is never sent to it. On a new install or a new PC, enter the same Bearer Token and they come back. Replacing your token? Enter the new one here on a PC that has your data, and the backup moves to it; a backup made with a token you've deleted at UEX can't be opened.
+        return `<p style="margin:0 0 8px">Quantum automatically saves a copy of your fleet, component swaps, waypoints, planned trade routes and mapped stations, so you don't lose them if you reinstall or move to a new PC.</p>
+          <p style="margin:0 0 8px"><b>It's private.</b> Your backup is locked with your UEX Bearer Token before it leaves this PC. Nobody else can open it, not even the Quantum server, and your token is never sent to it.</p>
+          <p style="margin:0"><b>Getting it back:</b> on a new PC or a fresh install, enter the same UEX Bearer Token and everything comes back. <b>Getting a new token?</b> Enter it here on a PC that still has your data first, so your backup moves over to the new token. If you delete your old token at UEX before doing that, the old backup can't be opened.</p>
           <div style="margin-top:8px">${state}</div>
           ${b.on&&b.has_key?(b.off?`<div class="row" style="gap:6px;margin-top:8px"><button class="btn small" data-a="bkon">Turn backups back on</button></div>`
             :`<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn small" data-a="bknow" ${S.bkBusy?"disabled":""}>${S.bkBusy==="save"?"Backing up…":"Back up now"}</button>
