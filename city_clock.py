@@ -16,7 +16,7 @@ import time
 AVAILABLE = os.name == "nt"
 
 MODES = ("off", "5", "10", "15", "city")     # seconds after arriving, or the whole time you're in the city
-POSITIONS = ("top", "upper", "bottom", "top-right", "bottom-right")
+POSITIONS = ("top", "upper", "center", "bottom", "top-right", "bottom-right", "custom")
 SIZES = {"large": 1.0, "medium": 0.75, "small": 0.5}      # how big, against the original size
 FADE_S = 0.45
 
@@ -89,11 +89,12 @@ class CityClock:
     def __init__(self, font_dir):
         self.font_dir = str(font_dir)
         self.position, self.h24, self.size = "top", True, "large"
+        self.xy = (0.5, 0.07)        # custom position: the clock's centre across, its top down, as fractions of the game window
         self._want = None            # info to show, or None
         self._lock = threading.Lock()
         self._thread = None
 
-    def show(self, info, position=None, h24=None, size=None):
+    def show(self, info, position=None, h24=None, size=None, xy=None):
         if not AVAILABLE:
             return
         with self._lock:
@@ -104,6 +105,8 @@ class CityClock:
                 self.h24 = bool(h24)
             if size in SIZES:
                 self.size = size
+            if xy:
+                self.xy = (min(1.0, max(0.0, float(xy[0]))), min(1.0, max(0.0, float(xy[1]))))
         if self._thread is None:
             self._thread = threading.Thread(target=self._run, daemon=True, name="city-clock")
             self._thread.start()
@@ -202,7 +205,7 @@ class CityClock:
             now = time.monotonic()
             dt, last = now - last, now
             with self._lock:
-                want, position, h24, sz = self._want, self.position, self.h24, SIZES.get(self.size, 1.0)
+                want, position, h24, sz, xy = self._want, self.position, self.h24, SIZES.get(self.size, 1.0), self.xy
             game = overlay._find_game()
             fg = u32.GetForegroundWindow()
             visible = bool(want and game and fg == game)
@@ -236,7 +239,13 @@ class CityClock:
                         g32.DeleteObject(bmp)
                     bmp, key = nb, new_key
                 margin = int(gh * 0.03)
-                if position == "top-right":
+                if position == "custom":
+                    x = int(gw * xy[0] - size[0] / 2)
+                    y = int(gh * xy[1])
+                    pt = wintypes.POINT(rc.left + max(0, min(gw - size[0], x)), rc.top + max(0, min(gh - size[1], y)))
+                elif position == "center":
+                    pt = wintypes.POINT(rc.left + (gw - size[0]) // 2, rc.top + (gh - size[1]) // 2)
+                elif position == "top-right":
                     pt = wintypes.POINT(rc.left + gw - size[0] - margin, rc.top + int(gh * 0.07))
                 elif position == "bottom-right":
                     pt = wintypes.POINT(rc.left + gw - size[0] - margin, rc.top + gh - size[1] - int(gh * 0.12))

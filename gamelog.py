@@ -403,6 +403,10 @@ class ContractTracker(threading.Thread):
         self.player_geid = ""
         self.activity = None       # latest thing you did that says where you are: {"text", "at"}
         self.vehicle = None        # {"name", "aboard", "at"}: your own ship or ground vehicle
+        self.hangar_at = None      # when the game last said "Hangar Request Completed" (you're cleared to land)
+        self.in_pu, self.pu_at = False, 0.0   # in the game world (joined the PU) this session, not the launcher or main menu
+        self.loading = False       # the game's loading screen is up (from "OpenLoadingScreen" to "Loading screen ... closed")
+        self.spawned_at = None     # when you last spawned in the game world (logging in, or respawning after death)
         self.armistice = None      # (inside: bool, at)
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
@@ -442,6 +446,7 @@ class ContractTracker(threading.Thread):
             return
         self.log_path = self.log_path or raw.get("log_path")
         self.log_sig, self.offset = raw.get("log_sig"), raw.get("offset", 0)
+        self.in_pu, self.pu_at = bool(raw.get("in_pu")), float(raw.get("pu_at") or 0)   # same game session as the offset
         self.where, self.zone_bodies = raw.get("where", {}), raw.get("zone_bodies", {})
         self.build = raw.get("build", "")
         self.phys_systems = raw.get("phys_systems", [])
@@ -463,7 +468,7 @@ class ContractTracker(threading.Thread):
     def _save(self):
         data = {"log_path": self.log_path, "log_sig": self.log_sig, "offset": self.offset,
                 "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build,
-                "loc_ids": self.loc_ids, "cur": self.cur, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places, "code_places": self.code_places, "gen_places": self.gen_places,
+                "loc_ids": self.loc_ids, "cur": self.cur, "in_pu": self.in_pu, "pu_at": self.pu_at, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places, "code_places": self.code_places, "gen_places": self.gen_places,
                 "phys_systems": self.phys_systems,
                 "atc": {str(k): v for k, v in self.atc.items()},
                 "contracts": [asdict(c) for c in self.contracts.values()]}
@@ -1338,6 +1343,17 @@ class ContractTracker(threading.Thread):
         # The build is read again at the top of every new log: a game update (4.10.1 -> 4.10.2) brings a new
         # build number, and that's how Quantum knows the game changed (planet alignment starts over, and so
         # on). Before, the first build ever seen was kept for good, so an update went unnoticed.
+        # In the game world or not: <Join PU> when you load in, the main menu ("Frontend") when you leave it
+        if "<Join PU>" in line or ('gamerules="SC_Default"' in line and not self.in_pu):
+            self.in_pu, self.pu_at = True, log_time(line) or time.time()
+        elif "Requesting game mode Frontend" in line:
+            self.in_pu = False
+        if "OnClientSpawned] Spawned!" in line and self.in_pu:
+            self.spawned_at = log_time(line) or time.time()
+        if "OpenLoadingScreen] Started" in line:
+            self.loading = True
+        elif self.loading and line.find("Loading screen for") >= 0 and "closed" in line:
+            self.loading = False
         if not self._build_read and "Build(" in line:
             m = re.search(r"Build\((\d+)\)", line)
             if m:
@@ -1647,6 +1663,9 @@ class ContractTracker(threading.Thread):
                 self.vehicle = {"name": c.group(2).strip(), "aboard": c.group(1) == "joined", "at": ts0}
                 return True
             return False
+        if "Hangar Request Completed" in full:
+            self.hangar_at = ts0
+            return False
         if "Armistice Zone" in full:
             self.armistice = ("Entering" in full, ts0)
             return True
@@ -1837,6 +1856,8 @@ class ContractTracker(threading.Thread):
                     if self._reopen or sig != self.log_sig or size < self.offset:
                         if sig != self.log_sig or size < self.offset:     # new game session
                             self.log_sig, self.offset, self.zone_bodies = sig, 0, {}
+                            self.in_pu, self.pu_at = False, 0.0           # the game was started again: at the menu
+                            self.loading = False
                             self._build_read, self.branch = False, ""      # the game may have been updated
                             self.zone_places, self.atc = {}, {}
                             self.phys_systems, self._phys = [], None

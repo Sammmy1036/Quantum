@@ -414,7 +414,7 @@ class Api:
         threading.Thread(target=self._check_update, daemon=True).start()
         # City clock: the local time drawn over the game when you arrive in a city (Settings > In-game overlay)
         self._clock = city_clock.CityClock(RES / "ui" / "fonts")
-        self._clock_city, self._clock_since = None, 0.0
+        self._clock_city, self._clock_since, self._clock_seat = None, 0.0, None
         threading.Thread(target=self._city_clock_loop, daemon=True).start()
         # Friends and messages (Social): a background check-in with the server, faster while Social is open
         self._soc = {"state": None, "top": None, "focus_until": 0.0, "notes": [], "playing": None, "err": None, "wake": threading.Event(),
@@ -2773,7 +2773,10 @@ class Api:
 
     # ------------------------------------------------------------ city clock overlay
     def _clock_cfg(self):
-        c = {"mode": "10", "position": "top", "h24": True, "size": "large", **(self._settings.get("city_clock") or {})}
+        c = {"mode": "10", "position": "top", "h24": True, "size": "large", "again": "seat", "x": 0.5, "y": 0.07,
+             **(self._settings.get("city_clock") or {})}
+        if c["again"] not in ("seat", "hangar", "both", "none"):
+            c["again"] = "seat"
         if c["mode"] not in city_clock.MODES:
             c["mode"] = "10"
         if c["size"] not in city_clock.SIZES:
@@ -2793,7 +2796,12 @@ class Api:
         """The city the log says you're in right now (its spaceport counts), or None."""
         if not self._game_on():
             return None
-        cur = self._tracker.cur or {}
+        tr = self._tracker
+        cur = tr.cur or {}
+        # Only once you're in the game world, and only for where this session's log puts you: not over the
+        # launcher, loading screens or main menu because of where you were last time.
+        if not tr.in_pu or tr.loading or cur.get("at", 0) < tr.pu_at:
+            return None                                   # (the loading screen: you aren't in the world yet)
         if not cur.get("landing") and (cur.get("left") or cur.get("jump")):
             return None                                   # took off / in quantum: not in a city any more
         spot, _, how = self._log_spot(cur)
@@ -2811,6 +2819,26 @@ class Api:
                     now = time.time()
                     if city != self._clock_city:
                         self._clock_city, self._clock_since = city, now     # arrived (or left)
+                    # The city is known as soon as you enter its airspace, minutes before you touch down. Getting
+                    # out of the pilot's seat there (you've landed) shows the clock again, when you'll see it.
+                    veh = self._tracker.vehicle or {}
+                    seat_left = veh.get("at") if veh.get("seat") is False else None
+                    if seat_left and seat_left != self._clock_seat:
+                        self._clock_seat = seat_left
+                        if city and now - seat_left < 60 and cfg["again"] in ("seat", "both"):
+                            self._clock_since = now
+                    # Respawned (after dying, at a city's medical centre, say): you're arriving again
+                    spawned = self._tracker.spawned_at
+                    if spawned and spawned != getattr(self, "_clock_spawn", None) and (city or now - spawned >= 60):
+                        self._clock_spawn = spawned                # (waits a moment for the log to say where you are)
+                        if city and now - spawned < 60 and cfg["again"] != "none":
+                            self._clock_since = now
+                    # Cleared to land: "Hangar Request Completed" (a minute or so before you touch down)
+                    hangar = self._tracker.hangar_at
+                    if hangar and hangar != getattr(self, "_clock_hangar", None):
+                        self._clock_hangar = hangar
+                        if city and now - hangar < 60 and cfg["again"] in ("hangar", "both"):
+                            self._clock_since = now
                     hours = self._city_local_hours(city, now) if city else None
                     body = self._db.locations[city].body if city else None
                 if now < getattr(self, "_clock_preview_until", 0):
@@ -2818,14 +2846,14 @@ class Api:
                     continue                                  # a preview from Settings is showing
                 keep = cfg["mode"] == "city" or (cfg["mode"].isdigit() and now - self._clock_since < int(cfg["mode"]))
                 if city and hours is not None and keep:
-                    self._clock.show({"city": city, "body": body, "hours": hours}, cfg["position"], cfg["h24"], cfg["size"])
+                    self._clock.show({"city": city, "body": body, "hours": hours}, cfg["position"], cfg["h24"], cfg["size"], (cfg["x"], cfg["y"]))
                 else:
                     self._clock.hide()
             except Exception:
                 watcher_mod.log_error("city clock")
             time.sleep(1)
 
-    def set_city_clock(self, mode=None, position=None, h24=None, size=None):
+    def set_city_clock(self, mode=None, position=None, h24=None, size=None, again=None, x=None, y=None):
         """Location clock overlay: mode off / 5 / 10 / 15 (seconds after arriving) / city (the whole time there)."""
         with self._lock:
             c = self._clock_cfg()
@@ -2837,9 +2865,40 @@ class Api:
                 c["h24"] = bool(h24)
             if size in city_clock.SIZES:
                 c["size"] = size
+            if again in ("seat", "hangar", "both", "none"):
+                c["again"] = again
+            for k, v in (("x", x), ("y", y)):
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    c[k] = round(min(1.0, max(0.0, float(v))), 4)
             self._settings["city_clock"] = c
             self._save_settings()
         return {"ok": True, **c}
+
+    def city_clock_image(self, city="New Babbage"):
+        """The clock as it looks now, as a picture (for placing it in Settings): its size at 1080p."""
+        with self._lock:
+            c = self._clock_cfg()
+            city = city if city in self._db.locations else "New Babbage"
+            hours, body = self._city_local_hours(city), self._db.locations[city].body
+        try:
+            import base64, io
+            img = city_clock.render({"city": city, "body": body, "hours": hours or 12.0}, RES / "ui" / "fonts",
+                                    city_clock.SIZES.get(c["size"], 1.0), c["h24"])
+            raw = bytearray(img.tobytes())          # the overlay's colours are premultiplied: undo that for a picture
+            for i in range(0, len(raw), 4):
+                a = raw[i + 3]
+                if 0 < a < 255:
+                    raw[i] = min(255, raw[i] * 255 // a)
+                    raw[i + 1] = min(255, raw[i + 1] * 255 // a)
+                    raw[i + 2] = min(255, raw[i + 2] * 255 // a)
+            from PIL import Image
+            img = Image.frombytes("RGBA", img.size, bytes(raw))
+            buf = io.BytesIO()
+            img.save(buf, "PNG")
+            return {"ok": True, "image": "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode(),
+                    "w": img.size[0], "h": img.size[1]}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def preview_city_clock(self, city="New Babbage"):
         """Show the clock for a few seconds (once you click back into Star Citizen) to see how it looks."""
@@ -2850,7 +2909,7 @@ class Api:
         if hours is None:
             return {"ok": False, "error": "That city's planet has no day length in the map data"}
         self._clock_preview_until = time.time() + 15
-        self._clock.show({"city": city, "body": body, "hours": hours}, c["position"], c["h24"], c["size"])
+        self._clock.show({"city": city, "body": body, "hours": hours}, c["position"], c["h24"], c["size"], (c["x"], c["y"]))
         return {"ok": True, "available": city_clock.AVAILABLE}
 
     def set_option(self, key, value):
@@ -4130,9 +4189,23 @@ class Api:
         """A new account sign-in (from the browser or with the password): keep it, link the UEX name, and bring in
         the UEX keys saved in the account, if any."""
         a = self._account()
+        if a.get("email") and a.get("email") != p.get("email"):
+            self._account_forget_person()                # another account was here before: none of its things stay
         a.update(token=secure.protect(p["session"]), email=p.get("email"), uex=p.get("uex"), at=int(time.time()))
         for k in ("note", "keys_at", "keys_error", "keys_note"):
             a.pop(k, None)
+        if p.get("username"):
+            a.update(username=p["username"], username_auto=bool(p.get("username_auto")))
+        if p.get("created_at"):
+            a["joined"] = p["created_at"]
+        av = p.get("avatar")
+        if isinstance(av, str) and av.startswith(("data:image/", "https://")):
+            a["avatar"] = av                             # the account's own picture wins over one set here before
+            self._settings.pop("profile_photo", None)
+            self._settings["profile_photo_shared"] = True
+        elif self._settings.get("profile_photo") and not self._settings.get("profile_photo_shared"):
+            self.profile_photo_set(self._settings["profile_photo"])   # a picture set here while signed out: give it to the account
+        self._soc.update(state=None, top=None)
         self._save_settings()
         self._acct_checked = time.time()
         self._account_keys(p.get("uex_keys"))
@@ -4251,10 +4324,21 @@ class Api:
         self._acct_flow = {"state": "idle"}
         return self.account_status()
 
+    def _account_forget_person(self):
+        """What belonged to the account signed in here: its name, picture and friends, so the next one starts clean."""
+        a = self._account()
+        for k in ("username", "username_auto", "joined", "avatar"):
+            a.pop(k, None)
+        if self._settings.get("profile_photo_shared") or a.get("token"):
+            self._settings.pop("profile_photo", None)    # it was the account's picture (kept with the account)
+        self._settings["profile_photo_shared"] = False
+        self._soc.update(state=None, top=None)
+
     def account_sign_out(self):
         """Sign out of the account on this PC (the server forgets this sign-in too). The UEX-key sign-in stays."""
         tok = self._account_token()
         a = self._account()
+        self._account_forget_person()
         for k in ("token", "email", "uex", "link_error", "note", "at", "keys_stored", "keys_at", "keys_error", "keys_note"):
             a.pop(k, None)
         self._save_settings()
@@ -5926,6 +6010,18 @@ class Api:
         fl[:] = [f for f in fl if f["uid"] != uid]
         if was_main and fl:
             fl[0]["main"] = True
+        self._save_settings()
+        return {"ok": True}
+
+    def fleet_move(self, uid, target_uid, after=False):
+        """Put a ship just before (or after) another one in My Fleet: the fleet's order is the order it's kept in."""
+        fl = self._fleet()
+        ship = next((f for f in fl if f["uid"] == uid), None)
+        if not ship or uid == target_uid or not any(f["uid"] == target_uid for f in fl):
+            return {"ok": False, "error": "That ship isn't in your fleet any more"}
+        fl.remove(ship)
+        i = next(n for n, f in enumerate(fl) if f["uid"] == target_uid)
+        fl.insert(i + 1 if after else i, ship)
         self._save_settings()
         return {"ok": True}
 

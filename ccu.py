@@ -1,4 +1,18 @@
-"""Ship upgrades (CCUs): the cheapest chain of upgrades from a ship you have to the one you want."""
+"""Ship upgrades (CCUs): the cheapest chain of upgrades from a ship you have to the one you want.
+
+The prices come live from RSI's own upgrade tool (the same API its "Ship upgrades" page uses): every
+ship's value (msrp) and the upgrade editions that lead to it ("Standard Edition", "Warbond Edition", ...),
+each with its price and whether it's on sale now. The Star Citizen Wiki API
+(api.star-citizen.wiki/api/shipmatrix/vehicles) adds each ship's maker and status. The wiki keeps a copy of
+RSI's upgrade list too, but never takes old ones out: a Warbond upgrade from a sale years ago, or one priced
+before the ship's price went up, still shows as on sale there. So when RSI can't be reached, the wiki's copy
+is used only for straight upgrades at the ship's current value, and no Warbond ones.
+
+How RSI prices an upgrade: what the edition costs, less the value of the ship you upgrade from.
+A Warbond edition costs less than the ship is worth, so stepping through ships that have one
+saves money compared with a straight upgrade. Every step must go up in value. Warbond upgrades
+need new money (no store credit).
+"""
 import http.cookiejar
 import json
 import re
