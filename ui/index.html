@@ -3886,16 +3886,16 @@ const pfDirty=key=>!!S.pfDraft?.[key]&&JSON.stringify(S.pfDraft[key])!==JSON.str
 function afkHtml(a){ const f=a.afk||{}, keys=["","F5","F6","F7","F8","F9","F10","F11","F12"], used=[a.hotkey,a.loc_hotkey,a.shot_hotkey,a.chat_key].filter(Boolean);
   const nx=f.on&&f.next?Math.max(0,Math.round(f.next-Date.now()/1000)):null;
   return `<div class="afk-box"><div class="row" style="gap:10px"><span class="dot ${f.on?"on":""}"></span><div style="flex:1;min-width:0"><b>Anti-AFK</b>
-      <div class="muted" style="font-size:12px">${f.on?`On${nx!=null?` · next in ${nx>=60?Math.round(nx/60)+" min":nx+" s"}`:""}${f.last?` · last ${new Date(f.last*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:""}`:"Off. Keeps the game from logging you out while you're away"}</div></div>
+      <div class="muted" style="font-size:12px">${f.on?`On${nx!=null?` · next in ${nx>=60?Math.round(nx/60)+" min":nx+" s"}`:""}${f.last?` · last ${new Date(f.last*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:""}`:"Off. Keeps the game from logging you out"}</div></div>
       <button class="btn small ${f.on?"":"primary"}" id="s-afktoggle">${f.on?"Turn off":"Turn on"}</button></div>
     <div class="setgrid" style="margin-top:8px">
-      <span class="k">On / off key</span><select class="field" id="s-afkkey">${keys.map(k=>`<option value="${k}" ${k===(f.hotkey||"")?"selected":""} ${k&&used.includes(k)?"disabled":""}>${k||"Off (use the button)"}${k&&used.includes(k)?" (used)":""}</option>`).join("")}</select>
+      <span class="k">On / off key</span><select class="field" id="s-afkkey">${keys.map(k=>`<option value="${k}" ${k===(f.hotkey||"")?"selected":""} ${k&&used.includes(k)?"disabled":""}>${k||"Off "}${k&&used.includes(k)?" (used)":""}</option>`).join("")}</select>
       <span class="k" title="What Quantum sends every 1 to 4 minutes">It sends</span><select class="field" id="s-afkact">
         <option value="nudge" ${f.action!=="f13"&&f.action!=="mobiglas"?"selected":""}>Tiny mouse nudge</option>
         <option value="f13" ${f.action==="f13"?"selected":""}>F13 (unused key)</option>
         <option value="mobiglas" ${f.action==="mobiglas"?"selected":""}>mobiGlas open/close</option></select></div>
-    <label class="row" style="gap:8px;margin-top:6px;cursor:pointer;font-size:12.5px"><input type="checkbox" id="s-afkfocus" ${f.focus?"checked":""}> Switch to Star Citizen when it's time (otherwise it waits until the game is the focused window)</label>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">Nothing moves in game: the nudge goes one pixel and straight back. If the game still logs you out, try F13.</div></div>`; }
+    <label class="row" style="gap:8px;margin-top:6px;cursor:pointer;font-size:12.5px"><input type="checkbox" id="s-afkfocus" ${f.focus?"checked":""}> Switch to Star Citizen if not in focus.</label>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Use Anti-AFK feature at your own risk.</div></div>`; }
 // ---- Location clock: drag it to a custom spot on a picture of the game window (saved as fractions of it)
 async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.city_clock; if(!box||!img||!cc) return;
   const key=`${cc.size}|${cc.h24}`;
