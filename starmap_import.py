@@ -214,7 +214,10 @@ def apply_extra(db, snap, keep=None):
             changed += 1
         for p in s.get("sites", []):
             name = p["name"]
-            if (_key(name), system) in have or keep.get(name):
+            # A /showlocation for a place that isn't on the map yet used to keep it off the map entirely (nothing
+            # else adds it): add it from the game files, and the measured spot is put on it afterwards
+            # (App._apply_place_fixes), so the reading still wins.
+            if (_key(name), system) in have:
                 continue
             body = _body_for(db, p.get("body"), system)
             if not body:

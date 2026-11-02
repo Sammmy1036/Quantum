@@ -15,6 +15,7 @@ Quantum started, say), press the /showlocation key twice within a few seconds to
 also tells Quantum chat is showing.
 """
 import os
+import random
 import threading
 import time
 
@@ -59,10 +60,43 @@ if AVAILABLE:
     user32.PostThreadMessageW.argtypes = (wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
     user32.FindWindowW.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR)
     user32.FindWindowW.restype = wintypes.HWND
+    user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
+    user32.ShowWindow.argtypes = (wintypes.HWND, ctypes.c_int)
 
     def game_window_open():
         """Is there a Star Citizen window at all (focused or not)?"""
         return bool(user32.FindWindowW(None, "Star Citizen"))
+
+    VK_F13, SC_F13, SC_F1, VK_MENU = 0x7C, 0x64, 0x3B, 0x12
+    MOUSEEVENTF_MOVE, INPUT_MOUSE = 0x0001, 0
+
+    def _vk_tap(vk, scan, hold=0.04):
+        """A key the game hasn't bound (F13): sent with both its virtual key and scan code."""
+        for up in (False, True):
+            inp = INPUT(type=INPUT_KEYBOARD)
+            inp.u.ki = KEYBDINPUT(vk, scan, KEYEVENTF_KEYUP if up else 0, 0, 0)
+            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+            time.sleep(hold)
+
+    def _mouse_nudge():
+        """Move the mouse one pixel and straight back: real input to the game, but nothing moves."""
+        for dx in (1, -1):
+            inp = INPUT(type=INPUT_MOUSE)
+            inp.u.mi = MOUSEINPUT(dx, 0, 0, MOUSEEVENTF_MOVE, 0, 0)
+            user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(INPUT))
+            time.sleep(0.05)
+
+    def focus_game():
+        """Bring Star Citizen to the front (Windows only lets a program do this right after a key press,
+        so Alt is tapped first, the usual way around that)."""
+        h = user32.FindWindowW(None, "Star Citizen")
+        if not h:
+            return False
+        _vk_tap(VK_MENU, 0x38, 0.02)
+        user32.ShowWindow(h, 9)                    # SW_RESTORE
+        user32.SetForegroundWindow(h)
+        time.sleep(0.4)
+        return game_in_focus()
 
     def _scan(code, up=False):
         inp = INPUT(type=INPUT_KEYBOARD)
@@ -130,6 +164,9 @@ else:
     def game_in_focus():
         return False
 
+    def focus_game():
+        return False
+
     def game_window_open():
         return False
 
@@ -165,14 +202,87 @@ class ShowLocationSender:
         self.last_sent = None
         self.last_result = "idle"
         self.events = []            # recent attempts, newest last, shown in Settings for troubleshooting
+        # Anti-AFK: while on, a harmless input every 1 to 4 minutes (random), so the game doesn't log you out
+        self.afk_hotkey = ""        # toggles it ("" = only from Settings)
+        self.afk_on = False
+        self.afk_action = "nudge"   # "nudge" = mouse 1 px and back, "f13" = an unbound key, "mobiglas" = F1 twice
+        self.afk_focus = False      # bring the game to the front first (otherwise it waits until the game is focused)
+        self.afk_min, self.afk_max = 60, 240
+        self.afk_next = None
+        self.afk_last = None
+        self._afk_wake = threading.Event()
         self._lock = threading.Lock()
         self._hk_thread = None
         self._hk_stop = threading.Event()
         self._stop = threading.Event()
         self._timer = threading.Thread(target=self._timer_loop, daemon=True)
         self._timer.start()
+        threading.Thread(target=self._afk_loop, daemon=True).start()
 
     # ------------------------------------------------------------ settings
+    def configure_afk(self, hotkey=None, on=None, action=None, focus=None):
+        """Anti-AFK settings; the toggle key mustn't clash with the other hotkeys."""
+        if action in ("nudge", "f13", "mobiglas"):
+            self.afk_action = action
+        if focus is not None:
+            self.afk_focus = bool(focus)
+        if on is not None:
+            self.set_afk(bool(on), quiet=True)
+        if hotkey is not None:
+            hk = hotkey if hotkey in FKEYS and hotkey not in (self.hotkey, self.loc_hotkey, self.shot_hotkey, self.chat_key) else ""
+            if hk != self.afk_hotkey:
+                self.afk_hotkey = hk
+                self._restart_hotkeys()
+        return self.status()
+
+    def set_afk(self, on, quiet=False):
+        self.afk_on = bool(on)
+        self.afk_next = time.time() + random.uniform(self.afk_min, self.afk_max) if on else None
+        self._afk_wake.set()
+        if not quiet:
+            self._event(f"Anti-AFK {'on: a harmless input every 1 to 4 minutes' if on else 'off'}")
+        return self.afk_on
+
+    def _afk_loop(self):
+        while not self._stop.is_set():
+            self._afk_wake.wait(1)
+            self._afk_wake.clear()
+            if not self.afk_on or not self.afk_next or time.time() < self.afk_next or not AVAILABLE:
+                continue
+            if not game_window_open():
+                self.afk_next = time.time() + 30
+                continue
+            if not game_in_focus() and not (self.afk_focus and focus_game()):
+                self.last_result = "Anti-AFK: waiting for Star Citizen to be the focused window"
+                self.afk_next = time.time() + 15           # tries again soon; keeps well inside the game's timer
+                continue
+            if foreground_elevated() and not we_are_admin():
+                self._event("Anti-AFK: blocked. Star Citizen runs as administrator; restart Quantum as administrator")
+                self.afk_next = time.time() + 60
+                continue
+            try:
+                with self._lock:
+                    if self.afk_action == "f13":
+                        _vk_tap(VK_F13, SC_F13)
+                    elif self.afk_action == "mobiglas":
+                        _tap(SC_F1, 0.05)
+                        time.sleep(0.6)
+                        _tap(SC_F1, 0.05)
+                    else:
+                        _mouse_nudge()
+                self.afk_last = time.time()
+                self._event(f"Anti-AFK: {'pressed F13' if self.afk_action == 'f13' else 'opened and closed mobiGlas' if self.afk_action == 'mobiglas' else 'nudged the mouse'}")
+            except Exception as e:
+                self._event(f"Anti-AFK: couldn't send ({e})")
+            self.afk_next = time.time() + random.uniform(self.afk_min, self.afk_max)
+
+    def _restart_hotkeys(self):
+        self._stop_hotkey()
+        if AVAILABLE and (self.hotkey or self.loc_hotkey or self.shot_hotkey or self.afk_hotkey or (self.chat_key and self.loc_hotkey)):
+            self._hk_stop = threading.Event()
+            self._hk_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
+            self._hk_thread.start()
+
     def configure(self, hotkey=None, interval=None, open_chat=None, action=None, qt_only=None,
                   loc_hotkey=None, on_arrival=None, shot_hotkey=None, chat_key=None):
         """hotkey = show/hide Quantum, loc_hotkey = type /showlocation ("F1".."F12" or "" for off).
@@ -197,6 +307,8 @@ class ShowLocationSender:
         new_shot = new_shot if new_shot in FKEYS and new_shot not in (new_hk, new_loc) else ""
         new_chat = chat_key if chat_key is not None else self.chat_key
         new_chat = new_chat if new_chat in FKEYS and new_chat not in (new_hk, new_loc, new_shot) else ""
+        if self.afk_hotkey in (new_hk, new_loc, new_shot, new_chat):
+            self.afk_hotkey = ""                     # a key just given to something else
         if new_chat != self.chat_key:
             self.chat_hidden = False
         keys = (new_hk, new_loc, new_shot)
@@ -206,7 +318,7 @@ class ShowLocationSender:
             self._stop_hotkey()
             self.hotkey, self.loc_hotkey, self.shot_hotkey = keys
             self.chat_key = new_chat
-            if (any(keys) or watch_chat) and AVAILABLE:
+            if (any(keys) or watch_chat or self.afk_hotkey) and AVAILABLE:
                 self._hk_stop = threading.Event()
                 self._hk_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
                 self._hk_thread.start()
@@ -221,7 +333,9 @@ class ShowLocationSender:
                 "shot_hotkey": self.shot_hotkey, "chat_key": self.chat_key, "chat_hidden": self.chat_hidden,
                 "interval": self.interval, "qt_only": True, "on_arrival": self.on_arrival,
                 "open_chat": self.open_chat, "last_sent": self.last_sent, "last_result": self.last_result,
-                "events": self.events, "admin": we_are_admin() if AVAILABLE else False}
+                "events": self.events, "admin": we_are_admin() if AVAILABLE else False,
+                "afk": {"hotkey": self.afk_hotkey, "on": self.afk_on, "action": self.afk_action, "focus": self.afk_focus,
+                        "next": self.afk_next, "last": self.afk_last}}
 
     def shutdown(self):
         self._stop.set()
@@ -276,9 +390,11 @@ class ShowLocationSender:
                                       (self.shot_hotkey, "screenshot")) if k}
         if self.chat_key and self.loc_hotkey:
             keys[self.chat_key] = "chat"
+        if self.afk_hotkey and self.afk_hotkey not in keys:
+            keys[self.afk_hotkey] = "afk"
         stop = self._hk_stop
         label = {"overlay": "show/hide Quantum", "showlocation": "/showlocation", "screenshot": "terminal screenshot",
-                 "chat": "game chat show/hide (watched)"}
+                 "chat": "game chat show/hide (watched)", "afk": "anti-AFK on/off"}
         self._event(" · ".join(f"{k}: {label[a]}" for k, a in keys.items()) + " ready (works in game)")
         state = {k: [False, 0.0] for k in keys}
         game_check = 0.0
@@ -308,6 +424,8 @@ class ShowLocationSender:
                             except Exception as e:
                                 self._event(f"{key}: screenshot failed ({e})")
                         threading.Thread(target=shoot, daemon=True).start()
+                    elif act == "afk":
+                        self.set_afk(not self.afk_on)
                     elif act == "showlocation":
                         self._event(f"{key} pressed")
                         threading.Thread(target=self.send, args=(key,), daemon=True).start()

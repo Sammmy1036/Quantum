@@ -48,6 +48,7 @@ import missions_wiki
 import starmap_import
 import overlay
 import city_clock
+import clientid
 from keysender import ShowLocationSender
 from watcher import ClipboardWatcher
 import watcher as watcher_mod
@@ -416,6 +417,9 @@ class Api:
         self._clock = city_clock.CityClock(RES / "ui" / "fonts")
         self._clock_city, self._clock_since, self._clock_seat = None, 0.0, None
         threading.Thread(target=self._city_clock_loop, daemon=True).start()
+        # Pickups and drop-offs the log only puts "inside a station": the wiki's list of places for that contract
+        self._obj_suggest, self._wiki_tried = {}, {}
+        threading.Thread(target=self._wiki_place_loop, daemon=True).start()
         # Friends and messages (Social): a background check-in with the server, faster while Social is open
         self._soc = {"state": None, "top": None, "focus_until": 0.0, "notes": [], "playing": None, "err": None, "wake": threading.Event(),
                      "lock": threading.Lock()}
@@ -423,6 +427,8 @@ class Api:
         self._dr_session = {"reports": 0, "prices": 0, "terminals": [], "days": 0.0, "started": time.time()}
         self._sender.on_shot = lambda: self._dr_start_job(from_button=False)
         self._sender.configure(shot_hotkey=(self._settings.get("datarunner") or {}).get("shot_hotkey", ""))
+        af = self._settings.get("antiafk") or {}            # its keys and choices (it always starts off)
+        self._sender.configure_afk(af.get("hotkey", ""), False, af.get("action", "nudge"), af.get("focus", False))
 
     # ------------------------------------------------------------ internals
     def _load_settings(self):
@@ -1125,6 +1131,8 @@ class Api:
         if r.get("status") == "taken":
             return {"ok": False, "taken": True, "by": r.get("by"), "until": r.get("until"),
                     "error": f"{r.get('by')} accepted this job already"}
+        if r.get("status") == "too_many":
+            return {"ok": False, "error": f"You have {r.get('max') or 5} jobs on the go. Finish or let go of one first"}
         if r.get("status") == "off":
             return {"ok": True, "until": None, "offline": True}
         return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
@@ -1307,7 +1315,10 @@ class Api:
         wp = self._tracker.place_for_code(w["code"]) if w.get("code") else None
         options = []
         if wp in locs and w.get("at"):
-            options.append((wp, w["at"], "log"))
+            wc = spaceport_city(wp) or wp
+            # a city the log names for a wide area (its moons, low over the planet) needs backing up
+            if not (wc.split(" (")[0].lower() in nav_core.CITIES and wc in locs) or self._city_confirmed(wc, w["at"]):
+                options.append((wp, w["at"], "log"))
         if cur.get("left") in locs and cur.get("at"):
             options.append((cur["left"], cur["at"], "left"))
         return max(options, key=lambda o: o[1]) if options else (None, 0, None)
@@ -1657,6 +1668,8 @@ class Api:
             for o in c["objectives"]:
                 o["place"] = self._existing_place(o)
                 o["in_route"] = f"{c['id']}|{o['id']}" in ids
+                if not o.get("location") and (c["id"], o["id"]) in self._obj_suggest:
+                    o["suggest"] = self._obj_suggest[(c["id"], o["id"])]
             tr = c.get("tracking")
             if not tr or c["status"] != "active":
                 continue
@@ -2563,6 +2576,15 @@ class Api:
         self._save_settings()
         return st
 
+    def set_antiafk(self, hotkey=None, action=None, focus=None, on=None):
+        """Anti-AFK (Settings > Hotkeys): its on/off key, what it sends, whether to bring the game to the front,
+        and on/off now. Everything but on/off is remembered."""
+        st = self._sender.configure_afk(hotkey, on, action, focus)
+        a = st["afk"]
+        self._settings["antiafk"] = {"hotkey": a["hotkey"], "action": a["action"], "focus": a["focus"]}
+        self._save_settings()
+        return st
+
     def send_bug_report(self, message, contact=""):
         """Settings > Report a bug: sent to the Quantum server with your UEX name (if you've added your
         Secret Key), the Quantum and game versions, and how to reach you if you chose to say."""
@@ -2664,7 +2686,7 @@ class Api:
         return self.social_get(False)
 
     # ------------------------------------------------------------ marketplace (server: market.py)
-    _PM_PATH = re.compile(r"^(browse|listing|mine|escrow|create|update|close|renew|delete|remove|contact|buy|trade|rate|report|"
+    _PM_PATH = re.compile(r"^(browse|listing|mine|escrow|create|update|close|renew|delete|remove|contact|buy|trade|rate|report|reviews|"
                           r"escrow/apply|escrow/decide|escrow/appoint|escrow/remove)(\?[\w=&%.,+\-]*)?$")
     _PM_ERR = {"signed_out": "Sign in to your Quantum account first.", "unreachable": "Couldn't reach the Quantum server. Try again in a moment.",
                "unavailable": "The Quantum server isn't running the marketplace yet (market.py), so nothing can be listed or bought.", "forbidden": "Only the Quantum owner can do that.",
@@ -2685,7 +2707,7 @@ class Api:
     # ------------------------------------------------------------ orgs (server: orgs.py)
     _ORG_PATH = re.compile(r"^(mine|browse|org|create|update|delete|transfer|invite|invite/respond|invite/cancel|request|"
                            r"request/respond|member/rank|member/remove|leave|rank/save|rank/delete|rank/move|event/save|"
-                           r"event/delete|rsvp|claim|claim/check|claim/cancel|slot/take|slot/leave|slot/assign|slot/unassign)(\?[\w=&%.,+\-]*)?$")
+                           r"event/delete|rsvp|claim|claim/check|claim/cancel|slot/take|slot/leave|slot/assign|slot/unassign|banner)(\?[\w=&%.,+\-]*)?$")
 
     def org(self, path, body=None):
         """Orgs: GET when body is None, otherwise POST. Path as in orgs.py, e.g. "org?id=3"."""
@@ -2693,7 +2715,7 @@ class Api:
         if not self._ORG_PATH.match(path):
             return {"ok": False, "error": "Unknown request"}
         r = self._community.orgs(self._account_token(), path, body if body is None else dict(body),
-                                 timeout=40 if body and body.get("logo") else 15)
+                                 timeout=60 if body and (body.get("logo") or body.get("banner")) else 15)
         ok = r.get("status") == "ok"
         if ok and body is not None:
             threading.Thread(target=self._social_tick, daemon=True).start()
@@ -2804,11 +2826,35 @@ class Api:
             return None                                   # (the loading screen: you aren't in the world yet)
         if not cur.get("landing") and (cur.get("left") or cur.get("jump")):
             return None                                   # took off / in quantum: not in a city any more
-        spot, _, how = self._log_spot(cur)
+        spot, spot_at, how = self._log_spot(cur)
         if not spot or how not in ("landed", "log"):
             return None
         city = spaceport_city(spot) or spot
-        return city if city.split(" (")[0].lower() in nav_core.CITIES and city in self._db.locations else None
+        if not (city.split(" (")[0].lower() in nav_core.CITIES and city in self._db.locations):
+            return None
+        return city
+
+    def _city_confirmed(self, city, since):
+        """A city named only by the log's inventory location ("Location[Stanton1_Lorville]") isn't proof you're
+        there: the game names the planet's city for a wide area, so it came up on Hurston's and ArcCorp's moons
+        and flying low over the planet. It counts when something else agrees: you're inside an armistice zone
+        (cities are one), and your latest /showlocation, if there's a recent one, is near the city."""
+        tr = self._tracker
+        arm = getattr(tr, "armistice", None)
+        if not arm or not arm[0] or arm[1] < since - 600:
+            return False                                  # not inside an armistice zone since the log named it
+        L = self._db.locations.get(city)
+        w = tr.where or {}
+        if L is not None and L.body and w.get("body") and w.get("body") != L.body and (w.get("at") or 0) >= since:
+            return False                                  # the log puts you on another planet or moon since
+        if self._player and self._player_t and time.time() - self._player_t < 900 and self._player_t >= since - 60 \
+                and L is not None and self._player_sys == L.system:
+            try:
+                if dist(self._player, self._db.global_pos(L, self._player_t)) > 60_000:
+                    return False                          # your own reading has you somewhere else
+            except Exception:
+                pass
+        return True
 
     def _city_clock_loop(self):
         while True:
@@ -3945,10 +3991,11 @@ class Api:
     def _session_token(self):
         """What the server knows this PC by: the UEX-key sign-in, or else the Quantum account's sign-in once that
         account is linked to a UEX name (the server treats it as that name)."""
-        tok = (self._dr_cfg().get("session") or {}).get("token")
-        if tok:
-            return tok
-        return self._account_token() if (self._settings.get("account") or {}).get("uex") else None
+        # The Quantum account comes first once it's linked to a UEX name: a server that requires accounts
+        # (REQUIRE_ACCOUNT) only accepts that one
+        if (self._settings.get("account") or {}).get("uex") and self._account_token():
+            return self._account_token()
+        return (self._dr_cfg().get("session") or {}).get("token") or None
 
     def _sign_in(self):
         """Sign in now (blocking). Returns the server's answer, or None without a secret key or server."""
@@ -3965,6 +4012,8 @@ class Api:
             self._settings.pop("trust_key", None)
             self._save_settings()
             threading.Thread(target=self._resend_alignments, daemon=True).start()   # ones made before signing in
+        elif r.get("status") == "account_required":
+            self._sender._event("Quantum server: sign in to a Quantum account (Profile) to send reports and pictures")
         else:
             self._sender._event(f"Quantum server sign-in: {r.get('status')}")    # shows in Settings > Log
         self._sign_in_status = r.get("status")
@@ -4907,7 +4956,8 @@ class Api:
         if recheck:
             self._update = self._updater.check()
         return {"current": updater.VERSION, "latest": self._update, "progress": self._updater.progress(),
-                "skipped": self._settings.get("skip_update"), "just_updated": "--updated" in sys.argv}
+                "skipped": self._settings.get("skip_update"), "just_updated": "--updated" in sys.argv,
+                "build": clientid.build_id()}
 
     def update_download(self):
         return self._updater.download()
@@ -6263,7 +6313,8 @@ class Api:
                         continue
                     seen.add(nm.lower())
                     out.append({"id": str(i["id"]), "name": nm, "source": "uex", "buy": spots.get(i["id"], [])[:3],
-                                "wiki": i.get("wiki") or nm, "store": i.get("url_store")})
+                                "wiki": i.get("wiki") or nm, "store": i.get("url_store"),
+                                "_hay": f"{nm} {i.get('vehicle_name') or ''} {i.get('slug') or ''}"})
         except Exception:
             pass
         try:
@@ -6275,7 +6326,7 @@ class Api:
                     continue
                 seen.add(nm.lower())
                 out.append({"id": d.get("uuid") or nm, "name": nm, "source": "wiki", "buy": [], "wiki": d.get("web_url") or nm,
-                            "image": d.get("image")})
+                            "image": d.get("image"), "_hay": f"{nm} {d.get('class_name') or ''}"})
         except Exception:
             pass
         # Paints the ship's wiki Paints page pictures that neither list has (the Intrepid's Wavefront)
@@ -6295,8 +6346,52 @@ class Api:
         except Exception as e:
             print("paints page:", e, flush=True)
         out = [x for x in out if not self._paint_not_for(x["name"], fam)]
+        out = [x for x in out if self._paint_fits_mark(x.get("_hay") or x["name"], v.get("name") or ship_name, fam)]
+        for x in out:
+            x.pop("_hay", None)
         out.sort(key=lambda x: x["name"].lower())
         return out
+
+    _MARK_RX = re.compile(r"(?i)(?:\bmk|\bmark)[\s_\-]*(iv|v|iii|ii|i|[1-9])\b")
+    _MARK_NUM = {"i": 1, "ii": 2, "iii": 3, "iv": 4, "v": 5}
+
+    @classmethod
+    def _mark_of(cls, text):
+        """The generation in a name: 'Constellation Mk V Centaurus' -> 5, 'rsi_constellation_mk5_paint' -> 5, None."""
+        m = cls._MARK_RX.search((text or "").replace("_", " "))
+        if not m:
+            m = re.search(r"(?i)mk(\d)", text or "")
+            return int(m.group(1)) if m else None
+        g = m.group(1).lower()
+        return cls._MARK_NUM.get(g) or int(g)
+
+    def _paint_fits_mark(self, hay, ship, fam):
+        """Paints for a ship line that has generations (the Constellation Mk IV and Mk V) only fit their own
+        generation: a Mk V Centaurus doesn't take the older Constellations' paints, and the reverse. A paint that
+        names no generation fits a newer-generation ship only when it names a word only that generation's ships
+        have ('Centaurus')."""
+        ship_mark, paint_mark = self._mark_of(ship), self._mark_of(hay)
+        try:
+            fam_ships = [vv.get("name") or "" for vv in self._vehicle_rows().values()
+                         if self._paint_family(vv.get("name")) == fam]
+        except Exception:
+            fam_ships = []
+        marks = {self._mark_of(n) for n in fam_ships} | {ship_mark}
+        if len(marks) < 2:                       # one generation only: nothing to sort out
+            return True
+        if paint_mark is not None:
+            # 'Mk IV' paints and old unmarked ships (UEX's 'Constellation Andromeda' is the Mk IV)
+            return paint_mark == ship_mark or (ship_mark is None and paint_mark != max(m for m in marks if m))
+        newest = max(m for m in marks if m)
+        older_words, newest_words = set(), set()
+        for n in fam_ships + [ship or ""]:
+            (newest_words if self._mark_of(n) == newest else older_words).update(re.findall(r"[a-z0-9]+", n.lower()))
+        skip = {"mk", "v", "iv", "rsi", fam}
+        words = set(re.findall(r"[a-z0-9]+", (hay or "").lower().replace("_", " ")))
+        if ship_mark != newest:                  # an older ship: an unmarked paint is its own, unless it names a newer-only ship
+            return not (words & (newest_words - older_words - skip))
+        own = set(re.findall(r"[a-z0-9]+", (ship or "").lower())) - older_words - skip
+        return bool(own & words)
 
     # Paints listed somewhere that aren't in the game (reported by players)
     PAINT_NOT_IN_GAME = {"spirit intrepid livery"}
@@ -6403,9 +6498,16 @@ class Api:
                     url = self._wiki_image(ref)
                 except Exception:
                     url = None
+                if url and fam and not self._paint_fits_mark(urllib.parse.unquote(url.rsplit("/", 1)[-1]).replace("_", " "),
+                                                             v.get("name") or "", fam):
+                    url = None                            # another generation's picture (a Mk IV's for a Mk V)
                 if url:
                     break
-        url = url or lv.get("image")
+        img = lv.get("image")
+        if img and v and not self._paint_fits_mark(urllib.parse.unquote(str(img).rsplit("/", 1)[-1]).replace("_", " "),
+                                                    v.get("name") or "", self._paint_family(v.get("name") or "")):
+            img = None
+        url = url or img
         cache[key] = url or ""
         return url
 
@@ -6418,6 +6520,8 @@ class Api:
                  f"{ship}/Paints"]
         try:
             files = self._wikiapi.page_files([p for p in pages if p])
+            # the series' Paints page pictures every generation: a Mk V's paint only from a Mk V's picture
+            files = [fl for fl in files if self._paint_fits_mark(fl.split(":", 1)[-1].replace("_", " "), ship, fam)]
             ship_words = set(re.findall(r"[a-z0-9]+", f"{ship} {fam}".lower())) - {"mk", "series"}
             fl = self._wikiapi.paint_file(paint, ship_words, files)
             return self._wikiapi.file_urls([fl]).get(fl) if fl else None
@@ -6822,6 +6926,7 @@ class Api:
         except Exception as e:
             return {"ok": False, "error": f"Couldn't reach the Star Citizen Wiki ({e})"}
         out = dict(b)
+        out["unlocks"] = self._fill_unlocks(b.get("unlocks") or [])
         gv = self._game_view(b.get("out_uuid"), b.get("name"), None) if b.get("out_uuid") else None
         if gv:
             out["out_game"] = gv
@@ -6867,10 +6972,108 @@ class Api:
             except Exception:
                 d = {}
             out["blueprint"] = {"uuid": b.get("uuid"), "name": b.get("name"), "default": b.get("default"),
-                                "missions": b.get("missions"), "unlocks": (d or {}).get("unlocks") or [],
+                                "missions": b.get("missions"), "unlocks": self._fill_unlocks((d or {}).get("unlocks") or []),
                                 "time_label": b.get("time_label"),
                                 "ingredients": [x.get("name") for x in b.get("ingredients") or []][:6]}
+        out["loot"] = self._loot_places()
         return out
+
+    # Mission titles on the wiki come from the game's templates: "Verified Bounty: ~mission(TargetName) at
+    # ~mission(Location)". The game fills those in per contract (the target is a random name each time), so
+    # Quantum can't know the name, but it can say what the gaps are and list the places the mission can use.
+    RE_MISSION_VAR = re.compile(r"~mission\(([^)|]*)[^)]*\)|\[([A-Za-z][A-Za-z0-9_ ]{1,40})\]")
+
+    def _mission_vars(self, text, info=None, below=False):
+        """Fill the template gaps in a mission title or briefing with what's known."""
+        if not text:
+            return text
+        info = info or {}
+        dest = ((info.get("destinations") or {}).get("names") or []) + ((info.get("pickups") or {}).get("names") or [])
+        dest = list(dict.fromkeys(dest))
+
+        def sub(m):
+            raw = (m.group(1) or m.group(2) or "").strip()
+            k = re.sub(r"[^a-z]", "", raw.lower())
+            if not k:
+                return "…"
+            if re.search(r"target|name|bounty|criminal|person|npc|boss", k) and not re.search(r"loc|place|ship", k):
+                return "a wanted target (named when you accept)"
+            if re.search(r"ship|vehicle", k):
+                return "a target ship"
+            if re.search(r"location|destination|place|site|outpost|planet|moon|area|poi|loc", k):
+                if len(dest) == 1:
+                    return dest[0]
+                if dest:
+                    return f"one of {len(dest)} places{' (listed below)' if below else ''}"
+                return "the place named in the contract"
+            if re.search(r"system", k):
+                sy = info.get("systems") or []
+                return " or ".join(sy) if sy else "the system named in the contract"
+            if re.search(r"cargo|item|commodity|good", k):
+                return "the cargo named in the contract"
+            words = re.sub(r"(?<=[a-z])(?=[A-Z])|_", " ", raw).strip().lower()
+            return f"the {words} named in the contract"
+        return self.RE_MISSION_VAR.sub(sub, text)
+
+    def _fill_unlocks(self, unlocks):
+        """Blueprint-unlocking missions with their template gaps filled, and the places they can send you."""
+        out = []
+        for i, m in enumerate(unlocks or []):
+            m = dict(m)
+            t = m.get("title") or ""
+            m["raw_title"] = t                         # what the wiki is searched by when the mission is opened
+            if self.RE_MISSION_VAR.search(t) and i < 8:
+                info = None
+                try:
+                    info = self._missions.page(m.get("ref"), m.get("code"), t)
+                except Exception:
+                    pass
+                m["title"] = self._mission_vars(t, info)
+                if info:
+                    rows = self._place_rows(info.get("destinations")) or self._place_rows(info.get("pickups"))
+                    m["places"] = [r for r in rows if r.get("place") or r.get("body")][:5]
+                    m["places_more"] = max(0, len(rows) - 5) + ((info.get("destinations") or {}).get("more") or 0)
+            elif self.RE_MISSION_VAR.search(t):
+                m["title"] = self._mission_vars(t)
+            out.append(m)
+        return out
+
+    # Where loot turns up, as kinds of place on the map (the wiki marks gear as lootable but doesn't say where
+    # it spawns): the nearest few of each kind to you, so there's somewhere to set a route to.
+    LOOT_KINDS = (
+        ("Contested Zones", r"^(ruin station|checkmate station|orbituary)$", "Ruin Station",
+         "High-tier armor and weapons in the reward rooms and on the guards"),
+        ("Bunkers and security posts", r"security post|security depot|colonial bunker|\bbunker\b|\bugf\b", "Security Post",
+         "Weapon and armor crates, and the gear the guards drop"),
+        ("Distribution Centres", r"distribution cent", "Distribution",
+         "Crates on the floors and in the security rooms"),
+        ("Derelict outposts and wrecks", r"derelict|abandoned outpost|wreck|graveyard", "Derelict",
+         "Loot boxes in the wrecks and outposts, and on whoever is guarding them"),
+    )
+
+    def _loot_places(self):
+        with self._lock:
+            t = time.time()
+            here, here_sys = self._player, self._player_sys
+            groups = []
+            for label, rx, search, why in self.LOOT_KINDS:
+                r = re.compile(rx, re.I)
+                found = []
+                for n, L in self._db.locations.items():
+                    if L.source != "db" or L.pos is None or not r.search(n):
+                        continue
+                    d = None
+                    if here and here_sys == L.system:
+                        try:
+                            d = dist(here, self._db.global_pos(L, t))
+                        except Exception:
+                            d = None
+                    found.append({"name": n, "system": L.system, "body": L.body, "dist": d})
+                if not found:
+                    continue
+                found.sort(key=lambda x: (x["dist"] is None, x["dist"] or 0, x["system"] != (here_sys or "Stanton"), x["name"]))
+                groups.append({"label": label, "why": why, "search": search, "count": len(found), "places": found[:3]})
+            return groups
 
     # ------------------------------------------------------------ places named by the wiki
     def _named_place(self, name, system=None):
@@ -6913,6 +7116,8 @@ class Api:
         if not info:
             return {"ok": True, "found": False}
         info = dict(info)
+        info["title"] = self._mission_vars(info.get("title"), info)
+        info["description"] = self._mission_vars(info.get("description"), info, below=True)
         for k in ("offered_at", "pickups", "destinations"):
             info[k + "_rows"] = self._place_rows(info.get(k))
         bps = {}
@@ -7382,11 +7587,65 @@ class Api:
                         "container_sizes_origin": rb.get("container_sizes") or tb.get("container_sizes"),
                         "container_sizes_destination": rs.get("container_sizes") or ts.get("container_sizes"),
                         "date_added": max(rb.get("date_modified") or 0, rs.get("date_modified") or 0) or None,
+                        "community_origin": rb.get("community_buy"), "community_destination": rs.get("community_sell"),
                         "faction_origin": tb.get("faction_name"), "faction_destination": ts.get("faction_name"),
                         **{f"{flag}_{side}": t.get(flag) for side, t in (("origin", tb), ("destination", ts))
                            for flag in ("has_freight_elevator", "has_loading_dock", "has_refuel", "has_docking_port",
                                         "is_space_station", "is_on_ground", "is_monitored")}})
         return out, at
+
+    def _routes_with_quantum(self, rows, kind, origin_id, stay="", avoid=None, one_system=False):
+        """UEX's routes from one planet, orbit or terminal, with Quantum users' newer price reports laid over
+        them (the same overlay the wide searches use): a terminal UEX still lists with 240 SCU that a Quantum
+        datarunner saw at 146 ten minutes ago is planned with 146, and its profit and place in the list
+        follow. Runs only Quantum's newer prices make profitable are added from the price table too."""
+        try:
+            prices, _ = self._uex.get("commodities_prices_all")
+            prices = self._community.overlay(prices)
+        except Exception:
+            return rows
+        idx = {(p.get("id_terminal"), p.get("id_commodity")): p for p in prices}
+        out = []
+        for r in rows or []:
+            r = dict(r)
+            cid = r.get("id_commodity")
+            pb = idx.get((r.get("id_terminal_origin"), cid))
+            if pb and pb.get("community_buy"):
+                r["price_origin"], r["scu_origin"] = pb.get("price_buy") or 0, pb.get("scu_buy")
+                r["status_origin"], r["community_origin"] = pb.get("status_buy"), pb["community_buy"]
+            ps = idx.get((r.get("id_terminal_destination"), cid))
+            if ps and ps.get("community_sell"):
+                r["price_destination"], r["status_destination"] = ps.get("price_sell") or 0, ps.get("status_sell")
+                r["community_destination"] = ps["community_sell"]
+            if r.get("community_origin") or r.get("community_destination"):
+                po, pd = r.get("price_origin") or 0, r.get("price_destination") or 0
+                r["price_margin"] = pd - po
+                r["price_roi"] = (pd - po) / po * 100 if po else 0
+                r["date_added"] = max(r.get("date_added") or 0, *[(r.get(f"community_{s_}") or {}).get("at") or 0
+                                                                   for s_ in ("origin", "destination")])
+            out.append(r)
+        # runs from here UEX doesn't list (yet): worked out from the overlaid price table
+        try:
+            terms = self._uex.terminals()
+            want = {"planet": "id_planet", "orbit": "id_orbit", "terminal": "id"}[kind]
+            have = {(r.get("id_commodity"), r.get("id_terminal_origin"), r.get("id_terminal_destination")) for r in out}
+            extra, _ = self._price_routes(None, stay, avoid, one_system)
+            for x in extra:
+                t = terms.get(x["id_terminal_origin"]) or {}
+                if str(t.get(want)) != str(origin_id):
+                    continue
+                k = (x["id_commodity"], x["id_terminal_origin"], x["id_terminal_destination"])
+                if k in have:
+                    continue
+                pb = idx.get((x["id_terminal_origin"], x["id_commodity"])) or {}
+                ps = idx.get((x["id_terminal_destination"], x["id_commodity"])) or {}
+                if not (pb.get("community_buy") or ps.get("community_sell")):
+                    continue                               # UEX left it out for its own reasons
+                x = dict(x, community_origin=pb.get("community_buy"), community_destination=ps.get("community_sell"))
+                out.append(x)
+        except Exception:
+            pass
+        return out
 
     def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload=""):
         """Best runs from a planet/orbit/terminal for your cargo space and budget, most profit first.
@@ -7402,6 +7661,7 @@ class Api:
             else:
                 key = {"planet": "id_planet_origin", "orbit": "id_orbit_origin", "terminal": "id_terminal_origin"}[kind]
                 rows, at = self._uex.get("commodities_routes", {key: int(origin_id)})
+                rows = self._routes_with_quantum(rows, kind, origin_id, stay, avoid, one_system)
             places = self._uex.place_map(self._db.locations)
             out = []
             for r in rows:
@@ -7451,6 +7711,7 @@ class Api:
                     "refuel_from": bool(r.get("has_refuel_origin")), "dock_to": bool(r.get("has_docking_port_destination")),
                     "elevator_from": bool(r.get("has_freight_elevator_origin") or r.get("has_loading_dock_origin")),
                     "autoload_from": al_from, "autoload_to": al_to,
+                    "quantum_from": r.get("community_origin"), "quantum_to": r.get("community_destination"),
                     "faction_from": r.get("origin_faction_name") or r.get("faction_origin"),
                     "faction_to": r.get("destination_faction_name") or r.get("faction_destination")})
             out.sort(key=lambda x: -x["profit"])
@@ -7638,6 +7899,72 @@ class Api:
             return {"ok": True, "applied": applied, "skipped": skipped}
 
     # ------------------------------------------------------------ contracts
+    # ------------------------------------------------------------ objectives the log can't place
+    # A delivery "to Nyx System" whose marker is inside a building (a hangar or a cargo deck) has no place the
+    # log can name: Dead Saints' cargo runs to Levski, say. The Star Citizen Wiki lists the places each kind
+    # of contract can send you; the ones in the objective's system that are on the map are the candidates.
+    # One candidate: it's used (shown as "from the Star Citizen Wiki"). Several: they're offered as buttons.
+    RE_OBJ_SYSTEM = re.compile(r"\b(?:to|in|at)\s+(?:the\s+)?(Stanton|Pyro|Nyx)(?:\s+system)?\b", re.I)
+
+    def _wiki_place_loop(self):
+        time.sleep(20)
+        while True:
+            try:
+                self._wiki_fill_places()
+            except Exception:
+                watcher_mod.log_error("wiki places")
+            time.sleep(30)
+
+    def _wiki_fill_places(self):
+        todo = []
+        with self._lock:
+            for c in list(self._tracker.contracts.values()):
+                if c.status != "active":
+                    continue
+                need = [o for o in c.objectives if o.status == "active" and o.kind in ("pickup", "dropoff")
+                        and not o.location and not o.marker and o.found != "manual" and not need_item(o.text)]
+                need = [o for o in need if time.time() - self._wiki_tried.get((c.id, o.id), 0) > 1800]
+                if need:
+                    todo.append((c.id, c.code, c.name, c.system, [(o.id, o.kind, o.text) for o in need]))
+        for cid, code, name, csys, objs in todo:
+            for oid, _, _ in objs:
+                self._wiki_tried[(cid, oid)] = time.time()
+            try:
+                info = self._missions.lookup(code, name, csys) or {}
+            except Exception:
+                info = {}
+            for oid, kind, text in objs:
+                names = ((info.get("destinations" if kind == "dropoff" else "pickups") or {}).get("names") or [])
+                m = self.RE_OBJ_SYSTEM.search(text or "")
+                want_sys = m.group(1).capitalize() if m else None
+                cands = []
+                with self._lock:
+                    for n in names:
+                        place, body = self._named_place(n, want_sys)
+                        place = place if place in self._db.locations else None
+                        if place and (not want_sys or self._db.locations[place].system == want_sys) and place not in cands:
+                            cands.append(place)
+                    c = self._tracker.contracts.get(cid)
+                    o = next((x for x in c.objectives if x.id == oid), None) if c else None
+                    if not o or o.location or o.found == "manual":
+                        continue
+                    if len(cands) == 1:
+                        with self._tracker.lock:
+                            o.location, o.found = cands[0], "wiki"
+                            self._tracker._changed()
+                        self._obj_suggest.pop((cid, oid), None)
+                    elif cands:
+                        self._obj_suggest[(cid, oid)] = cands[:8]
+                    elif want_sys:
+                        # Nothing on the wiki: the system's cities and stations, the places a cargo run delivers to
+                        # inside a building (one click sets it, and contracts like this one remember it)
+                        big = [(n, L) for n, L in self._db.locations.items() if L.system == want_sys and L.source == "db"
+                               and L.pos is not None and classify(n, L.category) in ("city", "station")
+                               and not gateways.system_of(n)]
+                        big.sort(key=lambda x: (classify(x[0], x[1].category) != "city", "gateway" in x[0].lower(), x[0]))
+                        if big:
+                            self._obj_suggest[(cid, oid)] = [n for n, _ in big[:8]]
+
     def _objective_place(self, c, o):
         """A route-able place for an objective: its matched place, or a stop at its exact marker."""
         if o.location and o.location in self._db.locations:

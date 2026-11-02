@@ -21,6 +21,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 -------------------------------------------------------------------------------
+The Quantum community server
+
+The MIT License above covers Quantum's code: you may use, change and share it.
+It does not cover the Quantum community server at quantumsc.org (the "Server"),
+which is a separate service run by Quantum's developer, and gives no right to
+use it. Using the Server is governed by these terms and the Terms of Use at
+https://quantumsc.org/terms:
+
+  1. Official releases only. Only unmodified releases of Quantum published at
+     https://github.com/Sammmy1036/Quantum/releases may connect to the Server.
+     A modified copy, fork or derivative of Quantum, or any other program, must
+     not connect to the Server, whatever its license. If you build your own
+     version, point it at your own server (the "community_url" setting) or turn
+     community features off ("community_url": "off").
+
+  2. Quantum account required. Sending anything to the Server (price reports,
+     pictures, station positions, planet alignments, jobs, messages, listings,
+     org changes) requires a Quantum account with its UEX name linked. One
+     person, one account.
+
+  3. No automated or bulk access. Don't call the Server's API from your own
+     scripts or apps, copy its data in bulk, or get around its rate limits,
+     sign-ins or build checks, without written permission from Quantum's
+     developer.
+
+  4. Why. The Server holds other players' accounts, messages, trades and
+     community data. Limiting it to official, unmodified releases and signed-in
+     accounts is how that data is kept safe and how what players share is kept
+     trustworthy.
+
+  5. Enforcement. The Server checks which build of Quantum is connecting and
+     may refuse any build or account that breaks these terms. Accounts can be
+     suspended or banned and builds blocked, without notice.
+
+Nothing here limits what the MIT License lets you do with the code itself.
+
+-------------------------------------------------------------------------------
 Third-party code and fonts
 
 Quantum includes or loads code from other projects, each under its own license:
@@ -85,8 +122,10 @@ what they share. By uploading a picture or logo, a user confirms they have the
 right to share it and agrees that it may be shown to other Quantum users.
 
 The server owner and their moderators can review, reject, replace or remove
-anything shared, take down listings, change a username, and suspend or ban an
-account that misuses the service. Shared data is provided as is, like the rest
+anything shared, take down listings, change a username, suspend or ban an
+account that misuses the service, and block builds of Quantum that break the
+terms above. A price report's screenshot is kept for the review team for 14
+days, then deleted. Shared data is provided as is, like the rest
 of the Software, and may be inaccurate or out of date.
 
 -------------------------------------------------------------------------------
@@ -107,8 +146,10 @@ at their own risk.
 Privacy
 
 How Quantum and the Quantum server handle your data (accounts, usernames,
-friends and messages, marketplace, orgs, public profiles, backups and UEX
-keys) is described in the privacy policy at https://quantumsc.org/privacy.
+friends and messages, marketplace, ratings and reviews, orgs, public profiles,
+report screenshots, the build of Quantum you use, emails the server sends,
+backups and UEX keys) is described in the privacy policy at
+https://quantumsc.org/privacy.
 Anyone running their own community server receives the same kinds of data
 and should handle them with the same care.
 

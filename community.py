@@ -13,7 +13,9 @@ import time
 import urllib.error
 import urllib.request
 
-TTL = 120                      # seconds between fetches
+import clientid
+
+TTL = 120
 DEFAULT_URL = "https://quantumsc.org"
 
 
@@ -22,9 +24,6 @@ class Community:
         self._url, self._test = url_getter, test_getter
         self.place_results = {}       # name -> what the server said about the last position you sent
         self.align_results = {}       # body -> what the server said about the last alignment you sent
-        # Your sign-in on the Quantum server (see login): sent with every request, so the server knows
-        # it's really you sending pictures, places and alignments under your UEX name. on_signed_out is
-        # called when the server no longer accepts it (expired, or signed out), to sign in again.
         self._session = session_getter or (lambda: None)
         self._on_signed_out = on_signed_out or (lambda: None)
         self._cache, self._at, self._lock = {}, 0, threading.Lock()
@@ -42,6 +41,7 @@ class Community:
                                      method="POST" if body is not None else "GET",
                                      headers={"Content-Type": "application/json", "Accept": "application/json",
                                               "User-Agent": "Quantum", **({"X-Quantum-Session": sess} if sess else {}),
+                                              **({"X-Quantum-Client": clientid.header()} if clientid.header() else {}),
                                               **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -53,12 +53,12 @@ class Community:
                 return {"status": f"http_{e.code}"}
         if sess and isinstance(out, dict) and out.get("status") == "sign_in_needed":
             self._on_signed_out()                              # the server forgot this sign-in: get a new one
+        if isinstance(out, dict) and out.get("status") == "unofficial_client":
+            out.setdefault("message", out.get("detail") or "The Quantum server only accepts official releases of Quantum.")
+            self.last_error = out["message"]
         return out
 
     def login(self, secret):
-        """Sign in with your UEX datarunner secret key. The server asks UEX whose key it is, then
-        forgets the key; you get back {status: ok, username, session} (or invalid_secret_key, banned,
-        try_later, uex_unreachable, unreachable)."""
         if not self.url:
             return {"status": "off"}
         try:
@@ -67,21 +67,17 @@ class Community:
             return {"status": "unreachable", "detail": str(e)}
 
     def logout(self, session):
-        """End a sign-in on the server (when the secret key is removed or changed)."""
         if not self.url or not session:
             return
         try:
             req = urllib.request.Request(self.url + "/v1/logout", data=b"{}", method="POST",
                                          headers={"Content-Type": "application/json", "User-Agent": "Quantum",
-                                                  "X-Quantum-Session": session})
+                                                  "X-Quantum-Session": session,
+                                                  **({"X-Quantum-Client": clientid.header()} if clientid.header() else {})})
             urllib.request.urlopen(req, timeout=8).close()
         except Exception:
             pass
 
-    # ---- Quantum accounts: the app signs in with email and password (account_login), or through the browser (a
-    # device code), where it never sees the password.
-    # Its sign-in is sent as X-Quantum-Account for these calls; once the account is linked to a UEX name, the
-    # server also accepts it as X-Quantum-Session wherever it asks who someone is.
     def _acct(self, path, body=None, token=None, agent=None, timeout=10):
         if not self.url:
             return {"status": "off"}
@@ -256,7 +252,6 @@ class Community:
             return False
 
     def leaderboard(self, me=None):
-        """The top 10 datarunners on the server, and where you stand ({top, me, total}), or None."""
         if not self.url:
             return None
         import urllib.parse
@@ -267,11 +262,9 @@ class Community:
             self.last_error = str(e)
             return None
 
-    PHOTOS_FOR = 300              # s: approved pictures are fetched again after this long
+    PHOTOS_FOR = 300
 
     def photos(self, fresh=False):
-        """{lowercase name: full picture URL} for pictures you've approved on the server. Cached for
-        PHOTOS_FOR (fresh: fetched now)."""
         if not self.url:
             return {}
         if not fresh and getattr(self, "_photos_at", 0) > time.time() - self.PHOTOS_FOR:
@@ -280,7 +273,6 @@ class Community:
             r = self._req("/v1/photos", timeout=8)
             got = (r.get("photos") or {}) if r.get("status") == "ok" else {}
             self._photos = {k: self.url + v["url"] for k, v in got.items()}
-            # Pictures the server owner put in place of the wiki's or UEX's (a wrong or poor one)
             self._overrides = {k: self.url + v["url"] for k, v in got.items() if v.get("override")}
         except Exception:
             self._photos = getattr(self, "_photos", {})
@@ -532,10 +524,46 @@ class Community:
             return {"ok": False, "error": str(e)}
         with self._lock:
             self._at = 0                                       # pick it up on the next read
+        if r.get("status") == "account_required":
+            self.last_error = r.get("status")
+            return {"ok": False, "error": "account_required",
+                    "detail": "Sign in to your Quantum account (Profile) with your UEX name linked, so your reports count on Quantum."}
         if r.get("status") != "ok":
             self.last_error = r.get("status")
             return {"ok": False, "error": r.get("status"), "detail": r.get("detail")}
+        if r.get("batch") and body.get("screenshot") and not test:
+            threading.Thread(target=self._post_shot, args=(r["batch"], body["screenshot"]), daemon=True).start()
         return {"ok": True, "states": r.get("states") or {}}
+
+    SHOT_W, SHOT_MAX = 1600, 880 * 1024
+
+    def _post_shot(self, batch, b64):
+        """A small copy of the report's screenshot, so the Quantum review team can see what was reported
+        (kept 14 days on the server, then deleted). Best effort: a report never waits on it or fails over it."""
+        import base64
+        import io
+        try:
+            raw = base64.b64decode(b64)
+            try:
+                from PIL import Image
+                im = Image.open(io.BytesIO(raw)).convert("RGB")
+                if im.width > self.SHOT_W:
+                    im = im.resize((self.SHOT_W, round(im.height * self.SHOT_W / im.width)))
+                data = b""
+                for q in (70, 55, 40):
+                    out = io.BytesIO()
+                    im.save(out, "JPEG", quality=q, optimize=True)
+                    data = out.getvalue()
+                    if len(data) <= self.SHOT_MAX:
+                        break
+            except Exception:
+                data = raw if raw.startswith(b"\xff\xd8\xff") else b""
+            if not data or len(data) > self.SHOT_MAX:
+                return
+            self._req("/v1/reports/shot", {"batch": batch, "image": "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")},
+                      timeout=60)
+        except Exception:
+            pass
 
     def overlay(self, rows):
         """UEX's commodities_prices_all rows with any newer community report laid over them. Changed

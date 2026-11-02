@@ -548,30 +548,30 @@ class NavDB:
             if a in stops and b in stops and a != b:
                 must_before.setdefault(b, set()).add(a)
 
-        def valid(order):
-            pos = {n: i for i, n in enumerate(order)}
-            return all(pos[a] < pos[b] for b, s in must_before.items() if b in pos for a in s if a in pos)
-
         place = (lambda n: place_of[n]) if place_of else (lambda n: n)   # stops may be task keys
         by_sys: dict[str, list[str]] = {}
         for n in stops:
             by_sys.setdefault(self.locations[place(n)].system, []).append(n)
-        order_sys = sorted(by_sys, key=lambda s: (s != start_system, list(by_sys).index(s)))
-        out, cur = [], start
-        for s in order_sys:
-            names = by_sys[s]
+        sys_rank = {s: i for i, s in enumerate(sorted(by_sys, key=lambda s: (s != start_system, list(by_sys).index(s))))}
+
+        def order_within(names, origin, inner):
+            """Nearest-neighbour then 2-opt / move-one improvements, keeping `inner` (b -> {a}) satisfied."""
             pts = {n: self.global_pos(self.locations[place(n)], t) for n in names}
-            origin = cur if s == start_system and cur is not None else pts[names[0]]
-            remaining, order, p = list(names), [], origin
+
+            def ok(o):
+                pos = {n: i for i, n in enumerate(o)}
+                return all(pos[a] < pos[b] for b, s_ in inner.items() if b in pos for a in s_ if a in pos)
+            remaining, order, p = list(names), [], origin if origin is not None else pts[names[0]]
+            start_p = p
             while remaining:  # nearest stop whose prerequisites are already visited
-                ready = [n for n in remaining if not (must_before.get(n, set()) & set(remaining))] or remaining
+                ready = [n for n in remaining if not (inner.get(n, set()) & set(remaining))] or remaining
                 nxt = min(ready, key=lambda n: dist(p, pts[n]))
                 order.append(nxt)
                 remaining.remove(nxt)
                 p = pts[nxt]
 
             def length(o):
-                total, q = 0.0, origin
+                total, q = 0.0, start_p
                 for n in o:
                     total += dist(q, pts[n])
                     q = pts[n]
@@ -592,11 +592,40 @@ class NavDB:
                             cands.append(rest[:j] + [order[i]] + rest[j:])
                 for cand in cands:
                     L = length(cand)
-                    if L < best - 1e-6 and valid(cand):
+                    if L < best - 1e-6 and ok(cand):
                         order, best, improved = cand, L, True
                         break
+            return order, pts[order[-1]]
+
+        # Systems one at a time, yours first, but a pickup in another system comes before its drop-off here:
+        # each pass takes the stops in one system that can be done now (their pickups are done, or in the
+        # same system), so a pickup on Terminus is fetched before the delivery at Grim HEX, and a system
+        # is gone back to when a delivery there waits on a pickup elsewhere.
+        out, cur, cur_sys, done = [], start, start_system, set()
+        left = {sname: list(ns) for sname, ns in by_sys.items()}
+        while any(left.values()):
+            def doable(sname):
+                c = set(left[sname])
+                changed = True
+                while changed:
+                    changed = False
+                    for n in list(c):
+                        if any(a not in done and a not in c for a in must_before.get(n, ())):
+                            c.discard(n)
+                            changed = True
+                return [n for n in left[sname] if n in c]
+            cands = [(sname, doable(sname)) for sname in left if left[sname]]
+            cands = [(sname, d) for sname, d in cands if d]
+            if not cands:                                  # prerequisites that can't be met (a loop): ignore them
+                cands = [(sname, list(left[sname])) for sname in left if left[sname]]
+                must_before = {}
+            sname, names = min(cands, key=lambda x: (x[0] != cur_sys, sys_rank.get(x[0], 99)))
+            inner = {b: {a for a in s_ if a in names} for b, s_ in must_before.items() if b in names}
+            order, cur = order_within(names, cur if sname == cur_sys else None, inner)
             out += order
-            cur = pts[order[-1]]
+            done.update(order)
+            left[sname] = [n for n in left[sname] if n not in done]
+            cur_sys = sname
         return out
 
     # --- guidance back to a place

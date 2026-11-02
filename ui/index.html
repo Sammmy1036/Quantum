@@ -1143,6 +1143,32 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-bar{height:6px;border-radius:999px;background:var(--panel-3);overflow:hidden;margin:8px 0 2px}.pf-bar i{display:block;height:100%;background:var(--brand-grad)}
 .gr-desc{color:var(--ink-2);font-size:13.5px;line-height:1.6;margin:0 2px 16px;max-width:900px}
 .gr-piece .w a{cursor:pointer}
+.gr-places{margin:0 0 6px 14px;border-left:2px solid var(--line,rgba(140,196,255,.18));padding-left:10px}
+.gr-place .w{font-size:13px}.gr-place .w a,.cart-open{cursor:pointer}
+.gr-loot{margin-bottom:6px}
+.gr-where{margin-top:18px}.gr-where-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:8px}
+.gr-wcard{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:12px 14px}
+.gr-wcard .hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.gr-wcard .hd svg{width:22px;height:22px;flex:none;fill:none;stroke:#8cc4ff;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.gr-wcard .hd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.gr-wcard .hd .t span{color:var(--dim);font-size:12px;line-height:1.4}
+.gr-wcard .hd .btn{flex:none}
+.gr-wt{width:100%;border-collapse:collapse;font-size:13px}.gr-wt td{padding:6px 0;border-top:1px solid var(--line);vertical-align:middle}
+.gr-wt td small{display:block;color:var(--dim);font-size:11.5px}.gr-wt a{cursor:pointer}
+.gr-wt td.d{text-align:right;color:var(--ink-2);white-space:nowrap;padding:0 10px;font-size:12px}.gr-wt td.a{width:30px;text-align:right}
+.afk-box{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.ph-grid-bg,.vg .ph.ph-g{background-color:#0a1222;background-image:linear-gradient(rgba(140,196,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.06) 1px,transparent 1px);background-size:24px 24px;background-position:-1px -1px}
+.ph-art{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#6f8fb8}
+.ph-art .ph-art-ic{width:34%;height:auto;max-height:62%;fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.mkp-img .pic-none.art{position:absolute;inset:0;justify-content:center;gap:10px;color:#6f8fb8}
+.pic-none.art .ph-art-ic{width:34%;max-height:52%;fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}
+.set-ver{display:flex;align-items:center;gap:12px;margin:-4px 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
+.set-ver .v{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;font-size:13px}.set-ver .v .muted{font-size:11.5px}.set-ver .btn{flex:none}
+.bp-grid-bg{background-color:#08142a;background-image:linear-gradient(rgba(140,196,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.10) 1px,transparent 1px),linear-gradient(rgba(140,196,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.05) 1px,transparent 1px);background-size:48px 48px,48px 48px,12px 12px,12px 12px;background-position:-1px -1px}
+.bp-ph{display:block;color:#8cc4ff;width:72%;height:72%}
+.vg .ph.bp{background-color:#08142a;background-image:linear-gradient(rgba(140,196,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.10) 1px,transparent 1px);background-size:24px 24px;color:#8cc4ff}
+.mkp-img .pic-none.bp{position:absolute;inset:0;width:auto;height:auto;justify-content:center;gap:10px;padding:14px;box-sizing:border-box;color:#8cc4ff}
+.mkp-img .pic-none.bp .bp-ph{width:78%;height:auto;max-height:62%;flex:none}
+.cart-open:hover{text-decoration:underline}
 /* Cart */
 .cart-btn{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-3);color:var(--ink-2);cursor:pointer;flex:none;transition:background .15s,color .15s}
 .cart-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -1359,6 +1385,34 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .og-grid2{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr);gap:18px}
 @container pic (max-width:860px){.og-grid2{grid-template-columns:1fr}}
 .og-desc{white-space:pre-wrap;color:var(--ink-2);line-height:1.55}
+.og-banner{height:180px;background:#0b1730 center/cover no-repeat;border-bottom:1px solid var(--line)}
+.og-hero{flex-wrap:wrap}.og-rsi{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;align-self:center}
+.og-banner-prev{border-radius:8px;margin:6px 0;transition:opacity .2s}.og-banner-prev.saving{opacity:.55}
+.og-banner-empty{height:120px;margin:6px 0;border:1px dashed var(--line-2);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 20px;color:var(--dim);font-size:12.5px;cursor:pointer}
+.og-banner-empty:hover{border-color:var(--route-2,#7fe7ff);color:var(--ink-2)}
+.og-banner+.og-hero{background:linear-gradient(180deg,#0b1730ee,#070e1c)}
+.og-rich{color:var(--ink-2);line-height:1.6;white-space:normal;overflow-wrap:anywhere}
+.og-rich h1,.og-rich h2,.og-rich h3,.og-rich h4{color:var(--ink);margin:14px 0 6px;font-family:var(--display)}
+.og-rich h1{font-size:22px}.og-rich h2{font-size:19px}.og-rich h3{font-size:16px}.og-rich h4{font-size:14px}
+.og-rich p{margin:0 0 10px}.og-rich img{max-width:100%;height:auto;border-radius:6px}
+.og-rich blockquote{margin:8px 0;padding:6px 12px;border-left:3px solid var(--route-2,#7fe7ff);background:#ffffff08}
+.og-rich hr{border:0;border-top:1px solid var(--line-2);margin:14px 0}.og-rich a{color:var(--route-2,#7fe7ff);cursor:pointer}
+.og-rich table{border-collapse:collapse;margin:8px 0}.og-rich td,.og-rich th{border:1px solid var(--line-2);padding:4px 8px}
+.og-rich code,.og-rich pre{background:#ffffff0d;border-radius:4px;padding:1px 4px;font-family:ui-monospace,Consolas,monospace}
+.pm-review{margin:8px 0 2px;display:flex;flex-direction:column;gap:6px;max-width:560px}.pm-review-ask{font-size:12.5px;margin:6px 0 0}
+.pm-tags{display:flex;flex-wrap:wrap;gap:6px}.pm-tags .chip{cursor:pointer;border-radius:12px}.pm-tags .chip.on{background:#f2c14e22;border-color:#f2c14e;color:#f2c14e}
+.top-row.has-prof{cursor:pointer}.top-row.has-prof:hover{filter:brightness(1.12)}
+.pm-standing{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.pm-big{display:flex;align-items:baseline;gap:8px;margin:4px 0 10px}.pm-big b{font:600 34px var(--display)}.pm-big span{font-size:20px}.pm-big .muted{font-size:12.5px}
+.pm-split{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pm-split div{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--dim)}.pm-split b{color:var(--ink);font-size:14px}
+.pm-trust{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}.pm-trust:first-of-type{border-top:0}
+.pm-trust>span{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--panel-3);color:var(--dim);flex:none;font-size:12px}
+.pm-trust.on>span{background:#57e39b22;color:#57e39b}.pm-trust b{font-size:13px}.pm-trust small{display:block;color:var(--dim);font-size:12px}
+.so-me.click{cursor:pointer}.so-me.click.on{outline:1px solid var(--route-2,#7fe7ff)}
+.pm-rev{padding:8px 0;border-top:1px solid var(--line)}.pm-rev:first-of-type{border-top:0}
+.og-rtb{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}.og-rtb button{min-width:30px}
+.og-rich-edit{width:100%;box-sizing:border-box;resize:vertical;min-height:220px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+.og-rich-prev{border:1px dashed var(--line-2);border-radius:8px;padding:10px 12px;max-height:420px;overflow:auto}
 .og-rank-h{font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:16px 2px 6px;display:flex;gap:8px;align-items:center}
 .og-mem{display:flex;gap:10px;align-items:center;padding:7px 8px;border-radius:10px}
 .og-mem:hover{background:var(--panel-2)}
@@ -1420,9 +1474,10 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 <div class="app">
   <nav class="rail" id="rail" aria-label="Sections">
     <button class="rail-me out" id="rail-me" data-group="profile" aria-label="Your profile" title="Sign in"><span class="av" id="rail-av"></span><i class="on-dot" id="rail-dot" hidden></i></button>
-    <button class="rail-btn" data-group="navigate" title="Route, waypoints and contracts"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8 16c4-1 2-7 8-8"/></svg>Navigate</button>
-    <button class="rail-btn" data-group="trade" title="Commodities, trade routes and datarunning"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
-    <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/></svg>Ships</button>
+    <button class="rail-btn" data-group="navigate" title="Home: the map, your route, waypoints and contracts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg>Home</button>
+    <button class="rail-btn" data-group="trade" title="Commodities and trade routes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
+    <button class="rail-btn" data-group="data" title="Datarunner: report prices, jobs, your reports and the leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5 1 0 1.9-.1 2.7-.2"/><path d="M17.5 15v6M15 18.5l2.5 2.5 2.5-2.5"/></svg>Data</button>
+    <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c1.6 1.4 2.6 3.6 2.8 6.4l.2 3.1 4.5 3.2v2.3l-4.6-1.3-.4 2.3 1.7 1.6v1.4l-4.2-1-4.2 1v-1.4l1.7-1.6-.4-2.3-4.6 1.3v-2.3L9 12l.2-3.1c.2-2.8 1.2-5 2.8-6.4z"/><path d="M12 7.5v3.5"/></svg>Ships</button>
     <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
     <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
     <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
@@ -1438,14 +1493,14 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
   <path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qg)" stroke-width="8.5" stroke-linecap="round"/>
   <path d="M33 45l18.5 13.5H40.5z" fill="url(#qg)"/>
   <path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><div><h1 aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</h1><div class="by">by <b>microTech</b></div></div></div>
-    <div class="sec-head"><h2 id="sec-title">Navigate</h2></div>
+    <div class="sec-head"><h2 id="sec-title">Home</h2></div>
     <div class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" data-group="navigate" data-tab="route" aria-selected="true">Route <span class="count" id="c-route">0</span></button>
       <button class="tab" role="tab" data-group="navigate" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
       <button class="tab" role="tab" data-group="navigate" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab uex-tab" role="tab" data-group="trade" data-tab="market" aria-selected="false" hidden>Commodities</button>
       <button class="tab uex-tab" role="tab" data-group="trade" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
-      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
+      <button class="tab uex-tab" role="tab" data-group="data" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="components" aria-selected="false" hidden>Components</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
@@ -1454,8 +1509,10 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="tab" role="tab" data-group="gear" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
       <button class="tab" role="tab" data-group="gear" data-tab="clothing" aria-selected="false" title="Clothing: hats, shirts, jackets, pants, shoes… from the Star Citizen Wiki">Clothing</button>
       <button class="tab" role="tab" data-group="gear" data-tab="gadgets" aria-selected="false" title="Multi-tools and their attachments, tractor beams, rangefinders, mining gadgets… from the Star Citizen Wiki">Gadgets</button>
-      <button class="tab" role="tab" data-group="gear" data-tab="utility" aria-selected="false" title="Hacking chips, cryptokeys and keycards, from the Star Citizen Wiki">Keys</button>
-      <button class="tab" role="tab" data-group="consumables" data-tab="consumables" aria-selected="false" title="Food, drinks and medical items, from the Star Citizen Wiki">Consumables</button>
+      <button class="tab" role="tab" data-group="consumables" data-tab="consumables" data-ckind="Food" aria-selected="false" title="Food, from the Star Citizen Wiki">Food</button>
+      <button class="tab" role="tab" data-group="consumables" data-tab="consumables" data-ckind="Drink" aria-selected="false" title="Drinks, from the Star Citizen Wiki">Drink</button>
+      <button class="tab" role="tab" data-group="consumables" data-tab="consumables" data-ckind="Medical" aria-selected="false" title="MedPens, med guns and other medical items">Medical</button>
+      <button class="tab" role="tab" data-group="consumables" data-tab="utility" aria-selected="false" title="Hacking chips, cryptokeys and keycards, from the Star Citizen Wiki">Keys</button>
       <button class="tab" role="tab" data-group="gear" data-tab="gearlo" aria-selected="false" title="Your own gear loadouts: what you wear and carry for each kind of job">Loadouts</button>
       <button class="tab" role="tab" data-group="crafting" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
       <button class="tab" role="tab" data-group="cart" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
@@ -2453,7 +2510,10 @@ function followNow(){ const live=S.live, p=live?.player; if(!p) return;
   else focusPlayer(true); }
 function focusPlayer(quiet){ const p=S.live?.player; if(!p) return quiet?null:toast("Type /showlocation in game chat first");
   if(p.system!==S.system) setSystem(p.system,false);
-  if(p.body) flyTo({kind:"local",body:p.body,pos:p.local}, Math.max(30000,S.bodyMap[p.body].radius*0.08), {...TOPDOWN,key:"player:"+p.body}); else flyTo({kind:"point",pos:p.pos}, 5e6, {key:"player:space"}); }
+  // {kind:"player"} is looked up every frame (focusPos), so once the camera is on you it stays on you as your
+  // position moves: a new /showlocation, or Quantum tracking you from the log as you travel.
+  if(p.body&&S.bodyMap[p.body]) flyTo({kind:"player"}, Math.max(30000,S.bodyMap[p.body].radius*0.08), {...TOPDOWN,key:"player:"+p.body});
+  else flyTo({kind:"player"}, 5e6, {key:"player:space"}); }
 
 // =================================================================== projection & occlusion
 const V3=new THREE.Vector3();
@@ -3043,7 +3103,7 @@ async function settingsAction(a,e){
       if(!em||!pw){ S.acctErr="Enter your email and password."; renderDetail(); (em?$("acct-pw"):$("acct-email"))?.focus(); return; }
       S.acctEmail=em; S.acctBusy=true; S.acctErr=""; renderDetail();
       const r=await api().account_sign_in_password(em,pw); S.acctBusy=false; S.acct=r;
-      if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
+      if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; S.og.mine=null; S.pm.mine=null; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
       else { S.acctErr=r.error; S.acctUnconfirmed=!!r.unconfirmed; }
       renderDetail(); if(!r.ok) $("acct-pw")?.focus(); return; }
     if(a==="acctkeys"){ const on=e.target.checked; S.acctKeysBusy=true; renderDetail();
@@ -3100,7 +3160,8 @@ function renderDetail(){
     const inSys=S.bodies.filter(b=>b.system===S.system&&b.alignable), done=inSys.filter(b=>b.calibrated).length;
     const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
-      <div class="row" style="gap:8px;margin:-4px 0 12px;font-size:12.5px"><span class="muted">Quantum ${esc(S.qVersion||"")}</span><button class="btn small ghost upd-btn" data-a="updcheck" ${S.updChecking?"disabled":""}>${S.updChecking?`<span class="spin-sm"></span>Checking…`:"Check for updates"}</button>${S.updNote?`<span class="muted" style="font-size:12px">${esc(S.updNote)}</span>`:""}</div>
+      <div class="set-ver"><div class="v"><b title="${S.qBuild?`Build ${esc(S.qBuild)}`:""}">Quantum ${esc(S.qVersion||"")}</b><span class="muted">${esc(S.updNote||"")}</span></div>
+        <button class="btn small ghost upd-btn" data-a="updcheck" ${S.updChecking?"disabled":""}>${S.updChecking?`<span class="spin-sm"></span>Checking…`:"Check for updates"}</button></div>
       <div class="sub" style="margin-top:6px">Game.log</div>
       <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
@@ -3172,12 +3233,17 @@ function renderDetail(){
       </div>
       ${a.loc_hotkey&&a.chat_key?`<div class="muted" style="font-size:12px;margin-top:6px">Chat in game: <b>${a.chat_hidden?"hidden":"showing"}</b>. While it's hidden, ${esc(a.loc_hotkey)} won't type (your letters would trigger key bindings). Out of step? Press ${esc(a.loc_hotkey)} twice to send anyway.</div>`:""}
       <div class="muted" style="font-size:12px;margin-top:8px">The game still sees your hotkeys, so pick keys that aren't bound in game.</div>
+      ${afkHtml(a)}
       <div class="sub" style="margin-top:12px">Log</div>
       <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>`;
     const save=async()=>{
       await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value, $("s-chatkey").value);
       await poll(); renderStatus(); renderDetail(); toast("Saved"); };
     for(const id of ["s-hotkey","s-lochotkey","s-chat","s-chatkey"]) $(id).onchange=save;
+    const afkSave=async(on)=>{ const st=await api().set_antiafk($("s-afkkey").value,$("s-afkact").value,$("s-afkfocus").checked,on); await poll(); renderDetail();
+      if(on!==undefined) toast(st.afk.on?"Anti-AFK on: a harmless input every 1 to 4 minutes while Star Citizen is open":"Anti-AFK off"); };
+    for(const id of ["s-afkkey","s-afkact","s-afkfocus"]) if($(id)) $(id).onchange=()=>afkSave();
+    if($("s-afktoggle")) $("s-afktoggle").onclick=()=>afkSave(!(S.live?.autoloc?.afk?.on));
     $("s-shothotkey").onchange=async e=>{ const r=await api().dr_set_hotkey(e.target.value); await poll(); renderDetail();
       toast(r.shot_hotkey?`${r.shot_hotkey} takes a terminal screenshot for your UEX report`:"Screenshot key off"); };
     const ccSave=async()=>{ if(!$("s-ccmode")) return; S.ccImg=null; S.ccPos=null; await api().set_city_clock($("s-ccmode").value,$("s-ccpos").value,$("s-cch24").value==="1",$("s-ccsize").value,$("s-ccagain").value); await poll(); renderDetail(); toast("Saved"); };
@@ -3370,9 +3436,9 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
-const GROUPS={navigate:{t:"Navigate",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade","datarunner"]},
-  ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","utility","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends"]},profile:{t:"Profile",tabs:["profile"]}};
+const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
+  ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","gearlo"]},
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";
@@ -3386,6 +3452,10 @@ for(const b of document.querySelectorAll("#rail [data-group]")) b.onclick=()=>{ 
   t.click(); };
 $("rail-settings").onclick=()=>{ if(S.selected?.kind==="settings") return select(null); select({kind:"settings"}); };
 for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",syncRail);
+// The Consumables tabs are one list, filtered by kind
+for(const t of document.querySelectorAll(".tab[data-ckind]")) t.addEventListener("click",()=>{ const st=grState("consumables");
+  if(st.ckind===t.dataset.ckind&&!st.sel) return; st.ckind=t.dataset.ckind; st.sel=null; st.mission=null; st.gridKey=null;
+  const sel=$("gr-cat-consumables"); if(sel) sel.value=""; if(st.data) grRender("consumables"); });
 syncRail();
 
 // =================================================================== Upgrades (CCUs)
@@ -3407,7 +3477,7 @@ function ccPic(x,who){
   if(!x) return `<div class="cc-pic">${who==="from"?"Pick the ship you have":"Pick the ship you want"}</div>`;
   const u=x.photo||S.cc.pics[x.name];
   if(u===undefined&&!x.photo){ S.cc.pics[x.name]=null; api().ccu_photo(x.name).then(r=>{ S.cc.pics[x.name]=r?.photo||""; if(S.tab==="ccu") renderCcu(); }); }
-  return `<div class="cc-pic">${u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:u===null?qPic():"No picture"}
+  return `<div class="cc-pic">${u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:u===null?qPic():`<div class="ph-art ph-grid-bg" style="position:absolute;inset:0">${phSvg("vehicle")}</div>`}
     <div class="cc-cap"><div><b>${esc(x.name)}</b><br><span>${esc(x.maker)}${x.status?` · ${esc(x.status)}`:""}</span></div><span class="v">${usd(x.value)}</span></div></div>`; }
 function ccLinks(x){ if(!x) return "";
   const veh=x.uex_id&&!document.querySelector('.tab[data-tab="vehicles"]')?.hidden;
@@ -3587,7 +3657,7 @@ async function glPicker(){ const P=$("gl-panel"), lo=glCur(), k=S.gl.pick; if(!l
     const fit=L.filter(fits), base=S.gl.all||!fit.length?L:fit;
     const shown=base.filter(i=>!words.length||words.every(w=>`${i.name} ${i.maker} ${i.kind||""} ${i.slot||""}`.toLowerCase().includes(w))).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200);
     const box=$("gl-pick-grid");
-    const grid=shown.length?`<div class="grid">${shown.map(i=>`<div class="vg" data-glchoose="${esc(i.uuid||i.name)}"><div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+    const grid=shown.length?`<div class="grid">${shown.map(i=>`<div class="vg" data-glchoose="${esc(i.uuid||i.name)}"><div class="ph ph-g" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard(grArt(kind,i))}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.slot||i.kind].filter(Boolean).join(" · "))}${grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
       :`<div class="empty">Nothing matches.</div>`;
     if(box){ box.innerHTML=grid; $("gl-pick-n").textContent=`${shown.length}${base.length>shown.length?` of ${base.length}`:""} shown`; fillGearPictures(box); return; }
@@ -3759,7 +3829,7 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
       return `<div class="mk-row"><div class="w">${esc(what[x.type]||"Station position")}<div class="m">${esc(x.name||"")}${x.at?` · ${fmtAgo(x.at)}`:""}</div></div><div class="p" style="color:${col};font-size:12px;white-space:nowrap">${esc(l)}</div><span></span></div>`; }).join("")
     :`<div class="muted" style="font-size:13px;padding:6px 0">${S.drHasSecret?"Nothing sent yet. Pictures, station positions and alignments you send show up here.":"Add your UEX Secret Key under Linked accounts to send reports."}</div>`;
   const fleet=!lg.uex_token?`<div class="muted" style="font-size:13px;padding:6px 0">Add your UEX Bearer Token to keep your fleet here.</div>`
-    :ships.length?!shipsOn.shown.length?`<div class="muted" style="font-size:13px;padding:6px 0">No ships chosen to show. <a data-pfv="fleet" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`:`<div class="grid" style="margin-top:8px">${shipsOn.shown.map(x=>`<div class="vg" data-pfship="${esc(x.uid||"")}"><div class="ph">${x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+    :ships.length?!shipsOn.shown.length?`<div class="muted" style="font-size:13px;padding:6px 0">No ships chosen to show. <a data-pfv="fleet" style="cursor:pointer;color:var(--route-2)">Choose some</a></div>`:`<div class="grid" style="margin-top:8px">${shipsOn.shown.map(x=>`<div class="vg" data-pfship="${esc(x.uid||"")}"><div class="ph ph-g">${x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard("vehicle")}</div>
         <div class="tx"><b>${x.main?"★ ":""}${esc(x.full||x.name||"")}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:"",x.loadouts>1?plural(x.loadouts,"loadout"):""].filter(Boolean).join(" · "))}</span></div></div>`).join("")}</div>
 `
     :`<div class="muted" style="font-size:13px;padding:6px 0">No ships yet.</div>`;
@@ -3780,9 +3850,14 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
   fillGearPictures(P); }
 const var_dim="var(--dim)";
 // ---- Profile overview: your orgs and what you have up on the marketplace (loaded once, when the overview opens)
+// Asked again when the last answer was an error (signed out at the time, the server was busy): the overview
+// used to keep that first answer, so your orgs never showed after signing in.
+function pfStale(m,at){ return m===null||((m?.error||m?.signed_in===false)&&Date.now()-(at||0)>10000); }
+function pfLoadOrgs(){ if(S.pfOgBusy||!pfStale(S.og.mine,S.pfOgAt)) return; S.pfOgBusy=true; S.pfOgAt=Date.now();
+  ogLoadMine().finally(()=>{ S.pfOgBusy=false; renderProfile(true); }); }
 function pfCommunityHtml(){ if(!S.acct?.signed_in) return "";
-  if(S.og.mine===null&&!S.pfOgAsk){ S.pfOgAsk=true; ogLoadMine().then(()=>renderProfile(true)); }
-  if(S.pm.mine===null&&!S.pfPmAsk){ S.pfPmAsk=true; pmLoadMine().then(()=>renderProfile(true)); }
+  pfLoadOrgs();
+  if(pfStale(S.pm.mine,S.pfPmAt)&&!S.pfPmBusy){ S.pfPmBusy=true; S.pfPmAt=Date.now(); pmLoadMine().finally(()=>{ S.pfPmBusy=false; renderProfile(true); }); }
   const go=(attr,t)=>`<a ${attr} style="cursor:pointer;color:var(--route-2);margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:12px">${t}</a>`;
   const om=S.og.mine, pm=S.pm.mine, oO=pfOrdered(om?.orgs||[],x=>x.id,"orgs",true), oL=pfOrdered((pm?.listings||[]).filter(l=>l.status==="active"),x=>x.id,"listings",true);
   const orgs=oO.shown, ls=oL.shown;
@@ -3807,6 +3882,20 @@ function pfOrdered(list,idOf,key,saved){ const dflt=key==="orgs"?10:8; const pr=
   const all=list.map((x,i)=>[x,i]).sort((a,b)=>(pos.get(String(idOf(a[0])))??1e6+a[1])-(pos.get(String(idOf(b[0])))??1e6+b[1])).map(([x])=>x);
   const count=Math.max(1,Math.min(10,pr.count??dflt)); return {all, shown:all.filter(x=>!hid.has(String(idOf(x)))).slice(0,count), count, hidden:hid, off:!!pr.off}; }
 const pfDirty=key=>!!S.pfDraft?.[key]&&JSON.stringify(S.pfDraft[key])!==JSON.stringify(S.pfPrefs?.[key]||{});
+// ---- Anti-AFK (Settings > Hotkeys): a harmless input every 1 to 4 minutes, at random, so the game doesn't log you out
+function afkHtml(a){ const f=a.afk||{}, keys=["","F5","F6","F7","F8","F9","F10","F11","F12"], used=[a.hotkey,a.loc_hotkey,a.shot_hotkey,a.chat_key].filter(Boolean);
+  const nx=f.on&&f.next?Math.max(0,Math.round(f.next-Date.now()/1000)):null;
+  return `<div class="afk-box"><div class="row" style="gap:10px"><span class="dot ${f.on?"on":""}"></span><div style="flex:1;min-width:0"><b>Anti-AFK</b>
+      <div class="muted" style="font-size:12px">${f.on?`On${nx!=null?` · next in ${nx>=60?Math.round(nx/60)+" min":nx+" s"}`:""}${f.last?` · last ${new Date(f.last*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`:""}`:"Off. Keeps the game from logging you out while you're away"}</div></div>
+      <button class="btn small ${f.on?"":"primary"}" id="s-afktoggle">${f.on?"Turn off":"Turn on"}</button></div>
+    <div class="setgrid" style="margin-top:8px">
+      <span class="k">On / off key</span><select class="field" id="s-afkkey">${keys.map(k=>`<option value="${k}" ${k===(f.hotkey||"")?"selected":""} ${k&&used.includes(k)?"disabled":""}>${k||"Off (use the button)"}${k&&used.includes(k)?" (used)":""}</option>`).join("")}</select>
+      <span class="k" title="What Quantum sends every 1 to 4 minutes">It sends</span><select class="field" id="s-afkact">
+        <option value="nudge" ${f.action!=="f13"&&f.action!=="mobiglas"?"selected":""}>Tiny mouse nudge</option>
+        <option value="f13" ${f.action==="f13"?"selected":""}>F13 (unused key)</option>
+        <option value="mobiglas" ${f.action==="mobiglas"?"selected":""}>mobiGlas open/close</option></select></div>
+    <label class="row" style="gap:8px;margin-top:6px;cursor:pointer;font-size:12.5px"><input type="checkbox" id="s-afkfocus" ${f.focus?"checked":""}> Switch to Star Citizen when it's time (otherwise it waits until the game is the focused window)</label>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Nothing moves in game: the nudge goes one pixel and straight back. If the game still logs you out, try F13.</div></div>`; }
 // ---- Location clock: drag it to a custom spot on a picture of the game window (saved as fractions of it)
 async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.city_clock; if(!box||!img||!cc) return;
   const key=`${cc.size}|${cc.h24}`;
@@ -3902,8 +3991,10 @@ function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
       const mini=l=>`<div class="pm-mini" data-uplist="${l.id}" data-upkind="${l.kind==="service"?"pm-services":"pm-items"}">${pmPh(l.photo)}<div class="who"><b>${esc(l.title)}</b><small>${l.unit==="quote"?"Quote":pmA(l.price)}${l.kind==="item"?` · ${l.qty} left`:""}</small></div></div>`;
       body+=sec("Listings",lists.length?(items.length?`<div class="pf-subh">Items for sale <span class="muted">${items.length}</span></div><div class="pm-mylist">${items.map(mini).join("")}</div>`:"")+(svcs.length?`<div class="pf-subh">Services <span class="muted">${svcs.length}</span></div><div class="pm-mylist">${svcs.map(mini).join("")}</div>`:"")
         :`<div class="muted" style="font-size:13px;padding:6px 0">Nothing for sale right now.</div>`,rt?.count?`${pmStars(rt)} · ${rt.sold} sold`:rt?.sold?`${rt.sold} sold`:""); }
+    // Trade reviews: what buyers and sellers said after trading with them (marketplace ratings)
+    if(rt&&(rt.count||d.reviews?.length)) body+=sec("Trade reviews",pmReviewsHtml(rt,d.reviews),rt.count?`${rt.count} rating${rt.count===1?"":"s"}`:"");
     const vphoto=x=>x.photo||(S.veh||[]).find(v=>(v.full||v.name)===x.name)?.photo;
-    if(d.ships) body+=sec("Fleet",d.ships.length?`<div class="grid" style="margin-top:8px">${d.ships.map(x=>{ const ph=vphoto(x); return `<div class="vg"><div class="ph">${ph?`<img src="${esc(ph)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:"No picture"}</div><div class="tx"><b>${x.main?"★ ":""}${esc(x.name)}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "))}</span></div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No ships to show.</div>`,d.ships.length||"");
+    if(d.ships) body+=sec("Fleet",d.ships.length?`<div class="grid" style="margin-top:8px">${d.ships.map(x=>{ const ph=vphoto(x); return `<div class="vg"><div class="ph ph-g">${ph?`<img src="${esc(ph)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div><div class="tx"><b>${x.main?"★ ":""}${esc(x.name)}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "))}</span></div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No ships to show.</div>`,d.ships.length||"");
     if(d.gear) body+=sec("Gear loadouts",d.gear.length?`<div class="grid" style="margin-top:8px">${d.gear.map(lo=>{ const pic=["core","helmet","primary","jacket"].map(k=>lo.items.find(i=>i.slot===k)).find(Boolean)||lo.items[0];
         return `<div class="vg up-lo"><div class="ph" ${pic?`data-gpic="${esc(pic.name)}"`:""}>${pic?"":"Empty loadout"}</div><div class="tx"><b>${lo.main?"★ ":""}${esc(lo.name)}</b><span>${esc([lo.scenario,plural(lo.items.length,"item")].filter(Boolean).join(" · "))}</span>
           ${lo.items.length?`<div class="up-items">${lo.items.slice(0,12).map(i=>`<span>${esc(i.name)}${i.qty>1?` ×${i.qty}`:""}</span>`).join("")}</div>`:""}</div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No loadouts to show.</div>`,d.gear.length||"");
@@ -3937,7 +4028,7 @@ function pfArrList(key){
   if(key==="orgs") return {list:S.og.mine?.orgs||[],idOf:x=>x.id};
   return {list:(S.pm.mine?.listings||[]).filter(l=>l.status==="active"),idOf:x=>x.id}; }
 function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, A=PF_ARR[v], key=A.key, ships=v==="fleet";
-  if(key==="orgs"&&S.og.mine===null&&!S.pfOgAsk){ S.pfOgAsk=true; ogLoadMine().then(()=>renderProfile(true)); }
+  if(key==="orgs") pfLoadOrgs();
   if(key==="listings"&&S.pm.mine===null&&!S.pfPmAsk){ S.pfPmAsk=true; pmLoadMine().then(()=>renderProfile(true)); }
   const {list,idOf}=pfArrList(key);
   const o=pfOrdered(list,idOf,key), noun=A.noun, dirty=pfDirty(key), sec=A.sec;
@@ -4375,7 +4466,7 @@ function renderContracts(force){
           ${w.url?`<a data-url="${esc(w.url)}" style="cursor:pointer;text-decoration:underline">Open on api.star-citizen.wiki</a>`:""}</div></div></details>`; };
   const cwFetch=async id=>{ S.cw[id]={loading:true}; let r; try{ r=await api().contract_wiki(id); }catch(e){ r={ok:false,error:"Couldn't look it up"}; }
     S.cw[id]=r.ok?{info:r.info}:{error:r.error}; renderContracts(); };
-  const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you",coords:"from the coordinates in the contract",learned:"where you set it on a contract like this before",contract:"from the contract's details in the log"};
+  const foundNote={visited:"from where you collected it",station:"from station traffic data",zone:"same building as another contract",manual:"set by you",coords:"from the coordinates in the contract",learned:"where you set it on a contract like this before",contract:"from the contract's details in the log",wiki:"from the Star Citizen Wiki's list for this contract (the only one in that system)"};
   const card=c=>{ const age=Math.max(0,live.now-c.accepted_at); const ago=age<3600?`${Math.max(1,Math.round(age/60))} min ago`:age<86400?`${(age/3600).toFixed(1)} h ago`:`${Math.round(age/86400)} d ago`;
     const active=c.status==="active", isDelivered=c.status==="complete"&&!c.acked;
     const objs=c.objectives.map(o=>{ const where=o.location||(o.marker?(o.marker.body?(o.marker.near_place?`${o.marker.near_km} km from ${o.marker.near_place} (${o.marker.body}${o.marker.system&&o.marker.system!==S.system?", "+o.marker.system:""})`:`Marker on ${o.marker.body}`):o.marker.from_text?`Contract coordinates${o.marker.near?` near ${o.marker.near}`:""}`:`Marker near ${o.marker.lpoint||o.marker.near||"a Lagrange point"}`):null); const live_=o.status==="active"&&active;
@@ -4388,7 +4479,8 @@ function renderContracts(force){
       const unknown = live_ && need ? (getter ? "" : `<div class="unknown">Where will you get it? It can come from any shop, loot or mining. Add the place and it becomes a stop before the hand-in.
           <div class="row"><input class="field" list="places-dl" placeholder="A shop, station or city" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
           <button class="btn small" data-act="setsrc" data-oid="${esc(o.id)}">Set</button></div></div>`)
-        : live_ && !where ? `<div class="unknown">The log only says it's inside a station or building.
+        : live_ && !where ? `<div class="unknown">The log only says it's inside a station or building${o.suggest?.length?`. The Star Citizen Wiki says this contract uses one of these. Pick the one in your mobiGlas:
+          <div class="row" style="flex-wrap:wrap;gap:6px;margin:6px 0">${o.suggest.map(p=>`<button class="btn small" data-act="setsug" data-oid="${esc(o.id)}" data-place="${esc(p)}">${esc(p)}</button>`).join("")}</div>`:"."}
           <div class="row"><input class="field" list="places-dl" placeholder="Type the place from your mobiGlas" data-pick="${esc(o.id)}" style="flex:1;padding:4px 8px">
           <button class="btn small" data-act="setplace" data-oid="${esc(o.id)}">Set</button><button class="btn small ghost" data-act="here" data-oid="${esc(o.id)}" title="Use the nearest place to your last /showlocation">I'm here</button></div></div>` : "";
       return `<div class="obj ${o.status}"><div class="tick"></div><div><div class="txt">${esc(o.label)}${pick?` <span class="muted">· ${pick.total} SCU</span>`:""}</div>
@@ -4446,6 +4538,7 @@ function renderContracts(force){
     if(act==="showroute"){ fitRoute(); }
     if(act==="setplace"){ const inp=cardEl.querySelector(`input[data-pick="${CSS.escape(e.target.dataset.oid)}"]`); const v=(inp?.value||"").trim();
       if(!S.locMap[v]) return toast("Pick a place from the suggestions"); const r=await api().set_objective_place(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Set to ${v}`:r.error); }
+    if(act==="setsug"){ const v=e.target.dataset.place; const r=await api().set_objective_place(c.id,e.target.dataset.oid,v); await poll(); renderContracts(true); toast(r.ok?`Set to ${v}. Contracts like this one will use it too`:r.error); }
     if(act==="here"){ const r=await api().objective_place_here(c.id,e.target.dataset.oid); await poll(); renderContracts(true); toast(r.ok?`Set to ${r.name}`:r.error); }
     if(act==="guide"){ const r=await api().guide_objective(c.id,e.target.dataset.oid); if(!r.ok) return toast(r.error); await poll(); focusLoc(r.name,true); toast(`Guiding you to ${r.name}`); } };
 }
@@ -4575,7 +4668,7 @@ async function renderMarketGrid(){
   const q=$("mk-search").value.trim().toLowerCase(), L=(S.mk||[]).filter(c=>!q||`${c.name} ${c.kind||""}`.toLowerCase().includes(q));
   // Raw resources (ores, gems, harvestables) are commodities to UEX (their prices are reported like any
   // other), but they're gathered rather than bought, so they get their own section below the rest.
-  const tile=c=>`<div class="vg" data-mkc="${c.id}"><div class="ph" data-pic="${esc(c.wiki||c.name)}">No picture</div>
+  const tile=c=>`<div class="vg" data-mkc="${c.id}"><div class="ph ph-g" data-pic="${esc(c.wiki||c.name)}">${phCard("commodity")}</div>
       <div class="tx"><b>${esc(c.name)}</b><span>${esc(c.kind||"")}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.sell?` · sells ~${shortMoney(c.sell)}/SCU`:""}</span></div></div>`;
   const raw=L.filter(c=>c.raw), traded=L.filter(c=>!c.raw);
   $("mk-panel").innerHTML=`<div class="gh"><b>Commodities</b>${traded.length} · click one for prices and where to trade it</div>
@@ -4982,12 +5075,29 @@ async function openVehicles(){
     S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; S.vehGalKey=null; }
   loadBrands(()=>{ if(S.tab==="vehicles") renderVehicles(); });          // manufacturer logos, fetched once in the background
   renderVehicles(); }
+// Where to buy: cheapest first, or closest to you (from your last /showlocation or where the log puts you;
+// other systems last). The choice is kept for every list on this PC.
+function spotDist(x){ if(x.dist!=null) return x.dist; const L=x.place&&S.locMap?.[x.place], p=S.live?.player;
+  if(!L?.pos||!p||p.system!==L.system) return null; const t=now(), a=playerG(t), b=globalPos(L,t); return a&&b?d3(a,b):null; }
+function spotSortPref(){ if(S.spotSort===undefined){ try{ S.spotSort=localStorage.getItem("spotSort")||"price"; }catch(_){ S.spotSort="price"; } } return S.spotSort; }
 function vehSpots(list,kind){
   if(!list.length) return `<div class="muted" style="font-size:12.5px;margin:4px 0 8px">${kind==="buy"?"Not sold in game":"Not for rent"}.</div>`;
-  return list.map((x,i)=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
-    <div class="p ${i===0?"best":""}">${money(x.price)}${kind==="rent"?`<small class="muted" style="font-weight:500"> /day</small>`:""}</div>
+  const rows=list.map(x=>({x,d:spotDist(x)})), cheap=Math.min(...list.map(x=>x.price??Infinity));
+  const near=spotSortPref()==="near"&&rows.length>1;
+  if(near) rows.sort((a,b)=>(a.d==null)-(b.d==null)||(a.d??0)-(b.d??0)||(a.x.price??0)-(b.x.price??0));
+  const toggle=rows.length>1?`<div class="seg-mini spot-sort" style="margin:2px 0 6px"><button data-spotsort="price" class="${near?"":"on"}">Cheapest first</button><button data-spotsort="near" class="${near?"on":""}" title="${S.live?.player?"From where you are":"Needs your position: type /showlocation in game"}">Closest to me</button></div>`:"";
+  return toggle+rows.map(({x,d})=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
+    <div class="p ${x.price===cheap?"best":""}">${money(x.price)}${kind==="rent"?`<small class="muted" style="font-weight:500"> /day</small>`:""}</div>
     ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
-    <div class="m">${x.shop&&x.shop!==x.where?`${esc(x.shop)} · `:""}${esc(x.system||"")}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
+    <div class="m">${x.shop&&x.shop!==x.where?`${esc(x.shop)} · `:""}${esc(x.system||"")}${d!=null?` · ${fmtDist(d)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
+// The toggle re-draws whichever page is open (each one rebuilds its lists from the same data)
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-spotsort]"); if(!b) return; e.preventDefault(); e.stopPropagation();
+  S.spotSort=b.dataset.spotsort; try{ localStorage.setItem("spotSort",S.spotSort); }catch(_){}
+  if(S.spotSort==="near"&&!S.live?.player) toast("Type /showlocation in game so Quantum knows where you are");
+  const kind=S.tab; if(GEAR[kind]&&grState(kind).sel) return grDetail(kind);
+  if(kind==="components"&&S.cpDetail) return renderComponents();
+  if(kind==="vehicles"&&typeof renderVehicles==="function") return renderVehicles();
+  if(typeof renderDetail==="function") renderDetail(); },true);
 // ---- Vehicles: every vehicle's picture in place of the map; the sidebar lists categories (by role, ground
 // vehicles, pad size, maker) that filter the pictures down. "All vehicles" takes the filter off again.
 const VH_ICON={ship:'<path d="M12 2.5l3 7 6.5 3-6.5 2-3 7-3-7-6.5-2 6.5-3z"/>',
@@ -5114,7 +5224,7 @@ function renderGallery(L){
   g.innerHTML=`<div class="gh vh-head">${all?"":`<button class="btn small" data-vhcat="all" title="Take the filter off: every vehicle">← All vehicles</button>`}<b>${q?`“${esc(q)}”${all?"":` in ${esc(c.name)}`}`:esc(c.name)}</b><span>${L.length} shown · click one for prices and where to get it</span>
       <span class="spacer"></span>${sel("avail",[["","Any"],["buy","Sold in game"],["rent","Rentable"]],S.vehAvail||"")}${sel("sort",[["price","Price: low to high"],["price_desc","Price: high to low"],["scu","Most cargo"],["name","A–Z"]],S.vehSort||"price")}</div>
     ${L.length?`<div class="grid">${L.map(v=>{ const b=v.buy[0], r=v.rent[0];
-    return `<div class="vg" data-vg="${v.id}"><div class="ph">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('No picture'))">`:"No picture"}</div>
+    return `<div class="vg" data-vg="${v.id}"><div class="ph ph-g">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=phCard('vehicle')">`:phCard("vehicle")}</div>
       <div class="tx"><b>${esc(v.full)}</b>${v.aka?`<span class="muted" style="font-size:11.5px">${esc(v.aka)}</span>`:""}<span>${v.concept?`<span style="color:#f2c14e">Concept · not in game yet</span>`:b?money(b.price):r?`Rent ${shortMoney(r.price)}/day`:"Not sold in game"}${v.scu?` · ${v.scu} SCU`:""}</span></div></div>`; }).join("")}</div>`
       :`<div class="empty" style="margin-top:30px">Nothing here${q?` matches “${esc(q)}”`:""}.${all?"":` <a data-vhcat="all" style="cursor:pointer;text-decoration:underline">Show all vehicles</a>`}</div>`}
     ${uexCredit(S.vehAt)}`; }
@@ -5301,7 +5411,7 @@ async function renderCpHome(){ S.cpCat=null; S.cpItems=null; S.cpDetail=null; S.
   if(searching&&S.cpIndex&&parts.length){
     const P=parts.slice(0,120);
     $("cp-panel").innerHTML=`<div class="gh"><b>Parts matching “${esc(q)}”</b>${parts.length} in every category${parts.length>120?" · showing 120":""} · click one for its page</div>
-      <div class="grid">${P.map(i=>`<div class="vg" data-cppart="${esc(i.cat)}|${esc(i.id)}"><div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
+      <div class="grid">${P.map(i=>`<div class="vg" data-cppart="${esc(i.cat)}|${esc(i.id)}"><div class="ph ph-g" data-pic="${esc(i.wiki||i.name)}">${phCard("component")}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${i.size?`S${esc(i.size)} · `:""}${i.grade?`${esc(i.grade)} · `:""}${esc(i.maker)}</span><span class="kt">${i.wtype?`${wtIcon(i.wtype)} ${esc(wtLabel(i.wtype))}`:esc(i.cat_name||"")}</span></div></div>`).join("")}</div>`;
     fillPictures($("cp-panel")); return; }
   $("cp-panel").innerHTML=`<div class="cp-land"><div class="cp-hero"><h2>Components</h2><p>Pick a category to browse, or search for any part by name in the box on the left. Each one has filters, numbers from the game files, the shops that sell it, and a button to fit a part to any ship in your fleet.</p></div>
@@ -5386,7 +5496,7 @@ function renderComponentGrid(L){ const c=S.cpCat;
   const wts=(S.cpTypes||[]).filter(([k])=>S.cpItems.some(i=>i.wtype===k)), wt=$("cp-wtype").value;
   $("cp-panel").innerHTML=`<div class="gh"><button class="btn small ghost" data-act="cphome">← All categories</button><b>${esc(wt?wtLabel(wt):c.name)}</b>${L.length} shown · click one for its page</div>
     ${c.slot==="WeaponGun"&&wts.length?`<div class="wt-bar"><button class="wt-chip ${!wt?"on":""}" data-wtchip="">${offIcon("weapons")}All guns</button>${wts.map(([k,lab])=>`<button class="wt-chip ${wt===k?"on":""}" data-wtchip="${k}" title="${esc(lab)}">${wtIcon(k)}${esc(lab)}</button>`).join("")}</div>`:""}
-    ${L.length?`<div class="grid">${L.slice(0,200).map(i=>{ const kt=cpKeyText(i); return `<div class="vg" data-cpc="${i.id}">${i.buy[0]?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<div class="ph" data-pic="${esc(i.wiki||i.name)}">No picture</div>
+    ${L.length?`<div class="grid">${L.slice(0,200).map(i=>{ const kt=cpKeyText(i); return `<div class="vg" data-cpc="${i.id}">${i.buy[0]?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<div class="ph ph-g" data-pic="${esc(i.wiki||i.name)}">${phCard("component")}</div>
       <div class="tx"><b>${esc(i.name)}</b><span>${cpSize(i)?`S${esc(cpSize(i))} · `:""}${cpGrade(i)?`${esc(cpGrade(i))} · `:""}${esc(i.game?.maker||i.maker)}${i.buy[0]?` · ${money(i.buy[0].price)}`:" · not in shops"}</span>${kt||i.wtype?`<span class="kt">${i.wtype?`${wtIcon(i.wtype)} ${esc(wtLabel(i.wtype).replace(/s$/,""))}${kt?" · ":""}`:""}${esc(kt)}</span>`:""}${cpFitsLine(i)}</div></div>`; }).join("")}</div>`
       :`<div class="empty">Nothing matches these filters.<br><br><button class="btn small" data-cpreset="1">Clear filters</button></div>`}`;
   markComponentGrid(); fillPictures($("cp-panel"));
@@ -5560,7 +5670,7 @@ async function renderShip(uid){
   if(!S.flLoad||S.flLoad.uid!==uid) $("fl-panel").innerHTML=qLoader("Loading the ship's components…");
   const r=await api().fleet_loadout(uid); if(S.flSel!==uid) return;
   const ship=(S.fleet||[]).find(x=>x.uid===uid);
-  if(!r.ok){ $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${ship?.photo?`<img src="${esc(ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div><div><h2>${esc(ship?.full||"")}</h2><div class="unknown" style="margin-top:10px">${esc(r.error)}</div></div></div>`; return; }
+  if(!r.ok){ $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${ship?.photo?`<img src="${esc(ship.photo)}" alt="" referrerpolicy="no-referrer">`:picMissing("vehicle",ship?.full||"")}</div><div><h2>${esc(ship?.full||"")}</h2><div class="unknown" style="margin-top:10px">${esc(r.error)}</div></div></div>`; return; }
   S.flLoad=r; const st=r.stats, dl=r.delta||{};
   if(S.flLiv?.[uid]?.ok){ const al=r.loadouts?.loadouts?.find(x=>x.id===r.loadouts.active); S.flLiv[uid].current=al?.livery?{...(S.flLiv[uid].items.find(x=>x.name===al.livery)||{name:al.livery})}:null; }
   const statOf=([k,lab,fmt,lb])=>({label:lab,value:st[k]!=null&&st[k]!==""?fmt(st[k]):null,changed:!!dl[k],
@@ -5582,7 +5692,7 @@ async function renderShip(uid){
         ${val?`<div class="val"><b>${ITEM_STAT[k][1](val,stats)}${sl.fitted&&stockVal&&k!=="missiles"?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
         <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
-  $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:"No picture"}</div>
+  $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:picMissing("vehicle",r.ship.full||"")}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
         ${loadoutBar(r.loadouts)}
         <div id="fl-livery" class="lv-row">${liveryHtml(uid)}</div>
@@ -5835,11 +5945,11 @@ async function openRunDetail(i){
       <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span><button class="pv-next in-win" id="trd-next" type="button" data-pvnext="1"></button></div>
     ${endBox("Buy at",x.from_place,x.from,x.from_where,x.buy,"In stock",x.scu_from,x.boxes_from,x.elevator_from,x.dock_from,x.refuel_from,x.from_station,x.from_ground,x.from_monitored,x.faction_from,"You buy",x.units,"Cost")}
     ${endBox("Sell at",x.to_place,x.to,x.to_where,x.sell,"Demand",x.scu_to,x.boxes_to,x.elevator_to,x.dock_to,x.refuel_to,x.to_station,x.to_ground,x.to_monitored,x.faction_to,"You sell",x.units,"Revenue")}</div>
-    <div class="trd-footer">${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
+    <div class="trd-footer">${x.quantum_from||x.quantum_to?`<span class="chip y" title="A Quantum datarunner reported this newer than UEX has it, so the run is planned with their numbers">Quantum report: ${[x.quantum_from&&`buy side ${agoTs(x.quantum_from.at)}`,x.quantum_to&&`sell side ${agoTs(x.quantum_to.at)}`].filter(Boolean).join(", ")}</span> · `:""}${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
   fitTradePanel();
   if(x.from_place&&x.to_place) requestAnimationFrame(()=>previewPlaces(x.from_place,x.to_place,x.commodity));   // after layout, so the map window is measured
   const img=await api().wiki_image(x.commodity); if(S.trOpen!==i) return;
-  const b=$("trd-img"); if(b) b.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onload="fitTradePanel()">`:`<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--dim);font-size:12px">No picture on the wiki</div>`; }
+  const b=$("trd-img"); if(b) b.innerHTML=img?`<img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onload="fitTradePanel()">`:`<div class="ph-art ph-grid-bg">${phSvg("commodity")}</div>`; }
 // The route page scales as a whole (text, picture, map window, figures) so all four quadrants and the
 // footer fit the window without scrolling; bigger windows get it a little larger, small ones smaller.
 // CSS zoom re-lays it out at the new size, so nothing overflows sideways.
@@ -6079,18 +6189,49 @@ function acctWatch(){
   clearTimeout(S.acctT);
   S.acctT=setTimeout(async()=>{ const x=await api().account_status(); const was=S.acct?.flow?.state; S.acct=x;
     if(x.flow?.state==="waiting") acctWatch();
-    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ renderDetail(); pfPrime(true); }); }
+    if(x.flow?.state!==was||x.signed_in){ if(x.flow?.state==="done"){ S.og.mine=null; S.pm.mine=null; toast(`Signed in as ${x.email}`); acctKeysArrived(x).then(()=>{ renderDetail(); pfPrime(true); }); }
       renderDetail(); } },2000);
 }
 function connPill(st,label,why){ const t={ok:["ok","Connected"],bad:["bad","Not connected"],offline:["bad","Offline"],off:["off","Disabled"],none:["off","Not set"],checking:["wait","Checking…"]}[st]||["off",st];
   return `<span class="conn ${t[0]}" ${why?`title="${esc(why)}"`:""}><i></i>${esc(label||t[1])}</span>`; }
 const IC_BOLT='<svg class="ic-line bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z"/></svg>';
 // No picture anywhere: anyone with a UEX token can send one in; it shows for everyone once approved.
-function picMissing(kind,name){ const can=!!S.live?.log?.uex_token;
-  return `<div class="pic-none"><span>No picture yet</span>${can?`<button class="btn small" data-photosend="${esc(kind)}" data-photoname="${esc(name)}">Send a picture</button>`:""}</div>`; }
+// A drawn set of plans for blueprints with no picture: still clearly "no picture yet", but it reads as a blueprint
+const BP_PLACEHOLDER=`<svg class="bp-ph" viewBox="20 12 112 66" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+  <g fill="none" stroke="currentColor" stroke-width="1.1" stroke-opacity=".75"><path d="M44 18h58l14 14v40H44z"/><path d="M102 18v14h14"/>
+  <rect x="54" y="30" width="34" height="22" rx="2"/><circle cx="71" cy="41" r="6"/><path d="M71 30v-4M71 52v4M54 41h-4M88 41h4"/>
+  <path d="M54 60h52M54 65h36" stroke-dasharray="3 2"/><path d="M96 46l10 0M101 41v10" stroke-opacity=".5"/></g>
+  <g fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width=".8"><path d="M30 26l-6 0 0 40 6 0"/><path d="M122 26l6 0 0 40-6 0"/></g></svg>`;
+// Drawn stand-ins for things with no picture yet (commodities, gear, food, ships...), one line drawing per kind on
+// a faint grid, like the blueprints: the app looks finished, and "Send a picture" still shows where it can.
+const PH_ART={
+  commodity:'<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/><path d="M8 5.3l8 4.5"/>',
+  weapon:'<path d="M2.5 10.5h13l2-1.5h4v3h-3l-1 1h-2.5l-1.5 4h-3l1-4H8l-1.5 2H4.5l.5-2.5h-2.5z"/><path d="M11 12.5v-2"/>',
+  armor:'<path d="M12 3c-4 0-7 2.6-7 7v4l2 3h3l1-3h2l1 3h3l2-3v-4c0-4.4-3-7-7-7z"/><path d="M7 10.5h10M9 10.5v2.5M15 10.5v2.5"/>',
+  clothing:'<path d="M8.5 3.5L4 6l1.5 4.5L7.5 10V20.5h9V10l2 .5L20 6l-4.5-2.5c-.6 1.6-1.9 2.5-3.5 2.5s-2.9-.9-3.5-2.5z"/>',
+  food:'<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8.5 8.5c0-1.5 1-1.5 1-3M12 8.5c0-1.5 1-1.5 1-3M15.5 8.5c0-1.5 1-1.5 1-3"/>',
+  drink:'<path d="M9.5 3h5v3l1.5 2.5V20a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V8.5L9.5 6z"/><path d="M8 11h8M8 16h8"/>',
+  medical:'<rect x="3.5" y="9" width="13" height="6" rx="1.5" transform="rotate(-35 10 12)"/><path d="M15.5 6.5l3-2M17.5 9l3.5-1"/><path d="M9 10.5v3M7.5 12h3"/>',
+  gadget:'<path d="M14.5 5.5a4 4 0 0 0-5 5L3.5 16.5l3 3 6-6a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/>',
+  key:'<rect x="3.5" y="6" width="17" height="12" rx="2"/><rect x="6.5" y="9" width="5" height="4" rx=".8"/><path d="M14 10h4M14 13h3M6.5 15.5h11"/>',
+  component:'<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/>',
+  vehicle:'<path d="M12 2.5c1.6 1.4 2.6 3.6 2.8 6.4l.2 3.1 4.5 3.2v2.3l-4.6-1.3-.4 2.3 1.7 1.6v1.4l-4.2-1-4.2 1v-1.4l1.7-1.6-.4-2.3-4.6 1.3v-2.3L9 12l.2-3.1c.2-2.8 1.2-5 2.8-6.4z"/><path d="M12 7.5v3.5"/>',
+  box:'<rect x="4" y="6" width="16" height="13" rx="1.5"/><path d="M4 10h16M10 13.5h4"/>'};
+const PH_ART_OF={commodity:"commodity",vehicle:"vehicle",component:"component"};
+const PH_LABEL={commodity:"Commodity",weapon:"Weapon",armor:"Armor",clothing:"Clothing",food:"Food",drink:"Drink",medical:"Medical",gadget:"Gadget",key:"Key",component:"Component",vehicle:"Ship",box:"Item"};
+function phSvg(art){ return `<svg class="ph-art-ic" viewBox="0 0 24 24" aria-hidden="true">${PH_ART[art]||PH_ART.box}</svg>`; }
+// For a grid card: the drawing alone (the card says what it is)
+function phCard(art){ return `<span class="ph-art">${phSvg(art)}</span>`; }
+// The kind of drawing for a piece of gear, by its tab and what it is
+function grArt(kind,i){ if(kind==="consumables") return i?.kind==="Drink"?"drink":i?.kind==="Medical"?"medical":"food";
+  return {weapons:"weapon",armor:"armor",clothing:"clothing",gadgets:"gadget",utility:"key"}[kind]||"box"; }
+function picMissing(kind,name,bp){ const can=!!S.live?.log?.uex_token;
+  if(bp===true) return `<div class="pic-none bp bp-grid-bg">${BP_PLACEHOLDER}<span>Blueprint · no picture yet</span>${can?`<button class="btn small" data-photosend="${esc(kind)}" data-photoname="${esc(name)}">Send a picture</button>`:""}</div>`;
+  const art=bp||PH_ART_OF[kind]||"box";
+  return `<div class="pic-none art ph-grid-bg">${phSvg(art)}<span>${esc(PH_LABEL[art]||"Item")} · no picture yet</span>${can?`<button class="btn small" data-photosend="${esc(kind)}" data-photoname="${esc(name)}">Send a picture</button>`:""}</div>`; }
 // A picture that's shown, or "No picture yet". The Quantum server's owner also gets a Replace button on it,
 // for a wrong or poor picture (the wiki's included): the new one is live for everyone at once.
-function picShown(url,kind,name){ if(!url) return picMissing(kind,name);
+function picShown(url,kind,name,bp){ if(!url) return picMissing(kind,name,bp);
   return `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer">${S.owner?`<button class="btn small pic-replace" data-photosend="${esc(kind)}" data-photoname="${esc(name)}" data-replace="1" title="Put your own picture in place of this one, for everyone">Replace picture</button>`:""}`; }
 // Asked once: are you the server's owner (signed in)? Pictures already on screen get their Replace button.
 async function ownerCheck(){ if(S.ownerAsked) return; S.ownerAsked=true;
@@ -6365,6 +6506,7 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
   const sy=e.target.closest("[data-mysys]"); if(sy){ const r=await api().set_my_system(sy.dataset.mysys); if(!r.ok) return toast(r.error);
     await poll(); toast(`Got it: you're in ${sy.dataset.mysys}`); return renderDrJobs(); }
   const jk=e.target.closest("[data-jobkind]"); if(jk){ S.drJobKind=jk.dataset.jobkind; return renderDrJobs(); }
+  if(await drMyJobClick(e)) return;
   if(await drSpecialJobClick(e)) return;
   const js=e.target.closest("[data-jobsort]"); if(js){ S.drJobSort=js.dataset.jobsort; return renderDrJobs(); }
   const jr=e.target.closest("[data-jobreport]"); if(jr){ const id=+jr.dataset.jobreport; S.dr.view="enter"; const v=S.dr.view; S.dr=null;
@@ -6387,11 +6529,11 @@ $("dr-panel").addEventListener("click",async e=>{ const d=S.dr; if(!d) return;
   if(await drPriceJobClick(e)) return;
   const pa=e.target.closest("[data-pjaccept]"); if(pa){ pa.disabled=true; pa.textContent="Accepting…";
     const jb=(S.drJobsList||[]).find(x=>String(x.id)===pa.dataset.pjaccept); const u=await drAccept(`t:${pa.dataset.pjaccept}`);
-    if(u&&jb){ if(S.drMapJob){ drRelease(`p:${S.drMapJob.name}`); S.drMapJob=null; }
-      S.drPriceJob={id:jb.id, name:jb.name, where:jb.where, system:jb.system, place:jb.place, until:u}; toast(`Job accepted: ${jb.name} is yours for ${CLAIM_MIN} minutes`); }
+    if(u&&jb){ S.drPriceJob={id:jb.id, name:jb.name, where:jb.where, system:jb.system, place:jb.place, until:u};
+      drHold(`t:${jb.id}`,{label:jb.name,sub:"Update prices",until:u,data:{...S.drPriceJob}}); toast(`Job accepted: ${jb.name} is yours for ${CLAIM_MIN} minutes`); }
     await drLoadClaims(); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
   const ms=e.target.closest("[data-mjstart]"); if(ms){ const u=await drAccept(`p:${ms.dataset.mjstart}`); if(!u){ renderDrJobs(); return; }
-    if(S.drPriceJob){ S.drPriceJob=null; } drMapJobStart(ms.dataset.mjstart); await drLoadClaims(); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
+    drMapJobStart(ms.dataset.mjstart); drHold(`p:${ms.dataset.mjstart}`,{label:ms.dataset.mjstart,sub:"Map a station",until:u}); await drLoadClaims(); renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return; }
   const mh=e.target.closest("[data-maphere]"); if(mh){ mh.disabled=true; mh.textContent="Mapping…"; const r=await api().set_place_here(mh.dataset.maphere);
     if(!r.ok){ mh.disabled=false; mh.textContent="I'm here: map it"; return toast(r.error); }
     await loadStatic(); await poll(); toast(`${mh.dataset.maphere} is on your map. It goes live for everyone once a second datarunner agrees`); return renderDrJobs(); }
@@ -6486,6 +6628,7 @@ async function drSave(){ const d=S.dr, b=$("dr-send-now"); b.disabled=true;
       d.pf.reports_count=(d.pf.reports_count||0)+done.length;
       if(!fail&&S.drPriceJob&&S.drPriceJob.id===d.pf.id_terminal&&!last.test){ toast(`Job done: ${S.drPriceJob.name}. Thanks, datarunner`);
         drRelease(`t:${S.drPriceJob.id}`); S.drPriceJob=null; }      // let go of the hold too, or it showed as taken for its full time
+      else if(!fail&&!last.test&&S.drHeld?.[`t:${d.pf.id_terminal}`]){ toast(`Job done: ${S.drHeld[`t:${d.pf.id_terminal}`].label}. Thanks, datarunner`); drRelease(`t:${d.pf.id_terminal}`); }
       renderDrStats(last.stats); renderDrList(); renderDrSend(); await renderDrShots(); } }
   finally{ S.drSending=false; }
   if(!fail){ const r=done[done.length-1], days=done.reduce((a,x)=>a+(x.refreshed_days||0),0), n=done.length;
@@ -6592,9 +6735,48 @@ function drClaimOf(job){ const c=S.drClaims?.[job]; return c&&c.until*1000>Date.
 function drClaimChip(job){ const c=drClaimOf(job); if(!c||c.mine) return "";
   return `<span class="chip claim" title="Another datarunner accepted this job. It's free again if they don't finish within ${CLAIM_MIN} minutes">⏳ In progress · ${esc(c.by)} · ${Math.max(1,Math.round((c.until*1000-Date.now())/60000))} min left</span>`; }
 async function drLoadClaims(){ try{ const r=await api().dr_claims(); S.drClaims=r.ok?r.claims:{}; }catch(e){ S.drClaims={}; } }
-async function drAccept(job){ const r=await api().dr_claim(job); if(!r.ok){ toast(r.error); await drLoadClaims(); return null; }
-  return r.until?r.until*1000:Date.now()+CLAIM_MIN*60000; }
-function drRelease(job){ api().dr_claim(job,true).catch(()=>{}); }
+async function drAccept(job){
+  const mine=drMyJobIds(); if(!mine.includes(job)&&mine.length>=DR_MAX_JOBS){ toast(`You have ${DR_MAX_JOBS} jobs on the go. Finish or let go of one first`); return null; }
+  const r=await api().dr_claim(job); if(!r.ok){ toast(r.error); await drLoadClaims(); return null; }
+  const u=r.until?r.until*1000:Date.now()+CLAIM_MIN*60000; if(S.drHeld?.[job]) S.drHeld[job].until=u; return u; }
+function drRelease(job){ if(S.drHeld) delete S.drHeld[job]; api().dr_claim(job,true).catch(()=>{}); }
+// Up to DR_MAX_JOBS jobs can be held at once. One of each kind is "open" (its steps shown); the rest wait in
+// "Your jobs" until you switch to them. S.drHeld keeps what each needs to be opened again.
+const DR_MAX_JOBS=5;
+function drHold(id,info){ (S.drHeld=S.drHeld||{})[id]={id,...(S.drHeld?.[id]||{}),...info}; }
+function drMyJobIds(){ const ids=new Set(Object.keys(S.drHeld||{}));
+  for(const [k,c] of Object.entries(S.drClaims||{})) if(c.mine&&c.until*1000>Date.now()) ids.add(k);
+  return [...ids]; }
+// The server is the record: a job it no longer holds for you (done, or timed out) leaves the list; one it holds
+// that this window doesn't know of (Quantum restarted) is added.
+function drSyncHeld(){ if(!S.drClaims) return; S.drHeld=S.drHeld||{};
+  const mine=Object.entries(S.drClaims).filter(([,c])=>c.mine);
+  if(Object.keys(S.drClaims).length||!Object.keys(S.drHeld).length){
+    for(const id of Object.keys(S.drHeld)) if(!S.drClaims[id]?.mine&&S.drHeld[id].until<Date.now()+CLAIM_MIN*60000-90000) delete S.drHeld[id]; }
+  for(const [id,c] of mine){ const h=S.drHeld[id]; if(h){ h.until=c.until*1000; continue; }
+    const [k,...rest]=id.split(":"), nm=k==="ph"?rest.slice(1).join(":"):rest.join(":");
+    S.drHeld[id]={id,until:c.until*1000,label:k==="t"?((S.drJobsList||[]).find(x=>String(x.id)===nm)?.name||`Terminal ${nm}`):nm,
+      sub:{t:"Update prices",p:"Map a station",a:"Planet alignment",ph:"Picture"}[k]||"Job"}; } }
+function drIsOpen(id){ const [k,...r]=id.split(":"), v=r.join(":");
+  return k==="t"?String(S.drPriceJob?.id)===v:k==="p"?S.drMapJob?.name===v:k==="a"?S.drAlignJob?.body===v:k==="ph"?S.drPhotoJob?.id===id:false; }
+function drMyJobsHtml(){ drSyncHeld(); const L=Object.values(S.drHeld||{}).sort((a,b)=>a.until-b.until); if(!L.length) return "";
+  if(L.length===1&&drIsOpen(L[0].id)) return "";
+  return `<div class="mk-h" style="margin-top:2px">Your jobs <span class="muted" style="text-transform:none;letter-spacing:0">${L.length} of ${DR_MAX_JOBS} held</span></div>
+    ${L.map(h=>{ const left=Math.max(0,Math.round((h.until-Date.now())/60000)), open=drIsOpen(h.id);
+      return `<div class="dr-job ${open?"here":""}"><div class="n">${h.id.startsWith("a:")?"🪐":h.id.startsWith("ph:")?IC_PIC:h.id.startsWith("p:")?"📍":"⛁"}</div>
+        <div class="age ${left>10?"a0":left>3?"a2":"a3"}" style="font-size:12px">${left} min</div>
+        <div class="info"><b>${esc(h.label)}</b><div class="muted" style="font-size:12.5px;margin-top:2px">${esc(h.sub||"")}${open?" · open below":""}</div></div>
+        <div class="go">${open?"":`<button class="btn small primary" data-myjob="${esc(h.id)}">Work on it</button>`}<button class="btn small ghost" data-myjobdrop="${esc(h.id)}">Let go</button></div></div>`; }).join("")}`; }
+async function drMyJobClick(e){ const o=e.target.closest("[data-myjob]"), d=e.target.closest("[data-myjobdrop]"); if(!o&&!d) return false;
+  const id=(o||d).dataset.myjob||(o||d).dataset.myjobdrop, h=S.drHeld?.[id], [k,...r]=id.split(":"), v=r.join(":");
+  if(d){ drRelease(id); if(drIsOpen(id)){ if(k==="t") S.drPriceJob=null; else if(k==="p") S.drMapJob=null; else if(k==="a") S.drAlignJob=null; else S.drPhotoJob=null; }
+    toast(`Let go of ${h?.label||"the job"}`); await drLoadClaims(); renderDrJobs(); return true; }
+  const until=h?.until||Date.now()+CLAIM_MIN*60000;
+  if(k==="t"){ const jb=h?.data||(S.drJobsList||[]).find(x=>String(x.id)===v); S.drPriceJob={...(jb||{id:+v,name:h?.label}),id:jb?.id??+v,until,arrived:false}; S.drJobKind="all"; }
+  else if(k==="p"){ drMapJobStart(v); S.drJobKind="all"; }
+  else if(k==="a"){ S.drAlignJob={body:v,until}; S.drJobKind="align"; }
+  else if(k==="ph"){ S.drPhotoJob=h?.data?{...h.data,until}:{id,until,kind:r[0],name:r.slice(1).join(":"),label:h?.label||r.slice(1).join(":")}; S.drJobKind="photos"; }
+  await renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
 function drPriceJobHtml(){ const j=S.drPriceJob; if(!j) return "";
   const left=Math.round((j.until-Date.now())/60000), over=left<=0;
   const stepN=j.arrived?3:2;
@@ -6630,12 +6812,12 @@ async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
   const one=top[0];
   const hero=one?`<div class="top-hero ${you(one)?"you":""}">
       <div class="crown">#1</div>${drAv(one,"av")}
-      <div class="who"><div class="lbl">Top datarunner</div><h2>${esc(one.username)}${you(one)?` <span class="you-tag">You</span>`:""}</h2>
+      <div class="who"><div class="lbl">Top datarunner</div><h2>${one.profile?`<span class="up-name" data-upid="${esc(one.profile)}" title="View profile">${esc(one.username)}</span>`:esc(one.username)}${you(one)?` <span class="you-tag">You</span>`:""}</h2>
         <div class="rk">${drRankBadge(one.rank)} ${drStarBar(one.rated?one.stars:0,20)} <b>${one.rated?one.stars.toFixed(1):"–"}</b>${since(one.since)?`<span class="muted">Datarunner since ${since(one.since)}</span>`:""}</div></div>
       <div class="big">${[[one.approved,"Approved reports"],[one.prices,"Prices approved"],[one.terminals,"Terminals"],[one.stations,"Stations mapped"],[one.week,"This week"]]
         .map(([n,l])=>`<div><b>${(n||0).toLocaleString()}</b><span>${l}</span></div>`).join("")}</div></div>`:"";
-  const row=x=>`<div class="top-row ${you(x)?"you":""} p${x.place}"><div class="pl">${x.place}</div>${drAv(x,"av")}
-      <div class="nm"><b>${esc(x.username)}</b>${you(x)?` <span class="you-tag">You</span>`:""}<div>${drRankBadge(x.rank)}</div></div>
+  const row=x=>`<div class="top-row ${you(x)?"you":""} p${x.place}${x.profile?" has-prof":""}"${x.profile?` data-upid="${esc(x.profile)}" title="View ${esc(x.username)}'s profile"`:""}><div class="pl">${x.place}</div>${drAv(x,"av")}
+      <div class="nm"><b${x.profile?` class="up-name" data-upid="${esc(x.profile)}" title="View ${esc(x.username)}'s profile"`:` title="${esc(x.username)} hasn't linked a Quantum account, so there's no profile to open"`}>${esc(x.username)}</b>${you(x)?` <span class="you-tag">You</span>`:""}<div>${drRankBadge(x.rank)}</div></div>
       <div class="st">${drStarBar(x.rated?x.stars:0,14)} <b>${x.rated?x.stars.toFixed(1):"–"}</b></div>
       <div class="n"><b>${x.approved.toLocaleString()}</b><span>approved</span></div><div class="n"><b>${x.sent.toLocaleString()}</b><span>sent</span></div>
       <div class="n"><b>${x.prices}</b><span>prices</span></div><div class="n"><b>${x.terminals}</b><span>terminals</span></div>
@@ -6818,7 +7000,7 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
         ${drJobTabs(kind,unmapped)}
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${drPriceJobHtml()}${drMapJobHtml()}${kind==="all"?drAlignGuide()+drPhotoBanner():""}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`+(checkJobs.length?`<div class="mk-h" style="margin-top:10px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div>${checkJobs.map(mapCard).join("")}`:"")
+    <div class="dr-list dr-jobs">${drMyJobsHtml()}${drPriceJobHtml()}${drMapJobHtml()}${kind==="all"?drAlignGuide()+drPhotoBanner():""}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`+(checkJobs.length?`<div class="mk-h" style="margin-top:10px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div>${checkJobs.map(mapCard).join("")}`:"")
         :checkJobs.length?`<div class="mk-h" style="margin-top:2px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div>${checkJobs.map(mapCard).join("")}`
         :kind==="map"?`<div class="dr-empty">Every station${S.drJobSys?` in ${esc(S.drJobSys)}`:""} is on the map.</div>`:""):""}
       ${kind==="all"?`<div id="dr-all-extra"></div>`:""}
@@ -6929,6 +7111,14 @@ async function drAlignClick(e){ const a=e.target.closest("[data-aj]"); if(!a) re
 function drAlignDone(r){ const aj=S.drAlignJob; if(!aj||aj.state==="sent") return; const j=r.jobs.find(x=>x.body===aj.body&&(x.status==="mine"||x.status==="live")); if(!j) return;
   S.drAlignJob=null; toast(j.status==="live"?`${aj.body} lined up and live for everyone`:`${aj.body} lined up and sent. It counts once another datarunner's alignment agrees`); }
 
+// Why alignment is a job at all: shown at the top of the tab, folded away once read (remembered per PC).
+function ajWhyHtml(){ if(S.ajWhyOpen===undefined){ try{ S.ajWhyOpen=localStorage.getItem("ajWhyOpen")!=="0"; }catch(_){ S.ajWhyOpen=true; } }
+  return `<div class="note aj-why" style="margin:0 2px 12px"><div style="display:flex;align-items:center;gap:8px"><b>Why line up planets?</b><a data-ajwhy="1" style="margin-left:auto;cursor:pointer;font-size:12px;text-decoration:underline">${S.ajWhyOpen?"Hide":"What's this for?"}</a></div>
+    ${S.ajWhyOpen?`<div style="font-size:12.5px;line-height:1.55;margin-top:6px;color:var(--ink-2)">Planets and moons spin, and every place on them (cities, outposts, landing zones) turns with them. Quantum works out where a place is right now from two numbers: how fast its planet turns and which way it was facing at a known moment. Game updates can change that starting angle, so after each patch the planets need lining up again.
+      <ul style="margin:6px 0 0 18px;padding:0"><li><b>Accurate times</b>: arrival times, the local time and day or night at cities and outposts, and the city clock depend on it.</li>
+      <li><b>Accurate navigation</b>: where an outpost sits on the map, which side of the planet it's on, and the route and distances to it.</li>
+      <li><b>Accurate tracking</b>: reading your position from /showlocation and spotting which place you're at.</li></ul>
+      <div style="margin-top:6px">One /showlocation at any known place on a planet lines it up. Once a second datarunner's alignment agrees, it's live for every Quantum user, and it stays right until the next patch.</div></div>`:""}</div>`; }
 // ---- Planet alignment jobs: every planet and moon for this game version. Land at a known place on it and
 // type /showlocation: Quantum lines it up and sends it. Live for everyone once a second alignment agrees.
 async function renderDrAlignJobs(){ const d=S.dr, P=$("dr-panel");
@@ -6938,12 +7128,16 @@ async function renderDrAlignJobs(){ const d=S.dr, P=$("dr-panel");
   drJobCounts(r,null); drAlignDone(r);
   const sys=S.drJobSys&&r.systems.includes(S.drJobSys)?S.drJobSys:"", rank={waiting:0,open:1,mine:2,live:3}, chk=drCheckJobs(sys);
   if(!S.drJobN.align&&!chk.length&&!drAlignGuide()&&!S.drMapJob){ S.drJobKind="all"; return renderDrJobs(); }      // nothing left to line up: the tab hides itself
-  const L=r.jobs.filter(j=>!sys||j.system===sys).sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||rank[a.status]-rank[b.status]||a.body.localeCompare(b.body));
+  // Planets already lined up (live for everyone, or yours waiting for a second) aren't jobs any more: they're
+  // kept out of the list unless you ask to see them (to check one on the map, say).
+  const all=r.jobs.filter(j=>!sys||j.system===sys), doneN=all.filter(j=>j.status==="live"||j.status==="mine").length;
+  const L=all.filter(j=>S.ajShowDone||(j.status!=="live"&&j.status!=="mine")).sort((a,b)=>(a.system!==S.system)-(b.system!==S.system)||rank[a.status]-rank[b.status]||a.body.localeCompare(b.body));
   const todo=S.drJobN.align;
   P.innerHTML=`${drViews()}${drJobsHead("align",`<select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===sys?"selected":""}>${esc(x)}</option>`).join("")}</select>`,
       `${gameVerTxt(r,true)} · ${todo?`${todo} ${todo===1?"planet or moon":"planets and moons"} still to line up`:"every planet and moon is lined up"}${chk.length?`, plus ${chk.length} ${chk.length===1?"Gateway or station":"Gateways and stations"} to confirm`:""}. Each update can shift where a planet's surface is turned, so they're lined up again per version.`)}
-    <div class="dr-list dr-jobs special align">${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drAlignGuide()}${drMapJobHtml()}
-      ${L.length?`<div class="mk-h" style="margin-top:2px">Planets and moons</div>${L.map(ajCard).join("")}`:""}
+    <div class="dr-list dr-jobs special align">${ajWhyHtml()}${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drMyJobsHtml()}${drAlignGuide()}${drMapJobHtml()}
+      ${L.length?`<div class="mk-h" style="margin-top:2px">Planets and moons</div>${L.map(ajCard).join("")}`:doneN?`<div class="dr-empty">Every planet and moon${sys?` in ${esc(sys)}`:""} is lined up for this version.</div>`:""}
+      ${doneN?`<div class="muted" style="font-size:12px;margin:6px 2px 10px"><a data-ajshowdone="1" style="cursor:pointer;text-decoration:underline">${S.ajShowDone?`Hide the ${doneN} already lined up`:`Show the ${doneN} already lined up`}</a></div>`:""}
       ${chk.length?`<div class="mk-h" style="margin-top:10px">Gateways and stations <span class="muted" style="text-transform:none;letter-spacing:0">${chk.length} on the map that nobody has confirmed in game</span></div>${chk.map(drMapCard).join("")}`:""}
       ${!L.length&&!chk.length?`<div class="dr-empty">Nothing to line up here.</div>`:""}</div>`; }
 
@@ -6978,7 +7172,7 @@ async function renderDrPhotoJobs(refresh){ const d=S.dr, P=$("dr-panel");
   P.innerHTML=`${drViews()}${drJobsHead("photos",kinds.length>1?`<div class="seg-mini"><button data-phkind="" class="${!k?"on":""}">All</button>${kinds.map(([x,n])=>`<button data-phkind="${x}" class="${k===x?"on":""}">${n} <small class="muted">${r.counts[x]}</small></button>`).join("")}</div>`:"",
       `${plural(r.jobs.length,"thing")} with no picture anywhere yet. Accept a job to see what's needed; it goes live for every Quantum user once it's approved.`)}
     <input class="search" id="dr-ph-q" placeholder="Find one, like “Atlas” or “Gold”" value="${esc(S.drPhotoQ||"")}" autocomplete="off" style="margin:0 2px 10px;width:calc(100% - 4px)">
-    <div class="dr-list dr-jobs special photos" id="dr-ph-list"><div id="dr-ph-guide">${drPhotoGuide()}</div><div id="dr-ph-cards"></div></div>`;
+    <div class="dr-list dr-jobs special photos" id="dr-ph-list">${drMyJobsHtml()}<div id="dr-ph-guide">${drPhotoGuide()}</div><div id="dr-ph-cards"></div></div>`;
   drPhotoList(); }
 function drPhotoList(){ const box=$("dr-ph-cards"); if(!box) return;
   const k=S.drPhotoKind||"", q=(S.drPhotoQ||"").trim().toLowerCase(), mine=drPhotoMine();
@@ -6996,14 +7190,16 @@ async function drSpecialJobClick(e){
   // Accepting a picture job opens the Pictures tab with what's needed and the form at the top
   const pa=e.target.closest("[data-phaccept]"); if(pa){ pa.disabled=true; pa.textContent="Accepting…"; const id=pa.dataset.phaccept;
     const j=(S.drPhotoJobs||[]).find(x=>`ph:${x.kind}:${x.title}`===id), u=await drAccept(id);
-    if(u&&j){ S.drPhotoJob={id, until:u, kind:j.kind, name:j.name, label:j.label}; toast(`Job accepted: it's yours for ${CLAIM_MIN} minutes`); }
+    if(u&&j){ S.drPhotoJob={id, until:u, kind:j.kind, name:j.name, label:j.label}; drHold(id,{label:j.label,sub:"Picture",until:u,data:{...S.drPhotoJob}}); toast(`Job accepted: it's yours for ${CLAIM_MIN} minutes`); }
     S.drJobKind="photos"; await renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
   if(e.target.closest("[data-phrelease]")){ if(S.drPhotoJob) drRelease(S.drPhotoJob.id); S.drPhotoJob=null; renderDrJobs(); return true; }
   const aa=e.target.closest("[data-ajaccept]"); if(aa){ aa.disabled=true; const u=await drAccept(`a:${aa.dataset.ajaccept}`);
-    if(u){ if(S.drAlignJob) drRelease(`a:${S.drAlignJob.body}`); S.drAlignJob={body:aa.dataset.ajaccept, until:u}; toast(`Job accepted: line up ${aa.dataset.ajaccept} within ${CLAIM_MIN} minutes`); }
+    if(u){ S.drAlignJob={body:aa.dataset.ajaccept, until:u}; drHold(`a:${aa.dataset.ajaccept}`,{label:aa.dataset.ajaccept,sub:"Planet alignment",until:u}); toast(`Job accepted: line up ${aa.dataset.ajaccept} within ${CLAIM_MIN} minutes`); }
     S.drJobKind="align"; await renderDrJobs(); $("dr-panel").querySelector(".dr-jobs")?.scrollTo({top:0,behavior:"smooth"}); return true; }
   if(await drAlignClick(e)) return true;
   if(e.target.closest("[data-ajrelease]")){ if(S.drAlignJob) drRelease(`a:${S.drAlignJob.body}`); S.drAlignJob=null; renderDrJobs(); return true; }
+  if(e.target.closest("[data-ajshowdone]")){ S.ajShowDone=!S.ajShowDone; renderDrJobs(); return true; }
+  if(e.target.closest("[data-ajwhy]")){ S.ajWhyOpen=!S.ajWhyOpen; try{ localStorage.setItem("ajWhyOpen",S.ajWhyOpen?"1":"0"); }catch(_){} renderDrJobs(); return true; }
   const am=e.target.closest("[data-ajmap]"); if(am){ document.querySelector('.tab[data-tab="route"]')?.click(); select({kind:"body",name:am.dataset.ajmap}); focusBody(am.dataset.ajmap); return true; }
   return false; }
 
@@ -7404,7 +7600,9 @@ const grPrice=i=>i.buy?.[0]?.price??null;
 function grFiltered(kind){ const G=GEAR[kind], st=grState(kind), L=st.data?.items||[], v=id=>$(`gr-${id}-${kind}`)?.value||"";
   const q=v("q").trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), cat=v("cat"), sub=v("sub"), mk=v("mk"), av=v("av"), sort=v("sort")||"name";
   const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${i.maker_code||""} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`;
-  const out=L.filter(i=>(!cat||G.cat(i)===cat)&&(!sub||!G.sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
+  // Consumables: the Food / Drink / Medical tab picks the kind (anything that isn't a drink or medical counts as food)
+  const ck=kind==="consumables"?st.ckind:null, ckOk=i=>!ck||(ck==="Food"?!["Drink","Medical"].includes(G.cat(i)):G.cat(i)===ck);
+  const out=L.filter(i=>ckOk(i)&&(!cat||G.cat(i)===cat)&&(!sub||!G.sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
     &&(!words.length||(t=>cpQueryHit(t,words.join(" ")))(text(i).toLowerCase())));
   const num=(i,k)=>i.stats?.[k]??-1e9, pr=i=>grPrice(i)??9e12;
   const by={name:(a,b)=>a.name.localeCompare(b.name),price:(a,b)=>pr(a)-pr(b)||a.name.localeCompare(b.name),
@@ -7444,9 +7642,9 @@ function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-$
   const shown=sets?sets.slice(0,240):L.slice(0,240);
   st.gridKey=JSON.stringify([st.view,...["q","cat","sub","mk","av","sort"].map(id=>$(`gr-${id}-${kind}`)?.value||"")]);
   $("gr-panel").innerHTML=`<div class="gh"><b>${esc(G.title)}</b>${sets?`${plural(sets.length,"armor set")}`:`${n.toLocaleString()} shown`} · click one for its page</div>
-    ${shown.length?`<div class="grid">${shown.map(i=>sets?`<div class="vg" data-gset="${esc(i.name)}">${i.pieces.some(p=>p.buy?.length)?cartBtn(i.pieces.filter(p=>p.buy?.length).map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:i.name}))):""}<div class="ph" data-gpic="${esc(i.pieces.find(p=>p.slot==="Core")?.name||i.pieces[0].name)}">No picture</div>
+    ${shown.length?`<div class="grid">${shown.map(i=>sets?`<div class="vg" data-gset="${esc(i.name)}">${grSetCartPieces(i).length?cartBtn(grSetCartPieces(i).map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:i.name}))):""}<div class="ph ph-g" data-gpic="${esc(i.pieces.find(p=>p.slot==="Core")?.name||i.pieces[0].name)}">${phCard("armor")}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.weight].filter(Boolean).join(" · "))}${i.price!=null?` · ${money(i.price)}`:""}</span><span class="kt">${esc(i.pieces.map(p=>p.slot).join(" · "))}${i.dr?` · up to ${nf(i.dr)}% DR`:""}</span></div></div>`
-      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}):""}<div class="ph" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:"No picture"}</div>
+      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}):""}<div class="ph${kind==="blueprints"?" bp":" ph-g"}" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:kind==="blueprints"?BP_PLACEHOLDER:phCard(grArt(kind,i))}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"?i.slot:kind==="weapons"||GR_ITEM[kind]?i.kind:i.grade?`grade ${i.grade}`:""].filter(Boolean).join(" · "))}${kind!=="blueprints"?(grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"):""}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
       :`<div class="empty">Nothing matches these filters.</div>`}`;
   fillGearPictures($("gr-panel"));
@@ -7458,6 +7656,8 @@ async function fillGearPictures(root){ const els=[...root.querySelectorAll("[dat
   paint();
   for(let i=0;i<need.length;i+=24){ const batch=need.slice(i,i+24); let got={}; try{ got=await api().gear_images(batch); }catch(e){}
     for(const r of batch) S.gpics[r]=got[r]||null; paint(); if(!root.isConnected) return; } }
+// The pieces of a set it makes sense to put in the cart: ones a shop sells, or that drop as loot
+function grSetCartPieces(s){ return s.pieces.filter(p=>p.buy?.length||p.lootable); }
 function grOpenItem(kind,id,set){ const st=grState(kind);
   if(!st.sel) st.back={key:st.gridKey,top:$("gr-panel").scrollTop};          // opened from the grid: Back returns to this spot
   st.sel=set?"set:"+set:id; st.mission=null; grRender(kind); $("gr-panel").scrollTop=0; }
@@ -7468,14 +7668,15 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
     g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(s.name)}</h2><div class="sub">${esc([s.maker,s.weight&&`${s.weight} armor`].filter(Boolean).join(" · "))}</div></div>${titleLogo(s.maker,false,true)}</div>
         ${statBlock([{label:"Pieces",value:s.pieces.length},{label:"Best damage reduction",value:s.dr?GR_PCT(s.dr):null},{label:"Whole set",value:s.price!=null?money(s.price):"Not all in shops"}],[])}
-        <div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" data-grshopset="1">${CART_SVG}Add the whole set to cart</button></div></div></div>
+        <div class="row" style="gap:8px;margin-top:12px">${(()=>{ const n=grSetCartPieces(s).length; return !n?`<span class="muted" style="font-size:12.5px">No piece of this set is sold or known to drop, so there's nothing to put in the cart.</span>`
+          :`<button class="btn primary" data-grshopset="1">${CART_SVG}${n===s.pieces.length?"Add the whole set to cart":`Add the ${n} pieces you can get to cart`}</button>`; })()}</div></div></div>
       <div class="vd-grid vd-flat"><div class="vd-sec" style="grid-column:1/-1"><div class="mk-h">The pieces</div>
         ${s.pieces.map(p=>`<div class="mk-row gr-piece"><div class="w"><a data-gi="${esc(p.uuid)}">${esc(p.name)}</a><div class="m">${esc(p.slot)}${p.stats?.dr!=null?` · ${nf(p.stats.dr)}% damage reduction`:""}${p.stats?.carry?` · ${Math.round(p.stats.carry).toLocaleString()} µSCU`:""}</div></div>
           <div class="p">${grPrice(p)!=null?money(grPrice(p)):'<span class="noshop">Not in shops</span>'}</div><span></span>
           <div class="m">${p.buy?.[0]?`${p.buy[0].place?`<a data-open="${esc(p.buy[0].place)}">${esc(p.buy[0].where)}</a>`:esc(p.buy[0].where)}${p.buy[0].shop?` · ${esc(p.buy[0].shop)}`:""}`:"Loot, rewards or crafting"}</div></div>`).join("")}</div></div>
       <div class="uex-credit">From the Star Citizen Wiki; prices from UEX. Sets are put together from the pieces' names.</div>`;
     const img=await api().gear_image(s.pieces.find(p=>p.slot==="Core")?.name||s.pieces[0].name); if(st.sel!=="set:"+name) return;
-    const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",s.name); return; }
+    const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",s.name,"armor"); return; }
   const i=L.find(x=>(x.uuid||x.name)===st.sel); if(!i){ st.sel=null; return grRender(kind); }
   const st_=i.stats||{}, rows=G.rows.filter(([k])=>st_[k]!=null).map(([k,lab,f])=>`<div class="vd-row"><span>${esc(lab)}</span><b>${esc(String(f(st_[k])))}</b></div>`).join("");
   let extra="";
@@ -7495,10 +7696,11 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
       <div class="vd-sec"><div class="mk-h">${i.buy?.length?"Where to buy":"How to get it"}</div>${i.buy?.length?vehSpots(i.buy,"buy")+`<div id="grd-get"></div>`:`<div id="grd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
+    <div id="grd-where"></div>
     <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>`;
   grObtain(i,kind);
-  if(!i.image){ const img=await api().gear_image(i.name); if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }
-  else { const box=$("grd-img"); if(box) box.innerHTML=picShown(i.image,"component",i.name); } }
+  if(!i.image){ const img=await api().gear_image(i.name); if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name,grArt(kind,i)); }
+  else { const box=$("grd-img"); if(box) box.innerHTML=picShown(i.image,"component",i.name,grArt(kind,i)); } }
 // How to get gear no shop sells: where players have found it, the blueprint that makes it (and the missions
 // that unlock that blueprint, each opening its own page), and whether the wiki marks it as loot.
 function knownSourcesHtml(notes){ return notes?.length?`<div class="mk-h" style="margin-top:4px">Found at</div>${notes.map(n=>`<div class="mk-row"><div class="w">${esc(n.text)}</div><div class="p"></div>${n.search?`<button class="btn small ghost" data-mapsearch="${esc(n.search)}" title="Find them on the map">Map</button>`:"<span></span>"}</div>`).join("")}`:""; }
@@ -7508,10 +7710,35 @@ async function grObtain(i,kind){ const st=grState(kind); let r; try{ r=await api
   out.push(knownSourcesHtml(notes));
   if(bp){ out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Craft it</div>
       <div class="mk-row"><div class="w"><a data-grbpopen="${esc(bp.uuid)}" title="Open the blueprint">${esc(bp.name)} blueprint</a><div class="m">${bp.default?"Every player knows it from the start":bp.unlocks?.length?`Unlocked by ${plural(bp.unlocks.length,"mission")}`:bp.missions?`${plural(bp.missions,"mission")} unlock it`:"How to unlock it isn't on the wiki yet"}${bp.time_label?` · ${esc(bp.time_label)} to craft`:""}</div></div><div class="p"></div><span></span></div>
-      ${(bp.unlocks||[]).slice(0,6).map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.title}))}" title="Where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"Mission")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")}`); }
-  if(!sold&&i.lootable) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Loot</div><div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">The wiki marks it as lootable: it turns up in loot crates and on enemies${notes.length?", like at the places above":""}. Weapon and armor crates are common in bunkers, Contested Zones and derelicts.</div>`);
+      ${(bp.unlocks||[]).slice(0,6).map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.raw_title||m.title}))}" title="Where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"Mission")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>
+        ${(m.places||[]).length?`<div class="gr-places">${m.places.map(grPlaceRow).join("")}${m.places_more?`<div class="muted" style="font-size:12px;padding:2px 0 6px 14px">+${m.places_more} more places: open the mission to see them all</div>`:""}</div>`:""}`).join("")}`); }
+  // Loot: a short note here, and the places to search as their own section under the page ("Where to find it")
+  const where=$("grd-where"); if(where) where.innerHTML=!sold&&i.lootable&&(r?.loot||[]).length?grWhereHtml(r.loot):"";
+  if(!sold&&i.lootable) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Loot</div><div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">The wiki marks it as lootable: it drops from loot crates and enemies${notes.length?", like at the places above":""}. Where exactly isn't fixed, so <b>Where to find it</b> below lists the kinds of place worth searching${S.live?.player?", nearest to you first":""}.</div>`);
+  // Not in any shop, but there is a way to get it (loot, a blueprint or a known spot): it can go in the cart too,
+  // where it's listed with how to get it rather than a shop stop
+  if(!sold&&(i.lootable||bp||notes.length)) out.push(`<div class="row" style="margin-top:10px">${cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart to find")}</div>`);
   if(!sold&&!out.join("")) out.push(`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows, and the wiki doesn't list a blueprint or mark it as loot. Items like this are usually pledge, event, subscriber or reward items.</div>`);
   box.innerHTML=out.join(""); }
+// Where loot turns up, one card per kind of place: what drops there, how many are on the map, the nearest few
+const GR_WHERE_IC={"Contested Zones":'<path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7z"/><path d="M9 12l2 2 4-4"/>',
+  "Bunkers and security posts":'<path d="M3 20h18M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/>',
+  "Distribution Centres":'<path d="M3 9l9-5 9 5v11H3z"/><path d="M7 20v-6h10v6M7 17h10"/>',
+  "Derelict outposts and wrecks":'<path d="M4 18l5-9 3 4 3-6 5 11z"/><path d="M3 21h18"/>'};
+function grWhereHtml(groups){
+  return `<div class="gr-where"><div class="mk-h">Where to find it<span class="mk-note">${S.live?.player?"nearest to you first":"type /showlocation to sort by distance"}</span></div>
+    <div class="gr-where-grid">${groups.map(gp=>`<div class="gr-wcard">
+      <div class="hd"><svg viewBox="0 0 24 24" aria-hidden="true">${GR_WHERE_IC[gp.label]||'<circle cx="12" cy="12" r="8"/>'}</svg>
+        <div class="t"><b>${esc(gp.label)}</b><span>${esc(gp.why)}</span></div>
+        <button class="btn small ghost" data-mapsearch="${esc(gp.search)}" title="Show all ${gp.count} on the map">Map · ${gp.count}</button></div>
+      <table class="gr-wt">${gp.places.map(x=>{ const p=x.place||x.name, ok=!!S.locMap?.[p], inR=S.live?.route?.includes(p);
+        return `<tr><td>${ok?`<a data-open="${esc(p)}">${esc(x.name)}</a>`:esc(x.name)}<small>${esc([x.body,x.system].filter(Boolean).join(" · "))}</small></td>
+          <td class="d">${x.dist!=null?fmtDist(x.dist):""}</td>
+          <td class="a">${ok?`<button class="iconbtn ${inR?"added":""}" data-add="${esc(p)}" title="${inR?"In your route":`Add ${esc(p)} to your route`}">${inR?"✓":"+"}</button>`:""}</td></tr>`; }).join("")}</table></div>`).join("")}</div></div>`; }
+// A place a mission or loot can send you: open it, or add it to the route
+function grPlaceRow(x){ const p=x.place||x.name; const ok=!!S.locMap?.[p];
+  return `<div class="mk-row gr-place"><div class="w">${ok?`<a data-open="${esc(p)}">${esc(x.name)}</a>`:esc(x.name)}<div class="m">${esc([x.body,x.system].filter(Boolean).join(" · "))}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}${!ok&&x.body?` · reached at its orbital marker`:""}</div></div><div class="p"></div>
+    ${ok?(S.live?.route?.includes(p)?`<button class="iconbtn added" data-add="${esc(p)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(p)}" title="Add ${esc(p)} to your route">+</button>`):"<span></span>"}</div>`; }
 // "Map" on a place type (PAF sites, Distribution Centres...): search the map for them
 document.addEventListener("click",e=>{ const m=e.target.closest("[data-mapsearch]"); if(!m) return;
   document.querySelector('.tab[data-tab="route"]')?.click();
@@ -7531,11 +7758,12 @@ async function grBlueprint(i,back){ const g=$("gr-panel"), st=grState("blueprint
           ${i.returns?.length?`<div class="mk-h" style="margin-top:14px">Dismantling gives back</div>${i.returns.map(ing).join("")}`:""}</div>
         <div class="vd-sec"><div class="mk-h">How you get it</div>
           ${i.default?`<div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">Every player knows this blueprint from the start.</div>`:""}
-          ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.title}))}" title="What this mission is, where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")
+          ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.raw_title||m.title}))}" title="What this mission is, where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>
+            ${(m.places||[]).length?`<div class="gr-places">${m.places.map(grPlaceRow).join("")}${m.places_more?`<div class="muted" style="font-size:12px;padding:2px 0 6px 14px">+${m.places_more} more: open the mission to see them all</div>`:""}</div>`:""}`).join("")
             :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}</div>
           ${og?.stats&&rows0(og.stats)?`<div class="vd-sec"><div class="mk-h">What it makes</div>${CP_STATS.filter(([k])=>og.stats[k]!=null&&og.stats[k]!==0&&og.stats[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(og.stats[k]))}</b></div>`).join("")}</div>`:""}</div>
       <div class="uex-credit">From the Star Citizen Wiki's crafting data.</div>`;
-    api().gear_image(i.name).then(img=>{ if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name); }); };
+    api().gear_image(i.name).then(img=>{ if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name,true); }); };
   draw(null);
   const r=await api().blueprint_detail(i.uuid); if(st.sel!==(i.uuid||i.name)) return;
   draw(r.ok?r.blueprint:{unlocks:[]}); }
@@ -7593,7 +7821,8 @@ $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
   if(e.target.closest("[data-grshop]")){ const i=st.data.items.find(x=>(x.uuid||x.name)===st.sel); if(!i) return;
     const r=await api().shop_add([{name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }
   if(e.target.closest("[data-grshopset]")){ const s=grSets(st.data.items).find(x=>"set:"+x.name===st.sel); if(!s) return;
-    return addToCart(s.pieces.map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:s.name})),`${s.name} (${plural(s.pieces.length,"piece")})`); }
+    const got=grSetCartPieces(s); if(!got.length) return toast("None of these pieces is sold or known to drop");
+    return addToCart(got.map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:s.name})),`${s.name} (${plural(got.length,"piece")})`); }
   const h=e.target.closest("[data-gi],[data-gset]"); if(h) grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); });
 document.addEventListener("click",e=>{ const f=e.target.closest("[data-grfresh]"); if(f&&GEAR[S.tab]) grLoad(S.tab,true); });
 
@@ -7601,6 +7830,21 @@ document.addEventListener("click",e=>{ const f=e.target.closest("[data-grfresh]"
 // The parts and gear you want, then the trip: fewest stops (or cheapest), in order from where you are. Each stop
 // lists what to buy there; buying it in game ticks it off (Game.log shows shop purchases), or tick it yourself.
 const SH_KIND={component:"Ship part",weapon:"Weapon",armor:"Armor",gadget:"Gadget",clothing:"Clothing",consumable:"Consumable",utility:"Utility item"};
+// Clicking something in the cart opens its own page: parts in Components, gear in its Gear tab
+const GR_TAB_OF=Object.fromEntries(Object.entries(GR_CART).map(([t,k])=>[k,t]));
+async function cartOpenItem(x){ if(!x) return;
+  const waitFor=async(f,n=40)=>{ for(let k=0;k<n&&!f();k++) await new Promise(r=>setTimeout(r,200)); return f(); };
+  if(x.kind==="component"){ const t=document.querySelector('.tab[data-tab="components"]'); if(!t||t.hidden) return toast("Components needs your UEX token in Settings");
+    t.click(); await waitFor(()=>S.cpCats); const ix=await cpLoadIndex();
+    const nm=(x.name||"").toLowerCase(), hit=ix?.items?.find(i=>(x.uex_id!=null&&String(i.id)===String(x.uex_id))||(x.uuid&&i.uuid&&String(i.uuid).toLowerCase()===String(x.uuid).toLowerCase()))||ix?.items?.find(i=>(i.name||"").toLowerCase()===nm);
+    if(hit) return openCpPart(`${hit.cat}|${hit.id}`);
+    renderCpHome(); const q=$("cp-home-q"); if(q){ q.value=x.name; renderCpHome(); } return; }
+  const tab=GR_TAB_OF[x.kind]; const t=tab&&document.querySelector(`.tab[data-tab="${tab}"]`); if(!t) return toast("Couldn't find where that item lives");
+  t.click(); const ok=await waitFor(()=>grState(tab).data?.items); if(!ok) return;
+  const st=grState(tab); if(tab==="armor") st.view="items";
+  const it=st.data.items.find(i=>x.uuid&&i.uuid&&String(i.uuid).toLowerCase()===String(x.uuid).toLowerCase())||st.data.items.find(i=>(i.name||"").toLowerCase()===(x.name||"").toLowerCase());
+  if(!it) return toast(`${x.name} isn't in the list any more`);
+  grOpenItem(tab,it.uuid||it.name,null); }
 async function openShopping(){ $("sh-panel").classList.add("show"); await renderShopping(true); }
 async function renderShopping(autoPlan){ let r=await api().shop_list(); S.slData=r; if(S.tab!=="shopping") return;
   // Opening the cart with things in it that aren't planned yet works out the route straight away
@@ -7609,7 +7853,7 @@ async function renderShopping(autoPlan){ let r=await api().shop_list(); S.slData
   setCartCount(r.left);
   const left=x=>Math.max(0,(x.qty||1)-(x.bought||0));
   $("sh-out").innerHTML=r.items.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${plural(r.items.length,"item")} in your cart · ${r.left} still to buy</div>`
-    +r.items.map(x=>`<div class="vh sh-item ${left(x)?"":"done"}"><div class="hd"><div style="min-width:0"><div class="nm">${left(x)?"":"✓ "}${esc(x.name)}</div>
+    +r.items.map(x=>`<div class="vh sh-item ${left(x)?"":"done"}"><div class="hd"><div style="min-width:0"><div class="nm">${left(x)?"":"✓ "}<a class="cart-open" data-shopen="${esc(x.id)}" title="Open ${esc(x.name)}">${esc(x.name)}</a></div>
         <div class="mk">${esc(SH_KIND[x.kind]||x.kind)}${x.source?` · ${esc(x.source)}`:""} · ${x.price!=null?`from ${money(x.price)}${x.where?` at ${esc(x.where)}`:""}`:"not in shops"}</div></div>
         <div class="sh-qty"><button class="iconbtn" data-shq="${x.id}" data-d="-1" title="One less">−</button><b title="${x.bought||0} of ${x.qty} bought">${x.bought?`${x.bought}/`:""}${x.qty}</b><button class="iconbtn" data-shq="${x.id}" data-d="1" title="One more">+</button>
           <button class="iconbtn" data-shdel="${x.id}" title="Take it out of the cart">✕</button></div></div></div>`).join("")
@@ -7622,7 +7866,7 @@ function shRenderPlan(r){ const p=r.plan, g=$("sh-panel");
   if(!p){ g.innerHTML=`<div class="empty" style="margin-top:60px"><strong>${plural(r.left,"item")} to buy</strong>Plan the trip to see which shops to visit and in what order.<br><br><button class="btn primary" data-shplan="1">Plan the trip</button></div>`; return; }
   const byid=Object.fromEntries(r.items.map(x=>[x.id,x])), cur=r.step, done=cur==null&&p.steps.length;
   const itemRow=(it,on)=>{ const e=byid[it.id], got=e&&(e.bought||0)>=(e.qty||1);
-    return `<label class="sh-buy ${got?"got":""}"><input type="checkbox" data-shbought="${it.id}" ${got?"checked":""} ${on?"":"disabled"}><span class="n">${esc(it.name)}${it.qty>1?` <b>× ${it.qty}</b>`:""}<small>${esc(SH_KIND[it.kind]||"")}${it.shop?` · ${esc(it.shop)}`:""}</small></span><span class="p">${money(it.cost)}</span></label>`; };
+    return `<label class="sh-buy ${got?"got":""}"><input type="checkbox" data-shbought="${it.id}" ${got?"checked":""} ${on?"":"disabled"}><span class="n"><a class="cart-open" data-shopen="${esc(it.id)}" title="Open ${esc(it.name)}">${esc(it.name)}</a>${it.qty>1?` <b>× ${it.qty}</b>`:""}<small>${esc(SH_KIND[it.kind]||"")}${it.shop?` · ${esc(it.shop)}`:""}</small></span><span class="p">${money(it.cost)}</span></label>`; };
   const step=(s,i)=>{ const isCur=i===cur, past=cur==null||i<cur, here=r.here&&s.place===r.here;
     return `<div class="sh-step ${isCur?"cur":""} ${past&&!isCur?"past":""}"><div class="sh-num">${past&&!isCur?"✓":i+1}</div><div class="sh-body">
       <div class="sh-head"><div><b>${s.place?`<a data-open="${esc(s.place)}">${esc(s.where)}</a>`:esc(s.where)}</b><span class="muted">${esc(s.system||"")}${isCur?(here?" · <b class=\"sh-here\">You're here</b>":" · next stop"):""}</span></div>
@@ -7635,17 +7879,20 @@ function shRenderPlan(r){ const p=r.plan, g=$("sh-panel");
       <button class="btn small ghost" data-shplan="1">Plan again${S.live?.player?" from here":""}</button></div>
     ${p.steps.map(step).join("")}
     ${p.offmap?.length?`<div class="mk-h" style="margin-top:16px">Also sold at places not on Quantum's map</div>${p.offmap.map(s=>`<div class="sh-step"><div class="sh-num">·</div><div class="sh-body"><div class="sh-head"><div><b>${esc(s.where)}</b><span class="muted">${esc(s.system||"")}</span></div><div class="sh-sub">${money(s.subtotal)}</div></div><div class="sh-items">${s.items.map(it=>itemRow(it,true)).join("")}</div></div></div>`).join("")}`:""}
-    ${p.unavailable?.length?`<div class="mk-h" style="margin-top:16px">Not sold in any shop</div><div class="muted" style="font-size:13px;line-height:1.6;margin:0 2px">${p.unavailable.map(id=>esc(byid[id]?.name||"")).filter(Boolean).join(", ")}: loot, rewards, crafting or stock on a ship.</div>`:""}
+    ${p.unavailable?.length?`<div class="mk-h" style="margin-top:16px">Not sold in any shop</div><div class="muted" style="font-size:13px;line-height:1.6;margin:0 2px">${p.unavailable.filter(id=>byid[id]).map(id=>`<a class="cart-open" data-shopen="${esc(id)}" title="See how to get it">${esc(byid[id].name)}</a>`).join(", ")}: loot, rewards, crafting or stock on a ship. Open one to see where it drops or what unlocks it.</div>`:""}
     <div class="uex-credit">${p.mode==="cheapest"?"Each item where it's cheapest.":"As few stops as possible; each item at the cheapest of them."} Prices from UEX, reported by players, so check the terminal before you buy. Purchases you make in game tick themselves off.</div>`; }
 $("sh-mode").addEventListener("change",async()=>{ const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); });
 $("sh-plan").onclick=async()=>{ $("sh-panel").innerHTML=qLoader("Finding the shops and the shortest way round…"); const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); };
 $("sh-out").onclick=async e=>{
+  const so=e.target.closest("[data-shopen]"); if(so){ e.preventDefault(); return cartOpenItem(S.slData?.items.find(i=>i.id===so.dataset.shopen)); }
   const q=e.target.closest("[data-shq]"); if(q){ const x=S.slData?.items.find(i=>i.id===q.dataset.shq); if(!x) return; const n=(x.qty||1)+(+q.dataset.d);
     if(n<1) await api().shop_remove(x.id); else await api().shop_set(x.id,n,null); return renderShopping(); }
   const d=e.target.closest("[data-shdel]"); if(d){ await api().shop_remove(d.dataset.shdel); return renderShopping(); }
   const c=e.target.closest("[data-shclear]"); if(c){ if(c.dataset.shclear==="all"&&!S.shClearAsk){ S.shClearAsk=true; c.textContent="Click again to clear everything"; setTimeout(()=>{ S.shClearAsk=false; },3000); return; }
     S.shClearAsk=false; await api().shop_remove(null,c.dataset.shclear==="bought",c.dataset.shclear==="all"); return renderShopping(); } };
-$("sh-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return;
+$("sh-panel").addEventListener("click",async e=>{
+  const so=e.target.closest("[data-shopen]"); if(so){ e.preventDefault(); e.stopPropagation(); return cartOpenItem(S.slData?.items.find(i=>i.id===so.dataset.shopen)); }
+  if(await tradeClick(e)) return;
   if(e.target.closest("[data-shplan]")){ $("sh-plan").click(); return; }
   const st=e.target.closest("[data-shstep]"); if(st){ await api().shop_step_done(+st.dataset.shstep); toast("Ticked off. On to the next stop"); return renderShopping(); }
   const ro=e.target.closest("[data-shroute]"); if(ro){ const r=await api().shop_to_route(ro.dataset.shroute==="replace"); await poll(); toast(r.ok?(ro.dataset.shroute==="replace"?"Your route is now the shopping trip":`Added ${plural(r.added?.length||0,"stop")} to your route`):r.error); return; } });
@@ -7864,8 +8111,8 @@ function pmPane(){ const tab=S.tab, P=$("pane-"+tab); if(!P) return;
   } else if(tab==="pm-mine"){ const m=S.pm.mine, ts=m?.trades||[];
     const n={todo:ts.filter(pmNeedsMe).length,open:ts.filter(t=>["requested","accepted","escrow"].includes(t.status)).length,done:ts.filter(t=>!["requested","accepted","escrow"].includes(t.status)).length,listings:(m?.listings||[]).length};
     P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn primary" style="flex:1" data-pmnewin="pm-items">+ Sell an item</button><button class="btn primary" style="flex:1" data-pmnewin="pm-services">+ Offer a service</button></div>
-      ${m?.rating?`<div class="so-me"><div class="who" style="min-width:0"><b>Your rating</b><div style="font-size:12.5px;margin-top:2px">${pmStars(m.rating)} <span class="muted">· ${m.rating.sold} sold</span></div></div>${m.agent?`<span class="pm-badge esc" style="margin-left:auto">Escrow agent</span>`:""}</div>`:""}
-      <div class="pm-cats">${[["todo","Requests"],["open","Open trades"],["done","Finished trades"],["listings","My listings"],
+      ${m&&!m.error?`<div class="so-me click ${S.pm.filter==="standing"?"on":""}" data-pmf="standing" title="Your rating, reviews and trust"><div class="who" style="min-width:0"><b>Your standing</b><div style="font-size:12.5px;margin-top:2px">${pmStars(m.rating)}${m.rating?.sold||m.rating?.bought?` <span class="muted">· ${m.rating.sold||0} sold · ${m.rating.bought||0} bought</span>`:""}</div></div>${m.agent?`<span class="pm-badge esc" style="margin-left:auto">Escrow agent</span>`:m.me?.trusted?`<span class="pm-badge ok" style="margin-left:auto">Trusted</span>`:""}</div>`:""}
+      <div class="pm-cats">${[["standing","Your standing"],["todo","Requests"],["open","Open trades"],["done","Finished trades"],["listings","My listings"],
         ...(S.pm.esc&&(S.pm.esc.is_agent||S.pm.esc.owner||S.pm.esc.trusted)?[["escrow",S.pm.esc.owner?"Escrow admin":S.pm.esc.is_agent?"Escrow agent":"Become an escrow agent"]]:[])].map(([k,t])=>`<div class="so-row click ${S.pm.filter===k?"on":""}" data-pmf="${k}"><div class="who"><b>${t}</b></div>${n[k]?`<span class="${k==="todo"?"so-n":"muted"}">${n[k]}</span>`:""}</div>`).join("")}</div>`;
     for(const r of P.querySelectorAll("[data-pmf]")) r.onclick=()=>{ S.pm.filter=r.dataset.pmf; S.pm.view="mine"; pmPane(); pmRender(); pmLoadMine(); };
   }
@@ -7950,6 +8197,19 @@ function pmFormHtml(){ const f=S.pm.form, svc=f.kind==="service", cats=(svc?S.pm
 const PM_ACT={accept:["Accept","primary"],decline:["Decline","ghost"],cancel:["Cancel trade","ghost"],done:["Mark as done","primary"],
   item_in:["Item received from seller","primary"],pay_in:["Payment received from buyer","primary"],release:["Hand over and complete","primary"],refund:["Cancel and return everything","danger"]};
 const PM_ARM=new Set(["decline","cancel","release","refund"]);
+// After the stars: quick tags and a short review (like OfferUp). Shown on their profile with who left it.
+function pmReviewForm(t,other){ const r=S.pm.rev?.[t.id]||{tags:[...(t.my_review?.tags||[])],note:t.my_review?.note||"",open:!(t.my_review?.note||t.my_review?.tags?.length)};
+  (S.pm.rev=S.pm.rev||{})[t.id]=r;
+  if(!r.open) return `<div class="pm-review-done"><span class="muted" style="font-size:12px">Your review${r.tags.length?`: ${r.tags.map(esc).join(" · ")}`:""}${r.note?` · “${esc(r.note)}”`:""}</span> <a data-pmrevedit="${t.id}" style="cursor:pointer;font-size:12px;text-decoration:underline">Change</a></div>`;
+  return `<div class="pm-review"><div class="pm-tags">${(t.review_tags||[]).map(x=>`<button type="button" class="chip ${r.tags.includes(x)?"on":""}" data-pmrevtag="${esc(x)}" data-pmt="${t.id}">${esc(x)}</button>`).join("")}</div>
+    <textarea class="field" rows="2" maxlength="300" data-pmrevnote="${t.id}" placeholder="A few words about trading with ${esc(other?.name||"them")} (optional)">${esc(r.note)}</textarea>
+    <div class="pm-acts"><button class="btn small primary" data-pmrevsave="${t.id}">Post review</button><span class="muted" style="font-size:11.5px">Shown on ${esc(other?.name||"their")}'s profile with your name.</span></div></div>`; }
+function pmStarsLine(rt){ if(!rt||rt.stars==null) return `<span class="muted">No ratings yet</span>`;
+  return `${pmStars(rt)}${rt.as_seller?` <span class="muted" style="font-size:12px">· as seller ★ ${rt.as_seller.stars} (${rt.as_seller.count})</span>`:""}${rt.as_buyer?` <span class="muted" style="font-size:12px">· as buyer ★ ${rt.as_buyer.stars} (${rt.as_buyer.count})</span>`:""}`; }
+function pmReviewsHtml(rt,list){ return `<div style="margin-bottom:8px">${pmStarsLine(rt)}${rt?.sold||rt?.bought?` <span class="muted" style="font-size:12px">· ${rt.sold||0} sold, ${rt.bought||0} bought</span>`:""}</div>
+  ${rt?.tags?.length?`<div class="pm-tags" style="margin-bottom:8px">${rt.tags.map(([x,n])=>`<span class="chip">${esc(x)} <b>${n}</b></span>`).join("")}</div>`:""}
+  ${(list||[]).map(v=>`<div class="pm-rev"><div class="row" style="gap:8px;align-items:center">${soAv(v.by)}<b class="up-name" data-upid="${esc(v.by?.id||"")}">${esc(v.by?.name||"")}</b><span style="color:#f2c14e">${"★".repeat(v.stars)}<span style="color:var(--line-2)">${"★".repeat(5-v.stars)}</span></span><span class="muted" style="font-size:12px;margin-left:auto">${v.as==="seller"?"Sold":"Bought"}: ${esc(v.title||"")} · ${soAgo(v.at)}</span></div>
+    ${v.tags.length?`<div class="pm-tags" style="margin:4px 0 0 34px">${v.tags.map(x=>`<span class="chip">${esc(x)}</span>`).join("")}</div>`:""}${v.note?`<div style="margin:4px 0 0 34px;font-size:13px">“${esc(v.note)}”</div>`:""}</div>`).join("")||`<div class="muted" style="font-size:13px">No reviews yet.</div>`}`; }
 function pmTradeHtml(t){ const other=t.role==="buyer"?t.seller:t.role==="seller"?t.buyer:null;
   const who=t.role==="buyer"?`Buying from <b>${esc(t.seller.name)}</b>`:t.role==="seller"?`Selling to <b>${esc(t.buyer.name)}</b>`:`Escrow for <b>${esc(t.seller.name)}</b> → <b>${esc(t.buyer.name)}</b>`;
   const stLabel={requested:["Waiting for the seller",""],accepted:["Meet in game","esc"],escrow:["In escrow","esc"],completed:["Complete","ok"],declined:["Declined","bad"],cancelled:["Cancelled","bad"],expired:["Expired","warn"]}[t.status]||[t.status,""];
@@ -7970,17 +8230,38 @@ function pmTradeHtml(t){ const other=t.role==="buyer"?t.seller:t.role==="seller"
     ${hint?`<div style="font-size:12.5px;margin-bottom:8px">${hint}</div>`:""}
     <div class="pm-acts">${t.actions.filter(a=>a!=="rate").map(a=>`<button class="btn small ${PM_ACT[a][1]}" data-pmact="${a}" data-pmt="${t.id}">${S.pm.arm===a+t.id?"Sure? Click again":PM_ACT[a][0]}</button>`).join("")}
       ${msg.map(p=>`<button class="btn small ghost" data-pmchat="${p.id}">Message ${esc(p.name)}</button>`).join("")}
-      ${t.actions.includes("rate")?`<span class="pm-rate" title="Rate ${esc(other?.name||"")}">${[1,2,3,4,5].map(n=>`<button data-pmrate="${n}" data-pmt="${t.id}" class="${(t.my_rating||0)>=n?"on":""}">★</button>`).join("")}</span><span class="muted" style="font-size:12px">${t.my_rating?"Thanks for rating":"Rate "+esc(other?.name||"them")}</span>`:""}</div>
+      ${t.actions.includes("rate")?`<span class="pm-rate" title="Rate ${esc(other?.name||"")}">${[1,2,3,4,5].map(n=>`<button data-pmrate="${n}" data-pmt="${t.id}" class="${(t.my_rating||0)>=n?"on":""}">★</button>`).join("")}</span><span class="muted" style="font-size:12px">${t.my_rating?(t.my_review?.note||t.my_review?.tags?.length?"Thanks for your review":"Thanks for rating"):"Rate "+esc(other?.name||"them")}</span>`:""}</div>
+    ${t.actions.includes("rate")&&t.my_rating?pmReviewForm(t,other):t.actions.includes("rate")&&t.status==="completed"?`<div class="pm-review-ask">How did it go with <b>${esc(other?.name||"them")}</b>? Your stars and a few words help other players know who to trade with.</div>`:""}
     <details class="pm-log"><summary>History</summary>${t.log.map(x=>`<div>${new Date(x.at*1000).toLocaleString([], {day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})} · ${esc([t.buyer,t.seller,t.agent].find(p=>p&&p.id===x.who)?.name||"")}: ${esc(x.text)}</div>`).join("")}</details></div></div>`; }
 function pmMineHtml(){ const m=S.pm.mine; if(!m) return `<div class="so-empty">Loading…</div>`;
   if(m.signed_in===false||m.error==="Sign in to your Quantum account first.") return pmSignIn("trade on the marketplace");
   if(m.error) return `<div class="note">${esc(m.error)}</div>`;
   const f=S.pm.filter, open=t=>["requested","accepted","escrow"].includes(t.status);
   if(f==="escrow") return pmEscHtml();
+  if(f==="standing") return pmStandingHtml(m);
   if(f==="listings") return `<div class="pm-top"><h2>My listings</h2><span class="muted">${m.listings.length}</span></div>`+(m.listings.length?`<div class="pm-mylist">${m.listings.map(l=>`<div class="pm-mini" data-pmopen="${l.id}">${pmPh(l.photo)}<div class="who"><b>${esc(l.title)}</b><small>${l.unit==="quote"?"Quote":pmA(l.price)} · ${l.status==="active"?`${l.kind==="item"?l.qty+" left · ":""}up`:esc(l.status)}</small></div></div>`).join("")}</div>`:`<div class="so-empty">You haven't listed anything yet.</div>`);
   const ts=m.trades.filter(f==="todo"?pmNeedsMe:f==="open"?open:t=>!open(t));
   const title={todo:"Requests",open:"Open trades",done:"Finished trades"}[f];
   return `<div class="pm-top"><h2>${title}</h2><span class="muted">${ts.length}</span></div>`+(ts.length?ts.map(pmTradeHtml).join(""):`<div class="so-empty">${f==="todo"?"No requests right now. Trades waiting on you (to accept, confirm or hand over) show up here.":"No trades here yet."}</div>`); }
+// Your standing as a trader: what other players see when they decide whether to trade with you
+function pmStandingHtml(m){ const rt=m.rating||{}, me=m.me||{};
+  const badge=(ok,label,why)=>`<div class="pm-trust ${ok?"on":""}"><span>${ok?"✓":"·"}</span><div><b>${label}</b><small>${why}</small></div></div>`;
+  const done=(m.trades||[]).filter(t=>t.status==="completed"&&t.actions.includes("rate")&&!t.my_rating).length;
+  return `<div class="pm-top"><h2>Your standing</h2><span class="muted">What other players see on your listings and profile</span></div>
+    <div class="pm-standing">
+      <div class="pm-box"><div class="k">Rating</div><div class="pm-big">${rt.stars!=null?`<b>${rt.stars}</b><span style="color:#f2c14e">★</span><span class="muted">from ${plural(rt.count,"rating")}</span>`:`<span class="muted">No ratings yet: finish a trade and ask them to rate you.</span>`}</div>
+        <div class="pm-split"><div><span>As a seller</span><b>${rt.as_seller?`★ ${rt.as_seller.stars} <small class="muted">(${rt.as_seller.count})</small>`:"–"}</b></div><div><span>As a buyer</span><b>${rt.as_buyer?`★ ${rt.as_buyer.stars} <small class="muted">(${rt.as_buyer.count})</small>`:"–"}</b></div>
+          <div><span>Sold</span><b>${rt.sold||0}</b></div><div><span>Bought</span><b>${rt.bought||0}</b></div></div>
+        ${rt.tags?.length?`<div class="pm-tags" style="margin-top:10px">${rt.tags.map(([x,n])=>`<span class="chip">${esc(x)} <b>${n}</b></span>`).join("")}</div>`:""}</div>
+      <div class="pm-box"><div class="k">Trust</div>
+        ${badge(true,"Quantum account","Signed in: every trade and review is tied to your account")}
+        ${badge(!!me.trusted,"Trusted datarunner",me.trusted?"Earned by accurate price reports through Quantum":"Earned by sending accurate prices to UEX through Quantum")}
+        ${badge(!!m.agent,"Escrow agent",m.agent?"You can hold items and aUEC for big trades":"Trusted datarunners can apply under Escrow")}
+        ${badge((rt.count||0)>=5&&(rt.stars||0)>=4.5,"Well rated","5 or more ratings averaging 4.5 stars or better")}</div>
+    </div>
+    ${done?`<div class="note" style="margin:12px 0">You have ${plural(done,"finished trade")} to rate. <a data-pmf2="done" style="cursor:pointer;text-decoration:underline">Rate them</a></div>`:""}
+    <div class="pm-sec">Latest reviews</div><div class="pm-box">${pmReviewsHtml(null,m.reviews).replace(/^<div style="margin-bottom:8px">[\s\S]*?<\/div>/,"")}</div>
+    ${me.id?`<div style="margin-top:10px"><button class="btn small ghost" data-upid="${esc(me.id)}">See your profile as others do</button></div>`:""}`; }
 function pmEscHtml(){ const e=S.pm.esc; if(!e) return `<div class="so-empty">Loading…</div>`;
   if(e.signed_in===false||e.error==="Sign in to your Quantum account first.") return pmSignIn("use escrow");
   if(e.error) return `<div class="note">${esc(e.error)}</div>`;
@@ -8008,6 +8289,16 @@ function pmNew(){ const kind=S.tab==="pm-services"?"service":"item";
   S.pm.form={kind,title:"",category:"",description:"",price:"",unit:kind==="service"?"per job":"each",qty:1,location:""}; S.pm.formErr=null; S.pm.view="form";
   if(!S.pm.mine) pmLoadMine().then(()=>{ if(S.pm.view==="form") pmRender(); }); pmRender(); }
 function pmArm(key,fn){ if(S.pm.arm===key){ S.pm.arm=null; return fn(); } S.pm.arm=key; pmRender(); setTimeout(()=>{ if(S.pm.arm===key){ S.pm.arm=null; pmRender(); } },3500); }
+// A banner: any picture, cropped from its middle to the banner's shape (15:4, like 1500 × 400) and sized 600 to
+// 1800 pixels across, so the server never turns one down for its shape
+const OG_BANNER_RATIO=3.75;
+function ogShrinkWide(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
+  img.onload=()=>{ let sw=img.width, sh=Math.round(img.width/OG_BANNER_RATIO);
+    if(sh>img.height){ sh=img.height; sw=Math.round(img.height*OG_BANNER_RATIO); }
+    const sx=Math.round((img.width-sw)/2), sy=Math.round((img.height-sh)/2);
+    const W=Math.max(600,Math.min(1800,sw)), c=document.createElement("canvas"); c.width=W; c.height=Math.round(W/OG_BANNER_RATIO);
+    c.getContext("2d").drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.88)); };
+  img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
 function pmShrink(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
   img.onload=()=>{ const k=Math.min(1,1280/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
     c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.86)); };
@@ -8061,7 +8352,13 @@ function pmWire(P){
       toast({accept:"Accepted",decline:"Declined",cancel:"Trade cancelled",done:"Marked as done",item_in:"Noted: item received",pay_in:"Noted: payment received",release:"Trade complete",refund:"Trade cancelled and returned"}[a]);
       await pmLoadMine(); };
     PM_ARM.has(a)?pmArm(a+id,go):go(); });
-  on("[data-pmrate]",async el=>{ const r=await pmCall("rate",{trade:+el.dataset.pmt,stars:+el.dataset.pmrate}); if(!r.ok) return toast(r.error); toast("Thanks for rating"); pmLoadMine(); });
+  on("[data-pmf2]",el=>{ S.pm.filter=el.dataset.pmf2; pmPane(); pmRender(); });
+  on("[data-pmrate]",async el=>{ const r=await pmCall("rate",{trade:+el.dataset.pmt,stars:+el.dataset.pmrate}); if(!r.ok) return toast(r.error); toast("Thanks for rating. Add a few words if you like"); const rv=S.pm.rev?.[+el.dataset.pmt]; if(rv) rv.open=true; pmLoadMine(); });
+  on("[data-pmrevtag]",el=>{ const r=S.pm.rev?.[+el.dataset.pmt]; if(!r) return; const x=el.dataset.pmrevtag; r.tags=r.tags.includes(x)?r.tags.filter(y=>y!==x):[...r.tags,x].slice(0,4); el.classList.toggle("on",r.tags.includes(x)); });
+  for(const ta of P.querySelectorAll("[data-pmrevnote]")) ta.oninput=()=>{ const r=S.pm.rev?.[+ta.dataset.pmrevnote]; if(r) r.note=ta.value; };
+  on("[data-pmrevedit]",el=>{ const r=S.pm.rev?.[+el.dataset.pmrevedit]; if(r){ r.open=true; pmRender(); } });
+  on("[data-pmrevsave]",async el=>{ const id=+el.dataset.pmrevsave, r=S.pm.rev?.[id], t=(S.pm.mine?.trades||[]).find(x=>x.id===id); if(!r||!t) return;
+    const res=await pmCall("rate",{trade:id,stars:t.my_rating||5,note:r.note.trim(),tags:r.tags}); if(!res.ok) return toast(res.error); r.open=false; toast("Review posted"); pmLoadMine(); });
   // escrow
   on("[data-pmapplysend]",async el=>{ el.disabled=true; const r=await pmCall("escrow/apply",{message:P.querySelector("[data-pmapply]").value}); el.disabled=false; toast(r.ok?"Application sent":r.error); if(r.ok) pmLoadEsc(); });
   on("[data-pmdecide]",async el=>{ const r=await pmCall("escrow/decide",{id:+el.dataset.id,approve:el.dataset.pmdecide==="1"}); toast(r.ok?(el.dataset.pmdecide==="1"?"Approved: they're an escrow agent now":"Declined"):r.error); pmLoadEsc(); });
@@ -8075,6 +8372,38 @@ setInterval(()=>{ if(S.tab==="pm-mine"&&S.pm.view==="mine") pmLoadMine(); },1000
 S.og={mine:null,cur:null,view:null,tab:"overview",data:null,browse:null,q:"",form:null,month:null,ev:null,evForm:null,rankEdit:null,inviteQ:"",inviteRes:null,arm:null,todo:0};
 const OG_PERM={members:"Members: invite, accept, rank and remove members below them",events:"Events: add, change and delete events",ranks:"Ranks: add, edit and reorder ranks below them",org:"Org: change the name, tag, logo, slogan and description"};
 async function ogCall(path,body){ let r; try{ r=await api().org(path,body===undefined?null:body); }catch(e){ r={ok:false,error:"Couldn't reach Quantum"}; } return r; }
+// An org's About page: the server keeps only a safe subset of HTML (server richtext.py); it's cleaned again here
+// before it's drawn, the same way, so nothing but formatting, links and pictures ever reaches the page.
+const RICH_TAGS=new Set("b strong i em u s strike del br p div span h1 h2 h3 h4 ul ol li blockquote hr a img center small sub sup code pre table thead tbody tr td th".split(" "));
+const RICH_DROP=new Set("script style iframe object embed noscript template svg math textarea select button form head title link meta base".split(" "));
+const RICH_IMG_HOSTS=["i.imgur.com","imgur.com","cdn.discordapp.com","media.discordapp.net","robertsspaceindustries.com","media.robertsspaceindustries.com","starcitizen.tools","media.starcitizen.tools","quantumsc.org"];
+function richUrl(u,img,verified){ u=String(u||"").trim().replace(/^http:\/\//i,"https://"); if(!/^https:\/\/[A-Za-z0-9.\-]+(:\d+)?([\/?#][^\s"'<>`]*)?$/.test(u)) return null;
+  if(img&&!verified){ const h=u.match(/^https:\/\/([^\/:?#]+)/)[1].toLowerCase(); if(!RICH_IMG_HOSTS.some(x=>h===x||h.endsWith("."+x))) return null; } return u; }
+function richStyle(v){ return String(v||"").split(";").map(x=>{ const i=x.indexOf(":"); if(i<0) return null; const k=x.slice(0,i).trim().toLowerCase(), val=x.slice(i+1).trim();
+    if(!["color","background-color","text-align","font-weight","font-style","text-decoration","font-size"].includes(k)||!val||val.length>40||/url\s*\(|expression|javascript|@import|\\|\/\*|[<>{}]/i.test(val)) return null; return `${k}: ${val}`; }).filter(Boolean).join("; "); }
+function richSafe(html,verified,raw){ if(!html) return ""; const doc=new DOMParser().parseFromString(`<div>${html}</div>`,"text/html"), out=document.createElement("div");
+  const BLOCK=/^(H[1-4]|P|DIV|UL|OL|LI|BLOCKQUOTE|TABLE|PRE|CENTER|HR)$/;
+  const walk=(src,dst,inPre)=>{ for(const n of [...src.childNodes]){
+      if(n.nodeType===3){ let t=n.nodeValue;
+        // what you typed: a line break is a line break (as the server stores it), except the layout between tags
+        if(raw&&!inPre&&t.trim()){ if(BLOCK.test(dst.lastChild?.nodeName||"")) t=t.replace(/^\r?\n/,"");
+          t.split(/\r?\n/).forEach((part,i)=>{ if(i) dst.appendChild(document.createElement("br")); if(part) dst.appendChild(document.createTextNode(part)); }); continue; }
+        dst.appendChild(document.createTextNode(t)); continue; }
+      if(n.nodeType!==1) continue; const t=n.tagName.toLowerCase();
+      if(RICH_DROP.has(t)) continue;
+      if(!RICH_TAGS.has(t)){ walk(n,dst); continue; }
+      let el;
+      if(t==="a"){ const u=richUrl(n.getAttribute("href"),false,verified); if(!u||!verified){ el=document.createElement("span"); } else { el=document.createElement("a"); el.dataset.ogurl=u; el.title=u; } }
+      else if(t==="img"){ const u=richUrl(n.getAttribute("src"),true,verified); if(!u) continue; el=document.createElement("img"); el.src=u; el.loading="lazy"; el.referrerPolicy="no-referrer"; el.alt=(n.getAttribute("alt")||"").slice(0,200);
+        for(const k of ["width","height"]){ const v=n.getAttribute(k); if(/^\d{1,4}$/.test(v||"")) el.setAttribute(k,v); } }
+      else el=document.createElement(t);
+      const al=(n.getAttribute("align")||"").toLowerCase(); if(["left","right","center","justify"].includes(al)) el.setAttribute("align",al);
+      const st=richStyle(n.getAttribute("style")); if(st) el.setAttribute("style",st);
+      for(const k of ["colspan","rowspan","start"]){ const v=n.getAttribute(k); if(/^\d{1,3}$/.test(v||"")) el.setAttribute(k,v); }
+      if(t!=="img") walk(n,el,inPre||t==="pre"); dst.appendChild(el); } };
+  walk(doc.body.firstChild||doc.body,out,false); return out.innerHTML; }
+function ogAboutHtml(o){ return o.about_html?`<div class="og-desc og-rich">${richSafe(o.about_html,o.verified)}</div>`
+  :`<div class="og-desc">${o.description?ogLinks(o.description,o.verified):"No description yet."}</div>`; }
 // Links in a verified org's description open in the browser (only verified orgs, so nobody can pose as a real org with a bad link)
 function ogLinks(text,verified){ const t=esc(text||""); if(!verified) return t;
   return t.replace(/(?<![@\w.\/-])((?:https?:\/\/|www\.)[^\s<]+|(?:discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+|[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|gg|io|co|us|uk|de|eu|tv|app|dev|space|xyz|info|me)(?:\/[^\s<]*)?)/gi,
@@ -8112,7 +8441,7 @@ function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
       :`<div class="so-empty">You're not in an org yet. Create one, or find one to join.</div>`:`<div class="so-empty">Loading…</div>`}
     ${req.length?`<div class="so-h">Waiting to join</div>${req.map(r=>`<div class="so-row click" data-ogopen="${r.org.id}">${ogLogo(r.org,1)}<div class="who"><b>${esc(r.org.name)}</b><small>Request sent ${soAgo(r.at)}</small></div></div>`).join("")}`:""}`;
   for(const b of P.querySelectorAll("[data-ogopen]")) b.onclick=()=>{ S.og.tab="overview"; ogOpen(+b.dataset.ogopen); };
-  for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",description:"",recruiting:true}; ogPane(); ogRender(); };
+  for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",about:"",recruiting:true}; ogPane(); ogRender(); };
   for(const b of P.querySelectorAll("[data-ogfind]")) b.onclick=()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); };
   for(const b of P.querySelectorAll("[data-oginv]")) b.onclick=async()=>{ b.disabled=true; const yes=b.dataset.yes==="1"; const r=await ogCall("invite/respond",{id:+b.dataset.oginv,accept:yes});
     if(!r.ok) return toast(r.error); toast(yes?"Welcome aboard!":"Invitation declined"); await ogLoadMine(); if(yes){ S.og.tab="overview"; ogOpen(r.org); } }; }
@@ -8146,7 +8475,16 @@ function ogFormHtml(isNew){ const f=S.og.form||{};
       <label>Recruiting<select class="field" data-ogf="recruiting"><option value="1" ${f.recruiting!==false?"selected":""}>Yes: anyone can ask to join</option><option value="0" ${f.recruiting===false?"selected":""}>No: invite only</option></select></label>
       <label class="wide">Visibility<select class="field" data-ogf="listed"><option value="1" ${f.listed!==false?"selected":""}>Listed: people can find it in Find orgs (once it's verified)</option><option value="0" ${f.listed===false?"selected":""}>Private: hidden from Find orgs, join by invitation only</option></select></label>
       <label class="wide">Slogan<input class="field" data-ogf="slogan" maxlength="120" value="${esc(f.slogan||"")}" placeholder="One line people remember"></label>
-      <label class="wide">About the org<textarea class="field" data-ogf="description" maxlength="4000" placeholder="What you do, when you play, what you expect from members…">${esc(f.description||"")}</textarea></label>
+      <div class="wide"><b style="font-size:12.5px">About the org</b> <span class="muted" style="font-size:12px">Write it like a normal message, or use the buttons (or HTML) for headings, bold, lists, links and pictures${f.verified?"":" from Imgur, Discord, RSI or the Star Citizen Wiki. Links become clickable once your org is verified with RSI"}.</span>
+        <div class="og-rtb">${[["b","<b>B</b>","Bold"],["i","<i>I</i>","Italic"],["u","<u>U</u>","Underline"],["s","<s>S</s>","Strikethrough"],["h2","H2","Heading"],["h3","H3","Smaller heading"],["center","Centre","Centre"],["ul","• List","Bullet list"],["ol","1. List","Numbered list"],["blockquote","❝","Quote"],["a","Link","Link"],["img","Picture","Picture from a link"],["hr","―","Divider"],["color","Colour","Coloured text"]].map(([k,l,t])=>`<button class="btn small ghost" type="button" data-ogrt="${k}" title="${t}">${l}</button>`).join("")}</div>
+        <textarea class="field og-rich-edit" data-ogf="about" maxlength="20000" placeholder="What you do, when you play, what you expect from members…">${esc(f.about||"")}</textarea>
+        <div class="muted" style="font-size:11.5px;margin:6px 0 4px">Preview</div><div class="og-rich-prev og-rich" id="og-rich-prev">${richSafe(f.about||"",f.verified,true)||'<span class="muted">Nothing yet.</span>'}</div></div>
+      ${isNew?"":`<div class="wide"><b style="font-size:12.5px">Banner</b> <span class="muted" style="font-size:12px">One wide picture across the top of your org's page. Saved as soon as you pick it.</span>
+        ${f.bannerPreview||f.banner?`<div class="og-banner og-banner-prev${S.og.banSaving?" saving":""}" style="background-image:url('${esc(f.bannerPreview||f.banner)}')"></div>`
+          :`<div class="og-banner-empty" data-ogbanpick="1">No banner yet: click to choose a picture. Any picture works; it's cropped from the middle to banner shape.</div>`}
+        <div class="pm-acts"><button class="btn small" type="button" data-ogbanpick="1" ${S.og.banSaving?"disabled":""}>${S.og.banSaving?`<span class="spin-sm"></span>Uploading…`:f.banner?"Change banner":"Upload a banner"}</button>${f.banner&&!S.og.banSaving?`<button class="btn small ghost" type="button" data-ognoban="1">Remove</button>`:""}
+          ${S.og.banMsg?`<span style="font-size:12.5px;color:${S.og.banMsg.ok?"#9fe0b4":"#ffb3b3"}">${esc(S.og.banMsg.text)}</span>`:""}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-ogbanfile="1" hidden></div>`}
       <div class="wide"><div class="pm-photo">${ogLogo({logo:f.logoData||f.logo,tag:f.tag||"?"})}<div style="display:flex;flex-direction:column;gap:6px"><b style="font-size:12.5px">Logo</b><span class="muted" style="font-size:12px">A square picture works best.</span>
         <div class="pm-acts"><button class="btn small" type="button" data-ogpick="1">${f.logoData||f.logo?"Change logo":"Upload a logo"}</button>${f.logoData||f.logo?`<button class="btn small ghost" type="button" data-ognologo="1">Remove</button>`:""}</div>
         <input type="file" accept="image/png,image/jpeg,image/webp" data-ogfile="1" hidden></div></div></div>
@@ -8155,9 +8493,10 @@ function ogOrgHtml(){ const d=S.og.data; if(!d) return `<div class="og-body"><di
   if(d.error) return `<div class="og-body"><div class="note">${esc(d.error)}</div></div>`;
   const o=d.org, perms=new Set(d.perms||[]), now=Date.now()/1000;
   const up=(d.events||[]).filter(e=>e.starts+(e.minutes||60)*60>now), online=(d.members||[]).filter(m=>m.online).length;
-  const hero=`<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
-    <div class="og-stats"><span><b>${o.members}</b> member${o.members===1?"":"s"}</span>${d.member?`<span><b>${online}</b> online</span><span>Your rank: ${ogRankIcon((d.ranks||[]).find(r=>r.id===d.my_rank),16)} <b>${esc(o.my_rank||"")}</b>${perms.has("owner")?" · Owner":""}</span>${up[0]?`<span>Next: <b>${esc(up[0].title)}</b> ${ogTime(up[0].starts)}</span>`:""}`:`<span>${o.recruiting?"Recruiting":"Invite only"}</span>`}</div></div></div>`;
-  if(!d.member) return hero+`<div class="og-body"><div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div><div class="og-desc">${o.description?ogLinks(o.description,o.verified):"No description yet."}</div>
+  const hero=`${o.banner?`<div class="og-banner" style="background-image:url('${esc(o.banner)}')"></div>`:""}<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
+    <div class="og-stats"><span><b>${o.members}</b> member${o.members===1?"":"s"}</span>${d.member?`<span><b>${online}</b> online</span><span>Your rank: ${ogRankIcon((d.ranks||[]).find(r=>r.id===d.my_rank),16)} <b>${esc(o.my_rank||"")}</b>${perms.has("owner")?" · Owner":""}</span>${up[0]?`<span>Next: <b>${esc(up[0].title)}</b> ${ogTime(up[0].starts)}</span>`:""}`:`<span>${o.recruiting?"Recruiting":"Invite only"}</span>`}</div></div>
+    ${o.verified&&o.rsi_url?`<div class="og-rsi"><button class="btn small" data-ogurl="${esc(o.rsi_url)}" title="${esc(o.rsi_url)}">View ${esc(o.tag)} on RSI</button>${!d.member&&o.recruiting?`<span class="muted">Apply on RSI too, so you show in their roster in game</span>`:""}</div>`:""}</div>`;
+  if(!d.member) return hero+`<div class="og-body"><div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div>${ogAboutHtml(o)}
       ${d.ranks?.length?`<div class="pm-sec">Ranks</div>${d.ranks.map(r=>`<div class="og-rank"><div class="top">${ogRankIcon(r,28)}<b>${esc(r.name)}</b></div>${r.requirements?`<div class="req">${esc(r.requirements)}</div>`:""}</div>`).join("")}`:""}</div>
     <div><div class="pm-box">${d.pending==="invite"?`<div>You've been invited to join.</div><button class="btn primary" data-ogjoininv="1">Join ${esc(o.name)}</button>`
       :d.pending==="request"?`<div>Your request to join is waiting for an answer.</div>`
@@ -8174,7 +8513,7 @@ function ogOrgHtml(){ const d=S.og.data; if(!d) return `<div class="og-body"><di
   const body=t==="members"?ogMembersHtml(d):t==="ranks"?ogRanksHtml(d):t==="calendar"?ogCalHtml(d):t==="settings"?ogSettingsHtml(d):ogOverviewHtml(d,up);
   return hero+`<div class="og-tabs">${tabs.map(([k,n])=>`<button data-ogtab="${k}" class="${t===k?"on":""}">${n}${k==="members"&&reqs?`<span class="so-n">${reqs}</span>`:""}</button>`).join("")}</div><div class="og-body">${body}</div>`; }
 function ogOverviewHtml(d,up){ const on=d.members.filter(m=>m.online);
-  return `<div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div><div class="og-desc">${d.org.description?ogLinks(d.org.description,d.org.verified):"No description yet."}</div>
+  return `<div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div>${ogAboutHtml(d.org)}
       <div class="pm-sec">Coming up</div>${up.length?up.slice(0,4).map(e=>ogEvCard(e,d)).join(""):`<div class="so-empty">Nothing planned yet.${new Set(d.perms).has("events")?" Add an event under Calendar.":""}</div>`}</div>
     <div><div class="pm-box"><div class="k">Online now · ${on.length}</div>${on.length?on.map(m=>{ const rk=d.ranks.find(r=>r.id===m.rank); return `<div class="pm-seller">${soAvDot(m)}<div class="who" style="flex:1;min-width:0"><b class="up-name" data-upid="${esc(m.id)}">${esc(m.name)}</b><small class="${m.playing?"playing":""}">${esc(soPresence(m))}</small></div>${rk?`<span class="row" style="gap:6px;font-size:12.5px;color:var(--ink-2);flex:none">${ogRankIcon(rk,22)}${esc(rk.name)}</span>`:""}</div>`; }).join(""):`<div class="muted" style="font-size:12.5px">Nobody's online right now.</div>`}</div></div></div>`; }
 function ogEvCard(e,d){ const dt=new Date(e.starts*1000), perms=new Set(d.perms), past=e.starts+(e.minutes||60)*60<Date.now()/1000;
@@ -8260,7 +8599,7 @@ function ogEvFormHtml(d){ const f=S.og.evForm, pad=n=>String(n).padStart(2,"0"),
       <div class="pm-acts"><button class="btn small" type="button" data-ogsship="1">+ Add a ship</button><button class="btn small ghost" type="button" data-ogsadd="1">+ Add a role without a ship</button></div></div>
     <div class="wide pm-acts"><button class="btn small primary" data-ogesave="1">${f.id?"Save event":"Add to calendar"}</button><button class="btn small ghost" data-ogecancel="1">Cancel</button></div></div></div>`; }
 function ogSettingsHtml(d){ const perms=new Set(d.perms), o=d.org;
-  if(!S.og.form||S.og.form.id!==o.id) S.og.form={id:o.id,name:o.name,tag:o.tag,slogan:o.slogan||"",description:o.description||"",recruiting:o.recruiting,listed:o.listed!==false,logo:o.logo,verified:o.verified};
+  if(!S.og.form||S.og.form.id!==o.id) S.og.form={id:o.id,name:o.name,tag:o.tag,slogan:o.slogan||"",description:o.description||"",about:o.about_src??o.description??"",recruiting:o.recruiting,listed:o.listed!==false,logo:o.logo,banner:o.banner,verified:o.verified};
   let h="";
   if(perms.has("owner")){ const c=d.claim;
     h+=`<div class="pm-sec" style="margin-top:0">RSI verification</div><div class="pm-box" style="max-width:760px;margin-bottom:6px">`+(o.verified
@@ -8281,7 +8620,7 @@ function ogSettingsHtml(d){ const perms=new Set(d.perms), o=d.org;
 // ---- actions
 function ogArm(key,fn){ if(S.og.arm===key){ S.og.arm=null; return fn(); } S.og.arm=key; ogRender(); setTimeout(()=>{ if(S.og.arm===key){ S.og.arm=null; ogRender(); } },3500); }
 function ogWire(P){ const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)) el.onclick=e=>fn(el,e); }, d=S.og.data, oid=d?.org?.id;
-  on("[data-ognew2]",()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",description:"",recruiting:true}; ogPane(); ogRender(); });
+  on("[data-ognew2]",()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",about:"",recruiting:true}; ogPane(); ogRender(); });
   on("[data-ogfind2]",()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); });
   on("[data-ogback]",()=>{ S.og.view=S.og.cur?"org":"home"; S.og.formErr=null; ogPane(); ogRender(); });
   on("[data-ogopen2]",el=>{ S.og.tab="overview"; ogOpen(+el.dataset.ogopen2); });
@@ -8294,8 +8633,34 @@ function ogWire(P){ const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)
   on("[data-ogpick]",()=>P.querySelector("[data-ogfile]").click());
   const fi=P.querySelector("[data-ogfile]"); if(fi) fi.onchange=async()=>{ const file=fi.files[0]; if(!file) return; try{ f.logoData=await pmShrink(file); f.logoRemove=false; ogRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
   on("[data-ognologo]",()=>{ f.logoData=null; f.logo=null; f.logoRemove=true; ogRender(); });
+  // About page editor: toolbar wraps the selection in tags; the preview follows as you type
+  const ed=P.querySelector('[data-ogf="about"]'), pv=P.querySelector("#og-rich-prev");
+  const prev=()=>{ if(pv) pv.innerHTML=richSafe(f.about||"",f.verified,true)||'<span class="muted">Nothing yet.</span>'; };
+  if(ed) ed.addEventListener("input",()=>{ f.about=ed.value; prev(); });
+  on("[data-ogrt]",el=>{ if(!ed) return; const k=el.dataset.ogrt, a=ed.selectionStart, b=ed.selectionEnd, sel=ed.value.slice(a,b);
+    let ins;
+    // Links and pictures go in with "https://" selected, ready to paste the address over
+    if(k==="a"||k==="img"){ ins=k==="a"?`<a href="https://">${sel||"link text"}</a>`:`<img src="https://" alt="${sel.replace(/"/g,"")}">`;
+      ed.setRangeText(ins,a,b,"start"); const at=a+ins.indexOf("https://"); ed.focus(); ed.setSelectionRange(at,at+8); f.about=ed.value; prev(); return; }
+    else if(k==="color"){ ins=`<span style="color:#7fe7ff">${sel||"text"}</span>`; }
+    else if(k==="hr"||k==="br") ins=`<${k}>`;
+    else if(k==="ul"||k==="ol") ins=`<${k}>\n${(sel||"Item").split("\n").map(x=>`  <li>${x}</li>`).join("\n")}\n</${k}>`;
+    else ins=`<${k}>${sel||""}</${k}>`;
+    ed.setRangeText(ins,a,b,"end"); ed.focus(); f.about=ed.value; prev(); });
+  on("[data-ogbanpick]",()=>P.querySelector("[data-ogbanfile]")?.click());
+  const bf=P.querySelector("[data-ogbanfile]"); if(bf) bf.onchange=async()=>{ const file=bf.files[0]; bf.value=""; if(!file) return; let data;
+    try{ data=await ogShrinkWide(file); }catch(_){ S.og.banMsg={ok:false,text:"That file isn't a picture Quantum can read (PNG, JPEG or WebP)."}; return ogRender(); }
+    f.bannerPreview=data; S.og.banSaving=true; S.og.banMsg=null; ogRender();      // shown straight away, saved behind it
+    let r; try{ r=await ogCall("banner",{org:f.id,banner:data}); }catch(e){ r={ok:false,error:"Couldn't reach Quantum"}; }
+    S.og.banSaving=false;
+    if(!r.ok){ f.bannerPreview=null; S.og.banMsg={ok:false,text:`Not saved: ${r.error||"the server didn't take it"}`}; return ogRender(); }
+    f.banner=r.org?.banner||null; f.bannerPreview=null; S.og.data=r; S.og.banMsg={ok:true,text:"Banner saved: it's at the top of your org's page."}; ogRender(); };
+  on("[data-ognoban]",async()=>{ const r=await ogCall("banner",{org:f.id,remove:true}); if(!r.ok){ S.og.banMsg={ok:false,text:r.error}; return ogRender(); }
+    f.banner=null; f.bannerPreview=null; S.og.data=r; S.og.banMsg={ok:true,text:"Banner removed."}; ogRender(); });
   on("[data-ogsave]",async()=>{ S.og.saving=true; S.og.formErr=null; ogRender();
-    const body={name:f.name,tag:f.tag,slogan:f.slogan,description:f.description,recruiting:f.recruiting!==false,listed:f.listed!==false,logo:f.logoData||null,logo_remove:!!f.logoRemove};
+    // One About box: the server keeps what you typed, a cleaned page from it, and a plain-text copy for older apps
+    const about=f.about||"", plain=about.replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").slice(0,4000);
+    const body={name:f.name,tag:f.tag,slogan:f.slogan,description:plain,about,recruiting:f.recruiting!==false,listed:f.listed!==false,logo:f.logoData||null,logo_remove:!!f.logoRemove};
     const r=f.id?await ogCall("update",{...body,id:f.id}):await ogCall("create",body); S.og.saving=false;
     if(!r.ok){ S.og.formErr=r.error; return ogRender(); }
     toast(f.id?"Saved":r.claim?`${r.org.name} is created. Put the code on your RSI org page, then press Check now.`:r.rsi==="missing"?`${r.org.name} is created. ${r.org.tag} isn't an org on RSI, so it can't be verified yet: see Settings.`:r.rsi==="unreachable"?`${r.org.name} is created. RSI couldn't be reached to start verifying: try Verify with RSI under Settings.`:`${r.org.name} is created. Invite your crew under Members.`); S.og.form=null; S.og.view="org"; S.og.cur=r.org.id; S.og.data=r; S.og.tab=f.id||r.claim||r.rsi?"settings":"members"; await ogLoadMine(); ogRender(); });
@@ -8375,14 +8740,18 @@ setInterval(()=>{ if(S.tab==="orgs"&&S.og.view==="org"&&S.og.cur&&!S.og.evForm&&
 
 async function poll(){
   const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
-  const fk=JSON.stringify([live.player?.fix_t, live.player?.approx, live.player?.system, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name]);
+  // What re-frames the follow view: a new reading, a change of system, body or travel state, the next stop, and
+  // (with a route, which is framed as you + the next stop) moving a fair way, so the frame keeps up as you fly.
+  const pl=live.player, step=pl?.body?Math.max(5000,(S.bodyMap?.[pl.body]?.radius||1e6)*0.15):2e7;
+  const moved=pl?(pl.local||pl.pos||[]).map(v=>Math.round(v/step)).join(","):"";
+  const fk=JSON.stringify([pl?.fix_t, pl?.approx, pl?.system, pl?.body, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name, (live.route?.length||live.guide)?moved:""]);
   if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
   // A fresh /showlocation while the Contracts tab is open recentres the map on you (and your next stop, if
   // there's a route), even when follow is off: it's how you check where you are against your objectives.
   { const fx=live.player?.fix_t||null; if(fx!==S.fixSeen){ const first=S.fixSeen===undefined; S.fixSeen=fx;
       // Guiding you to a waypoint: a fresh /showlocation turns following back on, so the map tracks you along the way
-      if(!first&&fx&&live.guide&&!S.follow){ setFollow(true); setTimeout(followNow,60); }
-      else if(!first&&fx&&S.tab==="contracts"&&!S.follow) setTimeout(followNow,60); } }
+      // Any fresh /showlocation is you asking where you are: centre on it, and keep following from there
+      if(!first&&fx&&!live.player?.approx){ if(!S.follow) setFollow(true); S.anim=null; setTimeout(followNow,60); } } }
   watchNewObjectives(live);
   // settings.json couldn't be read at start: say so once, long enough to read
   if(live.settings_note&&!S.settingsNoted){ S.settingsNoted=true; toast(live.settings_note); clearTimeout(toastT);
@@ -8402,7 +8771,7 @@ async function poll(){
   if(ck!==S.contractsKey||Math.round(live.now)%30===0){ S.contractsKey=ck; renderContracts(); }
   const ar=live.arrived; if(ar&&ar.at!==S.arrSeen){ if(S.arrSeen!==undefined) toast(ar.advanced?`Arrived at ${ar.place}${live.route.length?". Next: "+live.route[0]:". Route complete"}`:`Arrived at ${ar.place}`); S.arrSeen=ar.at; }
   renderHud(); renderStatus(); renderCapture(); renderWaypoints(false);
-  if(S.qVersion===undefined){ S.qVersion=""; api().update_status().then(st=>{ S.qVersion=st.current; if(st.just_updated) toast(`Quantum updated to ${st.current}`); }); }
+  if(S.qVersion===undefined){ S.qVersion=""; api().update_status().then(st=>{ S.qVersion=st.current; S.qBuild=st.build||""; if(st.just_updated) toast(`Quantum updated to ${st.current}`); }); }
   if((live.update?.version||null)!==(S.updSeen||null)){ S.updSeen=live.update?.version||null; renderUpdateBar(); }
   if((live.game_update?.build||null)!==(S.gameUpdSeen||null)){ S.gameUpdSeen=live.game_update?.build||null; renderGameUpdate(); }
   S.drHasSecret=!!live.datarunner?.has_secret;
