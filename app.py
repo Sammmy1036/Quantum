@@ -6347,6 +6347,29 @@ class Api:
             print("paints page:", e, flush=True)
         out = [x for x in out if not self._paint_not_for(x["name"], fam)]
         out = [x for x in out if self._paint_fits_mark(x.get("_hay") or x["name"], v.get("name") or ship_name, fam)]
+        # The same paint under two names (UEX's 'Constellation Blackthorne Livery' and the wiki's 'Constellation
+        # Mk V Blackthorne Paint') is listed once: the paint's own words decide, ship and filler words left out.
+        ship_words = set(re.findall(r"[a-z0-9]+", f"{v.get('name') or ship_name or ''} {fam or ''}".lower()))
+        filler = {"livery", "liveries", "paint", "paints", "skin", "mk", "mark", "series", "rsi", "the", "edition",
+                  "i", "ii", "iii", "iv", "v", "1", "2", "3", "4", "5"}
+        keyed, uniq = {}, []
+        for x in out:
+            words = frozenset(re.findall(r"[a-z0-9]+", x["name"].lower())) - filler - ship_words
+            k = words or x["name"].lower()
+            a = keyed.get(k)
+            if a is None:
+                keyed[k] = x
+                uniq.append(x)
+                continue
+            keep, drop = (a, x) if (a["source"] == "uex") >= (x["source"] == "uex") else (x, a)
+            for f in ("image", "file", "store"):
+                if drop.get(f) and not keep.get(f):
+                    keep[f] = drop[f]
+            keep["buy"] = keep.get("buy") or drop.get("buy") or []
+            if keep is not a:
+                uniq[uniq.index(a)] = keep
+                keyed[k] = keep
+        out = uniq
         for x in out:
             x.pop("_hay", None)
         out.sort(key=lambda x: x["name"].lower())

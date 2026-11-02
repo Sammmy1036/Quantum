@@ -1161,6 +1161,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .ph-art .ph-art-ic{width:34%;height:auto;max-height:62%;fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
 .mkp-img .pic-none.art{position:absolute;inset:0;justify-content:center;gap:10px;color:#6f8fb8}
 .pic-none.art .ph-art-ic{width:34%;max-height:52%;fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}
+.ph-art .ph-art-ic.ph-cig,.pic-none.art .ph-art-ic.ph-cig{fill:currentColor;stroke:none}
 .set-ver{display:flex;align-items:center;gap:12px;margin:-4px 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2)}
 .set-ver .v{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;font-size:13px}.set-ver .v .muted{font-size:11.5px}.set-ver .btn{flex:none}
 .bp-grid-bg{background-color:#08142a;background-image:linear-gradient(rgba(140,196,255,.10) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.10) 1px,transparent 1px),linear-gradient(rgba(140,196,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(140,196,255,.05) 1px,transparent 1px);background-size:48px 48px,48px 48px,12px 12px,12px 12px;background-position:-1px -1px}
@@ -1221,6 +1222,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 /* the Ships section's four tabs on one row */
 .tabs:has(.tab[data-tab="ccu"]:not(.off-group)){flex-wrap:nowrap}
 .tabs:has(.tab[data-tab="ccu"]:not(.off-group)) .tab{padding:6px clamp(8px,2.4cqi,12px)}
+.tabs:has(.tab[data-tab="pm-standing"]:not(.off-group)) .tab{padding:6px clamp(8px,2.4cqi,12px)}
 .cc-pic{aspect-ratio:16/9;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(135deg,var(--panel-3),var(--panel));display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:12.5px;position:relative}
 .cc-pic img{width:100%;height:100%;object-fit:cover}
 .cc-pic .cc-cap{position:absolute;left:0;right:0;bottom:0;padding:22px 14px 10px;background:linear-gradient(transparent,rgba(3,6,12,.92));display:flex;align-items:flex-end;gap:10px}
@@ -1386,7 +1388,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 @container pic (max-width:860px){.og-grid2{grid-template-columns:1fr}}
 .og-desc{white-space:pre-wrap;color:var(--ink-2);line-height:1.55}
 .og-banner{height:180px;background:#0b1730 center/cover no-repeat;border-bottom:1px solid var(--line)}
-.og-hero{flex-wrap:wrap}.og-rsi{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;align-self:center}
+.og-hero{flex-wrap:wrap}.og-rsi-btn{display:inline-flex;align-items:center;justify-content:center;width:52px;height:40px;padding:0}.og-rsi-btn svg{width:40px;height:40px}.og-rsi{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;align-self:center}
 .og-banner-prev{border-radius:8px;margin:6px 0;transition:opacity .2s}.og-banner-prev.saving{opacity:.55}
 .og-banner-empty{height:120px;margin:6px 0;border:1px dashed var(--line-2);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 20px;color:var(--dim);font-size:12.5px;cursor:pointer}
 .og-banner-empty:hover{border-color:var(--route-2,#7fe7ff);color:var(--ink-2)}
@@ -1477,7 +1479,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <button class="rail-btn" data-group="navigate" title="Home: the map, your route, waypoints and contracts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/></svg>Home</button>
     <button class="rail-btn" data-group="trade" title="Commodities and trade routes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
     <button class="rail-btn" data-group="data" title="Datarunner: report prices, jobs, your reports and the leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5 1 0 1.9-.1 2.7-.2"/><path d="M17.5 15v6M15 18.5l2.5 2.5 2.5-2.5"/></svg>Data</button>
-    <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c1.6 1.4 2.6 3.6 2.8 6.4l.2 3.1 4.5 3.2v2.3l-4.6-1.3-.4 2.3 1.7 1.6v1.4l-4.2-1-4.2 1v-1.4l1.7-1.6-.4-2.3-4.6 1.3v-2.3L9 12l.2-3.1c.2-2.8 1.2-5 2.8-6.4z"/><path d="M12 7.5v3.5"/></svg>Ships</button>
+    <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/></svg>Ships</button>
     <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
     <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
     <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
@@ -1518,7 +1520,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
       <button class="tab" role="tab" data-group="cart" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-items" aria-selected="false" title="Items other players are selling">Items</button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-services" aria-selected="false" title="Services other players offer: protection, hauling, mining…">Services</button>
-      <button class="tab" role="tab" data-group="exchange" data-tab="pm-mine" aria-selected="false" title="Your listings and trades">My Listings <span class="count" id="c-pm-mine" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="exchange" data-tab="pm-mine" aria-selected="false" title="Your listings, requests and trades">Listings <span class="count" id="c-pm-mine" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="exchange" data-tab="pm-standing" aria-selected="false" title="Your trader rating, reviews and trust">Standing</button>
       <button class="tab" role="tab" data-group="org" data-tab="orgs" aria-selected="false">Orgs</button>
       <button class="tab" role="tab" data-group="social" data-tab="friends" aria-selected="false" title="Your friends, friend requests and messages">Friends <span class="count" id="c-friends" hidden>0</span></button>
       <button class="tab" role="tab" data-group="profile" data-tab="profile" aria-selected="false">Profile</button>
@@ -1656,6 +1659,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <section class="pane" id="pane-pm-items"></section>
     <section class="pane" id="pane-pm-services"></section>
     <section class="pane" id="pane-pm-mine"></section>
+    <section class="pane" id="pane-pm-standing"></section>
     <section class="pane" id="pane-shopping">
       <div class="row" style="gap:6px;align-items:flex-end"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
         <button class="btn primary" id="sh-plan">Update route</button></div>
@@ -3438,7 +3442,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";
@@ -3455,7 +3459,8 @@ for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",syn
 // The Consumables tabs are one list, filtered by kind
 for(const t of document.querySelectorAll(".tab[data-ckind]")) t.addEventListener("click",()=>{ const st=grState("consumables");
   if(st.ckind===t.dataset.ckind&&!st.sel) return; st.ckind=t.dataset.ckind; st.sel=null; st.mission=null; st.gridKey=null;
-  const sel=$("gr-cat-consumables"); if(sel) sel.value=""; if(st.data) grRender("consumables"); });
+  for(const id of ["cat","mk"]){ const sel=$(`gr-${id}-consumables`); if(sel) sel.value=""; }
+  grCkFilters(); if(st.data){ grFillFilters("consumables"); grRender("consumables"); } });
 syncRail();
 
 // =================================================================== Upgrades (CCUs)
@@ -4020,7 +4025,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&S.up) upClose(); }
 const PF_ARR={fleet:{key:"ships",noun:"ship",sec:"My fleet",title:"My fleet on your profile",open:["openfleet","Open My Fleet"],empty:"No ships in My Fleet yet."},
   gearlo:{key:"gearlo",noun:"loadout",sec:"My personal loadouts",title:"Gear loadouts on your profile",open:["opengearlo","Open Gear › Loadouts"],empty:"No gear loadouts yet."},
   orgs:{key:"orgs",noun:"org",sec:"My orgs",title:"My orgs on your profile",open:["openorgs","Open Org"],empty:"You're not in an org yet."},
-  listings:{key:"listings",noun:"listing",sec:"My listings",title:"My listings on your profile",open:["openmarket","Open My Listings"],empty:"Nothing up for sale right now."}};
+  listings:{key:"listings",noun:"listing",sec:"My listings",title:"My listings on your profile",open:["openmarket","Open your listings"],empty:"Nothing up for sale right now."}};
 const PF_KEYV={ships:"fleet",gearlo:"gearlo",orgs:"orgs",listings:"listings"};
 function pfArrList(key){
   if(key==="ships") return {list:S.pfFleet||[],idOf:x=>x.uid};
@@ -6211,15 +6216,20 @@ const PH_ART={
   clothing:'<path d="M8.5 3.5L4 6l1.5 4.5L7.5 10V20.5h9V10l2 .5L20 6l-4.5-2.5c-.6 1.6-1.9 2.5-3.5 2.5s-2.9-.9-3.5-2.5z"/>',
   food:'<path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8.5 8.5c0-1.5 1-1.5 1-3M12 8.5c0-1.5 1-1.5 1-3M15.5 8.5c0-1.5 1-1.5 1-3"/>',
   drink:'<path d="M9.5 3h5v3l1.5 2.5V20a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V8.5L9.5 6z"/><path d="M8 11h8M8 16h8"/>',
-  medical:'<rect x="3.5" y="9" width="13" height="6" rx="1.5" transform="rotate(-35 10 12)"/><path d="M15.5 6.5l3-2M17.5 9l3.5-1"/><path d="M9 10.5v3M7.5 12h3"/>',
+  medical:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
   gadget:'<path d="M14.5 5.5a4 4 0 0 0-5 5L3.5 16.5l3 3 6-6a4 4 0 0 0 5-5l-2.5 2.5-2.5-.5-.5-2.5z"/>',
-  key:'<rect x="3.5" y="6" width="17" height="12" rx="2"/><rect x="6.5" y="9" width="5" height="4" rx=".8"/><path d="M14 10h4M14 13h3M6.5 15.5h11"/>',
+  key:'<rect x="1.5" y="5" width="21" height="14" rx="2" transform="rotate(-14 12 12)" fill="currentColor" fill-opacity=".3"/>',
   component:'<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/>',
-  vehicle:'<path d="M12 2.5c1.6 1.4 2.6 3.6 2.8 6.4l.2 3.1 4.5 3.2v2.3l-4.6-1.3-.4 2.3 1.7 1.6v1.4l-4.2-1-4.2 1v-1.4l1.7-1.6-.4-2.3-4.6 1.3v-2.3L9 12l.2-3.1c.2-2.8 1.2-5 2.8-6.4z"/><path d="M12 7.5v3.5"/>',
+  vehicle:'<path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/>',
   box:'<rect x="4" y="6" width="16" height="13" rx="1.5"/><path d="M4 10h16M10 13.5h4"/>'};
 const PH_ART_OF={commodity:"commodity",vehicle:"vehicle",component:"component"};
 const PH_LABEL={commodity:"Commodity",weapon:"Weapon",armor:"Armor",clothing:"Clothing",food:"Food",drink:"Drink",medical:"Medical",gadget:"Gadget",key:"Key",component:"Component",vehicle:"Ship",box:"Item"};
-function phSvg(art){ return `<svg class="ph-art-ic" viewBox="0 0 24 24" aria-hidden="true">${PH_ART[art]||PH_ART.box}</svg>`; }
+// CIG's own icons (from the Star Citizen Wiki) for weapons, armor and gadgets: filled, 50×50, in the theme's colour
+const PH_CIG={weapon:{vb:"0 0 50 50",inner:'<path d="M50 9.5v-.9l-1.7-1.1h-2.2c0 .2-.2.4-.4.4h-2.5c-.2 0-.4-.2-.4-.4H31.1l.1.5h-8.5l-.6-.5H4.5L1.7 9.1c-.3.2-.5.4-.7.7l-.7 1.5V14l.7.8v1.1l5 2.3s1.2 2.5-.8 6-3.4 4.6-5 12.5c0 0-.8 3 1 3.7 0 0-.1.5.3.8l-.3.9s0 .3 1.5.4 7.8 0 7.8 0 2.7-.1 2.7-2.1l.5-2.2s-.7-.5-.2-2.5c.5-2 1.4-4.8 1.4-4.8s.2-1.2 1.3-1.7.4-1.1.4-1.1-.4-1.5.6-3.6l.4-.8s2.1-1.5 4.2.1h6.6l4.4-4.8 2.3-.7h11.4l.3-.4h.2l.5-.5h.7s.8-.1.8-1.1l-.1-2.3h.2l.5-1.3-.2-.2V12l-.2-.3s.5-.6.5-1.4l.3-.8zm-22.3 6.4 2.5 2.1-.2 2.4-1.8 2.1h-3.6l.1-.4-.1-.4s-2.5-1.1-1.9-5.8h5z"/>'},armor:{vb:"0 0 50 50",inner:'<path d="m43 32.1-8.3 5.4-6.1-2.6.1-5.4 12.5-2.9 2.1-.7-1.1-6.8-1.3-.1 1.6-10-.1-1.4c-2.6-2.8-5.5-5.1-8.4-6C30.1.3 25 0 25 0s-5.1.3-8.9 1.6c-2.9.9-5.7 3.2-8.4 6L7.6 9l1.6 10-1.5.1-1 6.8 2 .8 12.5 2.9.1 5.4-6.1 2.6L7 32.2l-1.4 4.9 6.1 6.8 4 1.1 3 4.9h12.6l3-4.9 4-1.1 6.1-6.8-1.4-5zM28.4 43h-6.9l-.8-1.8 2.3-3.9h4l2.3 3.9-.9 1.8z"/>'},
+  gadget:{vb:"0 0 50 50",inner:'<path d="M24.8 16.2c-1.2.4-2.3 1-3.2 1.9-.8.8-1.4 1.7-1.8 2.7s-.5 2-.5 3.1c.1 1.2-.3 2.3-1.1 3.1L1 44.3c-.6.6-1 1.4-1 2.4 0 .9.3 1.7 1 2.3.6.6 1.4 1 2.4 1 .9 0 1.7-.3 2.3-1l16.6-16.6c1.2-1.2 2.3-1.6 3.4-1.5 1.2.2 2.4.1 3.5-.2 1.2-.4 2.2-1 3.1-1.9 1-1 1.6-2.1 2-3.5.3-1.3.3-2.6 0-3.9 0-.2-.1-.3-.2-.3-.1-.1-.3 0-.5.1L30.8 24c-.5.5-1.1.7-1.8.7s-1.3-.2-1.8-.7L26 23c-.5-.5-.7-1.1-.7-1.8s.2-1.3.7-1.8l2.7-2.7c.4-.4.3-.6-.3-.7-1.3-.2-2.5-.2-3.6.2m-4.5 12.3c.2-.2.5-.3.8-.3s.6.1.8.3c.2.2.3.5.3.8s-.1.6-.3.8L4.7 47.2c-.2.2-.5.3-.8.3s-.6-.1-.8-.3-.3-.5-.3-.8.1-.6.3-.8l17.2-17.1M45.4 9.2c0-.2-.1-.4-.2-.6l-3.8-3.8c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2l-3 3c-2.1-1.4-4.4-2.3-6.9-2.8V.8c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2h-5.4c-.2 0-.4.1-.5.2-.2.1-.2.3-.2.5v4.3c-2.5.6-4.7 1.5-6.8 2.9l-3.1-3.1c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2L8.7 8.7c-.1.1-.2.3-.2.5s.1.4.2.6l3.1 3.1C10.4 15 9.5 17.2 9 19.6H4.6c-.2 0-.4.1-.5.2-.1.2-.2.4-.2.6v5.4c0 .2.1.4.2.6.1.1.3.2.5.2h4.5c.3 1.5.8 3 1.4 4.3l3.9-3.9c-.7-2.3-.8-4.6-.2-7s1.7-4.5 3.5-6.2c2.6-2.6 5.7-3.8 9.3-3.8s6.7 1.3 9.3 3.8c2.6 2.6 3.9 5.7 3.9 9.3s-1.3 6.7-3.9 9.3c-1.8 1.8-3.9 2.9-6.3 3.5s-4.7.5-7-.3l-3.9 3.9c1.4.7 2.9 1.2 4.4 1.5v4.4c0 .2.1.4.2.6.2.1.3.2.5.2h5.4c.2 0 .4-.1.6-.2.1-.2.2-.3.2-.6V41c2.5-.5 4.8-1.4 6.8-2.8l3.1 3c.2.2.3.2.6.2s.4-.1.5-.2l3.8-3.8c.2-.2.2-.3.2-.6s-.1-.4-.2-.6l-3-3c1.4-2.1 2.4-4.3 2.9-6.9h4.2c.2 0 .4-.1.6-.2.2-.2.2-.3.2-.6v-5.4c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2H45c-.5-2.4-1.4-4.7-2.9-6.9l3-3c.2.1.3 0 .3-.3z"/>'}};
+function phSvg(art){ const c=PH_CIG[art];
+  if(c) return `<svg class="ph-art-ic ph-cig" viewBox="${esc(c.vb)}" aria-hidden="true">${c.inner}</svg>`;
+  return `<svg class="ph-art-ic" viewBox="0 0 24 24" aria-hidden="true">${PH_ART[art]||PH_ART.box}</svg>`; }
 // For a grid card: the drawing alone (the card says what it is)
 function phCard(art){ return `<span class="ph-art">${phSvg(art)}</span>`; }
 // The kind of drawing for a piece of gear, by its tab and what it is
@@ -7575,9 +7585,9 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
   p.innerHTML=`<input class="search" id="gr-q-${kind}" placeholder="${esc(G.ph)}" autocomplete="off">
     ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="sets" class="on">Sets</button><button data-grview="items">Single pieces</button></div>`:""}
     <div class="cp-filters">
-      <label><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
+      <label${kind==="consumables"?" hidden":""}><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
       ${G.subLab?`<label><span>${esc(G.subLab)}</span><select class="field" id="gr-sub-${kind}"><option value="">Any</option></select></label>`:""}
-      ${kind!=="blueprints"?`<label><span>Maker</span><select class="field" id="gr-mk-${kind}"><option value="">Any</option></select></label>
+      ${kind!=="blueprints"?`<label id="gr-mkw-${kind}"${kind==="utility"?" hidden":""}><span>Maker</span><select class="field" id="gr-mk-${kind}"><option value="">Any</option></select></label>
       <label><span>Where</span><select class="field" id="gr-av-${kind}"><option value="">Anywhere</option><option value="buy">Sold in shops</option><option value="noshop">Not in shops</option></select></label>`:""}
       <label class="wide"><span>Sort</span><select class="field" id="gr-sort-${kind}">${G.sorts.map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join("")}</select></label>
     </div>
@@ -7586,13 +7596,20 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
     <div id="gr-list-${kind}"></div>
     <div class="uex-credit" id="gr-credit-${kind}"></div>`;
   const re=()=>{ grState(kind).sel=null; grState(kind).mission=null; grRender(kind); };
+  grCkFilters();
   $(`gr-q-${kind}`).addEventListener("input",re);
   for(const id of ["cat","sub","mk","av","sort"]){ const el=$(`gr-${id}-${kind}`); if(el) el.addEventListener("change",re); }
   $(`gr-reset-${kind}`).onclick=()=>{ for(const id of ["q","cat","sub","mk","av"]){ const el=$(`gr-${id}-${kind}`); if(el) el.value=""; } re(); };
   p.addEventListener("click",e=>{ const v=e.target.closest("[data-grview]"); if(v){ const st=grState(kind); st.view=v.dataset.grview; st.sel=null;
       for(const b of p.querySelectorAll("[data-grview]")) b.classList.toggle("on",b===v); return grRender(kind); }
     const h=e.target.closest("[data-gi],[data-gset]"); if(h){ grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); } }); }
-function grFillFilters(kind){ const G=GEAR[kind], L=grState(kind).data?.items||[];
+// Consumables: no Kind filter (the Food / Drink / Medical tab is the kind), and Maker only on Medical (food and
+// drinks don't say who makes them)
+function grCkFilters(){ const w=$("gr-mkw-consumables"); if(w) w.hidden=grState("consumables").ckind!=="Medical"; }
+// In Consumables the Food / Drink / Medical tab already picks the kind, so the lists only offer what's in that tab
+const grCkOk=(kind,i)=>{ const ck=kind==="consumables"?grState(kind).ckind:null, c=GEAR[kind].cat(i);
+  return !ck||(ck==="Food"?!["Drink","Medical"].includes(c):c===ck); };
+function grFillFilters(kind){ const G=GEAR[kind], L=(grState(kind).data?.items||[]).filter(i=>grCkOk(kind,i));
   const fill=(id,vals)=>{ const el=$(`gr-${id}-${kind}`); if(!el) return; const cur=el.value;
     el.innerHTML=`<option value="">Any</option>`+[...new Set(vals.filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(v)}</option>`).join(""); };
   fill("cat",L.map(G.cat)); if(G.sub) fill("sub",L.map(G.sub)); fill("mk",L.map(i=>i.maker)); }
@@ -7601,7 +7618,7 @@ function grFiltered(kind){ const G=GEAR[kind], st=grState(kind), L=st.data?.item
   const q=v("q").trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean), cat=v("cat"), sub=v("sub"), mk=v("mk"), av=v("av"), sort=v("sort")||"name";
   const text=i=>kind==="blueprints"?`${i.name} ${i.category} ${(i.ingredients||[]).map(x=>x.name).join(" ")}`:`${i.name} ${i.maker} ${i.maker_code||""} ${makerAlias(i.maker)} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`;
   // Consumables: the Food / Drink / Medical tab picks the kind (anything that isn't a drink or medical counts as food)
-  const ck=kind==="consumables"?st.ckind:null, ckOk=i=>!ck||(ck==="Food"?!["Drink","Medical"].includes(G.cat(i)):G.cat(i)===ck);
+  const ckOk=i=>grCkOk(kind,i);
   const out=L.filter(i=>ckOk(i)&&(!cat||G.cat(i)===cat)&&(!sub||!G.sub||G.sub(i)===sub)&&(!mk||i.maker===mk)&&(!av||(av==="buy")===!!i.buy?.length)
     &&(!words.length||(t=>cpQueryHit(t,words.join(" ")))(text(i).toLowerCase())));
   const num=(i,k)=>i.stats?.[k]??-1e9, pr=i=>grPrice(i)??9e12;
@@ -8089,9 +8106,10 @@ const PM_ICON=`<svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 
 const pmPh=(url,cat)=>`<div class="pm-ph">${url?`<img src="${esc(url)}" alt="" loading="lazy" onerror="this.remove()">`:PM_ICON}${cat?`<span class="cat">${esc(cat)}</span>`:""}</div>`;
 async function pmCall(path,body){ let r; try{ r=await api().pm(path,body===undefined?null:body); }catch(e){ r={ok:false,error:"Couldn't reach Quantum"}; } return r; }
 function pmTodo(n){ S.pm.todo=n; const b=$("rail-pm-n"); if(b){ b.textContent=n; b.hidden=!n; } const c=$("c-pm-mine"); if(c){ c.textContent=n; c.hidden=!n; }
-  if(S.pmTodoSeen!==undefined&&n>S.pmTodoSeen) toast("Marketplace: new request (Market › My Listings › Requests)"); S.pmTodoSeen=n; }
+  if(S.pmTodoSeen!==undefined&&n>S.pmTodoSeen) toast("Marketplace: new request (Market › Listings › Requests)"); S.pmTodoSeen=n; }
 function openPm(tab){ if(PM_TAB[tab]){ if(S.pm.kind!==PM_TAB[tab]){ S.pm.kind=PM_TAB[tab]; S.pm.cat=""; S.pm.page=0; S.pm.data=null; } if(!["listing","form"].includes(S.pm.view)||S.pm.listing?.kind!==S.pm.kind) S.pm.view="browse"; pmPane(); pmLoad(); }
-  else if(tab==="pm-mine"){ S.pm.view="mine"; pmPane(); pmLoadMine(); pmLoadEsc(); }
+  else if(tab==="pm-mine"){ if(S.pm.filter==="standing") S.pm.filter="todo"; S.pm.view="mine"; pmPane(); pmLoadMine(); pmLoadEsc(); }
+  else if(tab==="pm-standing"){ S.pm.filter="standing"; S.pm.view="mine"; pmPane(); pmLoadMine(); }
   pmRender(); }
 
 // ---- sidebar
@@ -8108,11 +8126,17 @@ function pmPane(){ const tab=S.tab, P=$("pane-"+tab); if(!P) return;
     let t; P.querySelector(".pm-q").oninput=e=>{ S.pm.q=e.target.value; clearTimeout(t); t=setTimeout(()=>{ S.pm.page=0; S.pm.view="browse"; pmLoad(); },350); };
     P.querySelector(".pm-sort").onchange=e=>{ S.pm.sort=e.target.value; S.pm.page=0; S.pm.view="browse"; pmLoad(); };
     for(const r of P.querySelectorAll("[data-pmcat]")) r.onclick=()=>{ S.pm.cat=r.dataset.pmcat; S.pm.page=0; S.pm.view="browse"; pmPane(); pmLoad(); };
+  } else if(tab==="pm-standing"){ const m=S.pm.mine, rt=m?.rating||{};
+    // The sidebar: the short version, and what moves it
+    P.innerHTML=m&&!m.error?`<div class="so-me"><div class="who" style="min-width:0"><b>${esc(m.me?.name||"You")}</b><div style="font-size:12.5px;margin-top:2px">${pmStars(m.rating)}</div></div>${m.agent?`<span class="pm-badge esc" style="margin-left:auto">Escrow agent</span>`:m.me?.trusted?`<span class="pm-badge ok" style="margin-left:auto">Trusted</span>`:""}</div>
+      <div class="pm-cats"><div class="so-row"><div class="who"><b>Sold</b></div><span class="muted">${rt.sold||0}</span></div><div class="so-row"><div class="who"><b>Bought</b></div><span class="muted">${rt.bought||0}</span></div>
+        <div class="so-row"><div class="who"><b>Ratings</b></div><span class="muted">${rt.count||0}</span></div></div>
+      <div class="pm-rule">Your rating comes from the players you trade with: after a trade is finished, each side rates the other. It shows on your listings and your profile.</div>`
+      :m?.error?`<div class="note" style="font-size:12.5px">${esc(m.error)}</div>`:`<div class="so-empty">Loading…</div>`;
   } else if(tab==="pm-mine"){ const m=S.pm.mine, ts=m?.trades||[];
     const n={todo:ts.filter(pmNeedsMe).length,open:ts.filter(t=>["requested","accepted","escrow"].includes(t.status)).length,done:ts.filter(t=>!["requested","accepted","escrow"].includes(t.status)).length,listings:(m?.listings||[]).length};
     P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn primary" style="flex:1" data-pmnewin="pm-items">+ Sell an item</button><button class="btn primary" style="flex:1" data-pmnewin="pm-services">+ Offer a service</button></div>
-      ${m&&!m.error?`<div class="so-me click ${S.pm.filter==="standing"?"on":""}" data-pmf="standing" title="Your rating, reviews and trust"><div class="who" style="min-width:0"><b>Your standing</b><div style="font-size:12.5px;margin-top:2px">${pmStars(m.rating)}${m.rating?.sold||m.rating?.bought?` <span class="muted">· ${m.rating.sold||0} sold · ${m.rating.bought||0} bought</span>`:""}</div></div>${m.agent?`<span class="pm-badge esc" style="margin-left:auto">Escrow agent</span>`:m.me?.trusted?`<span class="pm-badge ok" style="margin-left:auto">Trusted</span>`:""}</div>`:""}
-      <div class="pm-cats">${[["standing","Your standing"],["todo","Requests"],["open","Open trades"],["done","Finished trades"],["listings","My listings"],
+      <div class="pm-cats">${[["todo","Requests"],["open","Open trades"],["done","Finished trades"],["listings","My listings"],
         ...(S.pm.esc&&(S.pm.esc.is_agent||S.pm.esc.owner||S.pm.esc.trusted)?[["escrow",S.pm.esc.owner?"Escrow admin":S.pm.esc.is_agent?"Escrow agent":"Become an escrow agent"]]:[])].map(([k,t])=>`<div class="so-row click ${S.pm.filter===k?"on":""}" data-pmf="${k}"><div class="who"><b>${t}</b></div>${n[k]?`<span class="${k==="todo"?"so-n":"muted"}">${n[k]}</span>`:""}</div>`).join("")}</div>`;
     for(const r of P.querySelectorAll("[data-pmf]")) r.onclick=()=>{ S.pm.filter=r.dataset.pmf; S.pm.view="mine"; pmPane(); pmRender(); pmLoadMine(); };
   }
@@ -8126,7 +8150,7 @@ async function pmLoad(){ const k=S.pm.kind, q=`browse?kind=${k}&sort=${S.pm.sort
   S.pm.loading=true; if(S.pm.view==="browse") pmRender(); const r=await pmCall(q); S.pm.loading=false; if(S.pm.kind!==k) return;
   S.pm.data=r.ok?r:{error:r.error}; if(PM_TAB[S.tab]) pmPane(); if(S.pm.view==="browse") pmRender(); }
 async function pmLoadMine(){ const r=await pmCall("mine"); S.pm.mine=r.ok?r:{error:r.error,signed_in:r.signed_in}; if(r.ok) pmTodo(r.todo);
-  if(S.tab==="pm-mine"){ pmPane(); if(S.pm.view==="mine") pmRender(); } return r; }
+  if(S.tab==="pm-mine"||S.tab==="pm-standing"){ pmPane(); if(S.pm.view==="mine") pmRender(); } return r; }
 async function pmLoadEsc(){ const r=await pmCall("escrow"); S.pm.esc=r.ok?r:{error:r.error,signed_in:r.signed_in}; if(S.tab==="pm-mine"){ pmPane(); if(S.pm.filter==="escrow") pmRender(); } }
 async function pmOpen(id){ S.pm.view="listing"; S.pm.listing={loading:true,id}; pmRender(); const r=await pmCall(`listing?id=${id}`);
   S.pm.listing=r.ok?{...r.listing,_min:r.escrow_min,_fee:r.escrow_fee}:{error:r.error}; S.pm.buy={qty:1,escrow:false,agent:"",note:""};
@@ -8352,7 +8376,7 @@ function pmWire(P){
       toast({accept:"Accepted",decline:"Declined",cancel:"Trade cancelled",done:"Marked as done",item_in:"Noted: item received",pay_in:"Noted: payment received",release:"Trade complete",refund:"Trade cancelled and returned"}[a]);
       await pmLoadMine(); };
     PM_ARM.has(a)?pmArm(a+id,go):go(); });
-  on("[data-pmf2]",el=>{ S.pm.filter=el.dataset.pmf2; pmPane(); pmRender(); });
+  on("[data-pmf2]",el=>{ S.pm.filter=el.dataset.pmf2; S.pm.view="mine"; if(S.tab!=="pm-mine") return document.querySelector('.tab[data-tab="pm-mine"]').click(); pmPane(); pmRender(); });
   on("[data-pmrate]",async el=>{ const r=await pmCall("rate",{trade:+el.dataset.pmt,stars:+el.dataset.pmrate}); if(!r.ok) return toast(r.error); toast("Thanks for rating. Add a few words if you like"); const rv=S.pm.rev?.[+el.dataset.pmt]; if(rv) rv.open=true; pmLoadMine(); });
   on("[data-pmrevtag]",el=>{ const r=S.pm.rev?.[+el.dataset.pmt]; if(!r) return; const x=el.dataset.pmrevtag; r.tags=r.tags.includes(x)?r.tags.filter(y=>y!==x):[...r.tags,x].slice(0,4); el.classList.toggle("on",r.tags.includes(x)); });
   for(const ta of P.querySelectorAll("[data-pmrevnote]")) ta.oninput=()=>{ const r=S.pm.rev?.[+ta.dataset.pmrevnote]; if(r) r.note=ta.value; };
@@ -8366,7 +8390,7 @@ function pmWire(P){
   on("[data-pmunagent]",el=>pmArm("un"+el.dataset.pmunagent,async()=>{ const r=await pmCall("escrow/remove",{member:el.dataset.pmunagent}); toast(r.ok?"No longer an escrow agent":r.error); pmLoadEsc(); }));
 }
 // The open trades refresh while Mine or Escrow is open (the other side may have moved them on)
-setInterval(()=>{ if(S.tab==="pm-mine"&&S.pm.view==="mine") pmLoadMine(); },10000);
+setInterval(()=>{ if((S.tab==="pm-mine"||S.tab==="pm-standing")&&S.pm.view==="mine") pmLoadMine(); },10000);
 
 // =================================================================== Org: player organisations (server: orgs.py)
 S.og={mine:null,cur:null,view:null,tab:"overview",data:null,browse:null,q:"",form:null,month:null,ev:null,evForm:null,rankEdit:null,inviteQ:"",inviteRes:null,arm:null,todo:0};
@@ -8414,6 +8438,8 @@ function ogIconFile(file){ return new Promise((res,rej)=>{ const img=new Image()
   img.onload=()=>{ const n=128, c=document.createElement("canvas"); c.width=c.height=n; const k=Math.min(n/img.width,n/img.height), w=img.width*k, h=img.height*k;
     c.getContext("2d").drawImage(img,(n-w)/2,(n-h)/2,w,h); URL.revokeObjectURL(u); res(c.toDataURL("image/png")); };
   img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
+// RSI's own mark (from the Star Citizen Wiki), in the theme's colour: links an org to its page on RSI
+const RSI_ICON='<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M8.64 14.35c-.14 0-.27-.11-.31-.23l-.36-1.5 1.62-.81c.39-.19.72-.58.84-1.06l.56-2.14c.14-.53-.2-.97-.77-.97h-6l-2.23 8.75H4.1l.55-2.12 1.42-.72.52 2.11c.09.39.5.72.91.72h1.69l.52-2.02H8.65Zm-3.33-2.64.02-.06.5-1.98h2.44c.19 0 .31.08.27.22-.03.12-.12.27-.36.38l-2.86 1.45Zm11.61.91-3.39-2.25c-.19-.12-.27-.27-.22-.45.05-.19.19-.27.38-.27h3.17l.52-2.03h-4.89c-.42 0-.83.33-.92.72l-.48 1.92c-.09.39.09.91.44 1.14l3.42 2.28c.19.13.22.25.17.41-.03.13-.17.25-.38.25h-2.55l-.53 2.05h4.27c.42 0 .86-.33.95-.72l.48-1.91c.09-.39-.09-.92-.44-1.14m2.97-4.99h-.01l-2.26 8.75h2.15L22 7.63zm-8.8 6.72h-.34l-.53 2.03h.36zm-.7 0h-.34l-.53 2.03h.36l.53-2.03z"/><path d="M11.47 14.35h-.03l-.52 2.03h.36l.53-2.03zM19 9.66l.52-2.03h-.35l-.51 2.03zm-.7 0 .51-2.03h-.34l-.52 2.03zm-.18-2.03h-.37l-.53 2.03h.37z"/></svg>';
 const ogVer=o=>o?.verified?`<span class="og-ver" title="Verified with RSI: the owner proved it's their org on robertsspaceindustries.com">✓ RSI</span>`:"";
 const ogLogo=(o,sm)=>`<div class="og-logo${sm?" sm":""}">${o?.logo?`<img src="${esc(o.logo)}" alt="" onerror="this.remove()">`:esc((o?.tag||"?").slice(0,4))}</div>`;
 function ogTodo(n){ S.og.todo=n; const b=$("rail-og-n"); if(b){ b.textContent=n; b.hidden=!n; }
@@ -8495,7 +8521,7 @@ function ogOrgHtml(){ const d=S.og.data; if(!d) return `<div class="og-body"><di
   const up=(d.events||[]).filter(e=>e.starts+(e.minutes||60)*60>now), online=(d.members||[]).filter(m=>m.online).length;
   const hero=`${o.banner?`<div class="og-banner" style="background-image:url('${esc(o.banner)}')"></div>`:""}<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
     <div class="og-stats"><span><b>${o.members}</b> member${o.members===1?"":"s"}</span>${d.member?`<span><b>${online}</b> online</span><span>Your rank: ${ogRankIcon((d.ranks||[]).find(r=>r.id===d.my_rank),16)} <b>${esc(o.my_rank||"")}</b>${perms.has("owner")?" · Owner":""}</span>${up[0]?`<span>Next: <b>${esc(up[0].title)}</b> ${ogTime(up[0].starts)}</span>`:""}`:`<span>${o.recruiting?"Recruiting":"Invite only"}</span>`}</div></div>
-    ${o.verified&&o.rsi_url?`<div class="og-rsi"><button class="btn small" data-ogurl="${esc(o.rsi_url)}" title="${esc(o.rsi_url)}">View ${esc(o.tag)} on RSI</button>${!d.member&&o.recruiting?`<span class="muted">Apply on RSI too, so you show in their roster in game</span>`:""}</div>`:""}</div>`;
+    ${o.verified&&o.rsi_url?`<div class="og-rsi"><button class="btn og-rsi-btn" data-ogurl="${esc(o.rsi_url)}" title="View ${esc(o.tag)} on RSI" aria-label="View ${esc(o.tag)} on RSI">${RSI_ICON}</button>${!d.member&&o.recruiting?`<span class="muted">Apply on RSI too, so you show in their roster in game</span>`:""}</div>`:""}</div>`;
   if(!d.member) return hero+`<div class="og-body"><div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div>${ogAboutHtml(o)}
       ${d.ranks?.length?`<div class="pm-sec">Ranks</div>${d.ranks.map(r=>`<div class="og-rank"><div class="top">${ogRankIcon(r,28)}<b>${esc(r.name)}</b></div>${r.requirements?`<div class="req">${esc(r.requirements)}</div>`:""}</div>`).join("")}`:""}</div>
     <div><div class="pm-box">${d.pending==="invite"?`<div>You've been invited to join.</div><button class="btn primary" data-ogjoininv="1">Join ${esc(o.name)}</button>`
