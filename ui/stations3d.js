@@ -24,22 +24,33 @@ let index=null, indexP=null;
 // "Stanton Gateway" (in Pyro) is Stanton Gateway Station (Pyro). Every name is also filed under a plain key
 // (no case, spaces, punctuation or trailing "Station"), and a lookup tries Quantum's name, then that key.
 const plain=n=>String(n||"").toLowerCase().replace(/\s*\((stanton|pyro|nyx)\)\s*$/,"").replace(/\bstation\b/g,"").replace(/[^a-z0-9]+/g,"");
-const getIndex=()=>indexP||(indexP=addScript("stations/index.js").then(()=>{
-  const L=Array.isArray(window.QSTATION_INDEX)?window.QSTATION_INDEX:[];
+// Two folders on the server: stations/ (stations and jump points) and outposts/ (ground sites and derelicts),
+// each with its own index.js. Each entry remembers its folder.
+const loadIdx=(dir,v)=>addScript(`${dir}/index.js`).then(()=>(Array.isArray(window[v])?window[v]:[]).map(e=>({...e,dir}))).catch(()=>[]);
+// Outposts and derelicts (outposts/) are off for now: too small on the map to be worth the downloads and
+// server space. Set OUTPOSTS=true to load them again.
+const OUTPOSTS=false;
+const getIndex=()=>indexP||(indexP=Promise.all([loadIdx("stations","QSTATION_INDEX"),OUTPOSTS?loadIdx("outposts","QOUTPOST_INDEX"):Promise.resolve([])]).then(([a,b])=>{
+  const L=[...a.filter(e=>OUTPOSTS||e.kind!=="site"),...b.filter(e=>!a.some(x=>x.station===e.station))];
   index=new Map(L.map(e=>[e.station,e]));
-  for(const e of L){ const k=`${(e.system||"").toLowerCase()}|${plain(e.station)}`; if(!index.has(k)) index.set(k,e);
+  for(const e of L){ if(e.kind==="jump") continue;            // jump points: by exact name only (see entry)
+    const k=`${(e.system||"").toLowerCase()}|${plain(e.station)}`; if(!index.has(k)) index.set(k,e);
     const k2=`|${plain(e.station)}`; if(!index.has(k2)) index.set(k2,e); } }).catch(()=>{ index=new Map(); }));
 // Pyro's game files are turned 85.23° from the game's own frame (gateways.py has the measurement): a station
 // placed in Pyro's system frame is turned the same way unless its file says it already is (ingame:true).
 const SYS_TURN={pyro:-85.22993*Math.PI/180};
 // A jump point is never a station, though its name can match one: "Nyx Gateway" (the wormhole) and "Nyx Gateway
 // Station" are the same once "station" is dropped, so the jump point drew (tried to draw) the station's model.
-function entry(L){ if(!index||L.type==="jump"||L.to) return null;
-  return index.get(L.name)||index.get(`${(L.system||"").toLowerCase()}|${plain(L.name)}`)
-    ||(!L.system?index.get(`|${plain(L.name)}`):null)||null; }
+// A jump point only takes a file built as one (tools/build_stations.py --jumps marks it kind "jump"), by its exact
+// name; a station never takes a jump point's file.
+function entry(L){ if(!index) return null;
+  if(L.type==="jump"||L.to){ const e=index.get(L.name); return e&&e.kind==="jump"?e:null; }
+  const e=index.get(L.name)||index.get(`${(L.system||"").toLowerCase()}|${plain(L.name)}`)
+    ||(!L.system?index.get(`|${plain(L.name)}`):null)||null;
+  return e&&e.kind==="jump"?null:e; }
 const bytes=s=>{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
 const LIN=k=>{ const c=k/255; return c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4; };
-const GLASS_C=[0.075,0.095,0.125], WIN_C=[1.0,0.82,0.6];
+const GLASS_C=[0.075,0.095,0.125], WIN_C=[1.0,0.82,0.6], GUIDE_C=0x3dff7a;
 // The map's ambient light is blue (it keeps planets' night sides readable). A station's shaded side, lit by
 // that alone, came out blue: all of Grim HEX, which sits in the shadow of its own asteroid. Station models
 // take the same amount of ambient light, but grey.
@@ -54,11 +65,18 @@ const greyAmbient=sh=>{ sh.fragmentShader=sh.fragmentShader.replace("#include <l
 const nudge=(f,key)=>sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <project_vertex>",
   `#include <project_vertex>\n gl_Position = projectionMatrix * vec4(mvPosition.xyz * ${f.toFixed(6)}, 1.0);`); };
 const STEP=0.00006, MATS=[];
+// Stations were hard to see: the side away from the sun (and anything in its own shadow, like Grim HEX in its
+// asteroid) only had the map's faint ambient light, so whole stations read as black shapes. A little of each
+// surface's own colour is added back everywhere (as the game's exterior floodlights and bounce light would),
+// so the dark side stays readable while the lit side keeps its shading.
+const FILL=0.22;
+const fillLight=sh=>{ sh.fragmentShader=sh.fragmentShader.replace("#include <emissivemap_fragment>",
+  `#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * ${FILL.toFixed(3)};`); };
 // (barely metallic: there's nothing round a station for metal to reflect, so a metallic finish just reads as dark grey)
 function mats(b){ if(MATS[b]) return MATS[b];
   const solid=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.7,metalness:0.08,side:THREE.DoubleSide}),
     glow=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide,toneMapped:false}), fs=1-b*STEP, fg=fs*0.9995;
-  solid.onBeforeCompile=sh=>{ greyAmbient(sh); if(b) nudge(fs)(sh); }; solid.customProgramCacheKey=()=>`station-solid-${b}`;
+  solid.onBeforeCompile=sh=>{ greyAmbient(sh); fillLight(sh); if(b) nudge(fs)(sh); }; solid.customProgramCacheKey=()=>`station-solid-${b}`;
   glow.onBeforeCompile=nudge(fg); glow.customProgramCacheKey=()=>`station-glow-${b}`;
   return MATS[b]=[solid,glow]; }
 // size step: 0 for the biggest pieces (hulls, rock), up to 3 for the small ones (trim, fittings)
@@ -96,8 +114,8 @@ function rockGeo(){ if(ROCK_GEO) return ROCK_GEO;
 // Built a few pieces per frame (about 6 ms at a time), so a big station arriving mid-flight doesn't stall it
 const yieldFrame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
 async function build(name){
-  const T=window.QSTATION?.[name]; if(!T?.inst) return null;
-  const IN=new Float32Array(bytes(T.inst).buffer), NI=IN.length/13, group=new THREE.Group(), byMesh=new Map();
+  const T=window.QSTATION?.[name]; if(!T||(!T.inst&&!T.guide?.length)) return null;
+  const IN=new Float32Array(bytes(T.inst||"").buffer), NI=IN.length/13, group=new THREE.Group(), byMesh=new Map();
   for(let i=0;i<NI;i++){ const k=IN[i*13]; if(!byMesh.has(k)) byMesh.set(k,[]); byMesh.get(k).push(i); }
   const M=new THREE.Matrix4(); let lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9], t0=performance.now();
   for(const [k,list] of byMesh){ const m=T.meshes[k]; if(!m) continue;
@@ -119,6 +137,18 @@ async function build(name){
   if(Array.isArray(T.rocks)) for(const [x,y,z,d] of T.rocks){ const m=new THREE.Mesh(rockGeo(),ROCK_MAT);
     m.position.set(x,y,z); m.scale.setScalar(Math.max(1,d/2)); m.rotation.set(x*0.001,y*0.001,z*0.001);
     m.frustumCulled=false; group.add(m); for(let a=0;a<3;a++){ lo[a]=Math.min(lo[a],[x,y,z][a]-d/2); hi[a]=Math.max(hi[a],[x,y,z][a]+d/2); } }
+  // A jump point's guide lines (tools/build_stations.py --jumps): the green lines its markers make into the
+  // wormhole, drawn glowing, with a bright point at each marker so the lanes read from far off
+  if(Array.isArray(T.guide)&&T.guide.length){ const seg=[], dots=[];
+    for(const L of T.guide){ for(let i=0;i+5<L.length;i+=3) seg.push(L[i],L[i+1],L[i+2],L[i+3],L[i+4],L[i+5]); }
+    for(const m of T.markers||[]) dots.push(m[0],m[1],m[2]);
+    for(let i=0;i<seg.length;i+=3) for(let a=0;a<3;a++){ lo[a]=Math.min(lo[a],seg[i+a]); hi[a]=Math.max(hi[a],seg[i+a]); }
+    if(seg.length){ const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(seg,3));
+      const ln=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color:GUIDE_C,transparent:true,opacity:0.9,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
+      ln.frustumCulled=false; group.add(ln); }
+    if(dots.length){ const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(dots,3));
+      const mat=new THREE.PointsMaterial({color:GUIDE_C,size:7,sizeAttenuation:false,map:dotTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
+      const pts=new THREE.Points(g,mat); pts.frustumCulled=false; group.add(pts); } }
   group.visible=false; scene.add(group);
   delete window.QSTATION[name];                      // the geometry is on the GPU now
   return {group, meta:T, span:Math.max(50,...hi.map((v,a)=>v-lo[a]))}; }
@@ -129,7 +159,7 @@ function show(o,v,d,t,f){
   if(!index){ getIndex(); return false; }
   const ent=entry(o.L);
   if(!ent){ if(typeof S!=="undefined"&&S.selected?.name===name&&d<LOAD_KM*1000)
-      note(name,`no 3D model listed for it in stations/index.js (${Math.floor(index.size/3)} stations listed; is the server's index.js the latest, and Quantum restarted since?)`);
+      note(name,`no 3D model listed for it in stations/ or outposts/index.js (${Math.floor(index.size/3)} stations listed; is the server's index.js the latest, and Quantum restarted since?)`);
     return false; }
   const file=ent.file;
   let e=R[name];
@@ -141,11 +171,12 @@ function show(o,v,d,t,f){
     // overhead is a dot from there): it's fetched once the camera settles nearby instead
     if(!picked&&((typeof S!=="undefined"&&S.anim)||(typeof city3dDown==="function"&&city3dDown()))) return false;
     e=R[name]=Object.assign(e||{tries:0},{state:"loading"}); e.tries++;
-    const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; note(name,`stations/${file}.js didn't load (try ${e.tries} of 4): not in manifest.json, or the download failed - see the asset lines in this log`); };
-    addScript(`stations/${encodeURIComponent(file)}.js`).then(ok=>{
+    const dir=ent.dir||"stations";
+    const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; note(name,`${dir}/${file}.js didn't load (try ${e.tries} of 4): not in manifest.json, or the download failed - see the asset lines in this log`); };
+    addScript(`${dir}/${encodeURIComponent(file)}.js`).then(ok=>{
         if(ok===false) return failed();
         // (built under the name its file registered: the index's, which can differ from the map's)
-        return build(window.QSTATION?.[ent.station]?ent.station:name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`stations/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
+        return build(window.QSTATION?.[ent.station]?ent.station:name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`${dir}/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
       .catch(failed);
     return false; }
   if(e.state!=="ready") return false;

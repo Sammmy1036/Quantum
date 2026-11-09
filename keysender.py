@@ -63,9 +63,57 @@ if AVAILABLE:
     user32.SetForegroundWindow.argtypes = (wintypes.HWND,)
     user32.ShowWindow.argtypes = (wintypes.HWND, ctypes.c_int)
 
+    _k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _k32.OpenProcess.restype = wintypes.HANDLE
+    _k32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    _k32.QueryFullProcessImageNameW.argtypes = (wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                                ctypes.POINTER(wintypes.DWORD))
+    _k32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+    user32.IsWindowVisible.argtypes = (wintypes.HWND,)
+    _WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = (_WNDENUMPROC, wintypes.LPARAM)
+
+    def _window_exe(h):
+        """The program file name (lower case) behind a window, or ""."""
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(h, ctypes.byref(pid))
+        ph = _k32.OpenProcess(0x1000, False, pid.value)             # PROCESS_QUERY_LIMITED_INFORMATION
+        if not ph:
+            return ""
+        try:
+            buf, n = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+            return os.path.basename(buf.value).lower() if _k32.QueryFullProcessImageNameW(ph, 0, buf, ctypes.byref(n)) else ""
+        finally:
+            _k32.CloseHandle(ph)
+
+    def _title(h):
+        buf = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(h, buf, 256)
+        return buf.value
+
+    def find_game_window():
+        """The game's main window. Found by its program (StarCitizen.exe), not its exact title: the title
+        isn't exactly "Star Citizen" on every build/PC, and an exact-title lookup (FindWindow) then found
+        nothing, so anti-AFK sat waiting for a game window forever and never sent a thing."""
+        found = []
+
+        def each(h, _):
+            if user32.IsWindowVisible(h):
+                exe = _window_exe(h)
+                if exe == "starcitizen.exe" or (not exe and "star citizen" in _title(h).lower()):
+                    found.append(h)
+                    return False
+            return True
+        try:
+            user32.EnumWindows(_WNDENUMPROC(each), 0)
+        except Exception:
+            pass
+        return found[0] if found else user32.FindWindowW(None, "Star Citizen")
+
     def game_window_open():
         """Is there a Star Citizen window at all (focused or not)?"""
-        return bool(user32.FindWindowW(None, "Star Citizen"))
+        return bool(find_game_window())
 
     VK_F13, SC_F13, SC_F1, VK_MENU = 0x7C, 0x64, 0x3B, 0x12
     MOUSEEVENTF_MOVE, INPUT_MOUSE = 0x0001, 0
@@ -89,7 +137,7 @@ if AVAILABLE:
     def focus_game():
         """Bring Star Citizen to the front (Windows only lets a program do this right after a key press,
         so Alt is tapped first, the usual way around that)."""
-        h = user32.FindWindowW(None, "Star Citizen")
+        h = find_game_window()
         if not h:
             return False
         _vk_tap(VK_MENU, 0x38, 0.02)
@@ -128,7 +176,8 @@ if AVAILABLE:
         return buf.value
 
     def game_in_focus():
-        return "star citizen" in foreground_title().lower()
+        h = user32.GetForegroundWindow()
+        return bool(h) and ("star citizen" in _title(h).lower() or _window_exe(h) == "starcitizen.exe")
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
@@ -265,9 +314,12 @@ class ShowLocationSender:
                     if self.afk_action == "f13":
                         _vk_tap(VK_F13, SC_F13)
                     elif self.afk_action == "mobiglas":
-                        _tap(SC_F1, 0.05)
-                        time.sleep(0.6)
-                        _tap(SC_F1, 0.05)
+                        # The game polls input once a frame and ignores F1 while the mobiGlas is still
+                        # opening: a 50 ms press 0.6 s apart could be missed or leave it open. Hold each
+                        # press for a few frames and let it finish opening first.
+                        _tap(SC_F1, 0.12)
+                        time.sleep(2.5)
+                        _tap(SC_F1, 0.12)
                     else:
                         _mouse_nudge()
                 self.afk_last = time.time()

@@ -1065,6 +1065,12 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-nav button{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;background:none;border:0;color:var(--ink-2);font-size:14px;text-align:left}
 .pf-nav button:hover{background:var(--panel-2);color:var(--ink)}
 .pf-nav button.on{background:var(--panel-3);color:var(--ink);font-weight:600}
+.wp-ctx{position:fixed;z-index:9999;min-width:180px;background:#0b1424;border:1px solid rgba(120,170,255,.25);border-radius:10px;padding:5px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.wp-ctx .h{font-size:11.5px;color:var(--dim);padding:5px 9px 6px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wp-ctx button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;font-size:13px;padding:7px 9px;border-radius:7px;cursor:pointer}
+.wp-ctx button:hover{background:rgba(75,141,255,.14)}
+.wp-ctx button.danger{color:#ff7a7a}
+.wp-ctx button.danger:hover{background:rgba(255,90,90,.14)}
 .pf-nav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .pf-nav button.on svg{stroke:var(--route-2)}
 .pf-nav .n{margin-left:auto;font-size:12px;color:var(--dim);font-weight:500}
@@ -1588,6 +1594,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
           <option value="avoid:Pyro">Avoid Pyro</option><option value="avoid:Nyx">Avoid Nyx</option><option value="avoid:Stanton">Avoid Stanton</option></select>
         <span class="k">Loading</span><select class="field" id="tr-auto" title="Auto-loading: the terminal loads and unloads your ship for you"><option value="">Any terminal</option>
           <option value="buy">Auto-load where I buy</option><option value="both">Auto-load at both ends</option></select>
+        <span class="k">Rank by</span><select class="field" id="tr-sort" title="Most profit: the biggest single trip. Per hour: profit for the time it takes (travel from where you are, landing, loading). Best overall: per hour, trusting fresh prices more than old ones"><option value="best">Best overall</option><option value="hour">Profit per hour</option><option value="profit">Most profit per trip</option></select>
         <span class="k">Cargo</span><div class="row" style="gap:6px"><input class="field" id="tr-scu" type="number" min="1" placeholder="SCU your ship holds" style="flex:1"><span class="muted">SCU</span></div>
         <span class="k">Budget</span><div class="row" style="gap:6px"><input class="field" id="tr-budget" type="number" min="0" placeholder="No limit" style="flex:1"><span class="muted">aUEC</span></div>
       </div>
@@ -1667,7 +1674,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     </section>
 
     <div class="status">
-      <div class="row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
+      <div class="row" id="pos-row"><span class="dot" id="pos-dot"></span><span id="pos-text">Type <b>/showlocation</b> in game chat to share your position</span></div>
+      <div class="row" id="play-row" style="display:none"><span class="dot on" id="play-dot"></span><span id="play-text"></span></div>
       <div class="row" id="log-row"><span class="dot" id="log-dot"></span><span id="log-text">Looking for Game.log…</span></div>
       <div class="row"><span class="dot" id="key-dot"></span><span id="key-text">Auto /showlocation</span><span class="spacer"></span><button class="btn small ghost" id="btn-settings">Settings</button></div>
 
@@ -2685,7 +2693,7 @@ function drawOverlay(t){
   for(const o of sysObjs){ const b=o.b, q=proj(b.center); if(!q) continue; const pr=o.pr;
     if(city3dDown()&&!visible(b.center,null)) continue;   // below the city's horizon
     if(pr<3){ ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); }
-    S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),depth:q[2]});
+    S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),pr,depth:q[2]});
     bodyLabels.push([b,q,pr]); }
   // ---- locations
   const drawn=[];
@@ -2975,7 +2983,13 @@ ov.addEventListener("dblclick",e=>{ const r=ov.getBoundingClientRect(); const hi
       else flyTo({kind:"local",body:m.o.marker.body,pos:m.o.marker.pos}, Math.max(15000,S.bodyMap[m.o.marker.body].radius*0.06), TOPDOWN); } }
   else focusLoc(hit.name,true); });
 function pick(x,y){ let best=null,bs=1e9; for(const p of S.picks){ const d=Math.hypot(p.x-x,p.y-y); if(d>p.r) continue;
-  const score=(p.kind==="body"?d+30:d); if(score<bs){ bs=score; best=p; } } return best; }
+  const score=(p.kind==="body"?d+30:d); if(score<bs){ bs=score; best=p; } }
+  // Zoomed out, a planet's moons sit a few pixels from it and a click on the planet kept landing on one. While
+  // the moon is only a dot and sits close to its planet on screen, the click goes to the planet: to reach a
+  // moon, zoom in (or search for it).
+  if(best?.kind==="body"){ const b=S.bodyMap[best.name], par=b?.kind==="moon"&&b.parent?S.picks.find(p=>p.kind==="body"&&p.name===b.parent):null;
+    if(par&&(best.pr??0)<6&&Math.hypot(par.x-best.x,par.y-best.y)<Math.max(36,par.r*2.5)&&Math.hypot(par.x-x,par.y-y)<Math.max(36,par.r*2.5)) best=par; }
+  return best; }
 const tip=$("tooltip");
 function showTip(hit,x,y){ let t="",s="";
   if(hit.kind==="body"){ const b=S.bodyMap[hit.name]; t=b.name; s=b.kind==="star"?"Star":`${kindLabel(b)}, ${fmtDist(b.radius)} ${b.kind==="asteroid"?"average radius":"radius"}. Double-click to fly there`; }
@@ -3029,7 +3043,7 @@ const SVC_ICONS={
   med:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
   shop:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
   food:'<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10"/><path d="M16 3c-2 2-2 6 0 8v10"/>',
-  ship:'<path d="M12 3l3 8 6 3-6 1-3 6-3-6-6-1 6-3z"/>',
+  ship:'<path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/>',                // the rail's Ships icon
   dot:'<circle cx="12" cy="12" r="4"/>'};
 // solid game-style icons (the Star Citizen UI's own glyphs), drawn filled on their own grid
 const SVC_SOLID={
@@ -3322,7 +3336,13 @@ function renderDetail(){
           return `<span class="k">Local time</span><span title="Worked out from ${esc(L.body)}'s rotation (one day = ${lt.period.toFixed(2)} real hours)${lt.calibrated?"":", using the community alignment"}"><span data-lt-row>${ltRow(lt)}</span></span>`; })()}
         ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
         ${L.verify?`<span class="k">Position</span><span style="color:#f2c14e">Not confirmed in game yet${L.placeable?`: ${L.type==="jump"?"stop at the jump point":"dock here"}, type /showlocation and press <b>I'm here: set position</b>, or take the job in Datarunner &gt; Jobs`:""}</span>`:""}
-        ${L.unplaced||L.type==="jump"?(L.type==="jump"?`<span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`:""):`<span class="k">Landing pad</span><span><select class="field" id="d-pad" title="The largest pad here">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"?(L.pad_shared?`Unknown (Quantum users: ${padLabel(L.pad_shared)})`:L.pad_auto?`Unknown (game data: ${padLabel(L.pad_auto)})`:"Unknown"):padLabel(p)}</option>`).join("")}</select>
+        ${L.unplaced||L.type==="jump"?(L.type==="jump"?`<span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`:""):`<span class="k">Landing pad</span><span>${(()=>{
+            // Already known (your own pick, Quantum users agreeing, or the game's data): just say it, with a way
+            // to report it if it's wrong. The picker only shows when nothing's known, or once you ask to correct it.
+            const known=L.pad!=="unknown"?[L.pad,"your report"]:L.pad_shared?[L.pad_shared,"agreed by Quantum users"]:L.pad_auto?[L.pad_auto,"from the game's data"]:null;
+            if(!known||L.source==="user"||S.padFix===L.name) return "";
+            return `<b>${esc(padLabel(known[0]))}</b> <span class="muted" style="font-size:12px">(${known[1]})</span>
+              <div style="font-size:12px;margin-top:3px"><a data-a="padfix" style="cursor:pointer;color:var(--route-2)">Wrong size? Report it</a></div></span><span hidden>`; })()}<select class="field" id="d-pad" title="The largest pad here">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"?(L.pad_shared?`Unknown (Quantum users: ${padLabel(L.pad_shared)})`:L.pad_auto?`Unknown (game data: ${padLabel(L.pad_auto)})`:"Unknown"):padLabel(p)}</option>`).join("")}</select>
           <div class="muted" style="font-size:11.5px;margin-top:4px">${L.pad_shared?`Quantum users agree: <b>${esc(padLabel(L.pad_shared))}</b>.`:""}${L.source!=="user"?" Your pick is shared; it shows for everyone once another datarunner agrees.":""}</div></span>
         <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`}</div>
       ${L.unplaced?`<div class="acts"><button class="btn primary" data-a="placehere" ${readingHere?"":`disabled title="Needs a /showlocation taken at this station in the last 15 minutes"`}>I'm here: set position</button></div>`:
@@ -3361,6 +3381,7 @@ function renderDetail(){
     if(a==="route"){ await addStops([sel.name]); showRoute(); }
     if(a==="unroute"){ await api().remove_place(sel.name); await poll(); renderDetail(); }
     if(a==="focus") focusLoc(sel.name,true);
+    if(a==="padfix"){ S.padFix=sel.name; renderDetail(); $("d-pad")?.focus(); }
     if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
     if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); showRoute(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
@@ -3412,6 +3433,9 @@ function renderHud(){
       ${cs.city?`<div class="note" style="margin:6px 0">In a city? Only confirm if you're standing <b>at</b> this place. From a hangar, open your inventory and type /showlocation instead: Quantum lines the planet up to the city's spaceport by itself.</div>`:""}
       <div class="hint" style="margin:4px 0 8px">Your /showlocation matches <b>${esc(top.name)}</b>${cs.log_area&&top.near_log?` (near ${esc(cs.log_area)}, where the log last placed you)`:""}, but the map has you ${fmtDist(top.off)} away. Are you there?</div>
       <div class="row" style="flex-wrap:wrap;gap:6px">${cs.places.map((p,i)=>`<button class="btn small ${i?"":"go"}" data-cal="${esc(p.name)}">${i?"":"Yes, "}I'm at ${esc(p.name)}</button>`).join("")}</div></div>`+html; }
+  // The route the card describes is gone (finished, cleared, or the game closed and its contract stops went
+  // with it): close the card instead of leaving "0 stops" with the old path showing.
+  if(S.overview&&!live.route.length) S.overview=null;
   const ov=S.overview;
   if(ov){ const route=live.route; const roleTxt=(n,i)=>roleTags(live.stop_roles?.[i]);
     html=`<div class="card overview"><div class="lbl">Route planned<span class="spacer"></span><button class="btn small ghost" id="hud-ov-close">Close</button></div>
@@ -3588,14 +3612,17 @@ $("cc-panel").onclick=e=>{
 // =================================================================== Gear loadouts
 // Your own sets of personal gear for a kind of job ("Bunker run", "Cave mining"): armor by slot, weapons, gadgets,
 // utility items, clothing and consumables with how many. The picker uses the Weapons/Armor/… tabs' wiki lists.
+const glCk=i=>`${i.kind||""} ${i.type||""} ${i.sub||""}`;
 const GL_GROUPS=[
   ["Armor",[["helmet","Helmet","armor",i=>i.slot==="Helmet"],["core","Core","armor",i=>i.slot==="Core"],["arms","Arms","armor",i=>i.slot==="Arms"],
     ["legs","Legs","armor",i=>i.slot==="Legs"],["backpack","Backpack","armor",i=>i.slot==="Backpack"],["undersuit","Undersuit","armor",i=>i.slot==="Undersuit"]]],
   ["Weapons",[["primary","Primary","weapons",i=>!/pistol|knife|grenade/i.test(i.kind||"")],["secondary","Secondary","weapons",i=>!/knife|grenade/i.test(i.kind||"")],
     ["sidearm","Sidearm","weapons",i=>/pistol/i.test(i.kind||"")],["melee","Melee","weapons",i=>/knife|melee/i.test(i.kind||"")]]],
   ["Gadgets and keys",[["gadget1","Gadget","gadgets",()=>true],["gadget2","Gadget","gadgets",()=>true],["utility1","Key","utility",()=>true],["utility2","Key","utility",()=>true]]],
-  ["Clothing",[["hat","Hat","clothing",i=>/hat|head/i.test(i.kind||"")],["torso","Shirt","clothing",i=>/shirt/i.test(i.kind||"")],["jacket","Jacket","clothing",i=>/jacket|outer/i.test(i.kind||"")],
-    ["pants","Pants","clothing",i=>/legs|pants/i.test(i.kind||"")],["shoes","Shoes","clothing",i=>/shoe|feet|boot/i.test(i.kind||"")],["gloves","Gloves","clothing",i=>/glove|hand/i.test(i.kind||"")]]]];
+  // Clothing slots read the wiki's label and its item type (Char_Clothing_Hat, _Torso_0 = shirt, _Torso_1 = jacket, _Legs, _Feet, _Hands, _Backpack)
+  ["Clothing",[["hat","Hat","clothing",i=>/hat|head/i.test(glCk(i))],["torso","Shirt","clothing",i=>/shirt|torso.?0|t-?shirt|top\b/i.test(glCk(i))],["jacket","Jacket","clothing",i=>/jacket|coat|outer|torso.?1/i.test(glCk(i))],
+    ["pants","Pants","clothing",i=>/legs|pants|trousers/i.test(glCk(i))],["shoes","Shoes","clothing",i=>/shoe|feet|foot|boot/i.test(glCk(i))],["gloves","Gloves","clothing",i=>/glove|hand/i.test(glCk(i))],
+    ["bag","Bag","clothing",i=>/backpack|bag/i.test(glCk(i))]]]];
 const GL_SLOT=Object.fromEntries(GL_GROUPS.flatMap(([,L])=>L.map(x=>[x[0],x])));
 const GL_SCENARIOS=["Bunker run","Cave mining","EVA salvage","Bounty hunting","Medical rescue","Cargo hauling","Exploration","PvP","Prison break","Racing"];
 S.gl=S.gl||{list:null,sel:null,pick:null,q:"",all:false};
@@ -3726,7 +3753,7 @@ const PF_VIEWS=[["overview","Overview",'<rect x="3" y="3" width="7" height="7" r
   ["accounts","Linked accounts",'<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>'],
   ["backup","Backup",'<path d="M7 18a5 5 0 010-10 6 6 0 0111 2 4 4 0 010 8z"/><path d="M12 11v6M9 14l3-3 3 3"/>'],
   ["submissions","Submissions",'<path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/>'],
-  ["fleet","My fleet",'<path d="M12 3l3 7 6 3-6 2-3 6-3-6-6-2 6-3z"/>'],
+  ["fleet","My fleet",'<path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/>'],
   ["gearlo","Gear loadouts",'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>'],
   ["orgs","My orgs",'<rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/>'],
   ["listings","My listings",'<path d="M4 7h16l-1.5 12h-13zM8 7V5a4 4 0 018 0v2"/>'],
@@ -4293,6 +4320,9 @@ $("btn-arrived").onclick=async()=>{ await api().arrived(); await poll(); };
 // always a list of every place in this system (with type chips) to add from; typing swaps the route and that
 // list for search results, and clearing the search or Esc brings them back. The old POI tab's list lives here.
 const RS={items:[],on:0,type:null,more:0};
+// Roman numerals after a name read as numbers ("nyx iii" -> "nyx 3"), for search only
+const ROMAN={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10};
+const numerals=s=>s.replace(/([a-z]) (viii|vii|iii|ii|iv|vi|ix|i|v|x)(?![a-z0-9])/g,(m,a,r)=>`${a} ${ROMAN[r]}`);
 const rsMode=()=>$("rsearch").value.trim()?"search":"browse";
 const RS_RANK={city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6};
 function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
@@ -4301,9 +4331,13 @@ function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
     sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}${padOf(L)!=="unknown"?" · pad: "+padLabel(padOf(L)):""}`}; }
 function rsCandidates(q){
   q=q.trim().toLowerCase(); if(!q) return [];
-  const score=n=>{ const x=n.toLowerCase(); if(x===q) return 0; if(x.startsWith(q)) return 1;
+  const score0=(x,q)=>{ if(x===q) return 0; if(x.startsWith(q)) return 1;
     if(x.split(/[^a-z0-9&']+/).some(w=>w.startsWith(q))) return 2; if(x.includes(q)) return 3;
     const z=squash(q); return z.length>=4&&squash(x).includes(z)?3:9; };
+  // "Nyx 1" finds Nyx I (and "Nyx I" still finds Nyx II and III as you type): numbered names are matched
+  // both as written and with their roman numerals read as numbers
+  const qn=numerals(q);
+  const score=n=>{ const x=n.toLowerCase(); return Math.min(score0(x,q), qn!==q||/\d/.test(q)?score0(numerals(x),qn):9); };
   const out=[];
   if(!RS.type) for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
   for(const L of S.locs){ if(L.mergedInto) continue;                                  // found as its station
@@ -4588,6 +4622,22 @@ $("wp-list").onclick=async e=>{ const row=e.target.closest(".wp"); if(!row) retu
   if(a==="unguide"){ await api().set_guide(null); await poll(); }
   if(a==="route") addStops([n]);
   if(a==="rename"){ S.editing=n; renderWaypoints(true); } };
+// Right-click a waypoint: a small menu with Delete (asks once), Rename and Add to route
+function wpMenu(e,n){ e.preventDefault(); document.querySelector(".wp-ctx")?.remove();
+  const m=document.createElement("div"); m.className="wp-ctx"; m.setAttribute("role","menu");
+  m.innerHTML=`<div class="h">${esc(n)}</div><button data-m="route">Add to route</button><button data-m="rename">Rename</button><button data-m="delete" class="danger">Delete waypoint</button>`;
+  document.body.appendChild(m); const r=m.getBoundingClientRect();
+  m.style.left=Math.min(e.clientX,innerWidth-r.width-6)+"px"; m.style.top=Math.min(e.clientY,innerHeight-r.height-6)+"px";
+  const close=()=>{ m.remove(); removeEventListener("mousedown",away,true); removeEventListener("keydown",esc_,true); };
+  const away=ev=>{ if(!m.contains(ev.target)) close(); }, esc_=ev=>{ if(ev.key==="Escape") close(); };
+  setTimeout(()=>{ addEventListener("mousedown",away,true); addEventListener("keydown",esc_,true); },0);
+  m.onclick=async ev=>{ const b=ev.target.closest("button"); if(!b) return; const k=b.dataset.m;
+    if(k==="route"){ close(); addStops([n]); }
+    if(k==="rename"){ close(); S.editing=n; renderWaypoints(true); }
+    if(k==="delete"){ if(b.dataset.arm!=="1"){ b.dataset.arm="1"; b.textContent="Sure? Click again to delete"; return; }
+      close(); const r=await api().delete_location(n); if(r&&r.ok===false) return toast(r.error||"Couldn't delete it");
+      if(S.selected?.kind==="loc"&&S.selected.name===n) select(null); await poll(); renderWaypoints(true); toast(`Deleted ${n}`); } }; }
+$("wp-list").addEventListener("contextmenu",e=>{ const row=e.target.closest(".wp"); if(!row||e.target.closest("input")) return; wpMenu(e,row.dataset.name); });
 $("btn-wp-save").onclick=async()=>{ const r=await api().save_waypoint($("wp-name").value,$("wp-notes").value,true);
   if(!r.ok) return toast(r.error); toast(`Saved ${r.name}${r.body?" on "+r.body:""}`); $("wp-name").value=""; $("wp-notes").value=""; await poll(); renderWaypoints(true); };
 $("wp-name").onkeydown=e=>{ if(e.key==="Enter") $("btn-wp-save").click(); };
@@ -4606,11 +4656,20 @@ function highlightResult(){ for(const li of $("rs-list").children) li.classList?
 // when you go through a wormhole, so it can keep naming the system you left.
 function sysPick(p){ const src={log:p.sys_from?`Game.log: ${p.sys_from}`:"Game.log",you:"set by you",wormhole:`went through ${p.sys_from}`,planet:"from the planet you're near"}[p.sys_how]||"Game.log";
   return `<select class="sys-pick" title="System from ${esc(src)}. Wrong? Pick the right one">${(S.systems||["Stanton","Pyro","Nyx"]).map(s=>`<option ${s===p.system?"selected":""}>${esc(s)}</option>`).join("")}</select>`; }
+// ---- Play time: how long this game session has been running and tracked by Quantum
+const fmtSpan=s=>{ s=Math.max(0,Math.floor(s)); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60;
+  return h?`${h}h ${String(m).padStart(2,"0")}m`:`${m}m ${String(x).padStart(2,"0")}s`; };
+function renderPlayTime(){ const pl=S.live?.play||{}, row=$("play-row"); if(!row) return;
+  if(!pl.since||S.live.game_off){ row.style.display="none"; return; }
+  const now=S.live.now+((performance.now()-(S.liveAt||performance.now()))/1000);
+  row.style.display=""; $("play-text").innerHTML=`Playing <b>${fmtSpan(now-pl.since)}</b>${pl.today>(now-pl.since)+60?` <span class="muted">· ${fmtSpan(pl.today)} today</span>`:""}`; }
+setInterval(()=>{ if(S.live) renderPlayTime(); },1000);
 function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
   if(!pt.dataset.sysBound){ pt.dataset.sysBound=1; pt.addEventListener("change",async e=>{ if(!e.target.classList.contains("sys-pick")) return;
     const v=e.target.value, r=await api().set_my_system(v); if(!r.ok) return toast(r.error); await poll(); toast(`Got it: you're in ${v}`); }); }
   if(pt.querySelector("select.sys-pick:focus")) return;     // don't redraw under an open picker
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
+  renderPlayTime();
   if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b>`; }
   else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
@@ -4911,7 +4970,7 @@ async function openTrade(){
   S.trOrigins=r.items;
   $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur; trFromSync();
   trFillAt(trPref("at"));
-  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sys").dataset.init=1; }
+  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sort").value=trPref("sort")||"best"; $("tr-sys").dataset.init=1; }
   trSysFit();
   if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
   const fl=await api().fleet_list(), keep=S.trShip?.key||trPref("ship"); S.trFleet=fl.ships;
@@ -4974,8 +5033,8 @@ async function runTrade(){
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
   trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
   $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">${wide?`Comparing every terminal${kind==="system"?` in ${esc(id)}`:""}…`:"Finding routes…"}</div>`;
-  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"), au=$("tr-auto").value; trPref("sys",sv); trPref("auto",au); trPref("ship",S.trShip?.key||"");
-  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one",au); S.trDone=true;
+  const sv=$("tr-sys").value, [sk,sn]=sv.split(":"), au=$("tr-auto").value, so=$("tr-sort").value||"best"; trPref("sys",sv); trPref("auto",au); trPref("sort",so); trPref("ship",S.trShip?.key||"");
+  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one",au,so); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
   if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>${wide?"Nothing":"Nothing from here"} makes a profit with that cargo space and budget${au?` at ${au==="both"?"terminals that auto-load at both ends":"a terminal that auto-loads"}`:""}.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
@@ -4983,6 +5042,7 @@ async function runTrade(){
     `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
+      ${x.per_hour!=null?`<div class="facts" style="margin-top:2px"><span title="Rough time for the run: quantum travel${x.start_dist?" from where you are":""}, landing or docking, loading and unloading">~${Math.round(x.minutes)} min</span><span style="color:var(--ok)">≈ ${shortMoney(x.per_hour)}/h</span>${x.trust<0.8?`<span style="color:#ffb454" title="These prices are a few days old or have few reports: check before you buy">Prices may be stale</span>`:""}${x.then?`<span title="The best run that starts where this one sells, so you don't fly back empty">Then: ${esc(x.then.commodity)} to ${esc(x.then.to)} +${shortMoney(x.then.profit)}</span>`:""}</div>`:""}
       <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.autoload_from||x.autoload_to?`<span style="color:var(--ok)" title="The terminal loads and unloads your ship for you">Auto-load ${x.autoload_from&&x.autoload_to?"both ends":x.autoload_from?"at buy":"at sell"}</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
       <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
         <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
@@ -7724,7 +7784,7 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
   g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):GR_ITEM[kind]?i.kind:`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
       ${statBlock(G.hero(i),[{label:"Sold at",value:i.buy?.length?plural(i.buy.length,"shop"):null}])}
-      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${glKinds.has(kind)?`<button class="btn ghost" data-gladd="${esc(i.uuid||i.name)}">Add to loadout</button>`:""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
       <div class="vd-sec"><div class="mk-h">${i.buy?.length?"Where to buy":"How to get it"}</div>${i.buy?.length?vehSpots(i.buy,"buy")+`<div id="grd-get"></div>`:`<div id="grd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
@@ -7839,7 +7899,30 @@ async function grMission(kind){ const st=grState(kind), g=$("gr-panel"), m=st.mi
     <div class="uex-credit">From the Star Citizen Wiki's mission data (the game files): ranges and possible places for this kind of contract. The one you're offered in game picks from these.</div>`; }
 function grOpenMission(kind,x){ const st=grState(kind), i=st.data?.items.find(y=>(y.uuid||y.name)===st.sel);
   st.mission={...x,from:st.mission?.from||i?.name||"Back",prev:st.mission||null}; $("gr-panel").scrollTop=0; grMission(kind); }
+// ---- "Add to loadout" on a weapon, armor piece, clothing, gadget, key or consumable page: pick one of your gear
+// loadouts (or make one) and it goes in the slot it fits: the first empty one, else it replaces that slot's item.
+const glKinds=new Set(["weapons","armor","clothing","gadgets","utility","consumables"]);
+function glSlotsFor(kind,i){ if(kind==="consumables") return ["cons"];
+  const all=Object.values(GL_SLOT).filter(x=>x[2]===kind), fit=all.filter(x=>x[3](i)); return (fit.length?fit:all).map(x=>x[0]); }
+async function glAddMenu(e,kind,i){ if(!S.gl.list) await glLoad().catch(()=>{}); const L=S.gl.list||[], slots=glSlotsFor(kind,i);
+  document.querySelector(".wp-ctx")?.remove(); const m=document.createElement("div"); m.className="wp-ctx"; m.style.maxHeight="60vh"; m.style.overflow="auto";
+  const where=lo=>{ if(slots[0]==="cons") return "Consumables"; const k=slots.find(k=>!lo.slots?.[k])||slots[0]; return `${GL_SLOT[k][1]}${lo.slots?.[k]?` (replaces ${lo.slots[k].name})`:""}`; };
+  m.innerHTML=`<div class="h">Add ${esc(i.name)} to…</div>${L.map(lo=>`<button data-lo="${esc(lo.id)}">${lo.main?"★ ":""}${esc(lo.name)}<div class="muted" style="font-size:11.5px">${esc(where(lo))}</div></button>`).join("")}
+    <button data-lo="" style="color:var(--route-2)">+ New loadout with it</button>`;
+  document.body.appendChild(m); const r=m.getBoundingClientRect();
+  m.style.left=Math.min(e.clientX,innerWidth-r.width-6)+"px"; m.style.top=Math.min(e.clientY+8,innerHeight-r.height-6)+"px";
+  const close=()=>{ m.remove(); removeEventListener("mousedown",away,true); }, away=ev=>{ if(!m.contains(ev.target)) close(); };
+  setTimeout(()=>addEventListener("mousedown",away,true),0);
+  m.onclick=async ev=>{ const b=ev.target.closest("button"); if(!b) return; close();
+    const item={name:i.name,uuid:i.uuid||null,class_name:i.class_name||null};
+    let lo=b.dataset.lo?JSON.parse(JSON.stringify(L.find(x=>x.id===b.dataset.lo)||null)):{name:`${i.name} loadout`.slice(0,60),slots:{},consumables:[]};
+    if(!lo) return;
+    if(slots[0]==="cons"){ const c=(lo.consumables||(lo.consumables=[])).find(c=>(c.uuid&&c.uuid===item.uuid)||c.name===item.name); if(c) c.qty=Math.min(99,(c.qty||1)+1); else lo.consumables.push({...item,qty:1}); }
+    else { const k=slots.find(k=>!lo.slots?.[k])||slots[0]; lo.slots={...(lo.slots||{}),[k]:item}; }
+    const c=await glSave(lo,true); if(c) toast(`${i.name} added to ${c.name}`); }; }
+
 $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return; const kind=S.tab; if(!GEAR[kind]) return; const st=grState(kind);
+  const ga=e.target.closest("[data-gladd]"); if(ga){ const it=(st.data?.items||[]).find(x=>(x.uuid||x.name)===ga.dataset.gladd); if(it) glAddMenu(e,kind,it); return; }
   if(e.target.closest("[data-grretry]")) return grLoad(kind);
   const gm=e.target.closest("[data-grmission]"); if(gm){ let x; try{ x=JSON.parse(gm.dataset.grmission); }catch(_){ return; } return grOpenMission(kind,x); }
   if(e.target.closest("[data-grmback]")){ st.mission=st.mission?.prev||null; $("gr-panel").scrollTop=0; return st.mission?grMission(kind):grDetail(kind); }
@@ -8780,7 +8863,7 @@ function ogWire(P){ const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)
 setInterval(()=>{ if(S.tab==="orgs"&&S.og.view==="org"&&S.og.cur&&!S.og.evForm&&!S.og.rankEdit&&S.og.tab!=="settings"&&!document.activeElement?.closest?.("#og-panel input,#og-panel textarea,#og-panel select")) ogOpen(S.og.cur,true); },20000);
 
 async function poll(){
-  const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live;
+  const live=await api().get_live(); syncUexTabs(!!live.log?.uex_token); const prevSys=S.live?.player?.system||S.live?.where?.system; S.live=live; S.liveAt=performance.now();
   // What re-frames the follow view: a new reading, a change of system, body or travel state, the next stop, and
   // (with a route, which is framed as you + the next stop) moving a fair way, so the frame keeps up as you fly.
   const pl=live.player, step=pl?.body?Math.max(5000,(S.bodyMap?.[pl.body]?.radius||1e6)*0.15):2e7;

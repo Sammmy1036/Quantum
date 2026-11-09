@@ -1350,6 +1350,8 @@ class ContractTracker(threading.Thread):
             self.in_pu = False
         if "OnClientSpawned] Spawned!" in line and self.in_pu:
             self.spawned_at = log_time(line) or time.time()
+        if "CSystem::Quit" in line or "<SystemQuit>" in line or "[FastShutdown]" in line:
+            self.quit_at = time.time()          # the game is shutting down: don't wait for the process to go
         if "OpenLoadingScreen] Started" in line:
             self.loading = True
         elif self.loading and line.find("Loading screen for") >= 0 and "closed" in line:
@@ -1822,11 +1824,16 @@ class ContractTracker(threading.Thread):
         self._last_locate = now
         logs = running_game_logs()
         if logs:
-            self._run_seen = now
+            self._run_seen, self._misses = now, 0
+        else:
+            self._misses = getattr(self, "_misses", 0) + 1
         # One missed process check (a busy PC, a handle the check couldn't open) isn't the game closing: Quantum
         # forgets your position when the game closes, which made the route line vanish until the next
-        # /showlocation. Only call it closed after a minute without seeing it.
-        self.game_running = bool(logs) or (self.proc_seen and now - getattr(self, "_run_seen", 0) < 60)
+        # /showlocation. But waiting a whole minute left the app showing you in game long after you'd quit.
+        # Closed = three checks in a row without it, at least 6 s apart (or the log says the game shut down).
+        quit_logged = getattr(self, "quit_at", 0) > getattr(self, "_run_seen", 0) - 2
+        gone = self._misses >= 3 and now - getattr(self, "_run_seen", 0) >= 6
+        self.game_running = bool(logs) or (self.proc_seen and not gone and not (quit_logged and self._misses >= 1))
         self.proc_seen = self.proc_seen or self.game_running   # the process check works on this PC
         running = [p for p in logs if os.path.isfile(p)]
         if running and (not self.log_path or os.path.normcase(self.log_path) not in map(os.path.normcase, running)):

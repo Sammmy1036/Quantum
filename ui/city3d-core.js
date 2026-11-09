@@ -717,7 +717,14 @@ const WORLD_LOOKS={
       sunGlow:0xffd9a0, hemi:[0xe6dccb,0x6e6457], haze:{near:9000, far:70000}, precip:null },
     ground:{low:[0.55,0.5,0.44], high:[0.66,0.63,0.58], rock:[0.36,0.33,0.3], sea:[0.6,0.6,0.62]} },
 };
-const worlds={};
+const worlds={}, PCOL={};
+// A planet's colour map as pixels for sampling (planetImage is the map's own loader), shrunk to at most 2048 wide
+function planetColours(body){ return PCOL[body]||(PCOL[body]=(async()=>{ try{
+    if(typeof planetImage!=="function") return null; const m=await planetImage(body); if(!m?.img) return null;
+    const w=Math.min(2048,m.img.naturalWidth||m.img.width), h=Math.round(w*(m.img.naturalHeight||m.img.height)/(m.img.naturalWidth||m.img.width));
+    const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d",{willReadFrequently:true}); g.drawImage(m.img,0,0,w,h);
+    const lin=new Float32Array(256); for(let i=0;i<256;i++){ const x=i/255; lin[i]=x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4; }
+    return {w,h,px:g.getImageData(0,0,w,h).data,lin,du:m.du||0,dv:m.dv||0}; }catch(e){ return null; } })()); }
 function worldFor(body){ if(worlds[body]) return worlds[body];
   const look=WORLD_LOOKS[body]||WORLD_LOOKS.default, G=look.ground; let wst=null;
   wst=worlds[body]=define({ city:body, body, file:`terrain/${body}.js`, world:true,
@@ -726,6 +733,18 @@ function worldFor(body){ if(worlds[body]) return worlds[body];
     weather:look.weather, note:"Ground from the game's elevation map (a point every few km); finer detail generated.",
     async build({F, terrain, pinned, heights, dirAt, fbm3, sstep, THREE}){
       const REAL=heights(), R=F.B.radius, sea=look.sea; if(!REAL) return {hgt:()=>0};
+      // The game's own colour map of the planet (planets/<Body>.js, the one the map's globe uses), when there is
+      // one: the ground takes its colours, so microTech's green valleys and forests show instead of snow
+      // everywhere, and it only snows where that map is snowy. Without one, the planet's hand-made look.
+      const MAP=await planetColours(body);
+      const mapAt=d=>{ if(!MAP) return null; const lon=Math.atan2(d[1],d[0])/(2*Math.PI), lat=Math.asin(Math.max(-1,Math.min(1,d[2])));
+        let u=((lon+MAP.du)%1+1)%1, v=lat/Math.PI+0.5+MAP.dv; v=Math.max(0,Math.min(1,v));
+        const fx=u*MAP.w-0.5, fy=(1-v)*MAP.h-0.5, x0=Math.floor(fx), y0=Math.max(0,Math.min(MAP.h-1,Math.floor(fy))), tx=fx-x0, ty=Math.max(0,Math.min(1,fy-y0));
+        const px=(x,y)=>{ x=((x%MAP.w)+MAP.w)%MAP.w; y=Math.max(0,Math.min(MAP.h-1,y)); const k=(y*MAP.w+x)*4; return [MAP.lin[MAP.px[k]],MAP.lin[MAP.px[k+1]],MAP.lin[MAP.px[k+2]]]; };
+        const a=px(x0,y0), b=px(x0+1,y0), c=px(x0,y0+1), e=px(x0+1,y0+1);
+        return [0,1,2].map(i=>(a[i]*(1-tx)+b[i]*tx)*(1-ty)+(c[i]*(1-tx)+e[i]*tx)*ty); };
+      const snowy=c=>{ if(!c) return 1; const mx=Math.max(...c), mn=Math.min(...c); return sstep(0.45,0.7,mx)*(1-sstep(0.12,0.3,(mx-mn)/(mx+1e-6))); };
+      if(MAP&&wst.want){ const u=Math.hypot(...wst.want), d=wst.want.map(v=>v/u); wst.snowy=snowy(mapAt(d))>0.5; }
       const det=(x,z,r)=>{ const d=dirAt(x,z), X=d[0]*R, Y=d[1]*R, Z=d[2]*R, A=40+0.2*Math.min(Math.abs(r-(sea??0)),2600);
         return (fbm3(X/2600+7,Y/2600+3,Z/2600+5)-0.48)*2*A+(fbm3(X/700+1,Y/700+6,Z/700+2,4)-0.48)*0.5*A; };
       const base=(x,z)=>{ const r=REAL(x,z); let h=r+det(x,z,r); if(sea!=null) h=Math.max(h,sea); return h; };
@@ -734,7 +753,12 @@ function worldFor(body){ if(worlds[body]) return worlds[body];
       await terrain(hgt,mat,(x,z,y,ny)=>{ const d=dirAt(x,z), n=fbm3(d[0]*R/900,d[1]*R/900,d[2]*R/900,3);
         const rock=Math.min(1,sstep(0.94,0.76,ny)+sstep(0.985,0.9,ny)*sstep(0.42,0.6,n)*sstep(500,1500,y)), up=sstep(300,2200,y);
         const ice=sea!=null?1-sstep(sea+0.3,sea+3,y):0;
-        return [0,1,2].map(i=>{ const g=G.low[i]*(1-up)+G.high[i]*up+0.04*(n-0.5); return (g*(1-rock)+G.rock[i]*rock)*(1-ice)+G.sea[i]*ice; }); },{seg:320});
+        const mc=mapAt(d), sn=mc?snowy(mc):1;
+        // with the map: its colour, a touch of fine variation, snow on the high ground only where the map is
+        // snowy, frozen seas only where it's cold; rock on the steep ground as before
+        const ice2=ice*sn;
+        return [0,1,2].map(i=>{ const g0=G.low[i]*(1-up)+G.high[i]*up, g=(mc?mc[i]*(1-up*sn*0.5)+g0*up*sn*0.5:g0)+0.04*(n-0.5);
+          return (g*(1-rock)+G.rock[i]*rock)*(1-ice2)+G.sea[i]*ice2; }); },{seg:320});
       return {hgt}; } });
   return wst; }
 
@@ -833,7 +857,7 @@ function update(t){
 
   // precipitation round the camera, near the ground
   const P=W.precip, now_=performance.now(), dt=Math.min(0.1,(now_-lastNow)/1000); lastNow=now_;
-  precip.visible=!inSpace&&!!P&&opt.precip&&camAlt<P.maxAlt&&g>0.5&&!reduceMotion();
+  precip.visible=!inSpace&&!!P&&opt.precip&&camAlt<P.maxAlt&&g>0.5&&!reduceMotion()&&st.snowy!==false;
   if(precip.visible){ const pm=precip.material; pm.color.set(P.color); pm.size=P.size; pm.opacity=P.opacity;
     precip.position.copy(camera.position); precip.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...upG));
     const p=pg.attributes.position.array, f0=P.fall[0], f1=P.fall[1]-P.fall[0];

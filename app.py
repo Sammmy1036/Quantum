@@ -740,6 +740,8 @@ class Api:
         - Any other named place (outposts, distribution centres) exact.
         Latitude and height don't depend on the rotation angle, so they must roughly match the anchor
         first."""
+        if not self._on_live():          # PTU/EPTU readings never move the LIVE alignments
+            return
         if self._player and self._autocal_from_delivery():
             return
         w = self._tracker.where or {}
@@ -1332,6 +1334,33 @@ class Api:
             options.append((cur["left"], cur["at"], "left"))
         return max(options, key=lambda o: o[1]) if options else (None, 0, None)
 
+    def _play_tick(self, game_on, t):
+        """Play time: this session started when Quantum first saw the game running; today's and all-time
+        totals add up while it runs (kept in settings, saved about once a minute)."""
+        pl = getattr(self, "_play", None)
+        if pl is None:
+            pl = self._play = {"since": None, "last": None, "saved": t}
+        rec = self._settings.setdefault("play_time", {})
+        day = time.strftime("%Y-%m-%d", time.localtime(t))
+        if rec.get("day") != day:
+            rec.update(day=day, today=0.0)
+        if game_on:
+            if not pl["since"]:
+                pl["since"] = t
+            if pl["last"] and 0 < t - pl["last"] < 30:          # a gap (asleep, hung) isn't play time
+                dt = t - pl["last"]
+                rec["today"] = float(rec.get("today") or 0) + dt
+                rec["total"] = float(rec.get("total") or 0) + dt
+            pl["last"] = t
+            if t - pl["saved"] > 60:
+                pl["saved"] = t
+                self._save_settings()
+        else:
+            if pl["since"]:
+                self._save_settings()
+            pl["since"] = pl["last"] = None
+        return {"since": pl["since"], "today": round(float(rec.get("today") or 0)), "total": round(float(rec.get("total") or 0))}
+
     def get_live(self):
         with self._lock:
             t = time.time()
@@ -1384,6 +1413,7 @@ class Api:
                     "city_clock": {**self._clock_cfg(), "available": city_clock.AVAILABLE, "in_city": self._clock_city},
                     "travel": self._travel_view(cur, t) if game_on else None,
                     "arrived": self._arrived_note if game_on else None, "game_off": not game_on,
+                    "play": self._play_tick(game_on, t),
                     "trade_ver": getattr(self, "_trade_changed", 0)}
             if p:
                 body = self._db.body_near(p, psys)
@@ -2062,7 +2092,7 @@ class Api:
                 "undersuit": "armor", "primary": "weapons", "secondary": "weapons", "sidearm": "weapons",
                 "melee": "weapons", "gadget1": "gadgets", "gadget2": "gadgets", "utility1": "utility",
                 "utility2": "utility", "hat": "clothing", "torso": "clothing", "jacket": "clothing",
-                "pants": "clothing", "shoes": "clothing", "gloves": "clothing"}
+                "pants": "clothing", "shoes": "clothing", "gloves": "clothing", "bag": "clothing"}
     GL_MAX = 60
 
     def _gl_item(self, x, kind):
@@ -2253,14 +2283,32 @@ class Api:
                 print("place sync:", e, flush=True)
             time.sleep(self.PLACES_SYNC_EVERY)
 
+    GAME_CHANNELS = ("EPTU", "PTU", "TECH-PREVIEW", "HOTFIX", "LIVE")
+
+    def _game_env(self, path=None):
+        """Which channel the Game.log being read belongs to (LIVE, PTU, EPTU, ...), from its folder."""
+        p = (path if path is not None else (self._tracker.log_path or "")).upper().replace("/", "\\")
+        return next((c for c in self.GAME_CHANNELS if f"\\{c}\\" in p), "LIVE")
+
+    def _on_live(self):
+        """True when the Game.log being read is the LIVE game's. Only LIVE builds count as "the game build":
+        logging into the PTU (or EPTU, Tech-Preview, Hotfix) must not look like a game update, start planet
+        alignment over, or tag alignments with a test build."""
+        return self._game_env() == "LIVE"
+
     def _game_build(self):
-        """The game build (from Game.log), or the last one seen when the game isn't running."""
-        b = str(self._tracker.build or "")
+        """The LIVE game build (from Game.log), or the last LIVE one seen when the game isn't running or
+        you're playing a test channel (PTU and friends never replace it)."""
+        b = str(self._tracker.build or "") if self._on_live() else ""
         old = self._settings.get("last_build")
         if b and b != old:
             self._settings["last_build"] = b
             self._save_settings()
-            if old:
+            # An older Quantum saved PTU builds here too. Coming back to LIVE from one of those isn't an
+            # update: just take the LIVE build quietly.
+            old_label = ((self._settings.get("build_labels") or {}).get(str(old)) or "").upper()
+            was_test = any(c in old_label for c in self.GAME_CHANNELS if c != "LIVE")
+            if old and not was_test:
                 self._on_new_build(old, b)
         return b or self._settings.get("last_build")
 
@@ -2546,6 +2594,12 @@ class Api:
     def delete_location(self, name):
         with self._lock:
             if self._db.locations.pop(name, None):
+                if self._guide == name:                        # don't keep guiding to a place that's gone
+                    self._guide = None
+                before = len(self._route)
+                self._route = [t for t in self._route if t.get("place") != name]
+                if len(self._route) != before or self._guide is None:
+                    self._save_settings()
                 self._db.save()
                 self._db_changed()
             return {"ok": True}
@@ -3360,8 +3414,7 @@ class Api:
     def _dr_game_build(self):
         running = self._game_on()
         path = self._tracker.log_path or ""
-        env = next((c for c in ("EPTU", "PTU", "TECH-PREVIEW", "HOTFIX", "LIVE")
-                    if f"\\{c}\\" in path.upper().replace("/", "\\")), "LIVE")
+        env = self._game_env(path)
         # The log knows the release (Branch: sc-alpha-4.10.0, FileVersion: 4.10.193.11644) but not
         # which patch of it: a 4.10.1 hotfix still says 4.10.0 / 4.10.193. So the log gives major.minor,
         # and UEX's own version list (the numbering the community uses) gives the patch, as long as
@@ -7797,7 +7850,47 @@ class Api:
             pass
         return out
 
-    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload=""):
+    # ---- How long a run takes, roughly, so runs can be ranked by aUEC per hour instead of only by the
+    # profit of one trip. Deliberately simple: quantum travel at ~0.2 c plus spool/align per leg, time to
+    # land or dock at each end, loading and unloading (much quicker where the terminal auto-loads), and a
+    # gateway crossing per system jump. Used to compare runs, not as a promise.
+    QT_SPEED = 0.2 * 299_792_458        # m/s
+    QT_LEG_S = 60                       # spool, align, accelerate and slow down
+    DOCK_S = {"station": 180, "ground": 420, "other": 300}
+    JUMP_S = 600                        # fly to the gateway, through it, and on
+    LOAD_S_PER_SCU, LOAD_MIN_S, AUTOLOAD_S = 1.5, 120, 90
+
+    def _run_minutes(self, x, units, start_dist=None):
+        legs = 0.0
+        if start_dist:
+            legs += self.QT_LEG_S + start_dist / self.QT_SPEED
+        d = x.get("dist") or 0
+        legs += self.QT_LEG_S + (d / self.QT_SPEED if d and d < 5e12 else 600)
+        if x.get("cross_system"):
+            legs += self.JUMP_S
+        dock = lambda st, gr: self.DOCK_S["station" if st else "ground" if gr else "other"]
+        legs += dock(x.get("from_station"), x.get("from_ground")) + dock(x.get("to_station"), x.get("to_ground"))
+        handle = lambda auto: self.AUTOLOAD_S if auto else max(self.LOAD_MIN_S, units * self.LOAD_S_PER_SCU)
+        legs += handle(x.get("autoload_from")) + handle(x.get("autoload_to"))
+        return legs / 60
+
+    @staticmethod
+    def _price_trust(x, now):
+        """0.55..1: how far to trust a run's prices. Fresh reports (or a Quantum datarunner's) count fully;
+        prices a few days old, or with few reports behind them, less: they're the runs that turn out empty."""
+        upd = x.get("updated") or 0
+        age_h = (now - upd) / 3600 if upd else 96
+        t = 1.0 if age_h <= 6 else max(0.65, 1.0 - (age_h - 6) / 66 * 0.35)
+        if x.get("quantum_from") or x.get("quantum_to"):
+            t = max(t, 0.95)
+        rep = min(x.get("reports_from") or 0, x.get("reports_to") or 0)
+        if upd and rep and rep < 2:
+            t *= 0.9
+        if x.get("units") and x.get("scu_from") and x["scu_from"] < x["units"] * 1.05:
+            t *= 0.92                   # you'd empty the terminal: the next one there finds less
+        return round(max(0.55, t), 3)
+
+    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload="", sort="profit"):
         """Best runs from a planet/orbit/terminal for your cargo space and budget, most profit first.
         kind "all" searches every system at once, kind "system" one whole system (origin_id is its name).
         autoload: "" any terminal, "buy" only where the buy terminal loads your ship for you, "both" only
@@ -7863,8 +7956,38 @@ class Api:
                     "autoload_from": al_from, "autoload_to": al_to,
                     "quantum_from": r.get("community_origin"), "quantum_to": r.get("community_destination"),
                     "faction_from": r.get("origin_faction_name") or r.get("faction_origin"),
-                    "faction_to": r.get("destination_faction_name") or r.get("faction_destination")})
-            out.sort(key=lambda x: -x["profit"])
+                    "faction_to": r.get("destination_faction_name") or r.get("faction_destination"),
+                    "id_from": r.get("id_terminal_origin"), "id_to": r.get("id_terminal_destination")})
+            # Time, aUEC per hour and how far to trust the prices, for the smarter sorts
+            now = time.time()
+            with self._lock:
+                me, me_sys = self._player, self._player_sys
+            for x in out:
+                L1 = self._db.locations.get(x["from_place"]) if x["from_place"] else None
+                start = None
+                if me and L1 is not None and L1.pos is not None and L1.system == me_sys:
+                    try:
+                        start = dist(me, self._db.global_pos(L1, now))
+                    except Exception:
+                        start = None
+                mins = self._run_minutes(x, x["units"], start)
+                x["minutes"] = round(mins, 1)
+                x["start_dist"] = start
+                x["per_hour"] = round(x["profit"] / max(mins, 5) * 60)
+                x["trust"] = self._price_trust(x, now)
+                x["best"] = round(x["per_hour"] * x["trust"])
+            key = {"hour": lambda x: -x["per_hour"], "best": lambda x: -x["best"]}.get(sort, lambda x: -x["profit"])
+            out.sort(key=key)
+            # Where to go next: the best run that starts where this one sells (a loop instead of flying back empty)
+            by_start = {}
+            for x in out:
+                b = by_start.get(x["id_from"])
+                if x["id_from"] and (b is None or x["profit"] > b["profit"]):
+                    by_start[x["id_from"]] = x
+            for x in out:
+                nx = by_start.get(x["id_to"])
+                if nx and nx is not x:
+                    x["then"] = {"commodity": nx["commodity"], "profit": nx["profit"], "to": nx["to"], "to_place": nx["to_place"]}
             if wide:                       # one commodity shouldn't fill the whole list
                 seen, kept = {}, []
                 for x in out:
@@ -7931,7 +8054,7 @@ class Api:
             CAL_PATH.write_text(json.dumps(self._cal_payload(data), indent=1), encoding="utf-8")
         except OSError:
             pass
-        if kind.startswith("auto-") or kind == "manual":         # a new alignment (not a check or a reset)
+        if (kind.startswith("auto-") or kind == "manual") and self._on_live():   # a new LIVE alignment
             if self._tracker.build:          # aligned by you in this game build: datarunners' agreed one doesn't replace it
                 self._settings.setdefault("cal_build", {})[body] = str(self._tracker.build)
                 self._save_settings()
@@ -8125,10 +8248,15 @@ class Api:
             if loc.source == "mission" and loc.body == o.marker["body"] and dist(loc.pos, o.marker["pos"]) < 50:
                 return loc.name
         cargo = contract_cargo(c.code)
-        label = {"pickup": "Pickup", "dropoff": "Drop-off"}.get(o.kind, "Objective")
+        # Pickups and drop-offs say what they are; any other objective is named after its contract
+        # ("Eliminate Specific Target (near Baijini Point, ArcCorp)"), not a bare "Objective"
+        title = re.sub(r"\s+", " ", str(getattr(c, "name", "") or "")).strip()
+        if len(title) > 48:
+            title = title[:47].rstrip() + "…"
+        label = {"pickup": "Pickup", "dropoff": "Drop-off"}.get(o.kind) or title or "Objective"
         where = (f"near {o.marker['near_place']}, {o.marker['body']}" if o.marker.get("near_place") and o.marker.get("body")
                  else o.marker.get("body") or o.marker.get("lpoint") or (f"near {o.marker['near']}" if o.marker.get("near") else "space"))
-        name = self._db.unique_name(f"{label}{' ' + cargo if cargo else ''} ({where})")
+        name = self._db.unique_name(f"{label}{' ' + cargo if cargo and o.kind in ('pickup', 'dropoff') else ''} ({where})")
         self._db.locations[name] = Location(name, "surface" if o.marker.get("body") else "space",
                                             tuple(o.marker["pos"]), o.marker.get("body"),
                                             notes=f"Contract: {c.name}", source="mission",
