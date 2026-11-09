@@ -7,6 +7,7 @@ Read-only data sources; nothing touches the game process:
   - locations.json                -> map database (run import_data.py once)
 """
 import base64
+import hashlib
 import json
 import secrets
 import urllib.parse
@@ -470,6 +471,10 @@ class Api:
         return data
 
     def _save_settings(self):
+        try:
+            self._fleet_web_check()           # My Fleet or a gear loadout changed: the website's copy follows
+        except Exception:
+            pass
         self._settings.update(route_tasks=self._route, guide=self._guide)
         self._settings.pop("route", None)
         out = self._settings
@@ -4170,7 +4175,8 @@ class Api:
                 "has_secret": bool(self._dr_cfg().get("secret")), "has_token": bool(self._uex.token), "flow": dict(self._acct_flow),
                 "site": self._community.url or community.DEFAULT_URL,
                 "keys": {"stored": bool(a.get("keys_stored")), "error": a.get("keys_error"),
-                         "note": a.pop("keys_note", None)}}           # said once
+                         "note": a.pop("keys_note", None)},          # said once
+                "fleet_web": {"on": self._fleet_web_wanted(), "at": a.get("fleet_web_at"), "error": a.get("fleet_web_error")}}
 
     def account_sign_in(self):
         """Start signing in: get a code from the server, open the approval page, and wait for it in the background."""
@@ -4270,6 +4276,11 @@ class Api:
                     self._account_refresh()
                 except Exception:
                     pass
+                self._fleet_web_failed = None       # a copy that couldn't be sent earlier gets another go
+                try:
+                    self._fleet_web_check()
+                except Exception:
+                    pass
 
     KEY_ERRORS = {"invalid_token": "UEX didn't accept your Bearer Token, so it wasn't saved to your account.",
                   "invalid_secret_key": "UEX didn't accept your Secret Key with this Bearer Token, so they weren't saved to your account.",
@@ -4361,6 +4372,117 @@ class Api:
         for k in ("keys_stored", "keys_at", "keys_error", "keys_note"):
             a.pop(k, None)
         self._save_settings()
+        return {**self.account_status(), "ok": True}
+
+    # ---- My Fleet on the website. While signed in (and "Show my fleet and gear loadouts on the website" is on,
+    # the default), a copy of My Fleet, every ship with each of its loadouts as My Fleet works it out, and the gear
+    # loadouts go to the account a few seconds after they change, so quantumsc.org/fleet can show them to you.
+    # The copy is replaced whole each time; turning the switch off removes it from the server.
+    FLEET_WEB_WAIT = 8                     # s after the last change before the copy is sent
+
+    def _fleet_web_wanted(self):
+        return self._settings.get("fleet_web", True) is not False
+
+    def _fleet_web_key(self):
+        """A fingerprint of what the copy holds, to tell whether it changed."""
+        keep = {"fleet": [{k: v for k, v in f.items() if k not in ("loadout", "power")} for f in self._settings.get("fleet") or []],
+                "gear": self._settings.get("gear_loadouts") or []}
+        return hashlib.sha256(json.dumps(keep, sort_keys=True, default=str).encode()).hexdigest()[:24]
+
+    def _fleet_web_check(self):
+        if not self._fleet_web_wanted() or not getattr(self, "_community", None) or not self._account_token():
+            return
+        key = self._fleet_web_key()
+        if key in (self._account().get("fleet_web_key"), getattr(self, "_fleet_web_pending", None),
+                   getattr(self, "_fleet_web_failed", None)):
+            return                            # already sent, on its way, or just failed (tried again on the next change)
+        self._fleet_web_pending = key
+        t = getattr(self, "_fleet_web_timer", None)
+        if t:
+            t.cancel()
+        self._fleet_web_timer = threading.Timer(self.FLEET_WEB_WAIT, self._fleet_web_push)
+        self._fleet_web_timer.daemon = True
+        self._fleet_web_timer.start()
+
+    def _fleet_web_snapshot(self):
+        """Every ship in My Fleet with each loadout worked out, and the gear loadouts, as the server keeps them."""
+        rows = self._vehicle_rows()
+        ships = []
+        for f in json.loads(json.dumps(self._settings.get("fleet") or [], default=str)):    # a copy: My Fleet isn't touched
+            try:
+                self._loadouts(f)
+            except Exception:
+                continue
+            v = rows.get(f.get("vehicle_id"), {})
+            out = {"uid": f["uid"], "vehicle_id": f.get("vehicle_id"), "name": f.get("name"), "nickname": f.get("nickname"),
+                   "full": v.get("name_full") or f.get("name"), "maker": v.get("company_name") or "", "scu": v.get("scu") or 0,
+                   "pad": v.get("pad_type"), "main": bool(f.get("main")), "primary": f.get("primary_loadout"),
+                   "photo": self._vehicle_photo(v) if v else None, "loadouts": []}
+            for lo in f["loadouts"]:
+                c = json.loads(json.dumps(f, default=str))
+                c["active_loadout"] = lo["id"]
+                entry = {"id": lo["id"], "name": lo["name"], "livery": (lo.get("livery") or {}).get("name")}
+                try:
+                    r = self.fleet_loadout(f["uid"], _ship=c)
+                except Exception as e:
+                    r = {"ok": False, "error": str(e)}
+                if r.get("ok"):
+                    photo = (r.get("ship") or {}).get("photo")
+                    entry.update(slots=r.get("slots") or [], fixed=r.get("fixed") or [], stats=r.get("stats") or {},
+                                 stock_stats=r.get("stock_stats") or {}, delta=r.get("delta") or {}, missiles=r.get("missiles"),
+                                 power=r.get("power"), photo=photo if isinstance(photo, str) and photo.startswith("https://") else None)
+                else:                                        # no wiki loadout: at least the parts swapped in
+                    entry.update(error=r.get("error"), slots=[{"port": p, "type": "", "label": p.split("/")[-1],
+                                                               "fitted": x.get("name") if isinstance(x, dict) else x}
+                                                              for p, x in (lo.get("loadout") or {}).items()])
+                out["loadouts"].append(entry)
+            ships.append(out)
+        return {"fleet": ships, "gear": self._settings.get("gear_loadouts") or [], "version": updater.VERSION}
+
+    def _fleet_web_push(self):
+        key = getattr(self, "_fleet_web_pending", None)
+        tok = self._account_token()
+        if not tok or not self._fleet_web_wanted():
+            return
+        try:
+            r = self._community.fleet_sync(tok, self._fleet_web_snapshot())
+        except Exception as e:
+            r = {"status": "error", "detail": str(e)}
+        a = self._account()
+        if getattr(self, "_fleet_web_pending", None) == key:
+            self._fleet_web_pending = None
+        if r.get("status") == "ok":
+            a.update(fleet_web_key=key, fleet_web_at=int(r.get("updated") or time.time()))
+            a.pop("fleet_web_error", None)
+            self._fleet_web_failed = None
+        else:
+            a["fleet_web_error"] = (r.get("message") or {"too_big": "Your fleet is too big to keep on the website.",
+                                                         "signed_out": "You were signed out of your Quantum account."}.get(
+                r.get("status"), "Couldn't send your fleet to the website. It'll try again with your next change."))
+            a.pop("fleet_web_key", None)
+            self._fleet_web_failed = key
+        self._save_settings()
+
+    def account_set_fleet_web(self, on):
+        """Settings › Quantum account › "Show my fleet and gear loadouts on the website"."""
+        tok = self._account_token()
+        if not tok:
+            return {**self.account_status(), "ok": False, "error": "Sign in to your Quantum account first."}
+        a = self._account()
+        self._settings["fleet_web"] = bool(on)
+        if on:
+            a.pop("fleet_web_key", None)
+            self._fleet_web_failed = None
+            self._fleet_web_pending = key = self._fleet_web_key()
+            self._fleet_web_push()
+            ok = a.get("fleet_web_key") == key
+            return {**self.account_status(), "ok": ok, "error": None if ok else a.get("fleet_web_error")}
+        r = self._community.fleet_clear(tok)
+        for k in ("fleet_web_key", "fleet_web_at", "fleet_web_error"):
+            a.pop(k, None)
+        self._save_settings()
+        if r.get("status") != "ok":
+            return {**self.account_status(), "ok": False, "error": "Turned off, but the website's copy couldn't be removed yet. Try again in a moment."}
         return {**self.account_status(), "ok": True}
 
     def account_open_page(self):
@@ -6149,9 +6271,10 @@ class Api:
         self._save_settings()
         return {"ok": True, "count": len(ports)}
 
-    def fleet_loadout(self, uid):
-        """The ship's slots stock component in each, and what you've swapped in."""
-        f = next((x for x in self._fleet() if x["uid"] == uid), None)
+    def fleet_loadout(self, uid, _ship=None):
+        """The ship's slots stock component in each, and what you've swapped in. _ship: a copy of the ship to
+        work out instead (the website copy works out each loadout this way, without touching the real one)."""
+        f = _ship or next((x for x in self._fleet() if x["uid"] == uid), None)
         if not f:
             return {"ok": False, "error": "That ship isn't in your fleet"}
         v = self._vehicle_rows().get(f["vehicle_id"], {})

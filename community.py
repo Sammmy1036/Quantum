@@ -131,6 +131,15 @@ class Community:
         {status: ok, uex} | invalid_secret_key | banned | signed_out | unreachable ..."""
         return self._acct("/v1/account/link-uex", {"secret": secret}, token=token, timeout=20)
 
+    def fleet_sync(self, token, data):
+        """A copy of My Fleet and the gear loadouts for the website: {status: ok, updated} | too_big | signed_out ..."""
+        r = self._acct("/v1/fleet/sync", data, token=token, timeout=60)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
+    def fleet_clear(self, token):
+        """Remove the website's copy of My Fleet."""
+        return self._acct("/v1/fleet/clear", {}, token=token, timeout=10)
+
     def account_avatar(self, token, image):
         """Your profile photo (a small JPEG/PNG data: URL, or None to remove it) kept with your Quantum account,
         so it follows you to the website and other PCs. {status: ok} | not_found (server without photos yet) ..."""

@@ -3115,6 +3115,11 @@ async function settingsAction(a,e){
       if(r.ok){ toast(on?"Your UEX keys are kept in your Quantum account":"Removed from your Quantum account. They stay on this PC"); if(on) await acctKeysArrived(r); }
       else toast(r.error||"Couldn't change it. Try again");
       renderDetail(); return; }
+    if(a==="acctfleetweb"){ const on=e.target.checked; S.acctFleetBusy=true; renderDetail();
+      const r=await api().account_set_fleet_web(on); S.acctFleetBusy=false; S.acct=r;
+      if(r.ok) toast(on?"Your fleet and gear loadouts are on the website":"Removed from the website. They stay on this PC");
+      else toast(r.error||"Couldn't change it. Try again");
+      renderDetail(); return; }
     if(a==="acctopen"){ S.acct=await api().account_open_page(); return; }
     if(a==="acctcancel"){ S.acct=await api().account_cancel(); renderDetail(); return; }
     if(a==="acctlink"){ toast("Linking your UEX name…"); S.acct=await api().account_link_now(); renderDetail();
@@ -6116,8 +6121,15 @@ function acctHtml(){
         ?"On: your UEX Bearer Token and Secret Key are kept (encrypted) in your account only. They're never saved on this PC: Quantum gets them from your account each time it starts, on any PC you sign in on."
         :"Off: your UEX keys are saved on this PC only. Turn it on to keep them in your account instead, so nothing is saved here and they fill in on any PC you sign in on."}</div>
       ${k.error?`<div style="color:#ffd38a;font-size:12px;margin-top:4px">${esc(k.error)}</div>`:""}`;
+    const fw=a.fleet_web||{};
+    const fleetWeb=`<label class="row" style="gap:8px;margin-top:10px;cursor:pointer"><input type="checkbox" data-a="acctfleetweb" ${fw.on?"checked":""} ${S.acctFleetBusy?"disabled":""}>
+        Show my fleet and gear loadouts on the website${S.acctFleetBusy?` <span class="spin-sm"></span>`:""}</label>
+      <div class="muted" style="font-size:12px;margin-top:2px">${fw.on
+        ?`On: a copy of My Fleet (every ship and loadout) and your gear loadouts is kept in your account, so you can see them at ${esc(site.replace(/^https?:\/\//,""))}/fleet when you're signed in. Only you can see it there.${fw.at?` Last sent ${new Date(fw.at*1000).toLocaleString()}.`:""}`
+        :"Off: your fleet and gear loadouts stay on this PC only, and the website's copy is removed."}</div>
+      ${fw.error?`<div style="color:#ffd38a;font-size:12px;margin-top:4px">${esc(fw.error)}</div>`:""}`;
     return `<div class="row"><span class="dot on"></span><span>Signed in as <b>${esc(a.email||"")}</b></span><span class="spacer"></span>
-        <button class="btn small ghost" data-a="acctsignout">Sign out</button></div>${link}${keys}
+        <button class="btn small ghost" data-a="acctsignout">Sign out</button></div>${link}${keys}${fleetWeb}
       <div class="muted" style="font-size:12px;margin-top:8px">Manage it at <a data-url="${esc(site)}/account" style="cursor:pointer;text-decoration:underline">${esc(site.replace(/^https?:\/\//,""))}/account</a>.</div>`;
   }
   const err=f.state==="error"?`<div style="color:#ffd38a;font-size:12px;margin-bottom:6px">${esc(f.error||"")}</div>`:"";
