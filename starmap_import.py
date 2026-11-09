@@ -326,3 +326,87 @@ def apply_positions(db, positions, keep=None):
             L.notes = (base + ". " if base else "") + "Position from the game's own layout"
         changed += 1
     return changed
+
+
+# ---------------------------------------------------------------- bodies built from the game files ---
+# game_bodies.json is written by tools/build_game_planet.py from a Data.p4k (LIVE or PTU): a planet the other
+# data only has as a marker (Nyx I) gets its real radius, rotation, orbital-marker height and game code, and
+# the places on it. "bodies" are patches ({name: {field: value}}; a field left out is left alone), "places"
+# are surface spots in the body's own frame, like every other surface place in locations.json.
+GAME_NOTE = "Position from the game files"
+BODY_FIELDS = ("center", "radius_m", "rotation_period_h", "rotation_offset_deg", "om_radius_m", "internal", "kind")
+
+
+def load_bodies(*paths):
+    """The newest readable game_bodies.json of the given files, or None."""
+    best = None
+    for p in paths:
+        try:
+            d = json.loads(Path(p).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(d, dict) and (not best or d.get("generated", 0) > best.get("generated", 0)):
+            best = d
+    return best
+
+
+def apply_bodies(db, data, keep=None):
+    """Put game_bodies.json into the database: the body patches, then the places. A rotation the user lined up
+    with a /showlocation is kept; a /showlocation for a place (keep) still wins over its game-file spot.
+    Safe to run on every start. Returns how many things changed."""
+    if not data:
+        return 0
+    keep = keep or {}
+    changed = 0
+    channel = data.get("channel") or ""
+    for name, patch in (data.get("bodies") or {}).items():
+        b = db.bodies.get(name)
+        system = patch.get("system")
+        if b is None:
+            if not (system and patch.get("center") and patch.get("radius_m")):
+                continue
+            b = db.bodies[name] = Body(name, tuple(patch["center"]), float(patch["radius_m"]), system=system,
+                                       kind=patch.get("kind", "planet"))
+            changed += 1
+        if system and b.system != system:
+            continue                                      # same name in another system: leave it
+        for k in BODY_FIELDS:
+            if k not in patch or patch[k] is None:
+                continue
+            v = tuple(patch[k]) if k == "center" else patch[k]
+            if k == "rotation_offset_deg":
+                if b.community_offset_deg != v:
+                    b.community_offset_deg = v
+                    changed += 1
+                if b.calibrated:
+                    continue                              # lined up in game: that wins
+            if k == "center" and math.dist(b.center, v) < 1000:
+                continue
+            if getattr(b, k) != v:
+                setattr(b, k, v)
+                changed += 1
+    have = {(_key(n), L.system) for n, L in db.locations.items()}
+    for p in data.get("places") or []:
+        body = db.bodies.get(p.get("body"))
+        if not body or not p.get("local"):
+            continue
+        name, system = p["name"], body.system
+        note = GAME_NOTE + (f" ({channel})" if channel else "") + (f". In {p['where']}" if p.get("where") else "")
+        cur = db.locations.get(name)
+        if cur is not None:
+            if cur.source == "db" and cur.system == system and (cur.notes or "").startswith(GAME_NOTE):
+                k = keep.get(name)
+                if not (k and k.get("system") == system):     # moved in a newer build of the game files
+                    pos = tuple(p["local"])
+                    if cur.body != body.name or cur.pos is None or math.dist(cur.pos, pos) > 50:
+                        cur.kind, cur.body, cur.pos = "surface", body.name, pos
+                        changed += 1
+            continue
+        if (_key(name), system) in have:
+            continue
+        db.locations[name] = Location(name, "surface", tuple(p["local"]), body.name, notes=note, source="db",
+                                      system=system, qt=bool(p.get("qt", False)), category=p.get("category", ""),
+                                      created=time.time())
+        have.add((_key(name), system))
+        changed += 1
+    return changed

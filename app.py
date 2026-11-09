@@ -317,6 +317,10 @@ class Api:
             # stations' spots from the game's own layout (tools/build_stations.py), where the data above is off
             self._station_pos = starmap_import.load_positions(HERE / "station_positions.json", RES / "station_positions.json")
             starmap_import.apply_positions(self._db, self._station_pos, keep=self._learned_places())
+            # planets the data above only has as a marker (Nyx I), built from the game files themselves
+            # (tools/build_game_planet.py): real size, rotation, game code and the places on them
+            self._game_bodies = starmap_import.load_bodies(HERE / "game_bodies.json", RES / "game_bodies.json")
+            starmap_import.apply_bodies(self._db, self._game_bodies, keep=self._learned_places())
             for name in [n for n, L in self._unplaced.items() if n in self._db.locations]:
                 self._unplaced.pop(name, None)               # placed from the game files now
         except Exception:

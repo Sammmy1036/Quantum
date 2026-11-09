@@ -93,7 +93,8 @@ BODY_KIND = {"Delamar": "asteroid", "Pyro4": "planet"}
 # checked against a /showlocation at Stanton Gateway and against Pyro I, Monox, Bloom and Pyro V.
 BODY_CENTER = {"Pyro4": (-3704137009.2, -43071659047.6, 0.0), "Fuego": (-3780111838.0, -42827195804.3, 0.0)}
 # Planets with no surface you can reach in the game yet (all three of Nyx's). With nowhere to land,
-# there's no /showlocation to line them up from, so they get no alignment.
+# there's no /showlocation to line them up from, so they get no alignment. One the game files now build
+# (game_bodies.json from tools/build_game_planet.py gives it its game code) is landable again.
 NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
 # Places the data files as cities that are really stations (Levski is built into Delamar).
 # Places taken out of the game that older map data still lists. Removed from the map on load (yours,
@@ -104,7 +105,8 @@ STATION_NAMES = {"levski", "grim hex", "grimhex"}   # data calls them landing zo
 
 def can_align(body) -> bool:
     """A planet or moon you can land on, so a /showlocation there can line up its rotation."""
-    return body is not None and body.kind in ("planet", "moon") and body.name not in NO_LANDING
+    return (body is not None and body.kind in ("planet", "moon")
+            and (body.name not in NO_LANDING or bool(body.internal)))
 
 
 def normalize(db) -> bool:

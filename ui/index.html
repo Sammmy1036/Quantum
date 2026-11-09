@@ -1993,7 +1993,10 @@ const PLANET_LOOK={
   ArcCorp:   {type:1, atmo:[0.55,0.90,0.88], haze:0.36, hazeCol:[0.62,0.78,0.76], clouds:0.17, cloudCol:[0.84,0.93,0.91], cityR:0.07, seed:2.1},
   Hurston:   {type:2, atmo:[0.78,0.93,0.90], haze:0.52, hazeCol:[0.80,0.86,0.83], clouds:0.24, cloudCol:[0.92,0.90,0.83], cityR:0.08, seed:5.3},
   Crusader:  {type:3, atmo:[0.55,0.85,0.95], haze:0.18, hazeCol:[0.86,0.92,0.95], clouds:0.0,  cloudCol:[1,1,1],          cityR:0.012, seed:7.7},
-  microTech: {type:4, atmo:[0.62,0.80,1.00], haze:0.14, hazeCol:[0.85,0.90,1.00], clouds:0.16, cloudCol:[0.97,0.98,1.00], cityR:0.06, seed:3.9}};
+  microTech: {type:4, atmo:[0.62,0.80,1.00], haze:0.14, hazeCol:[0.85,0.90,1.00], clouds:0.16, cloudCol:[0.97,0.98,1.00], cityR:0.06, seed:3.9},
+  // terraformed (oxygen-nitrogen air, oceans, cloud cover in the game's files); its colours are the game's own
+  // map (ui/planets/Nyx I.js), the type only shows until that has loaded
+  "Nyx I":   {type:2, atmo:[0.52,0.76,1.00], haze:0.16, hazeCol:[0.80,0.88,0.96], clouds:0.20, cloudCol:[0.95,0.96,0.97], cityR:0.0, seed:6.4}};
 const PLANET_MATS=[];          // their materials, for the sun's position and time each frame
 const PLANET_V=`#include <common>
   #include <logdepthbuf_pars_vertex>
@@ -3274,7 +3277,7 @@ function renderDetail(){
       <div class="sub">${esc(S.system)}${st.build?` · ${gameVerTxt(st)}`:""}</div>
       <div class="hint" style="font-size:13px;color:var(--ink-2)">Each planet is lined up once, from a /showlocation at a known place. Later readings at known places are logged as checks: if they stay near 0°, the alignment holds across sessions and can be shared.</div>
 
-      <div class="align-list">${rows||`<div class="muted">${S.system==="Nyx"?"Nothing to line up in Nyx: Nyx I, II and III can't be landed on in the game yet, and Delamar is an asteroid (Levski is a station built into it), so there's no planet surface to take a /showlocation on.":"No landable planets or moons in this system."}</div>`}</div>
+      <div class="align-list">${rows||`<div class="muted">${S.system==="Nyx"?"Nothing to line up in Nyx yet: its planets can't be landed on in this version of the game, and Delamar is an asteroid (Levski is a station built into it), so there's no planet surface to take a /showlocation on.":"No landable planets or moons in this system."}</div>`}</div>
       <div class="acts"><button class="btn primary" data-a="export">Export alignments</button><button class="btn" data-a="import">Import</button></div>
       <div class="muted" style="font-size:12px;margin-top:8px">Saved automatically to ${esc(st.file)}. A calibrations.json placed in the app folder is applied on start.</div>`;
   } else if(sel.kind==="body"){ const b=S.bodyMap[sel.name]; if(!b) return d.classList.remove("show");

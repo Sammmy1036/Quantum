@@ -32,7 +32,9 @@ const getIndex=()=>indexP||(indexP=addScript("stations/index.js").then(()=>{
 // Pyro's game files are turned 85.23° from the game's own frame (gateways.py has the measurement): a station
 // placed in Pyro's system frame is turned the same way unless its file says it already is (ingame:true).
 const SYS_TURN={pyro:-85.22993*Math.PI/180};
-function entry(L){ if(!index) return null;
+// A jump point is never a station, though its name can match one: "Nyx Gateway" (the wormhole) and "Nyx Gateway
+// Station" are the same once "station" is dropped, so the jump point drew (tried to draw) the station's model.
+function entry(L){ if(!index||L.type==="jump"||L.to) return null;
   return index.get(L.name)||index.get(`${(L.system||"").toLowerCase()}|${plain(L.name)}`)
     ||(!L.system?index.get(`|${plain(L.name)}`):null)||null; }
 const bytes=s=>{ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; };
@@ -142,7 +144,8 @@ function show(o,v,d,t,f){
     const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; note(name,`stations/${file}.js didn't load (try ${e.tries} of 4): not in manifest.json, or the download failed - see the asset lines in this log`); };
     addScript(`stations/${encodeURIComponent(file)}.js`).then(ok=>{
         if(ok===false) return failed();
-        return build(name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`stations/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
+        // (built under the name its file registered: the index's, which can differ from the map's)
+        return build(window.QSTATION?.[ent.station]?ent.station:name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`stations/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
       .catch(failed);
     return false; }
   if(e.state!=="ready") return false;

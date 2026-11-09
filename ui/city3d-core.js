@@ -258,7 +258,9 @@ const dome=new THREE.Mesh(new THREE.SphereGeometry(1,48,24),new THREE.ShaderMate
 dome.renderOrder=-1000; dome.frustumCulled=false; dome.visible=false; scene.add(dome);
 // The stars dim as the sky brightens (the map's starfield shader gets one extra uniform, once).
 const STARK={value:1};
-function patchShader(m,uniforms,find,repl){ if(!m||m.userData.c3d) return m?.userData.c3d; Object.assign(m.uniforms,uniforms);
+// (only the map's own shader materials: a planet without a custom look has a plain haze shell, no uniforms to add)
+function patchShader(m,uniforms,find,repl){ if(!m||m.userData.c3d) return m?.userData.c3d; if(!m.uniforms||typeof m.fragmentShader!=="string") return null;
+  Object.assign(m.uniforms,uniforms);
   const f=Object.entries(uniforms).filter(([,u])=>typeof u.value==="number").map(([k])=>k), v=Object.entries(uniforms).filter(([,u])=>u.value?.isVector3).map(([k])=>k);
   m.fragmentShader=m.fragmentShader.replace(/void main\(\)\{/,`${f.length?`uniform float ${f.join(",")};`:""}${v.length?` uniform vec3 ${v.join(",")};`:""}\nvoid main(){`).replace(find,repl);
   m.userData.c3d=uniforms; m.needsUpdate=true; return uniforms; }
@@ -269,7 +271,8 @@ function planetFx(o){ if(!o) return null; if(o.userData_c3d) return o.userData_c
   const fx={CLOUDK:{value:0},CITYP:{value:new THREE.Vector3(0,0,1)},ATMOK:{value:1}};
   if(o.clouds) patchShader(o.clouds.material,{CLOUDK:fx.CLOUDK,CITYP:fx.CITYP},/gl_FragColor=vec4\(([^;]*),d\*0\.92\*mix\(0\.35,1\.0,day\)\);/,
     (m0,rgb)=>`gl_FragColor=vec4(${rgb},d*0.92*mix(0.35,1.0,day)*(1.0-CLOUDK*(1.0-smoothstep(0.045,0.09,distance(vP,CITYP)))));`);
-  if(o.atmo) patchShader(o.atmo.material,{ATMOK:fx.ATMOK},"gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K,1.0);","gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K*ATMOK,1.0);");
+  if(o.atmo?.material?.uniforms) patchShader(o.atmo.material,{ATMOK:fx.ATMOK},"gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K,1.0);","gl_FragColor=vec4(pow(ATMO,vec3(2.2))*a*lit*0.9*K*ATMOK,1.0);");
+  else if(o.atmo?.material&&"opacity" in o.atmo.material) fx.plainAtmo={m:o.atmo.material, base:o.atmo.material.opacity};   // faded by hand
   // A rock (Delamar) is one plain mesh: while you're down at a city on it, it gets a hole round the city, as
   // the game cuts its own terrain away round Levski. The city's own ground and rock take over there.
   if(o.b?.kind==="asteroid"&&o.mesh?.material&&!o.mesh.material.userData.hole){ const m=o.mesh.material; fx.HOLE={value:0};
@@ -741,7 +744,7 @@ function release(){ if(!owner) return; const st=owner; owner=null;
   if(st.root) st.root.visible=false; st.FADE.value=0;
   precip.visible=false; dome.visible=false; scene.remove(hemi);
   sun.intensity=SUN0; sun.castShadow=false; sun.color.copy(SUNCOL0); if(ambient) ambient.intensity=AMB0;
-  scene.fog=null; STARK.value=1; const fx=st.fx; if(fx){ fx.CLOUDK.value=0; fx.ATMOK.value=1; }
+  scene.fog=null; STARK.value=1; const fx=st.fx; if(fx){ fx.CLOUDK.value=0; fx.ATMOK.value=1; if(fx.plainAtmo) fx.plainAtmo.m.opacity=fx.plainAtmo.base; }
   setPanel(false); }
 function setPanel(on){ if(panel===on) return; panel=on; ui.show(on?owner:null); if(!on&&S.timeShift) S.timeShift=0; }
 
@@ -783,6 +786,7 @@ function update(t){
   const pl=sysObjs.find(o=>o.b.name===C.body);
   if(pl){ st.fx=planetFx(pl); if(pl.grid&&r>0.5) pl.grid.visible=false;
     if(st.fx){ st.fx.CITYP.value.set(...fr.up); st.fx.CLOUDK.value=sstep(0,0.6,r); st.fx.ATMOK.value=1-g;
+      if(st.fx.plainAtmo) st.fx.plainAtmo.m.opacity=st.fx.plainAtmo.base*(1-g);
       // only once you're down at the city (its own ground drawn and solid round you), and only as wide as that
       // ground is solid: from further off the rock stays whole (a hole there showed as a black crater)
       if(st.fx.HOLE) st.fx.HOLE.value=!C.world&&st.model&&r>0.9&&g>0.6?C.edge[0]/B.radius:0; } }
