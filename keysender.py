@@ -177,7 +177,12 @@ if AVAILABLE:
 
     def game_in_focus():
         h = user32.GetForegroundWindow()
-        return bool(h) and ("star citizen" in _title(h).lower() or _window_exe(h) == "starcitizen.exe")
+        if not h:
+            return False
+        # By program first: a browser tab titled "Star Citizen ..." isn't the game, and keys typed
+        # there (/showlocation) would go into the web page.
+        exe = _window_exe(h)
+        return exe == "starcitizen.exe" or (not exe and "star citizen" in _title(h).lower())
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)

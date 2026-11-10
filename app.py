@@ -542,7 +542,11 @@ class Api:
                 watcher_mod.log_error("system hint")
                 hint = (self._tracker.where or {}).get("system")
             self._player, self._player_t = pos, t
-            self._player_sys = self._db.guess_system(pos, hint)
+            # A wormhole/gateway the log mentioned since it last named the system: only then may a
+            # planet zone in another system outvote the log (the systems share coordinates).
+            tr, w_at = self._tracker, (self._tracker.where or {}).get("at") or 0
+            gate_seen = any(ev and (ev.get("at") or 0) >= w_at - 60 for ev in (tr.tunnel, tr.last_gate))
+            self._player_sys = self._db.guess_system(pos, hint, gate_seen)
             if self._player_sys != hint:
                 self._sys_how = ("planet", "", t)
             self._last_fix = (pos, t, self._player_sys)

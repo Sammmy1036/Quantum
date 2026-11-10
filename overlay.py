@@ -37,21 +37,67 @@ if AVAILABLE:
         user32.GetWindowTextW(hwnd, buf, 256)
         return buf.value
 
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.IsWindow.argtypes = (wintypes.HWND,)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.QueryFullProcessImageNameW.argtypes = (wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+                                                    ctypes.POINTER(wintypes.DWORD))
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+
+    def _window_pid(hwnd):
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        return pid.value
+
+    def _pid_exe(pid):
+        """Program file name (lower case) of a process, or "" if Windows won't say."""
+        ph = kernel32.OpenProcess(0x1000, False, pid)                # PROCESS_QUERY_LIMITED_INFORMATION
+        if not ph:
+            return ""
+        try:
+            buf, n = ctypes.create_unicode_buffer(1024), wintypes.DWORD(1024)
+            return os.path.basename(buf.value).lower() if kernel32.QueryFullProcessImageNameW(
+                ph, 0, buf, ctypes.byref(n)) else ""
+        finally:
+            kernel32.CloseHandle(ph)
+
+    _game_cache = {"hwnd": None, "pid": 0, "miss_at": 0.0}
+
     def _find_game():
+        """The game's own window, found by its program (StarCitizen.exe). Matching on the title alone
+        also caught browser windows ("Star Citizen Wiki - Google Chrome", the RSI site), so the city
+        clock was drawn over a browser on another monitor and F9 could hand focus to the browser.
+        The title is only used when Windows won't tell which program a window belongs to."""
+        import time
+        c = _game_cache
+        h = c["hwnd"]
+        if h and user32.IsWindow(h) and user32.IsWindowVisible(h) and _window_pid(h) == c["pid"]:
+            return h
+        c["hwnd"] = None
+        now = time.monotonic()
+        if now - c["miss_at"] < 1.0:          # called several times a second: don't rescan every time
+            return None
         found = []
 
         def cb(hwnd, _):
-            if user32.IsWindowVisible(hwnd) and "star citizen" in _title(hwnd).lower():
-                found.append(hwnd)
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            pid = _window_pid(hwnd)
+            exe = _pid_exe(pid)
+            if exe == "starcitizen.exe" or (not exe and "star citizen" in _title(hwnd).lower()):
+                found.append((hwnd, pid))
                 return False
             return True
 
         user32.EnumWindows(EnumProc(cb), 0)
-        return found[0] if found else None
-
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
-    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+        if found:
+            c["hwnd"], c["pid"] = found[0]
+            return found[0][0]
+        c["miss_at"] = now
+        return None
     user32.AttachThreadInput.argtypes = (wintypes.DWORD, wintypes.DWORD, wintypes.BOOL)
     user32.GetWindowLongW.argtypes = (wintypes.HWND, ctypes.c_int)
     GWL_EXSTYLE, WS_EX_TOPMOST, VK_MENU, KEYEVENTF_KEYUP = -20, 0x0008, 0x12, 0x0002

@@ -433,12 +433,26 @@ class NavDB:
                 best, best_d = b, d
         return best
 
-    def guess_system(self, pos: Vec, hint: str | None = None) -> str:
+    def guess_system(self, pos: Vec, hint: str | None = None, gate_seen: bool = False) -> str:
         """Which system a /showlocation position is in: the hint (from Game.log) if we have one,
-        else the system whose planet zone contains the point."""
+        else the system whose planet zone contains the point.
+
+        Every system uses the same coordinates, each centred on its own star, so a point in open
+        space in one system can sit inside a planet's zone in another (a mission beacon far out in
+        Stanton landing in Nyx I's zone, say). Being in another system's planet zone is only enough
+        to override the log when the log saw a wormhole/gateway since it named the system
+        (gate_seen), or the point is right at that planet (on it or in low orbit), where a
+        coincidence is next to impossible."""
         inside = [s for s in SYSTEMS if self.body_near(pos, s)]
         if hint in SYSTEMS and (hint in inside or not inside):
             return hint
+        if hint in SYSTEMS and not gate_seen:
+            close = []
+            for s in inside:
+                b = self.body_near(pos, s)
+                if b and dist(pos, b.center) <= b.radius_m + 100_000:
+                    close.append(s)
+            return close[0] if len(close) == 1 else hint
         # Inside a planet's zone in one system only, and not the hinted one: the hint is stale
         # (the log doesn't always say when you go through a wormhole).
         if len(inside) == 1:
