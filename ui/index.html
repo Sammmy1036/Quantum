@@ -137,8 +137,8 @@ button{cursor:pointer}
 #detail{z-index:40;pointer-events:auto}   /* the panel itself takes the mouse: a wheel over its padding or gaps scrolls it, never the map behind */
 .stepbox{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;width:100%;margin-bottom:4px}
 .stepbox label{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--ink-2)}.stepbox .field{width:130px;padding:4px 8px}
-.runbar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 6px}.runbar i{height:6px;border-radius:3px;background:#223251}.runbar i.on{background:#57e39b}
-.runlabels{display:grid;grid-template-columns:repeat(4,1fr);font-size:11.5px;color:var(--dim);line-height:1.35}.runlabels .done{color:var(--ink)}
+.runbar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:4px 0 6px}.runbar i{height:6px;border-radius:3px;background:#223251}.runbar i.on{background:#57e39b}
+.runlabels{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;font-size:11px;color:var(--dim);line-height:1.35}.runlabels .done{color:var(--ink)}
 /* The route page: one page that scrolls as a whole. A single framed 2x2 grid (commodity | map,
    buy | sell) with divider lines, then the footer. The map cell is a window onto the live map. */
 .side-panel{position:absolute;inset:0;z-index:30;overflow-y:auto;overflow-x:hidden;display:none;padding:8px 20px 10px;pointer-events:none}
@@ -175,6 +175,45 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .run-form .k{color:var(--ink-2)}.run-form .field{width:100%}
 .pic-panel{position:absolute;inset:0;z-index:30;overflow:auto;background:var(--bg,#05080f);padding:22px 24px 34px;display:none}
 .pic-panel.show{display:block}
+/* A place's commodities: a window over the map beside the place's card (Commodities tile in its services) */
+.pic-panel.stk-panel{inset:16px 16px 16px calc(min(410px,100% - 32px) + 32px);z-index:35;border:1px solid var(--line);border-radius:16px;background:rgba(5,8,15,.97);box-shadow:0 18px 50px rgba(0,0,0,.55);padding:20px 22px 26px}
+@media (max-width:900px){.pic-panel.stk-panel{inset:16px}}
+.stk-top{display:flex;gap:14px;align-items:flex-start;margin-bottom:4px}.stk-top h2{margin:0 0 4px;font-size:24px}.stk-top .sub{color:var(--ink-2);font-size:13px}
+.stk-top .close{margin-left:auto;flex:none}
+.stk-panel .hd-hero{margin:12px 0 14px}
+.stk-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 6px}
+.stk-tools .search{flex:1;min-width:180px;max-width:320px;margin:0}.stk-tools select{width:auto}
+.stk-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+.stk-seg button{background:none;border:0;padding:7px 12px;color:var(--ink-2);font-size:12.5px;cursor:pointer}.stk-seg button.on{background:var(--route);color:#fff}
+.stk-th{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:18px 2px 10px;padding-bottom:7px;border-bottom:1px solid var(--line-2)}
+.stk-th b{font:600 15px var(--display);color:var(--ink)}.stk-th span{font-size:12px;color:var(--ink-2)}
+.stk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
+.stk-card{display:grid;grid-template-columns:96px minmax(0,1fr);border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2);cursor:pointer;transition:border-color .15s,transform .15s}
+.stk-card:hover{border-color:rgba(140,196,255,.55);transform:translateY(-1px)}
+.stk-card .ph{background:linear-gradient(135deg,var(--panel-3),var(--panel));display:flex;align-items:center;justify-content:center;color:var(--dim);min-height:86px}
+.stk-card .ph img{width:100%;height:100%;object-fit:cover;display:block}.stk-card .ph .ph-art svg{width:34px;height:34px}
+.stk-card .bd{padding:8px 10px;min-width:0;display:flex;flex-direction:column;gap:5px}
+.stk-card .nm{display:flex;gap:6px;align-items:baseline;min-width:0}.stk-card .nm b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stk-card .nm span{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-px{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stk-px>div{min-width:0}.stk-px .lab{display:block;font:600 9.5px var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.stk-px b{display:block;font:400 15px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stk-px b small{font:600 10.5px "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
+.stk-px .buy b{color:#57e39b}.stk-px .sell b{color:#7fc8ff}.stk-px .none{color:var(--dim);font-size:12px;line-height:22px}
+.stk-px i{display:block;font-style:normal;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-px i.a0{color:#57e39b}.stk-px i.a2{color:#f2c14e}.stk-px i.a3{color:#ff8a5c}
+.stk-chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.stk-chips button{border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-2);border-radius:999px;padding:5px 11px;font-size:12.5px;cursor:pointer}
+.stk-chips button b{font-weight:600;color:var(--dim);margin-left:4px}.stk-chips button.on{background:var(--route);border-color:var(--route);color:#fff}.stk-chips button.on b{color:#dbeaff}
+.stk-card.shop .ph{background:linear-gradient(135deg,#0c1629,#122038)}.stk-card.shop .ph img{object-fit:contain;padding:4px}
+.stk-card .cat{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-card .key{font-size:11.5px;color:#9fe0b4;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-card .pr{display:flex;align-items:baseline;gap:8px;margin-top:auto}
+.stk-card .pr b{font:400 15px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;color:#57e39b;white-space:nowrap}
+.stk-card .pr b small{font:600 10.5px "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
+.stk-card .pr i{font-style:normal;font-size:11px;color:var(--ink-2)}.stk-card .pr i.a0{color:#57e39b}.stk-card .pr i.a2{color:#f2c14e}.stk-card .pr i.a3{color:#ff8a5c}
+.stk-card.shop.rent .ph img{object-fit:cover;padding:0}.stk-card.shop.rent{grid-template-columns:128px minmax(0,1fr)}
+.stk-card.nolink{cursor:default}.stk-card.nolink:hover{transform:none;border-color:var(--line)}
 .pic-panel .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
 .pic-panel .gh{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;color:var(--ink-2);font-size:13px}.pic-panel .gh b{color:var(--ink);font-size:17px}
 .main-ship{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;background:var(--panel-2)}.main-ship img{width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:8px}
@@ -400,6 +439,8 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .rs-list li{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:7px 6px;border-radius:6px;cursor:pointer}
 .rs-list li:hover,.rs-list li.sel{background:var(--panel-2)}
 .rs-list li.on{background:var(--panel-3)}
+.rs-list li.rs-head{display:block;cursor:default;padding:10px 6px 4px;font:600 10.5px var(--text);letter-spacing:.1em;text-transform:uppercase;color:var(--route-2)}
+.rs-list li.rs-head:hover{background:none}.rs-list li .btn.go{padding:3px 10px}
 .rs-list .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rs-list .n mark{background:none;color:var(--route-2);font-weight:600}
 .rs-list .b{color:var(--dim);font-size:12px}
@@ -762,6 +803,9 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .svc-tile svg.solid{fill:#dbeaff;stroke:none}
 .svc-tile .bar{width:22px;height:3px;border-radius:2px;background:var(--ok);box-shadow:0 0 6px rgba(60,207,110,.6)}
 .svc-tile .l{font:600 9.5px/1.2 var(--text);letter-spacing:.06em;text-transform:uppercase;color:#bcd6f5;text-align:center;overflow-wrap:anywhere;max-width:100%}
+.desc-more{color:var(--route-2);cursor:pointer;font-weight:600;white-space:nowrap}.desc-more:hover{text-decoration:underline}
+.svc-tile.click{cursor:pointer}.svc-tile.click:hover{border-color:rgba(140,196,255,.6);background:rgba(47,134,255,.12)}
+.svc-tile.click.on{border-color:var(--route);background:rgba(47,134,255,.2)}
 .svc-tile .sz{position:absolute;top:3px;right:6px;font:700 10px var(--display);color:#fff}
 .svc .desc{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
 .svc .none{font-size:12.5px;color:var(--dim)}
@@ -1351,6 +1395,24 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pm-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
 .pm-seg button{background:none;border:0;padding:7px 14px;color:var(--ink-2)}.pm-seg button.on{background:var(--route);color:#fff}
 .pm-photo{display:flex;gap:12px;align-items:center}
+/* Sell form: link the item from Gear (picture and specs come with it) */
+.pm-link{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.pm-link.on{display:flex;gap:12px;align-items:center;border-color:rgba(75,141,255,.45);flex-wrap:wrap}
+.pm-link .who{flex:1;min-width:160px}.pm-link .who b{display:block;font-weight:600}.pm-link .who small{color:var(--dim);font-size:12px}
+.pm-link .k{font:600 11px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.pm-link-ph{width:72px;aspect-ratio:16/10;flex:none;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#0c1629,#122038);display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.pm-link-ph img{width:100%;height:100%;object-fit:contain}
+.pm-link-ph svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.4;opacity:.6}
+.pm-link-res{display:flex;flex-direction:column;gap:2px;margin-top:8px;max-height:310px;overflow:auto}
+.pm-link-row{display:flex;gap:10px;align-items:center;padding:5px 6px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.pm-link-row:hover{background:var(--panel-2);border-color:var(--line)}
+.pm-link-row .who{min-width:0}.pm-link-row b{display:block;font-weight:600;font-size:13px}.pm-link-row small{color:var(--dim);font-size:12px;font-weight:400}
+/* Listing page: the linked item's specs */
+.pm-specs{margin:4px 0 14px}
+.pm-spec-name b{display:block;font:600 15px var(--display)}.pm-spec-name small{color:var(--dim);font-size:12px}
+.pm-spec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.pm-spec-grid div{background:var(--panel-2);border:1px solid var(--line);border-radius:9px;padding:6px 9px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.pm-spec-grid span{font-size:11px;color:var(--dim)}.pm-spec-grid b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .pm-photo .pm-ph{width:200px;border-radius:10px;border:1px solid var(--line)}
 .pm-trade{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;margin-bottom:12px}
 .pm-trade.todo{border-color:rgba(75,141,255,.55);box-shadow:0 0 0 1px rgba(75,141,255,.15)}
@@ -1594,9 +1656,11 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
           <option value="avoid:Pyro">Avoid Pyro</option><option value="avoid:Nyx">Avoid Nyx</option><option value="avoid:Stanton">Avoid Stanton</option></select>
         <span class="k">Loading</span><select class="field" id="tr-auto" title="Auto-loading: the terminal loads and unloads your ship for you"><option value="">Any terminal</option>
           <option value="buy">Auto-load where I buy</option><option value="both">Auto-load at both ends</option></select>
-        <span class="k">Rank by</span><select class="field" id="tr-sort" title="Most profit: the biggest single trip. Per hour: profit for the time it takes (travel from where you are, landing, loading). Best overall: per hour, trusting fresh prices more than old ones"><option value="best">Best overall</option><option value="hour">Profit per hour</option><option value="profit">Most profit per trip</option></select>
+        <span class="k">Rank by</span><select class="field" id="tr-sort" title="Most profit: the biggest single trip. Per hour: profit for the time it takes (travel from where you are, landing, loading). Best overall: per hour, trusting fresh prices more than old ones"><option value="best">Best overall</option><option value="hour">Profit per hour</option><option value="profit">Most profit per trip</option><option value="fresh">Freshest prices</option></select>
+        <span class="k" title="Only use prices reported this recently. Fresher prices are likelier to still be right when you get there, but fewer runs have them.">Price age</span><select class="field" id="tr-age" title="Only use prices reported this recently"><option value="24">Last day</option><option value="12">Last 12 hours</option><option value="6">Last 6 hours</option><option value="3">Last 3 hours</option><option value="1">Last hour</option></select>
         <span class="k">Cargo</span><div class="row" style="gap:6px"><input class="field" id="tr-scu" type="number" min="1" placeholder="SCU your ship holds" style="flex:1"><span class="muted">SCU</span></div>
         <span class="k">Budget</span><div class="row" style="gap:6px"><input class="field" id="tr-budget" type="number" min="0" placeholder="No limit" style="flex:1"><span class="muted">aUEC</span></div>
+        <span class="k" title="Runs that would make less than this for one trip aren't listed (a few hundred aUEC, or a 1 SCU haul, isn't worth flying). 0 shows everything.">Min profit</span><div class="row" style="gap:6px"><input class="field" id="tr-minp" type="number" min="0" step="1000" placeholder="0 = show all" style="flex:1" title="Runs that would make less than this for one trip aren't listed. 0 shows everything."><span class="muted">aUEC</span></div>
       </div>
       <button class="btn primary plan" id="tr-go" style="width:100%;margin:10px 0 4px">Find Route</button>
       <div id="tr-out"></div>
@@ -1703,6 +1767,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <div id="so-panel" class="pic-panel"></div>
     <div id="pm-panel" class="pic-panel"></div>
     <div id="og-panel" class="pic-panel"></div>
+    <div id="stk-panel" class="pic-panel stk-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
     <div class="ov help" id="help">Drag to spin or roam · right-drag to turn and tilt · middle-drag to pan · scroll to zoom · double-click to fly</div>
@@ -3044,13 +3109,15 @@ const SVC_ICONS={
   shop:'<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
   food:'<path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10"/><path d="M16 3c-2 2-2 6 0 8v10"/>',
   ship:'<path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/>',                // the rail's Ships icon
-  dot:'<circle cx="12" cy="12" r="4"/>'};
+  dot:'<circle cx="12" cy="12" r="4"/>',
+  component:'<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>'};
 // solid game-style icons (the Star Citizen UI's own glyphs), drawn filled on their own grid
 const SVC_SOLID={
   pistol:['0 0 50 50','M50 9.5v-.9l-1.7-1.1h-2.2c0 .2-.2.4-.4.4h-2.5c-.2 0-.4-.2-.4-.4H31.1l.1.5h-8.5l-.6-.5H4.5L1.7 9.1c-.3.2-.5.4-.7.7l-.7 1.5V14l.7.8v1.1l5 2.3s1.2 2.5-.8 6-3.4 4.6-5 12.5c0 0-.8 3 1 3.7 0 0-.1.5.3.8l-.3.9s0 .3 1.5.4 7.8 0 7.8 0 2.7-.1 2.7-2.1l.5-2.2s-.7-.5-.2-2.5c.5-2 1.4-4.8 1.4-4.8s.2-1.2 1.3-1.7.4-1.1.4-1.1-.4-1.5.6-3.6l.4-.8s2.1-1.5 4.2.1h6.6l4.4-4.8 2.3-.7h11.4l.3-.4h.2l.5-.5h.7s.8-.1.8-1.1l-.1-2.3h.2l.5-1.3-.2-.2V12l-.2-.3s.5-.6.5-1.4l.3-.8zm-22.3 6.4 2.5 2.1-.2 2.4-1.8 2.1h-3.6l.1-.4-.1-.4s-2.5-1.1-1.9-5.8h5z'],
   utility:['0 0 50 50','M24.8 16.2c-1.2.4-2.3 1-3.2 1.9-.8.8-1.4 1.7-1.8 2.7s-.5 2-.5 3.1c.1 1.2-.3 2.3-1.1 3.1L1 44.3c-.6.6-1 1.4-1 2.4 0 .9.3 1.7 1 2.3.6.6 1.4 1 2.4 1 .9 0 1.7-.3 2.3-1l16.6-16.6c1.2-1.2 2.3-1.6 3.4-1.5 1.2.2 2.4.1 3.5-.2 1.2-.4 2.2-1 3.1-1.9 1-1 1.6-2.1 2-3.5.3-1.3.3-2.6 0-3.9 0-.2-.1-.3-.2-.3-.1-.1-.3 0-.5.1L30.8 24c-.5.5-1.1.7-1.8.7s-1.3-.2-1.8-.7L26 23c-.5-.5-.7-1.1-.7-1.8s.2-1.3.7-1.8l2.7-2.7c.4-.4.3-.6-.3-.7-1.3-.2-2.5-.2-3.6.2m-4.5 12.3c.2-.2.5-.3.8-.3s.6.1.8.3c.2.2.3.5.3.8s-.1.6-.3.8L4.7 47.2c-.2.2-.5.3-.8.3s-.6-.1-.8-.3-.3-.5-.3-.8.1-.6.3-.8l17.2-17.1M45.4 9.2c0-.2-.1-.4-.2-.6l-3.8-3.8c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2l-3 3c-2.1-1.4-4.4-2.3-6.9-2.8V.8c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2h-5.4c-.2 0-.4.1-.5.2-.2.1-.2.3-.2.5v4.3c-2.5.6-4.7 1.5-6.8 2.9l-3.1-3.1c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2L8.7 8.7c-.1.1-.2.3-.2.5s.1.4.2.6l3.1 3.1C10.4 15 9.5 17.2 9 19.6H4.6c-.2 0-.4.1-.5.2-.1.2-.2.4-.2.6v5.4c0 .2.1.4.2.6.1.1.3.2.5.2h4.5c.3 1.5.8 3 1.4 4.3l3.9-3.9c-.7-2.3-.8-4.6-.2-7s1.7-4.5 3.5-6.2c2.6-2.6 5.7-3.8 9.3-3.8s6.7 1.3 9.3 3.8c2.6 2.6 3.9 5.7 3.9 9.3s-1.3 6.7-3.9 9.3c-1.8 1.8-3.9 2.9-6.3 3.5s-4.7.5-7-.3l-3.9 3.9c1.4.7 2.9 1.2 4.4 1.5v4.4c0 .2.1.4.2.6.2.1.3.2.5.2h5.4c.2 0 .4-.1.6-.2.1-.2.2-.3.2-.6V41c2.5-.5 4.8-1.4 6.8-2.8l3.1 3c.2.2.3.2.6.2s.4-.1.5-.2l3.8-3.8c.2-.2.2-.3.2-.6s-.1-.4-.2-.6l-3-3c1.4-2.1 2.4-4.3 2.9-6.9h4.2c.2 0 .4-.1.6-.2.2-.2.2-.3.2-.6v-5.4c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2H45c-.5-2.4-1.4-4.7-2.9-6.9l3-3c.2.1.3 0 .3-.3z'],
   turret:['0 0 16 16','M9.617 14.31h2.195v.44H2.891v-.66l2.994-.634-.715-2.234-2.059.523c-.658-.385-1.015-.607-1.674-.992L1 9.046 7.646 7.31l.22.882 6.647-1.737.331 1.267-6.646 1.737.22.882-1.784.523.826 2.62 1.868.248.3.58zM8.464 4.281l.22.882-5.299 1.379c-.658-.386-1.015-.607-1.674-.993l-.44-1.71 6.645-1.734.221.855 6.532-1.71L15 2.518 8.464 4.224z']};
 function svcIcon(name){ const n=name.toLowerCase();
+  if(/ship component|ship items?\b(?! and)/.test(n)) return `<svg viewBox="0 0 24 24" aria-hidden="true">${SVC_ICONS.component}</svg>`;
   const s=n.includes("weapon")&&(n.includes("ship")||n.includes("vehicle"))?"turret":n.includes("weapon")?"pistol":n.includes("vehicle services")?"utility":null;
   if(s) return `<svg class="solid" viewBox="${SVC_SOLID[s][0]}" aria-hidden="true"><path d="${SVC_SOLID[s][1]}"/></svg>`;
   const k=n.includes("landing pad")?"pad":n.includes("hangar")||n.includes("garage")?"hangar":n.includes("vehicle services")||n.includes("repair")?"wrench":n.includes("docking")?"dock"
@@ -3059,15 +3126,26 @@ function svcIcon(name){ const n=name.toLowerCase();
   return `<svg viewBox="0 0 24 24" aria-hidden="true">${SVC_ICONS[k]}</svg>`; }
 const SVC_ORDER=["landing pad","hangar","docking","loading dock","freight elevator","vehicle services","commodity","refinery","clinic","hospital","rent","buy","food"];
 function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.includes(k)); return i<0?99:i; }
-function servicesHtml(r){
+// A crate with a price tag: the Commodities tile (opens what the place's terminals buy and sell)
+const SVC_COMMODITY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5 11 4.5l8 4v9l-8 4-8-4z"/><path d="M3 8.5l8 4 8-4M11 12.5v9"/><path d="M15.5 13.5l5-2.5v3.2l-5 2.5z"/></svg>';
+function servicesHtml(r,place){
   if(!r) return "";
-  const tiles=[...r.amenities].sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
+  const trade=place&&S.tradePlaces?.has(place), on=trade&&S.stock?.place===place&&S.stock.kind!=="shop";
+  // A terminal amenity the wiki lists ("Commodity Terminal", "Trade") becomes the Commodities tile itself
+  const isTrade=a=>/commodit|trade|trading/i.test(a)&&!/loading dock|freight/i.test(a);
+  const tiles=placeAmenities(r.amenities,place).filter(a=>!(trade&&isTrade(a))).sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
     const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)[)]?$/i); const label=m?m[1]:a;
-    return `<div class="svc-tile" title="${esc(a)}">${m?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("");
-  const desc=r.description?(r.description.length>260?r.description.slice(0,257)+"…":r.description):"";
+    const g=place&&shopGroupFor(a,place), gon=g&&S.stock?.kind==="shop"&&S.stock.place===place&&S.stock.group===g;
+    return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
+    +(trade?`<div class="svc-tile click ${on?"on":""}" data-stock="1" title="What the commodity terminals here buy and sell, with prices and how recent they are">${SVC_COMMODITY}<div class="bar"></div><div class="l">Commodities</div></div>`:"");
+  // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
+  // opened is kept, so the card can redraw every tick without folding it back up
+  const full=r.description||"", long=full.length>260, open=long&&S.descOpen?.has(place);
+  const desc=!full?"":!long||open?esc(full)+(long?` <a class="desc-more" data-desc="less">Less</a>`:"")
+    :esc(full.slice(0,full.lastIndexOf(" ",250)>180?full.lastIndexOf(" ",250):250).replace(/[\s,;:.]+$/,""))+`… <a class="desc-more" data-desc="more">More</a>`;
   return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
     ${tiles?`<div class="svc-grid">${tiles}</div>`:`<div class="none">No services listed for this location.</div>`}
-    ${desc?`<div class="desc">${esc(desc)}</div>`:""}
+    ${desc?`<div class="desc">${desc}</div>`:""}
     ${r.fuel?`<div class="jur" style="margin-top:8px">Fuel ${r.fuel.map(f=>`<b>${esc(f.what.replace(" Fuel",""))}</b> ${money(f.price)}/SCU`).join(" · ")} <span class="muted">(UEX)</span></div>`:""}
     ${r.uex?`<div class="credit">Services: UEX (community data)</div>`:""}
     ${r.url||r.reported?`<div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div>`:""}</div>`; }
@@ -3090,7 +3168,7 @@ async function fillPlacePic(sel){ const key=placePicKey(sel); if(!key||key in S.
   const show=()=>img.classList.add("in"); img.complete?show():(img.onload=show); img.onerror=()=>img.closest(".dpic")?.remove(); }
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
-  const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name]); }
+  const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name],name); }
 // Your own pick, else what Quantum users agree on, else what the game data suggests.
 function padOf(L){ return L.pad&&L.pad!=="unknown"?L.pad:(L.pad_shared||L.pad_auto||"unknown"); }
 const PAD_LABEL={unknown:"Unknown",none:"None",vehicle:"Vehicle",small:"Small",medium:"Medium",large:"Large",xl:"XL",hangar:"Hangar"};
@@ -3174,8 +3252,148 @@ async function settingsAction(a,e){
     if(a==="ccpreview"){ const r=await api().preview_city_clock(S.live?.city_clock?.in_city||"New Babbage"); toast(r.ok?"Click into Star Citizen now: the clock shows for 15 seconds":r.error); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
 }
+// ---- A place's commodity stock: the Commodities button on the card of a place with a commodity terminal shows
+// what each terminal there buys and sells, with stock and how long ago each price was reported (UEX, with newer
+// Quantum datarunner reports laid over it)
+async function loadTradePlaces(){ if(S.tradePlaces!==undefined||!S.live?.log?.uex_token||Date.now()-(S.tradePlacesTry||0)<60000) return;
+  S.tradePlaces=null; S.tradePlacesTry=Date.now();
+  let r; try{ r=await api().uex_trade_places(); }catch(e){ r=null; }
+  if(!r?.ok){ S.tradePlaces=undefined; return; }          // tried again next time a card opens
+  S.tradePlaces=new Set(r.places); if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc"&&S.tradePlaces.has(S.selected.name)) renderDetail(); }
+async function toggleStock(place){ if(S.stock?.place===place&&S.stock.kind!=="shop"){ closeStock(); return renderDetail(); }
+  S.stock={kind:"commodity",place,data:null,side:S.stockSide||"all",q:"",sort:S.stockSort||"name"}; renderDetail(); stockRender();
+  const [r]=await Promise.all([api().uex_place_stock(place).catch(e=>({ok:false,error:String(e)})),stockCommodities()]);
+  if(S.stock?.place!==place) return; S.stock.data=r; stockRender(); }
+function closeStock(){ S.stock=null; const P=$("stk-panel"); if(P){ P.classList.remove("show"); P.innerHTML=""; } }
+// UEX's commodity list (kind and picture name for each), as the Commodities tab has it
+async function stockCommodities(){ if(S.mk) return; try{ const c=await api().uex_commodities(); if(c.ok&&!S.mk){ S.mk=c.items; S.mkByName=Object.fromEntries(c.items.map(x=>[x.name.toLowerCase(),x])); } }catch(e){} }
+function stockPrice(x,side){ if(!x) return `<div><span class="lab">${side==="buy"?"You buy":"You sell"}</span><span class="none">—</span></div>`; const a=drAge(x.at);
+  return `<div class="${side}" title="${esc([x.status_name&&`Stock: ${x.status_name}`,x.community?"Reported by a Quantum datarunner, newer than UEX's":"",x.at?`Reported ${agoTs(x.at)}`:"No report time"].filter(Boolean).join(" · "))}">
+    <span class="lab">${side==="buy"?"You buy":"You sell"}</span><b>${Math.round(x.price).toLocaleString()}<small>aUEC</small></b>
+    <i>${x.scu!=null?`${Number(x.scu).toLocaleString()} SCU`:esc(x.status_name||"")}</i><i class="${a.c}">${x.community?"⚡ ":""}${x.at?agoTs(x.at):"age unknown"}</i></div>`; }
+function stockRender(){ const P=$("stk-panel"), st=S.stock; if(!P) return; if(!st){ return closeStock(); }
+  if(st.kind==="shop") return shopRender();
+  P.classList.add("show"); const L=S.locMap[st.place], r=st.data;
+  const head=`<div class="stk-top"><div><h2>Commodities at ${esc(st.place)}</h2><div class="sub">${esc(L?`${TYPES[L.type]?.one||"Place"}${L.body?" on "+L.body:" in "+L.system}`:"")}${r?.ok&&r.terminals.length>1?` · ${r.terminals.length} terminals`:""}</div></div>
+    <button class="btn small ghost close" data-stkclose="1" aria-label="Close">✕ Close</button></div>`;
+  if(!r){ P.innerHTML=head+qLoader("Loading prices…"); return stockWire(P); }
+  if(!r.ok){ P.innerHTML=head+`<div class="note">${esc(r.error||"Couldn't load the prices")}</div>`; return stockWire(P); }
+  if(!r.terminals.length){ P.innerHTML=head+`<div class="empty">UEX has no commodity terminal here.</div>`; return stockWire(P); }
+  const all=r.terminals.flatMap(t=>t.rows), nBuy=all.filter(i=>i.buy).length, nSell=all.filter(i=>i.sell).length;
+  const newest=Math.max(0,...r.terminals.map(t=>t.updated||0))||null, oldest=Math.min(...r.terminals.map(t=>t.oldest||Infinity));
+  const q=st.q.trim().toLowerCase(), info=i=>S.mk?.find(c=>c.id===i.id_commodity)||S.mkByName?.[i.name.toLowerCase()]||null;
+  const keep=i=>(st.side==="all"||(st.side==="buy"?i.buy:i.sell))&&(!q||`${i.name} ${info(i)?.kind||""}`.toLowerCase().includes(q));
+  const at=i=>Math.max(i.buy?.at||0,i.sell?.at||0);
+  const by={name:(a,b)=>a.name.localeCompare(b.name),buy:(a,b)=>(a.buy?.price??9e12)-(b.buy?.price??9e12)||a.name.localeCompare(b.name),
+    sell:(a,b)=>(b.sell?.price??-1)-(a.sell?.price??-1)||a.name.localeCompare(b.name),fresh:(a,b)=>at(b)-at(a)||a.name.localeCompare(b.name)}[st.sort]||((a,b)=>a.name.localeCompare(b.name));
+  const card=i=>{ const c=info(i);
+    return `<div class="stk-card" data-mkopen="${esc(i.name)}" title="Open ${esc(i.name)} in Commodities: every place that trades it"><div class="ph" data-pic="${esc(c?.wiki||i.name)}">${phCard("commodity")}</div>
+      <div class="bd"><div class="nm"><b>${esc(i.name)}</b>${c?.kind?`<span>${esc(c.kind)}</span>`:""}${c?.illegal?`<span style="color:#ffb454">illegal</span>`:""}</div>
+        <div class="stk-px">${stockPrice(i.buy,"buy")}${stockPrice(i.sell,"sell")}</div></div></div>`; };
+  P.innerHTML=head+statBlock([{label:"For sale here",value:String(nBuy)},{label:"Bought here",value:String(nSell)},{label:"Newest report",value:newest?agoTs(newest):"None"}],
+      oldest<Infinity&&newest&&newest-oldest>86400?[{label:"Oldest price here",value:agoTs(oldest)}]:[])
+    +`<div class="stk-tools"><input class="search" data-stkq="1" placeholder="Search commodities here" value="${esc(st.q)}" autocomplete="off" spellcheck="false">
+      <div class="stk-seg">${[["all","All"],["buy","You can buy"],["sell","You can sell"]].map(([k,t])=>`<button data-stkside="${k}" class="${st.side===k?"on":""}">${t}</button>`).join("")}</div>
+      <select class="field" data-stksort="1">${[["name","A–Z"],["buy","Cheapest to buy"],["sell","Best to sell"],["fresh","Most recently reported"]].map(([v,t])=>`<option value="${v}" ${st.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`
+    +r.terminals.map(t=>{ const rows=t.rows.filter(keep).sort(by), a=drAge(t.updated);
+      return `<div class="stk-th"><b>${esc(t.name)}</b>${t.updated?`<span class="${a.c}" style="${a.c==="a0"?"color:#57e39b":a.c==="a2"?"color:#f2c14e":a.c==="a3"?"color:#ff8a5c":""}">updated ${esc(agoTs(t.updated))}</span>`:`<span>no reports yet</span>`}
+          ${t.autoload?`<span>auto-load</span>`:""}${t.max_box?`<span>boxes up to ${t.max_box} SCU</span>`:""}<span>${rows.length} ${rows.length===1?"commodity":"commodities"}</span></div>
+        ${rows.length?`<div class="stk-grid">${rows.map(card).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:2px">${q?"Nothing here matches.":st.side==="buy"?"Nothing for sale at this terminal.":st.side==="sell"?"This terminal doesn't buy anything.":"No prices on UEX for this terminal yet."}</div>`}`; }).join("")
+    +`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a>${all.some(i=>i.buy?.community||i.sell?.community)?" (⚡ newer reports from Quantum datarunners)":""} and can be off; check the terminal before you buy. Age colours: green under a day, yellow up to 3 days, orange older. Click a commodity for every place that trades it.</div>`;
+  stockWire(P); fillPictures(P); }
+function stockWire(P){
+  P.onclick=e=>{ const x=e.target.closest("[data-ext]"); if(x) api().open_url(x.dataset.ext); };
+  P.querySelector("[data-stkclose]")?.addEventListener("click",()=>{ closeStock(); renderDetail(); });
+  for(const b of P.querySelectorAll("[data-stkside]")) b.onclick=()=>{ S.stock.side=S.stockSide=b.dataset.stkside; stockRender(); };
+  const so=P.querySelector("[data-stksort]"); if(so) so.onchange=()=>{ S.stock.sort=S.stockSort=so.value; stockRender(); };
+  const q=P.querySelector("[data-stkq]"); if(q){ let t; q.oninput=()=>{ S.stock.q=q.value; clearTimeout(t); t=setTimeout(()=>{ const pos=q.selectionStart; stockRender(); const n=$("stk-panel").querySelector("[data-stkq]"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } },220); }; } }
+// ---- A place's shops: the service tiles (Buy Armor, Buy Clothing, Buy Weapons, ship weapons, Food Court,
+// Clinic, Vehicle Services…) open the same kind of window as Commodities, with what the shops there sell
+// (UEX's item prices: app.uex_place_shop), on the group that tile is about. The other groups are a click away.
+// A service's tile -> the groups of things it's about (the first one the place has opens)
+const SVC_SHOP=[[/rent|rental/i,["rentals"]],[/ship component/i,["components"]],[/ship weapon|vehicle weapon/i,["shipweapons"]],[/armou?r/i,["armor"]],[/cloth|apparel|fashion/i,["clothing"]],
+  [/weapon|gun ?shop|armory/i,["weapons"]],[/food|restaurant|bar\b|drink|cafe|diner/i,["food"]],[/clinic|hospital|medical|pharmacy/i,["medical"]],
+  [/gadget|tool|mining equipment/i,["gadgets"]]];
+// The wiki's one "Buy Ship Items and Weapons" is shown as two tiles, ship weapons and ship components (only the
+// ones UEX lists there, once that's known). A shop UEX lists that no amenity covers gets its tile too.
+const SHOP_TILE={armor:"Buy Armor",clothing:"Buy Clothing",weapons:"Buy Weapons",shipweapons:"Buy Ship Weapons",components:"Buy Ship Components",rentals:"Rent Vehicles"};
+function placeAmenities(list,place){ const have=place&&S.shopPlaces?.[place], out=[];
+  for(const a of list){
+    if(/ship items and weapons/i.test(a)){ const both=["shipweapons","components"], keep=have&&both.some(g=>have.includes(g))?both.filter(g=>have.includes(g)):both;
+      for(const g of keep) out.push(SHOP_TILE[g]); }
+    else out.push(a); }
+  if(have){ const covered=new Set(out.flatMap(a=>{ const h=SVC_SHOP.find(([rx])=>rx.test(a)); return h?h[1]:[]; }));
+    for(const g of Object.keys(SHOP_TILE)) if(have.includes(g)&&!covered.has(g)) out.push(SHOP_TILE[g]); }
+  return [...new Set(out)]; }
+function shopGroupFor(service,place){ const have=S.shopPlaces?.[place]; if(!have) return null;
+  const hit=SVC_SHOP.find(([rx])=>rx.test(service)); return hit?hit[1].find(g=>have.includes(g))||null:null; }
+async function loadShopPlaces(){ if(S.shopPlaces!==undefined||!S.live?.log?.uex_token||Date.now()-(S.shopPlacesTry||0)<60000) return;
+  S.shopPlaces=null; S.shopPlacesTry=Date.now();
+  let r; try{ r=await api().uex_shop_places(); }catch(e){ r=null; }
+  if(!r?.ok){ S.shopPlaces=undefined; return; }
+  S.shopPlaces=r.places; S.shopGroups=r.groups; S.fuelPlaces=r.fuel||{}; if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc"&&r.places[S.selected.name]) renderDetail(); }
+async function toggleShop(place,group){ const st=S.stock;
+  if(st?.kind==="shop"&&st.place===place){ if(st.group===group){ closeStock(); return renderDetail(); } st.group=group; st.q=""; renderDetail(); return shopRender(); }
+  S.stock={kind:"shop",place,group,data:null,q:"",sort:S.shopSort||"name"}; renderDetail(); shopRender();
+  let r; try{ r=await api().uex_place_shop(place); }catch(e){ r={ok:false,error:String(e)}; }
+  if(S.stock?.place!==place||S.stock.kind!=="shop") return; S.stock.data=r; shopRender();
+  // The Gear tabs these shops' things are in, for their stats and a link to their page (loaded quietly)
+  const tabs=[...new Set((r.shops||[]).flatMap(s=>s.items.map(i=>SHOP_GEAR_TAB[i.group])).filter(Boolean))];
+  await Promise.all(tabs.map(t=>glData(t).catch(()=>[]))); if(S.stock?.data===r) shopRender(); }
+// A group's Gear tab (stats and the item's page), when it has one
+const SHOP_GEAR_TAB={armor:"armor",clothing:"clothing",weapons:"weapons",gadgets:"gadgets",food:"consumables",medical:"consumables"};
+const SHOP_GEAR_KIND=new Set(["armor","clothing","weapons","gadgets","food","medical"]);
+function shopGear(i){ const tab=SHOP_GEAR_TAB[i.group]; if(!tab) return null; const L=grState(tab).data?.items; if(!L) return null;
+  const n=i.name.toLowerCase(); const g=L.find(x=>(i.uuid&&x.uuid===i.uuid))||L.find(x=>x.name.toLowerCase()===n); return g?{tab,g}:null; }
+function shopRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="shop") return;
+  P.classList.add("show"); const L=S.locMap[st.place], r=st.data, gname=Object.fromEntries(S.shopGroups||r?.groups||[]);
+  const head=`<div class="stk-top"><div><h2>${esc(gname[st.group]||"Shops")} at ${esc(st.place)}</h2><div class="sub">${esc(L?`${TYPES[L.type]?.one||"Place"}${L.body?" on "+L.body:" in "+L.system}`:"")}${r?.ok&&r.shops.length?` · ${r.shops.length} shop${r.shops.length===1?"":"s"}`:""}</div></div>
+    <button class="btn small ghost close" data-stkclose="1" aria-label="Close">✕ Close</button></div>`;
+  if(!r){ P.innerHTML=head+qLoader("Loading what's sold here…"); return shopWire(P); }
+  if(!r.ok){ P.innerHTML=head+`<div class="note">${esc(r.error||"Couldn't load the shops")}</div>`; return shopWire(P); }
+  const all=r.shops.flatMap(s=>s.items), count={}; for(const i of all) count[i.group]=(count[i.group]||0)+1;
+  const groups=(r.groups||[]).filter(([k])=>count[k]);
+  const q=st.q.trim().toLowerCase(), keep=i=>(st.group==="all"||i.group===st.group)&&(!q||`${i.name} ${i.category} ${i.section}`.toLowerCase().includes(q));
+  const shown=all.filter(keep), dates=shown.map(i=>i.at).filter(Boolean), newest=dates.length?Math.max(...dates):null, oldest=dates.length?Math.min(...dates):null;
+  const prices=shown.map(i=>i.price);
+  const by={name:(a,b)=>a.name.localeCompare(b.name),cheap:(a,b)=>a.price-b.price||a.name.localeCompare(b.name),dear:(a,b)=>b.price-a.price||a.name.localeCompare(b.name),
+    fresh:(a,b)=>(b.at||0)-(a.at||0)||a.name.localeCompare(b.name)}[st.sort]||((a,b)=>a.name.localeCompare(b.name));
+  // A vehicle for rent: its picture, maker, cargo and crew, the price per day, and its page in Vehicles
+  const rentCard=i=>{ const a=drAge(i.at), facts=[i.scu?`${Number(i.scu).toLocaleString()} SCU`:"",i.crew?`crew ${i.crew}`:"",i.pad?`${padLabel(i.pad)} pad`:""].filter(Boolean).join(" · ");
+    return `<div class="stk-card shop rent" data-vhopen="${esc(i.vid)}" title="Open the ${esc(i.name)} in Vehicles"><div class="ph">${i.photo?`<img src="${esc(i.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div>
+      <div class="bd"><div class="nm"><b>${esc(i.name)}</b></div><div class="cat">${esc([i.maker,i.category].filter(Boolean).join(" · "))}</div>${facts?`<div class="key">${esc(facts)}</div>`:""}
+        <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>aUEC / day</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
+  const card=i=>{ if(i.group==="rentals") return rentCard(i); const m=shopGear(i), G=m&&GEAR[m.tab], a=drAge(i.at), ship=i.group==="components"||i.group==="shipweapons";
+    const link=m?`data-shopgear="${esc(m.tab)}|${esc(m.g.uuid||m.g.name)}" title="Open ${esc(i.name)} in Gear"`:ship&&i.cat?`data-shopcp="${esc(i.cat)}|${esc(i.id)}" title="Open ${esc(i.name)} in Components"`:"";
+    const img=m?.g?.image;
+    return `<div class="stk-card shop${link?"":" nolink"}" ${link}><div class="ph" ${img?"":SHOP_GEAR_KIND.has(i.group)?`data-gpic="${esc(i.name)}"`:`data-pic="${esc(i.name)}"`}>${img?`<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard(ship?"component":"commodity")}</div>
+      <div class="bd"><div class="nm"><b>${esc(i.name)}</b></div><div class="cat">${esc([m?.g?.maker,i.category||gname[i.group]].filter(Boolean).join(" · "))}</div>
+        ${G&&G.key(m.g)?`<div class="key">${esc(G.key(m.g))}</div>`:""}
+        <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>aUEC</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
+  P.innerHTML=head+statBlock([{label:st.group==="rentals"?"For rent":"For sale",value:String(shown.length)},{label:"Prices",value:prices.length?(Math.min(...prices)===Math.max(...prices)?`${Math.round(prices[0]).toLocaleString()} aUEC`:`${shortMoney(Math.min(...prices))} to ${shortMoney(Math.max(...prices))}`):"—"},{label:"Newest report",value:newest?agoTs(newest):"None"}],
+      oldest&&newest&&newest-oldest>86400?[{label:"Oldest price here",value:agoTs(oldest)}]:[])
+    +(groups.length>1||st.group==="all"?`<div class="stk-chips">${[["all","Everything"],...groups].map(([k,t])=>`<button data-shopg="${k}" class="${st.group===k?"on":""}">${esc(t)}<b>${k==="all"?all.length:count[k]}</b></button>`).join("")}</div>`:"")
+    +`<div class="stk-tools"><input class="search" data-stkq="1" placeholder="${st.group==="rentals"?"Search vehicles for rent here":"Search what's sold here"}" value="${esc(st.q)}" autocomplete="off" spellcheck="false">
+      <select class="field" data-stksort="1">${[["name","A–Z"],["cheap","Price: low to high"],["dear","Price: high to low"],["fresh","Most recently reported"]].map(([v,t])=>`<option value="${v}" ${st.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`
+    +(!all.length?`<div class="empty">UEX has nothing listed for sale here yet.</div>`
+      :r.shops.map(s=>{ const rows=s.items.filter(keep).sort(by); if(!rows.length) return ""; const a=drAge(s.updated);
+        return `<div class="stk-th"><b>${esc(s.name)}</b>${s.updated?`<span style="${a.c==="a0"?"color:#57e39b":a.c==="a2"?"color:#f2c14e":a.c==="a3"?"color:#ff8a5c":""}">updated ${esc(agoTs(s.updated))}</span>`:""}<span>${rows.length} ${st.group==="rentals"?"vehicle":"item"}${rows.length===1?"":"s"}</span></div>
+          <div class="stk-grid">${rows.map(card).join("")}</div>`; }).join("")||`<div class="muted" style="font-size:13px;padding:6px 2px">${q?"Nothing here matches.":`No ${esc((gname[st.group]||"items").toLowerCase())} for sale here on UEX.`}</div>`)
+    +`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the shop before you buy. Age colours: green under a day, yellow up to 3 days, orange older. ${st.group==="rentals"?" Rental prices are for one day.":""} Click an item for its full page.</div>`;
+  shopWire(P); fillGearPictures(P); fillPictures(P); }
+function shopWire(P){
+  P.onclick=e=>{ const x=e.target.closest("[data-ext]"); if(x) return api().open_url(x.dataset.ext);
+    const gg=e.target.closest("[data-shopgear]"); if(gg){ const [tab,id]=gg.dataset.shopgear.split("|"); const t=document.querySelector(`.tab[data-tab="${tab}"]`); if(!t) return; t.click();
+      setTimeout(()=>{ const st=grState(tab); if(tab==="armor") st.view="items"; if(st.data) grOpenItem(tab,id,null); },250); return; }
+    const cp=e.target.closest("[data-shopcp]"); if(cp){ const ref=cp.dataset.shopcp; document.querySelector('.tab[data-tab="components"]')?.click();
+      (async()=>{ for(let k=0;k<40&&!S.cpCats;k++) await new Promise(r=>setTimeout(r,250)); if(S.cpCats) openCpPart(ref); })(); return; } };
+  P.querySelector("[data-stkclose]")?.addEventListener("click",()=>{ closeStock(); renderDetail(); });
+  for(const b of P.querySelectorAll("[data-shopg]")) b.onclick=()=>{ S.stock.group=b.dataset.shopg; shopRender(); renderDetail(); };
+  const so=P.querySelector("[data-stksort]"); if(so) so.onchange=()=>{ S.stock.sort=S.shopSort=so.value; shopRender(); };
+  const q=P.querySelector("[data-stkq]"); if(q){ let t; q.oninput=()=>{ S.stock.q=q.value; clearTimeout(t); t=setTimeout(()=>{ const pos=q.selectionStart; shopRender(); const n=$("stk-panel").querySelector("[data-stkq]"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } },220); }; } }
 function renderDetail(){
   const d=$("detail"), sel=S.selected;
+  if(S.stock&&(sel?.kind!=="loc"||sel.name!==S.stock.place)) closeStock();
   if(sel?.kind!=="settings"){ S.bugSent=false; S.bugOpen=false; }      // Settings closed: back to "Report a bug" next time
   if(!sel){ d.classList.remove("show"); return; }
   const live=S.live, t=now();
@@ -3323,7 +3541,7 @@ function renderDetail(){
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`${placePicHtml(placePicKey(sel))}<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
       <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
-      ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null):""}</div>
+      ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null,L.name):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
         return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
           <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
@@ -3349,6 +3567,7 @@ function renderDetail(){
       `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
         ${inRoute?`<button class="btn" data-a="route" title="Visit it again later in the trip">Add again</button><button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
+        ${S.tradePlaces?.has(L.name)&&!(L.amen&&S.svcCache[L.name]?.amenities)?`<button class="btn${S.stock?.place===L.name?" primary":""}" data-a="stock" title="What the commodity terminals here buy and sell, and how recent the prices are">Commodities</button>`:""}
         ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
         ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
@@ -3358,6 +3577,7 @@ function renderDetail(){
           It moves on your map straight away, and for every Quantum user once another datarunner's reading agrees. Trusted datarunners' corrections count at once.</div>
         <button class="btn small primary" data-a="fixpos" ${readingHere?"":`disabled title="Needs a /showlocation taken here in the last 15 minutes"`}>Send the right position</button></details>`:""}`;
     if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
+    loadTradePlaces(); loadShopPlaces();
     if(!L.unplaced){
       if($("d-pad")) $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value;
         toast(e.target.value==="unknown"?`Pad size for ${L.name} cleared`:`Pad size ${padLabel(e.target.value)} saved. It shows for everyone once another datarunner agrees`); };
@@ -3367,6 +3587,11 @@ function renderDetail(){
   if(sel.kind==="body"||sel.kind==="loc") fillPlacePic(sel);
   if(sel.kind==="settings") fillUexStatus(false);
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
+    const dm=e.target.closest("[data-desc]"); if(dm){ S.descOpen=S.descOpen||new Set();
+      if(dm.dataset.desc==="more") S.descOpen.add(sel.name); else S.descOpen.delete(sel.name);
+      const el=$("d-svc"); if(el) el.innerHTML=servicesHtml(S.svcCache[sel.name],sel.name); return; }
+    if(e.target.closest("[data-stock]")) return toggleStock(sel.name);
+    const sh=e.target.closest("[data-shop]"); if(sh) return toggleShop(sel.name,sh.dataset.shop);
     const gl=e.target.closest("[data-golink]"); if(gl){ const n=gl.dataset.golink; select({kind:"loc",name:n}); if(S.locMap[n]?.pos) focusLoc(n,true); return; }
     const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;
     if(a==="zoom") focusBody(sel.name);
@@ -3383,6 +3608,7 @@ function renderDetail(){
     if(a==="focus") focusLoc(sel.name,true);
     if(a==="padfix"){ S.padFix=sel.name; renderDetail(); $("d-pad")?.focus(); }
     if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
+    if(a==="stock") return toggleStock(sel.name);
     if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); showRoute(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
@@ -4356,6 +4582,60 @@ function rsCandidates(q){
 function rsBrowse(){
   return S.locs.filter(L=>L.source==="db"&&!L.mergedInto&&L.system===S.system&&(RS.type?L.type===RS.type:L.type!=="om"))
     .map(L=>rsLocItem(L,0)).sort((a,b)=>a.r-b.r||a.name.localeCompare(b.name)); }
+// ---- Search by what you need: "refinery", "clinic", "hungry", "rent", "armor", "missiles", "fuel", "hydrogen"…
+// lists the places that have it, nearest to you first, above the usual name matches. What a place has comes
+// from its services (the wiki) and from UEX: its shops, commodity terminals and fuel.
+const amenHas=(L,rx)=>(L.amen||[]).some(a=>rx.test(a));
+const shopHas=(L,g)=>!!S.shopPlaces?.[L.name]?.includes(g);
+const fuelHas=(L,k)=>!!S.fuelPlaces?.[L.name]?.includes(k);
+const RS_NEEDS=[
+  {k:"refinery",label:"refinery",words:["refinery","refineries","refine","refining","refine ore"],has:L=>amenHas(L,/refinery/i)},
+  {k:"rent",label:"vehicle rental",words:["vehicle rental","vehicle rentals","rental","rentals","rent","rent vehicle","rent vehicles","rent a ship","rent ship","rent a vehicle","hire"],
+    has:L=>amenHas(L,/rent/i)||shopHas(L,"rentals")},
+  {k:"showroom",label:"vehicle showroom",words:["vehicle showroom","showroom","ship showroom","buy ship","buy ships","buy vehicle","buy vehicles","ship dealer","dealership","ship shop"],
+    has:L=>amenHas(L,/buy vehicles|buy and rent vehicles/i)},
+  {k:"medical",label:"clinic or hospital",words:["clinic","hospital","medical","health","healthcare","heal","healing","doctor","medic","med bay","medbay","injured","injury","hurt","medpen","medpens"],
+    has:L=>amenHas(L,/clinic|hospital/i)||shopHas(L,"medical")},
+  {k:"food",label:"food and drink",words:["food","drink","drinks","food and drink","food court","hungry","thirsty","eat","restaurant","snack","water","burrito"],
+    has:L=>amenHas(L,/food/i)||shopHas(L,"food")},
+  {k:"armor",label:"armor shop",words:["armor","armour","buy armor","armor shop","helmet","undersuit"],has:L=>amenHas(L,/buy armor/i)||shopHas(L,"armor")},
+  {k:"clothing",label:"clothing shop",words:["clothing","clothes","outfit","jacket","fashion","apparel","buy clothing"],has:L=>amenHas(L,/buy clothing/i)||shopHas(L,"clothing")},
+  {k:"weapons",label:"weapon shop",words:["weapons","weapon","guns","gun","pistol","pistols","rifle","rifles","sniper","shotgun","smg","ammo","fps weapons","personal weapons","buy weapons"],
+    has:L=>amenHas(L,/buy weapons/i)||shopHas(L,"weapons")},
+  {k:"shipweapons",label:"ship weapons",words:["ship weapons","ship weapon","missiles","missile","torpedo","torpedoes","ship guns","ship gun","guns","gun","cannon","cannons","repeater","repeaters","turret","bombs"],
+    has:L=>S.shopPlaces?.[L.name]?shopHas(L,"shipweapons"):amenHas(L,/ship items and weapons/i)},
+  {k:"components",label:"ship components",words:["ship components","ship component","components","component","ship parts","ship items","quantum drive","quantum drives","cooler","coolers","power plant","shield generator","shields"],
+    has:L=>S.shopPlaces?.[L.name]?shopHas(L,"components"):amenHas(L,/ship items and weapons/i)},
+  {k:"hydrogen",label:"hydrogen fuel",words:["hydrogen","hydrogen fuel","h2"],has:L=>S.fuelPlaces&&Object.keys(S.fuelPlaces).length?fuelHas(L,"hydrogen"):amenHas(L,/vehicle services/i)},
+  {k:"quantum",label:"quantum fuel",words:["quantum","quantum fuel","qt fuel"],has:L=>S.fuelPlaces&&Object.keys(S.fuelPlaces).length?fuelHas(L,"quantum"):amenHas(L,/vehicle services/i)},
+  {k:"fuel",label:"refuelling",words:["fuel","refuel","refueling","refuelling","gas","fuel up","out of fuel"],has:L=>fuelHas(L,"hydrogen")||fuelHas(L,"quantum")||amenHas(L,/vehicle services/i)},
+  {k:"repair",label:"repair and rearm",words:["repair","repairs","rearm","restock","fix ship","vehicle services","ship repair"],has:L=>amenHas(L,/vehicle services/i)},
+  {k:"trade",label:"commodity trading",words:["commodities","commodity","trade","trading","sell cargo","buy cargo","trade terminal","tdd"],has:L=>!!S.tradePlaces?.has(L.name)||amenHas(L,/commodity trading/i)}];
+// The needs a search is about: the whole search is one of their words, a word or phrase in it is
+// ("closest refinery", "where to eat"), or it's the start of one while you type ("refin", "hospi")
+function rsNeeds(q){ q=q.trim().toLowerCase().replace(/\s+/g," "); if(q.length<3) return [];
+  const pad=` ${q.replace(/[^a-z0-9 ]/g," ")} `;
+  const hit=RS_NEEDS.filter(n=>n.words.some(w=>w===q||pad.includes(` ${w} `)));
+  if(hit.some(n=>n.k==="hydrogen"||n.k==="quantum")) return hit.filter(n=>n.k!=="fuel");   // "hydrogen fuel": just hydrogen
+  if(hit.length) return hit;
+  return q.length>=4?RS_NEEDS.filter(n=>n.words.some(w=>w.startsWith(q))):[]; }
+const RS_NEED_MAX=8;
+function rsNeedItems(q){ const needs=rsNeeds(q); if(!needs.length) return [];
+  if(S.live?.log?.uex_token){ loadShopPlaces(); loadTradePlaces(); }          // UEX's shops, terminals and fuel, once
+  const t=now(), me=playerG(t), mySys=S.live?.player?.system, out=[];
+  for(const n of needs){
+    const L=S.locs.filter(L=>L.source==="db"&&!L.mergedInto&&!L.unplaced&&n.has(L)).map(L=>{ const g=globalPos(L,t);
+      return {L,d:me&&g&&L.system===mySys?d3(g,me):null}; });
+    if(!L.length) continue;
+    // Nearest first in your system; then the system you're looking at, then the rest
+    L.sort((a,b)=>(a.d==null)-(b.d==null)||(a.d??0)-(b.d??0)||(a.L.system!==S.system)-(b.L.system!==S.system)||a.L.name.localeCompare(b.L.name));
+    L.slice(0,RS_NEED_MAX).forEach((x,i)=>{ const it=rsLocItem(x.L,-1);
+      it.sub=`${i===0&&x.d!=null?"Closest · ":""}${x.d!=null?fmtDist(x.d)+" away · ":""}${TYPES[x.L.type]?.one||"Place"} · ${x.L.body||"Space"}${x.L.system!==S.system?", "+x.L.system:""}`;
+      it.need=n.k; it.closest=i===0&&x.d!=null;
+      if(i===0) it.head=`${me?"Nearest":"Places with"} ${n.label}${L.length>RS_NEED_MAX?` · ${RS_NEED_MAX} of ${L.length}`:""}${me?"":" · set your position (/showlocation) to sort by distance"}`;
+      out.push(it); }); }
+  if(out.length) out[out.length-1].tail=true;
+  return out; }
 const RS_MAX=250;
 function rsRender(){
   const mode=rsMode(), list=$("rs-list"), route=S.live?.route||[], q=$("rsearch").value.trim();
@@ -4364,13 +4644,15 @@ function rsRender(){
   // While searching, the route is hidden under the results: a bar says it's there and brings it back.
   const rb=$("rs-routebar"); if(rb){ rb.hidden=!(mode==="search"&&route.length);
     if(!rb.hidden) rb.textContent=`Your route · ${route.length} stop${route.length>1?"s":""} · Plan / Optimize ›`; }
-  const all=mode==="search"?rsCandidates(q):rsBrowse();
+  let all=mode==="search"?rsCandidates(q):rsBrowse();
+  if(mode==="search"){ const needs=rsNeedItems(q); if(needs.length){ const seen=new Set(needs.map(x=>x.name)), rest=all.filter(x=>!seen.has(x.name));
+    if(rest.length) rest[0].head="Names matching your search"; all=[...needs,...rest]; } }
   RS.items=all.slice(0,RS_MAX); RS.more=all.length-RS.items.length; RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
   const hl=n=>{ if(!q) return esc(n); const i=n.toLowerCase().indexOf(q.toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.length))+"</mark>"+esc(n.slice(i+q.length)); };
   const kb=mode==="search";                       // the keyboard pick is shown while typing
-  list.innerHTML=RS.items.length?RS.items.map((it,i)=>`<li role="option" data-i="${i}" data-name="${esc(it.name)}" class="${kb&&i===RS.on?"on":""}${S.selected?.name===it.name?" sel":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
+  list.innerHTML=RS.items.length?RS.items.map((it,i)=>`${it.head?`<li class="rs-head" role="presentation">${esc(it.head)}</li>`:""}<li role="option" data-i="${i}" data-name="${esc(it.name)}" class="${kb&&i===RS.on?"on":""}${S.selected?.name===it.name?" sel":""}"><span class="ty ${it.kind==="body"?"body":it.type}"></span>
       <div style="min-width:0"><div class="n">${hl(it.name)}</div><div class="b">${esc(it.sub)}</div></div>
-      ${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="add" title="In your route: click to add it again">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
+      ${it.closest?`<button class="btn small go" data-act="guide" title="Guide me to ${esc(it.name)}">Go</button>`:""}${it.kind==="body"?`<button class="btn small ghost" data-act="fly">Fly to</button>`:S.locMap[it.name]?.unplaced?`<button class="iconbtn" data-act="fly" title="Position not known yet: open it to set it">?</button>`:route.includes(it.name)?`<button class="iconbtn in" data-act="add" title="In your route: click to add it again">✓</button>`:`<button class="iconbtn" data-act="add" title="Add to route">+</button>`}</li>`).join("")
       +(RS.more>0?`<li class="empty">${RS.more} more. ${mode==="search"?"Type more of the name":"Pick a type above or search"} to narrow it down.</li>`:"")
     :`<li class="empty">${mode==="search"?`No match for “${esc(q)}”${RS.type?` in ${esc(TYPES[RS.type]?.label||"")}`:""}`:`No ${RS.type?esc((TYPES[RS.type]?.label||"places").toLowerCase()):"places"} in ${esc(S.system)}`}</li>`;
 }
@@ -4386,6 +4668,7 @@ async function rsPick(i,act,{fromKeys=false}={}){
   else if(act==="add"){ await addStops([it.name]);
     // From the keyboard: add, show it and go back to the route. A click on + keeps the list, to add more.
     if(fromKeys){ select({kind:"loc",name:it.name}); focusLoc(it.name,true); rsClose(); return; } }
+  else if(act==="guide"){ await api().set_guide(it.name); await poll(); select({kind:"loc",name:it.name}); focusLoc(it.name,true); showRoute(); setFollow(true); followNow(); toast(`Guiding you to ${it.name}`); return; }
   else { select({kind:"loc",name:it.name}); focusLoc(it.name,true); }
   rsRender();
 }
@@ -4958,6 +5241,8 @@ $("mk-search").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const v=$("m
 $("mk-sys").onchange=()=>{ if(S.mkSel) renderMarket(); };
 $("mk-out").onclick=e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap(); tradeClick(e); };
 // ---- Trade routes: best runs from a starting point for your cargo space and budget
+// Runs under this profit for one trip are hidden unless you change it (Min profit; 0 shows everything)
+const TR_MIN_PROFIT=10000;
 const trPref=(k,v)=>{ try{ if(v===undefined) return localStorage.getItem("q-"+k)||""; localStorage.setItem("q-"+k,v); }catch{ return ""; } };
 async function openTrade(){
   if(!S.live?.log?.uex_token){ $("tr-out").innerHTML=needToken; $("tr-from").innerHTML=""; trFromSync(); return; }
@@ -4970,9 +5255,10 @@ async function openTrade(){
   S.trOrigins=r.items;
   $("tr-from").innerHTML=html; if(cur&&[...$("tr-from").options].some(o=>o.value===cur)) $("tr-from").value=cur; trFromSync();
   trFillAt(trPref("at"));
-  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sort").value=trPref("sort")||"best"; $("tr-sys").dataset.init=1; }
+  if(!$("tr-sys").dataset.init){ $("tr-sys").value=trPref("sys")||""; $("tr-auto").value=trPref("auto")||""; $("tr-sort").value=trPref("sort")||"best"; $("tr-age").value=trPref("age")||"24"; $("tr-sys").dataset.init=1; }
   trSysFit();
   if(!$("tr-scu").value) $("tr-scu").value=trPref("scu"); if(!$("tr-budget").value) $("tr-budget").value=trPref("budget");
+  if(!$("tr-minp").value) $("tr-minp").value=trPref("minp")===""?String(TR_MIN_PROFIT):trPref("minp");
   const fl=await api().fleet_list(), keep=S.trShip?.key||trPref("ship"); S.trFleet=fl.ships;
   if(/^v:/.test(keep)&&!S.veh) await trLoadVehicles();
   const pick=trShipFind(keep)||(fl.main?trShipFind(`f:${fl.main}`):null);
@@ -5031,18 +5317,25 @@ async function runTrade(){
   const wide=kind==="all"||kind==="system";
   setPreview(null);
   const scu=+$("tr-scu").value||0, budget=+$("tr-budget").value||0;
-  trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value);
+  trPref("from",$("tr-from").value); trPref("scu",$("tr-scu").value); trPref("budget",$("tr-budget").value); trPref("minp",$("tr-minp").value===""?"0":$("tr-minp").value);
   $("tr-out").innerHTML=`<div class="muted" style="margin-top:6px">${wide?`Comparing every terminal${kind==="system"?` in ${esc(id)}`:""}…`:"Finding routes…"}</div>`;
   const sv=$("tr-sys").value, [sk,sn]=sv.split(":"), au=$("tr-auto").value, so=$("tr-sort").value||"best"; trPref("sys",sv); trPref("auto",au); trPref("sort",so); trPref("ship",S.trShip?.key||"");
-  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one",au,so); S.trDone=true;
+  const minp=S.trShowSmall?0:Math.max(0,+$("tr-minp").value||0); S.trShowSmall=false;
+  const age=+$("tr-age").value||24; trPref("age",String(age));
+  const r=await api().uex_routes(kind,wide?id:+id,scu,budget,sk==="stay"?sn:"",sk==="avoid"?[sn]:[],sk==="one",au,so,minp,age); S.trDone=true;
   if(!r.ok){ $("tr-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
-  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No profitable routes</strong>${wide?"Nothing":"Nothing from here"} makes a profit with that cargo space and budget${au?` at ${au==="both"?"terminals that auto-load at both ends":"a terminal that auto-loads"}`:""}.</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
+  // Runs whose prices are over a day old aren't used (app.ROUTE_MAX_AGE_H): say so, so an empty list makes sense
+  // Runs too small to be worth it (under Min profit): say how many, with a way to see them this once
+  const smallNote=r.small_left_out?`${r.small_left_out} run${r.small_left_out===1?"":"s"} under ${money(r.min_profit)} profit hidden · <a data-act="trsmall" style="cursor:pointer;text-decoration:underline;color:var(--route-2)">Show them</a>`:"";
+  const ageTxt=h=>h>=24?"a day":h===1?"an hour":`${h} hours`, ageLast=h=>h>=24?"day":h===1?"hour":`${h} hours`;
+  const oldNote=r.old_left_out?`${r.old_left_out} run${r.old_left_out===1?"":"s"} left out: their prices are over ${ageTxt(r.max_age_h||24)} old`:"";
+  if(!r.routes.length){ $("tr-out").innerHTML=`<div class="empty"><strong>No ${r.min_profit?"worthwhile":"profitable"} routes</strong>${wide?"Nothing":"Nothing from here"} makes ${r.min_profit?`at least ${money(r.min_profit)} a trip`:"a profit"} with that cargo space and budget${au?` at ${au==="both"?"terminals that auto-load at both ends":"a terminal that auto-loads"}`:""}, using prices reported in the last ${ageLast(r.max_age_h||24)}.${(r.max_age_h||24)<24?" Try a longer Price age.":""}${smallNote?`<br><br>${smallNote}`:""}${oldNote?`<br><br>${esc(oldNote)}. Updating prices in Datarunner brings them back.`:""}</div>${uexCredit(r.at)}<div id="tr-shared"></div>`; renderSharedRoutes(); return; }
   const end=(pl,name)=>pl?`<a data-open="${esc(pl)}" style="cursor:pointer;text-decoration:underline">${esc(name)}</a>`:esc(name);
-  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"}${r.wide?` · best ${r.routes.length} shown, a few per commodity`:""} · click one for details${!scu?" · enter your cargo space for real totals":""}</div>`+r.routes.map((x,i)=>
+  $("tr-out").innerHTML=TRADE_DISCLAIMER+`<div class="muted" style="font-size:12px;margin:2px 2px 8px">${r.total} route${r.total===1?"":"s"}${r.wide?` · best ${r.routes.length} shown, a few per commodity`:""} · prices from the last ${ageLast(r.max_age_h||24)} only${oldNote?` (${esc(oldNote.replace(" left out:"," left out,"))})`:""} · click one for details${!scu?" · enter your cargo space for real totals":""}${smallNote?` · ${smallNote}`:""}</div>`+r.routes.map((x,i)=>
     `<div class="tr-card ${S.previewIdx===i?"hl":""} ${S.trOpen===i?"open":""}" data-tri="${i}"><div class="top"><b>${esc(x.commodity)}</b><span class="muted">${x.units.toLocaleString()} SCU</span><span class="profit">+${shortMoney(x.profit)}</span></div>
       <div class="leg">Buy at ${end(x.from_place,x.from)} <span class="muted">${esc(x.from_where)} · ${money(x.buy)}/SCU</span><br>
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
-      ${x.per_hour!=null?`<div class="facts" style="margin-top:2px"><span title="Rough time for the run: quantum travel${x.start_dist?" from where you are":""}, landing or docking, loading and unloading">~${Math.round(x.minutes)} min</span><span style="color:var(--ok)">≈ ${shortMoney(x.per_hour)}/h</span>${x.trust<0.8?`<span style="color:#ffb454" title="These prices are a few days old or have few reports: check before you buy">Prices may be stale</span>`:""}${x.then?`<span title="The best run that starts where this one sells, so you don't fly back empty">Then: ${esc(x.then.commodity)} to ${esc(x.then.to)} +${shortMoney(x.then.profit)}</span>`:""}</div>`:""}
+      ${x.per_hour!=null?`<div class="facts" style="margin-top:2px"><span title="Rough time for the run: quantum travel${x.start_dist?" from where you are":""}, landing or docking, loading and unloading">~${Math.round(x.minutes)} min</span><span style="color:var(--ok)">≈ ${shortMoney(x.per_hour)}/h</span>${x.updated?(()=>{ const h=(Date.now()/1000-x.updated)/3600; return `<span style="color:${h<3?"#57e39b":h<12?"var(--ink-2)":"#ffb454"}" title="${x.updated_from&&x.updated_to?`Buy price ${agoTs(x.updated_from)}, sell price ${agoTs(x.updated_to)}`:"When these prices were reported"}">Prices ${agoTs(x.updated)}</span>`; })():""}${x.trust<0.8?`<span style="color:#ffb454" title="These prices are most of a day old or have few reports: check before you buy">Prices may be stale</span>`:""}${x.then?`<span title="The best run that starts where this one sells, so you don't fly back empty">Then: ${esc(x.then.commodity)} to ${esc(x.then.to)} +${shortMoney(x.then.profit)}</span>`:""}</div>`:""}
       <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.autoload_from||x.autoload_to?`<span style="color:var(--ok)" title="The terminal loads and unloads your ship for you">Auto-load ${x.autoload_from&&x.autoload_to?"both ends":x.autoload_from?"at buy":"at sell"}</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
       <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
         <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
@@ -5128,7 +5421,7 @@ async function renderSharedRoutes(){ const box=$("tr-shared"); if(!box) return;
         Sell at <a data-open="${esc(x.to_place)}" style="cursor:pointer;text-decoration:underline">${esc(x.to_terminal||x.to_place)}</a> <span class="muted">${esc(x.to_place)} · ${money(x.sell)}/SCU</span></div>
       <div class="facts"><span>by ${esc(x.username)}</span><span>${esc(agoTs(x.at))}</span>${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
       <div class="row" style="margin-top:8px;gap:6px"><button class="btn small primary" data-sharedrun="${i}">Add to Planned Routes</button></div></div>`).join(""); }
-$("tr-out").onclick=async e=>{ const sh=e.target.closest("[data-sharedrun]"); if(sh){ const x=S.trShared[+sh.dataset.sharedrun];
+$("tr-out").onclick=async e=>{ if(e.target.closest("[data-act=trsmall]")){ S.trShowSmall=true; return runTrade(); } const sh=e.target.closest("[data-sharedrun]"); if(sh){ const x=S.trShared[+sh.dataset.sharedrun];
     const r=await api().trade_run_save({commodity:x.commodity,units:x.units,from_place:x.from_place,to_place:x.to_place,from_terminal:x.from_terminal,to_terminal:x.to_terminal,plan_buy:x.buy,plan_sell:x.sell,notes:`Shared by ${x.username}`});
     toast(r.ok?"Added to Planned Routes":(r.error||"Couldn't add it")); return; }
   if(await tradeClick(e)) return;
@@ -6018,7 +6311,7 @@ async function openRunDetail(i){
       <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span><button class="pv-next in-win" id="trd-next" type="button" data-pvnext="1"></button></div>
     ${endBox("Buy at",x.from_place,x.from,x.from_where,x.buy,"In stock",x.scu_from,x.boxes_from,x.elevator_from,x.dock_from,x.refuel_from,x.from_station,x.from_ground,x.from_monitored,x.faction_from,"You buy",x.units,"Cost")}
     ${endBox("Sell at",x.to_place,x.to,x.to_where,x.sell,"Demand",x.scu_to,x.boxes_to,x.elevator_to,x.dock_to,x.refuel_to,x.to_station,x.to_ground,x.to_monitored,x.faction_to,"You sell",x.units,"Revenue")}</div>
-    <div class="trd-footer">${x.quantum_from||x.quantum_to?`<span class="chip y" title="A Quantum datarunner reported this newer than UEX has it, so the run is planned with their numbers">Quantum report: ${[x.quantum_from&&`buy side ${agoTs(x.quantum_from.at)}`,x.quantum_to&&`sell side ${agoTs(x.quantum_to.at)}`].filter(Boolean).join(", ")}</span> · `:""}${x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
+    <div class="trd-footer">${x.quantum_from||x.quantum_to?`<span class="chip y" title="A Quantum datarunner reported this newer than UEX has it, so the run is planned with their numbers">Quantum report: ${[x.quantum_from&&`buy side ${agoTs(x.quantum_from.at)}`,x.quantum_to&&`sell side ${agoTs(x.quantum_to.at)}`].filter(Boolean).join(", ")}</span> · `:""}${x.updated_from&&x.updated_to?`Buy price reported ${agoTs(x.updated_from)}, sell price ${agoTs(x.updated_to)}`:x.updated?`Prices last reported ${agoTs(x.updated)}`:"Report time unknown"}${x.reports_from||x.reports_to?` · based on ${(x.reports_from||0)+(x.reports_to||0)} player reports`:""}${TRADE_DISCLAIMER}</div>`;
   fitTradePanel();
   if(x.from_place&&x.to_place) requestAnimationFrame(()=>previewPlaces(x.from_place,x.to_place,x.commodity));   // after layout, so the map window is measured
   const img=await api().wiki_image(x.commodity); if(S.trOpen!==i) return;
@@ -6042,13 +6335,36 @@ $("tr-panel").onclick=async e=>{ if(await tradeClick(e)) return; const x=S.trRou
     if(!r.ok) return toast(r.error); await api().add_stops([x.from_place,x.to_place]); await poll();
     toast(`Route planned: ${x.commodity}. Track it under Planned Routes`); showTradeView("mine"); } };
 // ---- My runs
-const STAGES=[["planned","Planned"],["bought","Bought"],["transit","In transit"],["sold","Sold"]];
+// A run's steps ("bought" is the saved key for Purchased, so older runs still work; app.TRADE_STAGES)
+const STAGES=[["planned","Planned"],["bought","Purchased"],["loading","Loading"],["transit","In transit"],["unloading","Off loading"],["sold","Sold"]];
+const RUN_NEXT={planned:["bought","Mark purchased"],bought:["loading","Start loading"],loading:["transit","Departed"],transit:["unloading","Arrived · off loading"],unloading:["sold","Mark sold"]};
 function showTradeView(v){ S.trView=v; for(const b of document.querySelectorAll("[data-trv]")) b.classList.toggle("on",b.dataset.trv===v);
   $("tr-find").hidden=v!=="find"; $("tr-mine").hidden=v!=="mine"; if(v==="mine"){ closeRunDetail(); renderRuns(); } }
 document.querySelector(".tr-tabs").onclick=e=>{ const b=e.target.closest("[data-trv]"); if(b) showTradeView(b.dataset.trv); };
 function runProfit(r){ const buy=r.buy_price??r.plan_buy, sell=r.sell_price??r.plan_sell;
   if(!r.units||buy==null||sell==null) return null;
   return {v:r.units*(sell-buy)-runFees(r), actual:r.buy_price!=null&&r.sell_price!=null}; }
+// What's typed in a run's price and fee boxes but not saved yet (kept across redraws until the step is marked)
+S.runDraft=S.runDraft||{};
+// The run as it would be with what's typed: buying sets the price paid and loading fee, selling the price
+// sold for and unloading fee. So Est. profit follows a sell price that isn't the one expected.
+function runWithDraft(x){ const d=S.runDraft[x.id], nx=RUN_NEXT[x.stage]?.[0]; if(!d||!["bought","sold"].includes(nx)) return x;
+  const num=v=>v===""||v==null||isNaN(+v)?null:+v, y={...x};
+  if(nx==="bought"){ if(num(d.price)!=null) y.buy_price=num(d.price); if(num(d.fee)!=null) y.load_fee=num(d.fee); }
+  else { if(num(d.price)!=null) y.sell_price=num(d.price); if(num(d.fee)!=null) y.unload_fee=num(d.fee); }
+  return y; }
+const runPaid=x=>x.units&&x.buy_price!=null?x.units*x.buy_price+(+x.load_fee||0):null;
+// The money line of a run: total paid, what selling brings in, profit (estimated until sold) and how far a sell
+// price is off what was expected
+function runMoneyHtml(x0){ const x=runWithDraft(x0), pr=runProfit(x), paid=runPaid(x), u=x.units||0;
+  const sell=x.sell_price??x.plan_sell, off=x.sell_price!=null&&x.plan_sell!=null&&Math.round(x.sell_price)!==Math.round(x.plan_sell)?x.sell_price-x.plan_sell:null;
+  const out=[];
+  if(paid!=null) out.push(`<span title="${u} SCU × ${money(x.buy_price)}${+x.load_fee?` + ${money(+x.load_fee)} loading fee`:""}">Total paid <b>${money(paid)}</b></span>`);
+  else if(u&&x.plan_buy!=null) out.push(`<span>Est. cost ${money(u*x.plan_buy)}</span>`);
+  if(u&&sell!=null) out.push(`<span>${x.sell_price!=null?(x0.stage==="sold"?"Sold for":"Selling for"):"Est. sale"} ${money(u*sell)}</span>`);
+  if(pr) out.push(`<span style="color:${pr.v>=0?"#57e39b":"#ff8f8f"};font-weight:600">${pr.actual&&x0.stage==="sold"?"Profit":"Est. profit"} ${pr.v>=0?"+":"−"}${money(Math.abs(pr.v))}</span>`);
+  if(off!=null) out.push(`<span style="color:${off<0?"#ffb454":"#57e39b"}" title="Expected ${money(x.plan_sell)}/SCU when you planned it">${off<0?"−":"+"}${money(Math.abs(off))}/SCU vs expected${u?` (${off<0?"−":"+"}${money(Math.abs(off*u))})`:""}</span>`);
+  return out.join(""); }
 const runFees=r=>(+r.load_fee||0)+(+r.unload_fee||0)+(+r.handling||0);
 function runForm(r){ r=r||{}; const v=k=>esc(r[k]??"");
   return `<div class="run-form" data-runform="${esc(r.id||"")}">
@@ -6067,8 +6383,8 @@ async function renderRuns(){
   $("tr-mine-n").textContent=n?`(${n})`:"";
   if(!S.mk&&S.live?.log?.uex_token){ const c=await api().uex_commodities(); if(c.ok){ S.mk=c.items; S.mkByName=Object.fromEntries(c.items.map(x=>[x.name.toLowerCase(),x]));
     $("mk-dl").innerHTML=c.items.map(x=>`<option value="${esc(x.name)}"></option>`).join(""); } }
-  const card=x=>{ const st=STAGES.findIndex(s=>s[0]===x.stage), pr=runProfit(x), t=x.times||{};
-    const next={planned:["bought","Mark bought"],bought:["transit","Departed"],transit:["sold","Mark sold"]}[x.stage];
+  const card=x=>{ const st=STAGES.findIndex(s=>s[0]===x.stage), t=x.times||{}, dr=S.runDraft[x.id]||{};
+    const next=RUN_NEXT[x.stage], pay=next?.[0]==="bought";
     return `<div class="contract ${x.stage==="sold"?"done":""}" data-run="${x.id}"><h3>${esc(x.commodity)}${x.units?` <span class="muted" style="font-weight:500">· ${x.units} SCU</span>`:""}</h3>
       <div class="trackno" title="Click to copy">Job ID # <b>${esc(x.tracking_no||"")}</b></div>
       <div class="sub">${esc(x.from_place||"?")} → ${esc(x.to_place||"?")}</div>
@@ -6076,13 +6392,14 @@ async function renderRuns(){
         <div class="runlabels">${STAGES.map(([key,lab],k)=>`<div class="${k<=st?"done":""}">${lab}${t[key]?`<br><span class="muted">${new Date(t[key]*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>`:""}</div>`).join("")}</div></div>
       <div class="facts" style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-2);margin:6px 0">
         ${x.buy_price!=null?`<span>Paid ${money(x.buy_price)}/SCU</span>`:x.plan_buy!=null?`<span>Expected buy ${money(x.plan_buy)}/SCU</span>`:""}
-        ${x.sell_price!=null?`<span>Sold ${money(x.sell_price)}/SCU</span>`:x.plan_sell!=null?`<span>Expected sell ${money(x.plan_sell)}/SCU</span>`:""}
-        ${pr?`<span style="color:${pr.v>=0?"#57e39b":"#ff8f8f"};font-weight:600">${pr.actual?"Profit":"Est. profit"} ${pr.v>=0?"+":"−"}${money(Math.abs(pr.v))}</span>`:""}
+        ${x.sell_price!=null?`<span>${x.stage==="sold"?"Sold":"Selling at"} ${money(x.sell_price)}/SCU</span>`:x.plan_sell!=null?`<span>Expected sell ${money(x.plan_sell)}/SCU</span>`:""}
         ${+x.load_fee?`<span>Loading fee −${money(+x.load_fee)}</span>`:""}${+x.unload_fee?`<span>Unloading fee −${money(+x.unload_fee)}</span>`:""}${+x.handling?`<span>Load/unload −${money(+x.handling)}</span>`:""}
         ${x.notes?`<span>${esc(x.notes)}</span>`:""}</div>
-      ${S.runEdit===x.id?runForm(x):`${next&&next[0]!=="transit"?`<div class="stepbox">
-          <label><span>${next[0]==="bought"?"Paid":"Sold for"} per SCU</span><input class="field" data-price="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??""))}"></label>
-          <label title="If you used auto ${next[0]==="bought"?"loading":"unloading"}, what it cost. It comes off the profit."><span>Auto ${next[0]==="bought"?"loading":"unloading"} fee</span><input class="field" data-fee="${x.id}" type="number" min="0" value="${esc(next[0]==="bought"?(x.load_fee??0):(x.unload_fee??0))}"></label></div>`:""}
+      <div class="facts run-money" data-runmoney="${x.id}" style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--ink-2);margin:0 0 6px">${runMoneyHtml(x)}</div>
+      ${S.runEdit===x.id?runForm(x):`${next&&(pay||next[0]==="sold")?`<div class="stepbox">
+          <label><span>${pay?"Paid":"Sold for"} per SCU</span><input class="field" data-price="${x.id}" type="number" min="0" value="${esc(dr.price??(pay?(x.buy_price??x.plan_buy??""):(x.sell_price??x.plan_sell??"")))}"></label>
+          <label title="If you used auto ${pay?"loading":"unloading"}, what it cost. It comes off the profit."><span>Auto ${pay?"loading":"unloading"} fee</span><input class="field" data-fee="${x.id}" type="number" min="0" value="${esc(dr.fee??(pay?(x.load_fee??0):(x.unload_fee??0)))}"></label></div>
+          ${next[0]==="sold"?`<div class="muted" style="font-size:11.5px;margin:-2px 0 6px">Selling for a different price than expected? Type what the terminal pays: the totals above update as you type.</div>`:""}`:""}
         <div class="run-acts">${next?`<button class="btn small primary" data-runstage="${next[0]}">${next[1]}</button>`:""}
         ${st>0?`<button class="btn small ghost icon" data-runstage="${STAGES[st-1][0]}" title="Back a step (undo)" aria-label="Back a step">↶</button>`:""}
         ${x.from_place&&x.to_place?`<button class="btn small ghost" data-runprev="1" title="Show the route on the map">Map</button><button class="btn small ghost" data-runroute="1" title="Add both stops to your route">+ Route</button>`:""}
@@ -6092,6 +6409,11 @@ async function renderRuns(){
   $("tr-mine-out").innerHTML=(S.runEdit==="new"?runForm(null):`<button class="btn primary" data-act="runnew" style="width:100%;margin-bottom:10px">+ Create my own trade route</button>`)
     +(open.length?open.map(card).join(""):S.runEdit==="new"?"":`<div class="empty"><strong>No Planned Routes</strong>Start one from the Find Routes tab, or create your own above.</div>`)
     +(done.length?`<details class="finished" ${S.runsDoneOpen?"open":""}><summary>Finished (${done.length}) · ${total>=0?"+":"−"}${money(Math.abs(total))}</summary>${done.map(card).join("")}</details>`:""); }
+// Typing a price or fee: the run's totals and Est. profit follow straight away (saved when the step is marked)
+$("tr-mine-out").addEventListener("input",e=>{ const el=e.target.closest("[data-price],[data-fee]"); if(!el) return;
+  const id=el.dataset.price||el.dataset.fee, x=(S.runs||[]).find(r=>r.id===id); if(!x) return;
+  (S.runDraft[id]=S.runDraft[id]||{})[el.dataset.price?"price":"fee"]=el.value;
+  const box=$("tr-mine-out").querySelector(`[data-runmoney="${CSS.escape(id)}"]`); if(box) box.innerHTML=runMoneyHtml(x); });
 $("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("summary")){ setTimeout(()=>{ S.runsDoneOpen=!!$("tr-mine-out").querySelector("details.finished")?.open; },0); return; }
   const tn=e.target.closest(".trackno"); if(tn){ const n=tn.querySelector("b").textContent; try{ await navigator.clipboard.writeText(n); toast(`Copied ${n}`); }catch{ toast(n); } return; }
@@ -6103,8 +6425,9 @@ $("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
     data.handling=0;                                    // the two fee fields replace the old combined one
     const r=await api().trade_run_save(data); if(!r.ok) return toast(r.error); S.runEdit=null; toast("Route saved"); return renderRuns(); }
   const c=e.target.closest("[data-run]"); if(!c) return; const x=S.runs.find(r=>r.id===c.dataset.run);
-  const sg=e.target.closest("[data-runstage]"); if(sg){ const price=c.querySelector(`[data-price="${x.id}"]`)?.value, fee=c.querySelector(`[data-fee="${x.id}"]`)?.value;
-    await api().trade_run_stage(x.id,sg.dataset.runstage,price||null,fee===""||fee==null?null:fee); return renderRuns(); }
+  const sg=e.target.closest("[data-runstage]"); if(sg){ const fwd=sg.dataset.runstage===RUN_NEXT[x.stage]?.[0];   // the price boxes go with a step forward, not an undo
+    const price=fwd?c.querySelector(`[data-price="${x.id}"]`)?.value:null, fee=fwd?c.querySelector(`[data-fee="${x.id}"]`)?.value:null;
+    await api().trade_run_stage(x.id,sg.dataset.runstage,price||null,fee===""||fee==null?null:fee); delete S.runDraft[x.id]; return renderRuns(); }
   if(e.target.closest("[data-runedit]")){ S.runEdit=x.id; return renderRuns(); }
   if(e.target.closest("[data-runshare]")){ const r=await api().share_route(x.id); toast(r.ok?"Shared: other Quantum users will see it in Find Routes for a week":(r.error||"Couldn't share it")); return; }
   if(e.target.closest("[data-rundel]")){ await api().trade_run_delete(x.id); toast("Route deleted"); return renderRuns(); }
@@ -7753,6 +8076,24 @@ function grSetCartPieces(s){ return s.pieces.filter(p=>p.buy?.length||p.lootable
 function grOpenItem(kind,id,set){ const st=grState(kind);
   if(!st.sel) st.back={key:st.gridKey,top:$("gr-panel").scrollTop};          // opened from the grid: Back returns to this spot
   st.sel=set?"set:"+set:id; st.mission=null; grRender(kind); $("gr-panel").scrollTop=0; }
+// A gear page's extra rows (damage type, fire modes, armor resistances, effects…) as [label, value]: the Gear
+// page and a marketplace listing linked to the item show the same ones
+function grExtraPairs(kind,i){
+  if(kind==="weapons") return [i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.length&&["Fire modes",i.modes.join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean);
+  if(kind==="armor") return [["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean);
+  if(GR_ITEM[kind]) return [...(i.effects?.length?[["Effects",i.effects.join(", ")]]:[]),...(i.buffs?.length?[["Buffs",i.buffs.join(", ")]]:[]),
+      ...(i.facts||[]).filter(([a])=>!/^(effects?|buffs?)$/i.test(a)),i.sub&&i.sub!==i.kind?["Type",i.sub]:null,
+      i.paints?.length?["Also comes in",i.paints.map(p=>(p.name.match(/["“”]([^"“”]+)["“”]/)||[,p.name])[1]).join(", ")]:null,i.size!=null&&i.size!==0?["Size",i.size]:null].filter(Boolean);
+  return []; }
+// Everything worth knowing about a piece of gear, as [label, value] rows: the headline numbers, the stat rows
+// and the extras. For marketplace listings linked to the item (the shop price is kept apart, as "In shops").
+function grSpecPairs(kind,i){ const G=GEAR[kind]; if(!G||!i) return [];
+  const st=i.stats||{}, out=[];
+  for(const h of G.hero(i)) if(h.value!=null&&h.value!==""&&h.label!=="Price") out.push([h.label,h.value]);
+  for(const [k,lab,f] of G.rows) if(st[k]!=null&&!out.some(([l])=>l===lab)) out.push([lab,f(st[k])]);
+  for(const p of grExtraPairs(kind,i)) if(!out.some(([l])=>l===p[0])) out.push(p);
+  if(i.maker&&!out.some(([l])=>l==="Maker")) out.unshift(["Maker",i.maker]);
+  return out; }
 async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.items, g=$("gr-panel");
   if(st.mission) return grMission(kind);
   const back=`<button class="btn" data-grback="1" style="margin-bottom:14px">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button>`;
@@ -7771,15 +8112,7 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
     const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",s.name,"armor"); return; }
   const i=L.find(x=>(x.uuid||x.name)===st.sel); if(!i){ st.sel=null; return grRender(kind); }
   const st_=i.stats||{}, rows=G.rows.filter(([k])=>st_[k]!=null).map(([k,lab,f])=>`<div class="vd-row"><span>${esc(lab)}</span><b>${esc(String(f(st_[k])))}</b></div>`).join("");
-  let extra="";
-  if(kind==="weapons") extra=[i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.length&&["Fire modes",i.modes.join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean)
-    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
-  if(kind==="armor") extra=[["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean)
-    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
-  if(GR_ITEM[kind]) extra=[...(i.effects?.length?[["Effects",i.effects.join(", ")]]:[]),...(i.buffs?.length?[["Buffs",i.buffs.join(", ")]]:[]),
-      ...(i.facts||[]).filter(([a])=>!/^(effects?|buffs?)$/i.test(a)),i.sub&&i.sub!==i.kind?["Type",i.sub]:null,
-      i.paints?.length?["Also comes in",i.paints.map(p=>(p.name.match(/["“”]([^"“”]+)["“”]/)||[,p.name])[1]).join(", ")]:null,i.size!=null&&i.size!==0?["Size",i.size]:null].filter(Boolean)
-    .map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
+  const extra=grExtraPairs(kind,i).map(([a,b])=>`<div class="vd-row"><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("");
   if(kind==="blueprints") return grBlueprint(i,back);
   g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):GR_ITEM[kind]?i.kind:`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
@@ -8259,7 +8592,8 @@ async function pmOpen(id){ S.pm.view="listing"; S.pm.listing={loading:true,id}; 
 // ---- main area
 function pmRender(){ const P=$("pm-panel"); if(!P||!S.tab?.startsWith("pm-")) return;
   const v=S.pm.view; P.innerHTML=v==="listing"?pmListingHtml():v==="form"?pmFormHtml():v==="mine"?pmMineHtml():v==="escrow"?pmEscHtml():pmBrowseHtml();
-  pmWire(P); }
+  pmWire(P);
+  if(v==="listing"&&S.pm.listing&&!S.pm.listing.loading&&!S.pm.listing.error) pmFillSpecs(S.pm.listing); }
 const pmSignIn=what=>`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg><h2>Sign in to ${what}</h2><div>The marketplace goes with your Quantum account.</div><button class="btn primary" style="margin-top:14px" onclick="openProfileView('overview')">Sign in</button></div>`;
 function pmBrowseHtml(){ const d=S.pm.data, svc=S.pm.kind==="service";
   const head=`<div class="pm-top"><h2>${S.pm.cat?esc(S.pm.cat):svc?"Services":"Items for sale"}</h2><span class="muted">${d&&!d.error?`${d.total} listing${d.total===1?"":"s"}`:""}${S.pm.q.trim()?` matching “${esc(S.pm.q.trim())}”`:""}</span></div>`;
@@ -8292,6 +8626,7 @@ function pmListingHtml(){ const l=S.pm.listing, back=`<button class="btn small g
   return back+`<div class="pm-detail"><div>${pmPh(l.photo,l.category)}<h2>${esc(l.title)}</h2><div>${pmPrice(l)}${l.kind==="item"?` <span class="muted" style="font-size:13px">· ${l.qty.toLocaleString()} available</span>`:""}</div>
       <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">${l.location?`<span class="pm-badge">◆ ${esc(l.location)}</span>`:""}<span class="pm-badge">${esc(l.category)}</span>${l.escrow_ok&&l.unit!=="quote"?`<span class="pm-badge esc">Escrow available</span>`:""}<span class="pm-badge">Listed ${soAgo(l.created)}</span></div>
       <div class="pm-desc">${esc(l.description||"No description.")}</div>
+      ${l.kind==="item"?`<div id="pm-specs"></div>`:""}
       ${!l.mine?`<button class="btn small ghost" data-pmreport="1">⚑ Report this ${l.kind==="service"?"service":"listing"}</button>`:""}
       ${S.pm.reporting?`<div class="pm-box" style="margin-top:10px"><div class="k">Report</div><select class="field" data-pmrr="1">${[["real_money","Real-money trade"],["scam","Scam or fraud"],["offensive","Offensive"],["wrong_category","Wrong category"],["other","Something else"]].map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}</select>
         <textarea class="field" rows="2" maxlength="500" data-pmrn="1" placeholder="Anything we should know (optional)"></textarea><div class="pm-acts"><button class="btn small danger" data-pmrsend="1">Send report</button><button class="btn small ghost" data-pmreport="1">Cancel</button></div></div>`:""}
@@ -8304,6 +8639,7 @@ function pmFormHtml(){ const f=S.pm.form, svc=f.kind==="service", cats=(svc?S.pm
   const units=svc?[["per job","Per job"],["per hour","Per hour"],["per SCU","Per SCU"],["per trip","Per trip"],["quote","Ask for a quote"]]:[];
   return `<button class="btn small ghost" data-pmback="1" style="margin-bottom:14px">← Cancel</button><div class="pm-top"><h2>${f.id?"Edit listing":svc?"Offer a service":"Sell an item"}</h2></div>
     <div class="pm-form">
+      ${svc?"":pmLinkHtml(f)}
       <label class="wide">Title<input class="field" data-pmf="title" maxlength="80" value="${esc(f.title||"")}" placeholder="${svc?"e.g. Armed escort through Pyro":"e.g. Arclight pistol, Grade A quantum drive"}"></label>
       <label>Category<select class="field" data-pmf="category">${cats.map(c=>`<option ${f.category===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
       <label>Location<input class="field" data-pmf="location" maxlength="80" value="${esc(f.location||"")}" placeholder="${svc?"e.g. Stanton, Pyro":"e.g. Area 18"}"></label>
@@ -8406,9 +8742,84 @@ function pmEscHtml(){ const e=S.pm.esc; if(!e) return `<div class="so-empty">Loa
     h+=`<div class="pm-sec">Owner: reported listings <span class="muted">${e.reports.length}</span></div>`+(e.reports.length?`<div class="pm-box" style="max-width:760px">${e.reports.map(r=>`<div class="row" style="gap:8px;flex-wrap:wrap"><span class="pm-badge ${r.reason==="real_money"||r.reason==="scam"?"bad":"warn"}">${esc(r.reason.replace("_"," "))}</span><a style="cursor:pointer;text-decoration:underline" data-pmopen="${r.listing}">${esc(r.title)}</a><span class="muted" style="font-size:12px">${esc(r.status)} · ${soAgo(r.at)}${r.note?` · “${esc(r.note)}”`:""}</span></div>`).join("")}</div>`:`<div class="so-empty">No reports.</div>`); }
   return h; }
 
+// ---- Items linked to Gear: a seller picks what they're selling from the Gear tabs, and its picture and stats
+// go on the listing (their title, price, description and meeting place stay their own). The link is sent as
+// item_ref {tab, uuid, name}; listings without one (older ones) are matched by the Gear name in their title.
+const PM_GEAR_TABS=["weapons","armor","gadgets","clothing","consumables","utility"];
+// The marketplace category a Gear tab's items go under
+const pmGearCat=(tab,i)=>tab==="consumables"?(i?.kind==="Medical"?"Medical":"Food and drink")
+  :({weapons:"Weapons",armor:"Armor",clothing:"Clothing",gadgets:"Gadgets and tools",utility:"Other"})[tab]||"Other";
+// And back: the Gear tabs to look in for a listing of a category that has no link
+const PM_CAT_GEAR={Weapons:["weapons"],Armor:["armor"],Clothing:["clothing"],"Gadgets and tools":["gadgets"],Medical:["consumables"],"Food and drink":["consumables"]};
+const pmGearImg=(i,name)=>i?.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:PM_ICON;
+function pmGearSearch(q){ const words=q.toLowerCase().split(/\s+/).filter(Boolean), ql=q.trim().toLowerCase(); if(!words.length) return [];
+  const out=[];
+  for(const tab of PM_GEAR_TABS) for(const i of grState(tab).data?.items||[]){
+    const t=`${i.name} ${i.maker||""} ${i.maker_code||""} ${GEAR[tab].cat(i)}`.toLowerCase(); if(words.every(w=>t.includes(w))) out.push({tab,i}); }
+  const n=x=>x.i.name.toLowerCase();
+  out.sort((a,b)=>(n(b).startsWith(ql))-(n(a).startsWith(ql))||(b.i.base?1:0)-(a.i.base?1:0)||n(a).length-n(b).length||n(a).localeCompare(n(b)));
+  return out.slice(0,14); }
+function pmLinkHtml(f){ const r=f.item_ref;
+  if(r&&GEAR[r.tab]){ const g=glFind(r.tab,r), G=GEAR[r.tab], own=(f.photoData||f.photo)&&!f.photoFromGear;
+    return `<div class="wide pm-link on"><div class="pm-link-ph" data-gpic="${esc(r.name)}">${pmGearImg(g)}</div>
+      <div class="who"><span class="k">Linked from Gear</span><b>${esc(r.name)}</b><small>${esc([g?.maker,g?G.cat(g):G.title,g&&G.key(g)].filter(Boolean).join(" · "))}</small>
+        <small style="display:block;margin-top:2px">Its picture and stats show on your listing. Selling a custom or modified one? Say how in the description.</small></div>
+      <div class="pm-acts">${own?`<button class="btn small" type="button" data-pmgearpic="1">Use its picture</button>`:""}<button class="btn small ghost" type="button" data-pmunlink="1">Unlink</button></div></div>`; }
+  return `<div class="wide pm-link"><label>What are you selling? <span class="muted" style="font-weight:400;font-size:12px">Optional. Pick it from Gear and its picture and stats go on your listing; the title, price, description and where to meet stay yours.</span>
+      <input class="field" data-pmlinkq="1" placeholder="Search Gear, e.g. Arclight, ADP core, MedPen" value="${esc(S.pm.linkQ||"")}" autocomplete="off" spellcheck="false"></label>
+    <div class="pm-link-res" data-pmlinkres="1"></div></div>`; }
+async function pmLinkResults(P){ const box=P.querySelector("[data-pmlinkres]"); if(!box) return; const q=(S.pm.linkQ||"").trim();
+  if(q.length<2){ box.innerHTML=""; return; }
+  if(PM_GEAR_TABS.some(t=>!grState(t).data)){ box.innerHTML=`<div class="muted" style="font-size:12.5px;padding:6px 2px">Loading Gear…</div>`;
+    await Promise.all(PM_GEAR_TABS.map(t=>glData(t).catch(()=>[]))); if(!box.isConnected||(S.pm.linkQ||"").trim()!==q) return; }
+  const hits=pmGearSearch(q);
+  box.innerHTML=hits.length?hits.map(({tab,i})=>`<div class="pm-link-row" data-pmlinktab="${esc(tab)}" data-pmlinkid="${esc(i.uuid||i.name)}"><div class="pm-link-ph" data-gpic="${esc(i.name)}">${pmGearImg(i)}</div>
+      <div class="who"><b>${esc(i.name)}</b><small>${esc([GEAR[tab].title,i.maker,GEAR[tab].cat(i),GEAR[tab].key(i)].filter(Boolean).join(" · "))}</small></div></div>`).join("")
+    :`<div class="muted" style="font-size:12.5px;padding:6px 2px">Nothing in Gear matches “${esc(q)}”. You can still list it without linking.</div>`;
+  for(const r of box.querySelectorAll("[data-pmlinktab]")) r.onclick=()=>pmLinkPick(r.dataset.pmlinktab,r.dataset.pmlinkid);
+  fillGearPictures(box); }
+function pmLinkPick(tab,id){ const f=S.pm.form; if(!f) return; const i=(grState(tab).data?.items||[]).find(x=>(x.uuid||x.name)===id); if(!i) return;
+  f.item_ref={tab,uuid:i.uuid||null,name:i.name}; S.pm.linkQ="";
+  if(!String(f.title||"").trim()) f.title=i.name;
+  const cat=pmGearCat(tab,i), cats=S.pm.mine?.item_cats||PM_CATS.item; if(cats.includes(cat)) f.category=cat;
+  pmRender();
+  if(!f.photoData&&!f.photo) pmGearPic(f,i); }
+// The item's Gear picture as the listing's photo (downloaded by the app and sent like an uploaded one)
+async function pmGearPic(f,i){ const url=i.image||S.gpics?.[i.name]||null; let r; try{ r=await api().gear_photo(i.name,url); }catch(e){ r=null; }
+  if(S.pm.form!==f||f.item_ref?.name!==i.name) return;
+  if(!r?.ok) return toast(r?.error?`No picture added: ${r.error}. You can add your own.`:"Couldn't get its picture. You can add your own.");
+  try{ f.photoData=await pmShrink(r.data); f.photoFromGear=true; f.photoRemove=false; if(S.pm.view==="form"&&S.pm.form===f) pmRender(); }catch(_){} }
+// The Gear item a listing is about: the one its seller linked, else the longest Gear name in its title
+async function pmGearFor(l){ const ref=l.item_ref;
+  if(ref?.tab&&GEAR[ref.tab]){ await glData(ref.tab); const i=glFind(ref.tab,ref); return i?{tab:ref.tab,i,linked:true}:null; }
+  const tabs=l.kind==="item"?PM_CAT_GEAR[l.category]:null; if(!tabs) return null;
+  await Promise.all(tabs.map(glData));
+  const t=` ${String(l.title||"").toLowerCase().replace(/[^a-z0-9"'-]+/g," ")} `; let best=null;
+  for(const tab of tabs) for(const i of grState(tab).data?.items||[]){
+    // "Arclight Pistol" is found in "Custom Arclight" too: the kind word at the end is optional
+    const full=i.name.toLowerCase(), core=full.replace(/\s+(pistol|rifle|sniper rifle|smg|shotgun|lmg|launcher|railgun|helmet|core|arms|legs|backpack)$/,"");
+    const hit=[full,core].find(n=>n.length>=4&&t.includes(` ${n} `)); if(!hit) continue;
+    if(!best||hit.length>best.len||(hit.length===best.len&&i.base&&!best.i.base)) best={tab,i,linked:false,len:hit.length}; }
+  return best; }
+async function pmFillSpecs(l){ if(l.kind!=="item") return;
+  if(l._gear===undefined){ l._gear=false; let g=null; try{ g=await pmGearFor(l); }catch(e){} l._gear=g; if(S.pm.listing!==l) return; }
+  else if(l._gear===false) return;                     // still looking: painted when it's found
+  const box=$("pm-specs"), g=l._gear; if(!box) return; if(!g){ box.innerHTML=""; return; }
+  const rows=grSpecPairs(g.tab,g.i), price=grPrice(g.i);
+  box.innerHTML=`<div class="pm-box pm-specs"><div class="row" style="gap:8px;align-items:center"><span class="k">${g.linked?"Specs":"Specs (matched by title)"}</span><span class="spacer"></span><button class="btn small ghost" data-pmgear="1">Open in Gear</button></div>
+    <div class="pm-spec-name"><b>${esc(g.i.name)}</b><small>${esc([g.i.maker,GEAR[g.tab].cat(g.i)].filter(Boolean).join(" · "))}</small></div>
+    ${rows.length?`<div class="pm-spec-grid">${rows.map(([a,b])=>`<div><span>${esc(a)}</span><b>${esc(String(b))}</b></div>`).join("")}</div>`:`<div class="muted" style="font-size:12.5px">No numbers on the wiki for this one.</div>`}
+    <div class="muted" style="font-size:11.5px;line-height:1.45">${price!=null?`Sold in shops from ${money(price)}. `:"Not sold in shops. "}Stock stats from the Star Citizen Wiki${g.linked?"":`, for the item named in the title`}: a custom or modified one can differ, so ask the seller.</div></div>`;
+  box.querySelector("[data-pmgear]").onclick=()=>{ const t=document.querySelector(`.tab[data-tab="${g.tab}"]`); if(!t) return; t.click();
+    setTimeout(()=>{ const st=grState(g.tab); if(g.tab==="armor") st.view="items"; if(st.data) grOpenItem(g.tab,g.i.uuid||g.i.name,null); },250); };
+  // No photo of the seller's own: the item's picture
+  const ph=document.querySelector("#pm-panel .pm-detail .pm-ph");
+  if(!l.photo&&ph&&!ph.querySelector("img")){ let u=g.i.image||S.gpics?.[g.i.name]; if(!u){ try{ u=await api().gear_image(g.i.name); }catch(e){} }
+    if(u&&S.pm.listing===l&&ph.isConnected&&!ph.querySelector("img")){ ph.querySelector("svg")?.remove(); ph.insertAdjacentHTML("afterbegin",`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`); } } }
+
 // ---- actions
 function pmNew(){ const kind=S.tab==="pm-services"?"service":"item";
-  S.pm.form={kind,title:"",category:"",description:"",price:"",unit:kind==="service"?"per job":"each",qty:1,location:""}; S.pm.formErr=null; S.pm.view="form";
+  S.pm.form={kind,title:"",category:"",description:"",price:"",unit:kind==="service"?"per job":"each",qty:1,location:"",item_ref:null}; S.pm.formErr=null; S.pm.view="form"; S.pm.linkQ="";
   if(!S.pm.mine) pmLoadMine().then(()=>{ if(S.pm.view==="form") pmRender(); }); pmRender(); }
 function pmArm(key,fn){ if(S.pm.arm===key){ S.pm.arm=null; return fn(); } S.pm.arm=key; pmRender(); setTimeout(()=>{ if(S.pm.arm===key){ S.pm.arm=null; pmRender(); } },3500); }
 // A banner: any picture, cropped from its middle to the banner's shape (15:4, like 1500 × 400) and sized 600 to
@@ -8421,10 +8832,12 @@ function ogShrinkWide(file){ return new Promise((res,rej)=>{ const img=new Image
     const W=Math.max(600,Math.min(1800,sw)), c=document.createElement("canvas"); c.width=W; c.height=Math.round(W/OG_BANNER_RATIO);
     c.getContext("2d").drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.88)); };
   img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
-function pmShrink(file){ return new Promise((res,rej)=>{ const img=new Image(), u=URL.createObjectURL(file);
+// A picture for a listing, sized down to 1280 pixels at most. file: a picked file, or a data: URL (a Gear picture)
+function pmShrink(file){ return new Promise((res,rej)=>{ const img=new Image(), own=typeof file!=="string", u=own?URL.createObjectURL(file):file;
   img.onload=()=>{ const k=Math.min(1,1280/Math.max(img.width,img.height)), c=document.createElement("canvas"); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
-    c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.86)); };
-  img.onerror=()=>{ URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
+    const g=c.getContext("2d"); if(!own){ g.fillStyle="#0c1629"; g.fillRect(0,0,c.width,c.height); }      // see-through wiki pictures: no black background
+    g.drawImage(img,0,0,c.width,c.height); if(own) URL.revokeObjectURL(u); res(c.toDataURL("image/jpeg",0.86)); };
+  img.onerror=()=>{ if(own) URL.revokeObjectURL(u); rej(); }; img.src=u; }); }
 function pmWire(P){
   const on=(sel,fn)=>{ for(const el of P.querySelectorAll(sel)) el.onclick=e=>fn(el,e); };
   on("[data-pmopen]",el=>pmOpen(+el.dataset.pmopen));
@@ -8449,7 +8862,7 @@ function pmWire(P){
   on("[data-pmrsend]",async()=>{ const r=await pmCall("report",{listing:S.pm.listing.id,reason:P.querySelector("[data-pmrr]").value,note:P.querySelector("[data-pmrn]").value});
     toast(r.ok?"Thanks. The Quantum team will take a look.":r.error); if(r.ok){ S.pm.reporting=false; pmRender(); } });
   on("[data-pmtake]",()=>pmArm("take",async()=>{ const r=await pmCall("remove",{id:S.pm.listing.id,reason:"Taken down by Quantum"}); toast(r.ok?"Listing taken down":r.error); if(r.ok){ S.pm.view="browse"; pmLoad(); pmLoadEsc(); } }));
-  on("[data-pmedit]",()=>{ const l=S.pm.listing; S.pm.form={...l,photoData:null}; S.pm.formErr=null; S.pm.view="form"; if(!S.pm.mine) pmLoadMine().then(()=>pmRender()); pmRender(); });
+  on("[data-pmedit]",()=>{ const l=S.pm.listing; S.pm.form={...l,photoData:null,_gear:undefined}; S.pm.linkQ=""; S.pm.formErr=null; S.pm.view="form"; if(!S.pm.mine) pmLoadMine().then(()=>pmRender()); pmRender(); });
   on("[data-pmclose]",()=>pmArm("close",async()=>{ const r=await pmCall("close",{id:S.pm.listing.id}); toast(r.ok?"Listing closed":r.error); if(r.ok){ pmOpen(S.pm.listing.id); pmLoad(); } }));
   on("[data-pmdel]",()=>pmArm("del",async()=>{ const r=await pmCall("delete",{id:S.pm.listing.id});
     if(!r.ok){ S.pm.listing.delErr=r.error==="Unknown request"?"This copy of Quantum can't delete listings yet: update app.py too (or rebuild the exe).":r.error; toast(S.pm.listing.delErr); return pmRender(); }
@@ -8460,10 +8873,16 @@ function pmWire(P){
   for(const el of P.querySelectorAll("[data-pmf]")) el.oninput=el.onchange=()=>{ f[el.dataset.pmf]=el.value; if(el.dataset.pmf==="unit") pmRender(); };
   on("[data-pmpick]",()=>P.querySelector("[data-pmfile]").click());
   const fileIn=P.querySelector("[data-pmfile]"); if(fileIn) fileIn.onchange=async()=>{ const file=fileIn.files[0]; if(!file) return;
-    try{ f.photoData=await pmShrink(file); f.photoRemove=false; pmRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
-  on("[data-pmnophoto]",()=>{ f.photoData=null; f.photo=null; f.photoRemove=true; pmRender(); });
+    try{ f.photoData=await pmShrink(file); f.photoFromGear=false; f.photoRemove=false; pmRender(); }catch(_){ toast("That file isn't a picture Quantum can read"); } };
+  on("[data-pmnophoto]",()=>{ f.photoData=null; f.photo=null; f.photoFromGear=false; f.photoRemove=true; pmRender(); });
+  // Linking the item from Gear
+  const lq=P.querySelector("[data-pmlinkq]"); if(lq){ let t; lq.oninput=()=>{ S.pm.linkQ=lq.value; clearTimeout(t); t=setTimeout(()=>pmLinkResults(P),200); }; if(S.pm.linkQ) pmLinkResults(P); }
+  on("[data-pmunlink]",()=>{ f.item_ref=null; if(f.photoFromGear){ f.photoData=null; f.photoFromGear=false; } pmRender(); });
+  on("[data-pmgearpic]",()=>{ const r=f.item_ref, i=r&&glFind(r.tab,r); if(i) pmGearPic(f,i); });
+  if(f?.item_ref&&GEAR[f.item_ref.tab]&&!grState(f.item_ref.tab).data&&!f._refLoad){ f._refLoad=1; glData(f.item_ref.tab).then(()=>{ if(S.pm.view==="form"&&S.pm.form===f) pmRender(); }); }
   on("[data-pmsave]",async()=>{ const cat=f.category||P.querySelector('[data-pmf="category"]')?.value;
-    const body={kind:f.kind,title:f.title,category:cat,description:f.description,price:f.unit==="quote"?0:String(f.price||"").replace(/[^\d]/g,""),unit:f.kind==="service"?f.unit:"each",qty:f.qty,location:f.location,photo:f.photoData||null,photo_remove:!!f.photoRemove};
+    const body={kind:f.kind,title:f.title,category:cat,description:f.description,price:f.unit==="quote"?0:String(f.price||"").replace(/[^\d]/g,""),unit:f.kind==="service"?f.unit:"each",qty:f.qty,location:f.location,photo:f.photoData||null,photo_remove:!!f.photoRemove,
+      item_ref:f.kind==="item"&&f.item_ref?{tab:f.item_ref.tab,uuid:f.item_ref.uuid||null,name:f.item_ref.name}:null};
     if(f.id) body.id=f.id; S.pm.saving=true; S.pm.formErr=null; pmRender();
     const r=await pmCall(f.id?"update":"create",body); S.pm.saving=false;
     if(!r.ok){ S.pm.formErr=r.signed_in===false?"Sign in to your Quantum account first.":r.error; return pmRender(); }

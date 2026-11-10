@@ -608,6 +608,9 @@ class Community:
 
 
 def _apply(r, side, p):
+    # UEX keeps one date for both sides of a row. Keep it before a report on one side moves it, so the
+    # other side still shows its real age (trade routes skip prices over a day old: app.ROUTE_MAX_AGE_H).
+    r.setdefault("uex_modified", r.get("date_modified") or 0)
     if p.get("is_missing"):
         r[f"price_{side}"] = 0
     else:

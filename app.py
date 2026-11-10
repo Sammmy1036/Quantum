@@ -287,6 +287,13 @@ def ensure_spaceports(db):
 QUALITY = {"": 0, "estimate": 0, "hangar": 1, "station": 2, "place": 3}
 BUILTIN_CAL_PATH = RES / "builtin_calibrations.json"   # shared alignments shipped with Quantum  
 
+def _num_or0(v):
+    try:
+        return float(v or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 class Api:
 
     def __init__(self):
@@ -5213,6 +5220,229 @@ class Api:
             return {"ok": True, "buy": buy, "sell": sell, "at": at}
         return self._uex_call(run)
 
+    def uex_trade_places(self):
+        """The map places that have a commodity terminal (for the Commodities button on a place's card).
+        From the cached terminal list, so it's quick; {ok, places: [name]}."""
+        def run():
+            terms = self._uex.terminals()
+            places = self._uex.place_map(self._db.locations)
+            have = {places.get(tid) for tid, t in terms.items() if t.get("type") == "commodity" and uex.is_live(t)}
+            have.discard(None)
+            return {"ok": True, "places": sorted(have)}
+        return self._uex_call(run)
+
+    def uex_place_stock(self, place):
+        """What a place's commodity terminals buy and sell: price, stock (SCU and level) and when each was last
+        reported, for the Commodities view on its card. Quantum datarunners' newer reports are laid over UEX's.
+        -> {ok, place, terminals: [{name, id, updated, oldest, rows: [{name, buy?, sell?}]}], at}."""
+        def run():
+            terms = self._uex.terminals()
+            places = self._uex.place_map(self._db.locations)
+            tids = {tid for tid, t in terms.items()
+                    if t.get("type") == "commodity" and uex.is_live(t) and places.get(tid) == place}
+            if not tids:
+                return {"ok": True, "place": place, "terminals": [], "at": None}
+            rows, at = self._uex.get("commodities_prices_all")
+            rows = self._community.overlay(rows)
+            names = {c["id"]: c["name"] for c in self._uex.get("commodities")[0]}
+            out = {tid: [] for tid in tids}
+            for r in rows:
+                tid = r.get("id_terminal")
+                if tid not in out:
+                    continue
+                item = {"name": names.get(r.get("id_commodity")) or r.get("commodity_name") or f"#{r.get('id_commodity')}",
+                        "id_commodity": r.get("id_commodity")}
+                if (r.get("price_buy") or 0) > 0:
+                    item["buy"] = {"price": r["price_buy"], "scu": r.get("scu_buy"), "status": r.get("status_buy"),
+                                   "status_name": datarunner.STATUS.get(r.get("status_buy")),
+                                   "at": self._side_at(r, "buy") or None, "community": bool(r.get("community_buy"))}
+                if (r.get("price_sell") or 0) > 0:
+                    item["sell"] = {"price": r["price_sell"], "scu": r.get("scu_sell_stock") or r.get("scu_sell"),
+                                    "status": r.get("status_sell"), "status_name": datarunner.STATUS.get(r.get("status_sell")),
+                                    "at": self._side_at(r, "sell") or None, "community": bool(r.get("community_sell"))}
+                if "buy" in item or "sell" in item:
+                    out[tid].append(item)
+            res = []
+            for tid, items in out.items():
+                t = terms[tid]
+                dates = [s["at"] for i in items for s in (i.get("buy"), i.get("sell")) if s and s.get("at")]
+                items.sort(key=lambda i: i["name"].lower())
+                res.append({"id": tid, "name": t.get("name") or t.get("nickname") or str(tid), "where": uex.where(t),
+                            "updated": max(dates) if dates else None, "oldest": min(dates) if dates else None,
+                            "autoload": bool(t.get("is_auto_load")), "max_box": t.get("max_container_size"),
+                            "rows": items})
+            res.sort(key=lambda x: x["name"].lower())
+            return {"ok": True, "place": place, "terminals": res, "at": at}
+        return self._uex_call(run)
+
+    # ---- What a place's shops sell (armor, clothing, weapons, ship weapons and parts, food, medical…), for the
+    # windows the service tiles on a place's card open. From UEX's item prices at every terminal (one cached
+    # request), sorted into groups by each item's UEX category.
+    SHOP_GROUPS = (("armor", "Armor"), ("clothing", "Clothing"), ("weapons", "Personal weapons"),
+                   ("gadgets", "Gadgets and tools"), ("shipweapons", "Ship weapons"), ("components", "Ship components"),
+                   ("food", "Food and drink"), ("medical", "Medical"), ("rentals", "Vehicle rentals"), ("paints", "Paints"),
+                   ("other", "Other"))
+
+    @staticmethod
+    def _shop_group(cat):
+        """Which SHOP_GROUPS group a UEX item category goes in, from its section and name."""
+        sec = str((cat or {}).get("section") or "").lower()
+        nm = str((cat or {}).get("name") or "").lower()
+        txt = f"{sec} {nm}"
+        has = lambda *w: any(x in txt for x in w)
+        if has("livery", "liveries", "paint", "skin"):
+            return "paints"
+        if has("food", "drink", "beverage", "snack", "meal"):
+            return "food"
+        if has("medic", "medpen", "health", "first aid", "hemozal", "oxypen"):
+            return "medical"
+        if has("vehicle", "ship") or sec in ("systems", "components"):
+            if has("weapon", "gun", "missile", "turret", "torpedo", "bomb", "cannon", "repeater", "scattergun", "rack", "mount"):
+                return "shipweapons"
+            return "components"
+        if has("cooler", "power plant", "quantum drive", "shield generator", "jump module", "jump drive", "radar",
+               "mining laser", "mining module", "salvage", "tractor beam"):
+            return "components"
+        if has("missile", "torpedo", "bomb", "turret"):
+            return "shipweapons"
+        if has("armor", "armour", "undersuit", "helmet", "backpack", "torso", "core"):
+            return "armor"
+        if has("cloth", "jacket", "shirt", "pants", "legwear", "footwear", "shoe", "boot", "glove", "hat", "jumpsuit",
+               "eyewear", "glasses", "outerwear"):
+            return "clothing"
+        if has("weapon", "pistol", "rifle", "smg", "shotgun", "lmg", "sniper", "launcher", "knife", "knives", "grenade",
+               "magazine", "ammo", "attachment", "optic", "barrel", "underbarrel"):
+            return "weapons"
+        if has("gadget", "tool", "multi-tool", "utility", "flair", "decoration", "mining"):
+            return "gadgets"
+        return "other"
+
+    def _shop_rows(self):
+        """Every item for sale at a terminal on the map: [(place, terminal, row, group)], newest price per item
+        and terminal. Cached with UEX's prices."""
+        rows, at = self._uex.get("items_prices_all")
+        c = getattr(self, "_shop_cache", None)
+        if c and c[0] == at:
+            return c[1], at
+        terms = self._uex.terminals()
+        places = self._uex.place_map(self._db.locations)
+        cats = {c_["id"]: c_ for c_ in self._uex.get("categories")[0]}
+        best = {}
+        for r in rows:
+            t = terms.get(r.get("id_terminal"))
+            place = places.get(r.get("id_terminal"))
+            if not t or not place or not (r.get("price_buy") or 0) > 0 or not uex.is_live(t):
+                continue
+            key = (r.get("id_item"), r.get("id_terminal"))
+            prev = best.get(key)
+            if prev and _num_or0(prev[2].get("date_modified")) >= _num_or0(r.get("date_modified")):
+                continue
+            best[key] = (place, t, r, self._shop_group(cats.get(r.get("id_category"))))
+        out = list(best.values())
+        self._shop_cache = (at, out)
+        return out, at
+
+    def _rental_rows(self):
+        """Every vehicle for rent at a terminal on the map: [(place, terminal, row, vehicle)], newest price per
+        vehicle and terminal. UEX's rental price is for one day."""
+        rows, at = self._uex.get("vehicles_rentals_prices_all")
+        c = getattr(self, "_rent_cache", None)
+        if c and c[0] == at:
+            return c[1], at
+        terms = self._uex.terminals()
+        places = self._uex.place_map(self._db.locations)
+        vehicles = {v["id"]: v for v in with_extra_vehicles(self._uex.get("vehicles")[0])}
+        best = {}
+        for r in rows:
+            t = terms.get(r.get("id_terminal"))
+            place = places.get(r.get("id_terminal"))
+            price = next((r[k] for k in ("price_rent", "price", "price_buy") if r.get(k)), None)
+            if not t or not place or not price or not uex.is_live(t):
+                continue
+            key = (r.get("id_vehicle"), r.get("id_terminal"))
+            prev = best.get(key)
+            if prev and _num_or0(prev[2].get("date_modified")) >= _num_or0(r.get("date_modified")):
+                continue
+            best[key] = (place, t, dict(r, _price=price), vehicles.get(r.get("id_vehicle")) or {})
+        out = list(best.values())
+        self._rent_cache = (at, out)
+        return out, at
+
+    def _rental_item(self, r, v):
+        name = v.get("name_full") or v.get("name") or r.get("vehicle_name") or f"#{r.get('id_vehicle')}"
+        return {"name": name, "id": r.get("id_vehicle"), "vid": v.get("id") or r.get("id_vehicle"), "price": r["_price"],
+                "per": "day", "at": _num_or0(r.get("date_modified")) or None, "group": "rentals",
+                "category": "Ground vehicle" if v.get("is_ground_vehicle") else "Ship",
+                "maker": v.get("company_name") or "", "photo": self._vehicle_photo(v) if v else None,
+                "scu": v.get("scu") or 0, "crew": v.get("crew") or "", "pad": v.get("pad_type")}
+
+    def uex_shop_places(self):
+        """For each place on the map, the groups of things its shops sell: {ok, places: {place: [group]}}."""
+        def run():
+            rows, _ = self._shop_rows()
+            out = {}
+            for place, _t, _r, g in rows:
+                out.setdefault(place, set()).add(g)
+            try:
+                for place, _t, _r, _v in self._rental_rows()[0]:
+                    out.setdefault(place, set()).add("rentals")
+            except uex.UexError:
+                pass
+            # Fuel, for search ("hydrogen", "quantum fuel"): which kinds UEX lists at each place
+            fuel = {}
+            try:
+                places = self._uex.place_map(self._db.locations)
+                for r in self._uex.get("fuel_prices_all")[0]:
+                    pl = places.get(r.get("id_terminal"))
+                    nm = str(r.get("commodity_name") or "").lower()
+                    if pl and r.get("price_buy"):
+                        kind = "hydrogen" if "hydrogen" in nm else "quantum" if "quantum" in nm else None
+                        if kind:
+                            fuel.setdefault(pl, set()).add(kind)
+            except uex.UexError:
+                pass
+            return {"ok": True, "places": {p: sorted(g) for p, g in out.items()},
+                    "groups": [list(x) for x in self.SHOP_GROUPS], "fuel": {p: sorted(k) for p, k in fuel.items()}}
+        return self._uex_call(run)
+
+    def uex_place_shop(self, place):
+        """What every shop at a place sells, with price, category and when the price was reported:
+        {ok, place, shops: [{name, id, updated, items: [{name, id, price, at, group, category}]}], groups, at}."""
+        def run():
+            rows, at = self._shop_rows()
+            cats = {c_["id"]: c_ for c_ in self._uex.get("categories")[0]}
+            shops = {}
+            for p, t, r, g in rows:
+                if p != place:
+                    continue
+                s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
+                                                "terminal": t.get("name"), "items": []})
+                cat = cats.get(r.get("id_category")) or {}
+                s["items"].append({"name": r.get("item_name") or f"#{r.get('id_item')}", "id": r.get("id_item"),
+                                   "uuid": r.get("item_uuid"), "price": r["price_buy"], "at": _num_or0(r.get("date_modified")) or None,
+                                   "group": g, "category": cat.get("name") or "", "section": cat.get("section") or "",
+                                   "cat": r.get("id_category")})
+            try:                                     # vehicles for rent, as the rental desk's own shop
+                rent = self._rental_rows()[0]
+            except uex.UexError:
+                rent = []
+            for p, t, r, v in rent:
+                if p != place:
+                    continue
+                s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
+                                                "terminal": t.get("name"), "items": []})
+                s["items"].append(self._rental_item(r, v))
+            res = []
+            for s in shops.values():
+                s["items"].sort(key=lambda i: i["name"].lower())
+                dates = [i["at"] for i in s["items"] if i["at"]]
+                s["updated"] = max(dates) if dates else None
+                s["oldest"] = min(dates) if dates else None
+                res.append(s)
+            res.sort(key=lambda s: s["name"].lower())
+            return {"ok": True, "place": place, "shops": res, "groups": [list(x) for x in self.SHOP_GROUPS], "at": at}
+        return self._uex_call(run)
+
     def uex_vehicles(self):
         """Every ship and ground vehicle, with where to buy and rent it in game and for how much."""
         def run():
@@ -7126,6 +7356,25 @@ class Api:
     def gear_image(self, ref):
         return self.gear_images([ref], size=720).get(ref)
 
+    def gear_photo(self, ref, url=None):
+        """A piece of gear's picture as a data: URL, for a marketplace listing's photo when the seller links
+        the item from Gear (the page can't copy a picture off another site into an upload itself).
+        url: the picture the Gear tab already has; else it's looked up by name. -> {ok, data} or {ok: False}."""
+        if not (isinstance(url, str) and url.startswith("https://")):
+            url = self.gear_image(ref)
+        if not (isinstance(url, str) and url.startswith("https://")):
+            return {"ok": False, "error": "No picture of it on the wiki"}
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Quantum", "Accept": "image/*"})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                kind = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+                body = r.read(8_000_001)
+        except Exception as e:
+            return {"ok": False, "error": f"Couldn't download its picture ({e})"}
+        if not kind.startswith("image/") or not body or len(body) > 8_000_000:
+            return {"ok": False, "error": "Its picture couldn't be used"}
+        return {"ok": True, "data": f"data:{kind};base64,{base64.b64encode(body).decode('ascii')}"}
+
     def blueprint_detail(self, uuid):
         """One blueprint with the missions that unlock it, and the numbers of what it makes."""
         try:
@@ -7635,7 +7884,9 @@ class Api:
             self._shop_changed(f"Bought {', '.join(got)}: ticked off your shopping list")
 
     # ------------------------------------------------------------ my trade runs
-    TRADE_STAGES = ("planned", "bought", "transit", "sold")
+    # A run's steps. "bought" is shown as Purchased (the key is kept so saved runs still work); loading is
+    # after buying, off loading (unloading) after arriving, before it's sold.
+    TRADE_STAGES = ("planned", "bought", "loading", "transit", "unloading", "sold")
 
     def _runs(self):
         return self._settings.setdefault("trade_runs", [])
@@ -7668,8 +7919,8 @@ class Api:
         return {"ok": True, "id": (old or run)["id"]}
 
     def trade_run_stage(self, rid, stage, price=None, fee=None):
-        """Move a run along: planned > bought > in transit > sold. Buying or selling can record the
-        price you actually got (per SCU) and what auto loading / unloading cost."""
+        """Move a run along: planned > purchased > loading > in transit > off loading > sold. Buying or
+        selling can record the price you actually got (per SCU) and what auto loading / unloading cost."""
         r = next((x for x in self._runs() if x["id"] == rid), None)
         if not r or stage not in self.TRADE_STAGES:
             return {"ok": False, "error": "Run not found"}
@@ -7677,7 +7928,7 @@ class Api:
         r.setdefault("times", {})[stage] = time.time()
         for later in self.TRADE_STAGES[self.TRADE_STAGES.index(stage) + 1:]:
             r["times"].pop(later, None)             # stepping back clears what came after
-        if price not in (None, ""):
+        if price not in (None, "") and stage in ("bought", "sold"):       # not when stepping back
             r["buy_price" if stage == "bought" else "sell_price"] = float(price)
         if fee not in (None, "") and stage in ("bought", "sold"):
             r["load_fee" if stage == "bought" else "unload_fee"] = float(fee)
@@ -7686,7 +7937,7 @@ class Api:
 
     def _auto_trade_transit(self):
         """Smart departure for trade runs, like contracts: setting your in-game route (quantum
-        destination) to a bought run's sell place, or its planet/moon, puts the run in transit."""
+        destination) to a purchased (or loading) run's sell place, or its planet/moon, puts the run in transit."""
         q = self._tracker.qt or {}
         sel, dest = q.get("selected"), q.get("place") or q.get("dest")
         if not sel or not dest or sel == getattr(self, "_trade_qt_seen", None):
@@ -7698,7 +7949,7 @@ class Api:
         names.discard("")
         changed = False
         for r in self._runs():
-            if r.get("stage") != "bought" or (r.get("times") or {}).get("bought", 0) > sel + 5:
+            if r.get("stage") not in ("bought", "loading") or (r.get("times") or {}).get("bought", 0) > sel + 5:
                 continue
             targets = {comp(r.get("to_place")), comp(r.get("to_terminal"))} - {""}
             if any(n == t or (len(n) > 5 and (n in t or t in n)) for n in names for t in targets):
@@ -7743,23 +7994,51 @@ class Api:
         return self._uex_call(run)
 
     ROUTES_PER_COMMODITY = 4      # wide searches: at most this many runs of one commodity in the list
+    # Trade routes only use prices reported in the last day: older ones are too often wrong (emptied
+    # stock, changed prices) to plan a run on. A run is as fresh as the older of its two prices.
+    ROUTE_MAX_AGE_H = 24
 
-    def _price_routes(self, system=None, stay="", avoid=None, one_system=False, per_origin=6):
+    @staticmethod
+    def _side_at(p, side):
+        """When one side ("buy" or "sell") of a price row was last reported: a Quantum datarunner's report
+        when there's a newer one, else UEX's date for the row. 0 when unknown."""
+        if not p:
+            return 0
+        c = p.get(f"community_{side}")
+        if c and c.get("at"):
+            return c["at"]
+        return p.get("uex_modified", p.get("date_modified")) or 0
+
+    def _route_age_h(self, max_age_h=None):
+        """How old a price may be for a route: what was asked for (Price age), never more than ROUTE_MAX_AGE_H."""
+        try:
+            h = float(max_age_h) if max_age_h not in (None, "", 0, "0") else self.ROUTE_MAX_AGE_H
+        except (TypeError, ValueError):
+            h = self.ROUTE_MAX_AGE_H
+        return max(0.25, min(h, self.ROUTE_MAX_AGE_H))
+
+    def _route_cutoff(self, max_age_h=None):
+        return time.time() - self._route_age_h(max_age_h) * 3600
+
+    def _price_routes(self, system=None, stay="", avoid=None, one_system=False, per_origin=6, max_age_h=None):
         """UEX-style route rows worked out from every terminal's prices (one cached request), for searches
         wider than one planet: the whole game, or one whole system. UEX's own routes endpoint only takes a
-        single starting planet, orbit or terminal. system: only runs that start there (None: anywhere)."""
+        single starting planet, orbit or terminal. system: only runs that start there (None: anywhere).
+        Prices over ROUTE_MAX_AGE_H old aren't used at all, so the runs found are among fresh prices."""
         terms = self._uex.terminals()
         rows, at = self._uex.get("commodities_prices_all")
         rows = self._community.overlay(rows)
         names = {c["id"]: c["name"] for c in self._uex.get("commodities")[0]}
+        cut = self._route_cutoff(max_age_h)
         buys, sells = {}, {}
         for r in rows:
             t = terms.get(r.get("id_terminal"))
             if not t or not uex.is_live(t):
                 continue
-            if (r.get("price_buy") or 0) > 0 and (not system or t.get("star_system_name") == system):
+            if (r.get("price_buy") or 0) > 0 and (not system or t.get("star_system_name") == system) \
+                    and self._side_at(r, "buy") >= cut:
                 buys.setdefault(r["id_commodity"], []).append((r, t))
-            if (r.get("price_sell") or 0) > 0:
+            if (r.get("price_sell") or 0) > 0 and self._side_at(r, "sell") >= cut:
                 sells.setdefault(r["id_commodity"], []).append((r, t))
         avoid = set(avoid or ())
 
@@ -7793,7 +8072,8 @@ class Api:
                         "status_origin": rb.get("status_buy"), "status_destination": rs.get("status_sell"),
                         "container_sizes_origin": rb.get("container_sizes") or tb.get("container_sizes"),
                         "container_sizes_destination": rs.get("container_sizes") or ts.get("container_sizes"),
-                        "date_added": max(rb.get("date_modified") or 0, rs.get("date_modified") or 0) or None,
+                        "date_origin": self._side_at(rb, "buy"), "date_destination": self._side_at(rs, "sell"),
+                        "date_added": min(self._side_at(rb, "buy"), self._side_at(rs, "sell")) or None,
                         "community_origin": rb.get("community_buy"), "community_destination": rs.get("community_sell"),
                         "faction_origin": tb.get("faction_name"), "faction_destination": ts.get("faction_name"),
                         **{f"{flag}_{side}": t.get(flag) for side, t in (("origin", tb), ("destination", ts))
@@ -7801,7 +8081,7 @@ class Api:
                                         "is_space_station", "is_on_ground", "is_monitored")}})
         return out, at
 
-    def _routes_with_quantum(self, rows, kind, origin_id, stay="", avoid=None, one_system=False):
+    def _routes_with_quantum(self, rows, kind, origin_id, stay="", avoid=None, one_system=False, max_age_h=None):
         """UEX's routes from one planet, orbit or terminal, with Quantum users' newer price reports laid over
         them (the same overlay the wide searches use): a terminal UEX still lists with 240 SCU that a Quantum
         datarunner saw at 146 ten minutes ago is planned with 146, and its profit and place in the list
@@ -7828,15 +8108,16 @@ class Api:
                 po, pd = r.get("price_origin") or 0, r.get("price_destination") or 0
                 r["price_margin"] = pd - po
                 r["price_roi"] = (pd - po) / po * 100 if po else 0
-                r["date_added"] = max(r.get("date_added") or 0, *[(r.get(f"community_{s_}") or {}).get("at") or 0
-                                                                   for s_ in ("origin", "destination")])
+            # Each end's own report time, from the price table (UEX's route row only has when the route
+            # was worked out, which says nothing about how old its prices are)
+            r["date_origin"], r["date_destination"] = self._side_at(pb, "buy"), self._side_at(ps, "sell")
             out.append(r)
         # runs from here UEX doesn't list (yet): worked out from the overlaid price table
         try:
             terms = self._uex.terminals()
             want = {"planet": "id_planet", "orbit": "id_orbit", "terminal": "id"}[kind]
             have = {(r.get("id_commodity"), r.get("id_terminal_origin"), r.get("id_terminal_destination")) for r in out}
-            extra, _ = self._price_routes(None, stay, avoid, one_system)
+            extra, _ = self._price_routes(None, stay, avoid, one_system, max_age_h=max_age_h)
             for x in extra:
                 t = terms.get(x["id_terminal_origin"]) or {}
                 if str(t.get(want)) != str(origin_id):
@@ -7881,10 +8162,11 @@ class Api:
     @staticmethod
     def _price_trust(x, now):
         """0.55..1: how far to trust a run's prices. Fresh reports (or a Quantum datarunner's) count fully;
-        prices a few days old, or with few reports behind them, less: they're the runs that turn out empty."""
-        upd = x.get("updated") or 0
-        age_h = (now - upd) / 3600 if upd else 96
-        t = 1.0 if age_h <= 6 else max(0.65, 1.0 - (age_h - 6) / 66 * 0.35)
+        prices hours old (anything over ROUTE_MAX_AGE_H is left out before this), or with few reports behind
+        them, less: they're the runs that turn out empty."""
+        upd = x.get("updated") or 0             # the older of the run's two prices (all under a day old)
+        age_h = (now - upd) / 3600 if upd else 24
+        t = 1.0 if age_h <= 2 else max(0.7, 1.0 - (age_h - 2) / 22 * 0.3)
         if x.get("quantum_from") or x.get("quantum_to"):
             t = max(t, 0.95)
         rep = min(x.get("reports_from") or 0, x.get("reports_to") or 0)
@@ -7894,8 +8176,13 @@ class Api:
             t *= 0.92                   # you'd empty the terminal: the next one there finds less
         return round(max(0.55, t), 3)
 
-    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload="", sort="profit"):
+    def uex_routes(self, kind, origin_id, scu=0, budget=0, stay="", avoid=None, one_system=False, autoload="", sort="profit",
+                   min_profit=0, max_age_h=None):
         """Best runs from a planet/orbit/terminal for your cargo space and budget, most profit first.
+        min_profit: runs that would make less than this (aUEC, for the units you'd carry) aren't listed: a
+        200 aUEC margin or a 1 SCU haul isn't worth the trip. How many were left out is returned.
+        max_age_h: only prices reported this recently (Price age; at most ROUTE_MAX_AGE_H).
+        sort "fresh": the runs with the most recent prices first (by the older of each run's two prices).
         kind "all" searches every system at once, kind "system" one whole system (origin_id is its name).
         autoload: "" any terminal, "buy" only where the buy terminal loads your ship for you, "both" only
         where both ends do (UEX's is_auto_load on the terminal)."""
@@ -7904,14 +8191,30 @@ class Api:
             auto = lambda tid: bool((terms.get(tid) or {}).get("is_auto_load"))
             wide = kind in ("all", "system")
             if wide:
-                rows, at = self._price_routes(str(origin_id) if kind == "system" else None, stay, avoid, one_system)
+                rows, at = self._price_routes(str(origin_id) if kind == "system" else None, stay, avoid, one_system,
+                                              max_age_h=max_age_h)
             else:
                 key = {"planet": "id_planet_origin", "orbit": "id_orbit_origin", "terminal": "id_terminal_origin"}[kind]
                 rows, at = self._uex.get("commodities_routes", {key: int(origin_id)})
-                rows = self._routes_with_quantum(rows, kind, origin_id, stay, avoid, one_system)
+                rows = self._routes_with_quantum(rows, kind, origin_id, stay, avoid, one_system, max_age_h=max_age_h)
             places = self._uex.place_map(self._db.locations)
-            out = []
+            age_h = self._route_age_h(max_age_h)
+            out, cut, old, small = [], self._route_cutoff(age_h), 0, 0
+            try:
+                floor = max(0.0, float(min_profit or 0))      # a new name: assigning min_profit here would hide the argument
+            except (TypeError, ValueError):
+                floor = 0.0
             for r in rows:
+                # Only prices from the last day: a run is as fresh as the older of its two prices. Rows
+                # without a date of each end (the price table couldn't be read) fall back to the route's own.
+                d_from, d_to = r.get("date_origin"), r.get("date_destination")
+                if d_from is None:
+                    d_from = r.get("date_added") or 0
+                if d_to is None:
+                    d_to = r.get("date_added") or 0
+                if min(d_from, d_to) < cut:
+                    old += 1
+                    continue
                 so, sd = r.get("origin_star_system_name"), r.get("destination_star_system_name")
                 if so not in uex.SYSTEMS or sd not in uex.SYSTEMS:
                     continue
@@ -7929,6 +8232,9 @@ class Api:
                     cap.append(int(budget // pb))
                 units = int(min(cap)) if cap else 0
                 if units <= 0:
+                    continue
+                if floor and units * (ps - pb) < floor:
+                    small += 1                     # too small to be worth flying
                     continue
                 po, pd = places.get(r["id_terminal_origin"]), places.get(r["id_terminal_destination"])
                 L1, L2 = self._db.locations.get(po), self._db.locations.get(pd)
@@ -7948,7 +8254,8 @@ class Api:
                     "boxes_from": r.get("container_sizes_origin"), "boxes_to": r.get("container_sizes_destination"),
                     "elevator_to": bool(r.get("has_freight_elevator_destination") or r.get("has_loading_dock_destination")),
                     "url": f"https://uexcorp.space/trade/route?code={r['code']}" if r.get("code") else None,
-                    "id_commodity": r.get("id_commodity"), "updated": r.get("date_added"),
+                    "id_commodity": r.get("id_commodity"), "updated": min(d_from, d_to),
+                    "updated_from": d_from, "updated_to": d_to,
                     "scu_from": r.get("scu_origin"), "scu_to": r.get("scu_destination"),
                     "reports_from": r.get("price_origin_users_rows"), "reports_to": r.get("price_destination_users_rows"),
                     "from_station": bool(r.get("is_space_station_origin")), "to_station": bool(r.get("is_space_station_destination")),
@@ -7980,7 +8287,8 @@ class Api:
                 x["per_hour"] = round(x["profit"] / max(mins, 5) * 60)
                 x["trust"] = self._price_trust(x, now)
                 x["best"] = round(x["per_hour"] * x["trust"])
-            key = {"hour": lambda x: -x["per_hour"], "best": lambda x: -x["best"]}.get(sort, lambda x: -x["profit"])
+            key = {"hour": lambda x: -x["per_hour"], "best": lambda x: -x["best"],
+                   "fresh": lambda x: (-(x["updated"] or 0), -x["profit"])}.get(sort, lambda x: -x["profit"])
             out.sort(key=key)
             # Where to go next: the best run that starts where this one sells (a loop instead of flying back empty)
             by_start = {}
@@ -8002,7 +8310,9 @@ class Api:
                 total, out = len(out), kept
             else:
                 total = len(out)
-            return {"ok": True, "routes": out[:60], "at": at, "total": total, "wide": wide}
+            return {"ok": True, "routes": out[:60], "at": at, "total": total, "wide": wide,
+                    "old_left_out": old, "max_age_h": age_h,
+                    "small_left_out": small, "min_profit": floor}
         return self._uex_call(run)
 
     def journey(self, a, b):
