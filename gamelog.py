@@ -100,6 +100,8 @@ RE_PHYS_PLANET = re.compile(r"planet cells:.*?name: (\S+)")
 RE_PLANET_SYS = re.compile(r"^(?:OOC_)?(Stanton|Pyro|Nyx)(?:_|\d|$)", re.I)
 RE_SHOP = re.compile(r"playerId\[(\d+)\] shopId\[\d+\] shopName\[SCShop_([A-Za-z0-9]+)_([A-Za-z0-9_]+)\]"
                      r"(?:.*?itemName\[([A-Za-z0-9_]+)\])?")
+# A shop purchase can be for several at once ("quantity[32]" for a stack of missiles)
+RE_SHOP_QTY = re.compile(r"\bquantity\[(\d+)\]", re.I)
 MAKERS = {"AEGS": "Aegis", "ANVL": "Anvil", "ARGO": "Argo", "BANU": "Banu", "CNOU": "C.O.", "CRUS": "Crusader",
           "DRAK": "Drake", "ESPR": "Esperia", "GAMA": "Gatac", "GLSN": "Gallenson", "GRIN": "Greycat", "KRIG": "Kruger",
           "MISC": "MISC", "MRAI": "Mirai", "ORIG": "Origin", "RSI": "RSI", "TMBL": "Tumbril", "XIAN": "Aopoa", "XNAA": "Aopoa"}
@@ -1401,7 +1403,9 @@ class ContractTracker(threading.Thread):
                 text = f"{verb} a {vehicle_name(item)} at {shop}, {where}" if verb and item else f"At {shop}, {where}"
                 if verb == "Bought" and item:          # for the shopping list: ticks the item off
                     self.purchase_n += 1
+                    q = RE_SHOP_QTY.search(line)
                     self.purchases = (self.purchases + [{"item": item, "shop": shop, "where": where,
+                                                         "qty": max(1, int(q.group(1))) if q else 1,
                                                          "at": log_time(line) or time.time(), "n": self.purchase_n}])[-50:]
                 return self._activity(text, line, place=where)
         if "ATC_DataManager_Port_" in line:

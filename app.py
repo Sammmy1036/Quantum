@@ -6562,6 +6562,20 @@ class Api:
         self._save_settings()
         return {"ok": True, "count": len(ports)}
 
+    def fleet_fill_missiles(self, uid, size, item_name, uuid=None):
+        """Fit one missile to every missile slot of its size on the whole ship, across all its racks."""
+        lo = self.fleet_loadout(uid)
+        if not lo.get("ok"):
+            return lo
+        ports = [s["port"] for s in lo["slots"] if s["type"] == "Missile" and str(s.get("size") or "") == str(size or "")]
+        if not ports:
+            return {"ok": False, "error": f"This ship has no size {size} missile slots"}
+        fits = self._loadout_of(self._ship(uid))["loadout"]
+        for p_ in ports:
+            fits[p_] = {"name": item_name, "uuid": uuid}
+        self._save_settings()
+        return {"ok": True, "count": len(ports)}
+
     def fleet_loadout(self, uid, _ship=None):
         """The ship's slots stock component in each, and what you've swapped in. _ship: a copy of the ship to
         work out instead (the website copy works out each loadout this way, without touching the real one)."""
@@ -7877,11 +7891,13 @@ class Api:
             self._shop_done_n = b["n"]
             e = shopping.match_purchase(items, b["item"], self.PURCHASE_NOISE)
             if e and (e.get("added") or 0) <= (b.get("at") or time.time()) + 5:
-                e["bought"] = min(e.get("qty") or 1, (e.get("bought") or 0) + 1)
-                got.append(e["name"])
+                was = e.get("bought") or 0
+                e["bought"] = min(e.get("qty") or 1, was + max(1, int(b.get("qty") or 1)))   # 32 missiles in one go count as 32
+                n_ = e["bought"] - was
+                got.append(f"{e['name']} × {n_}" if n_ > 1 else e["name"])
                 items = [x for x in items if (x.get("bought") or 0) < (x.get("qty") or 1)]
         if got:
-            self._shop_changed(f"Bought {', '.join(got)}: ticked off your shopping list")
+            self._shop_changed(f"Purchased {', '.join(got)}: marked bought in your cart")
 
     # ------------------------------------------------------------ my trade runs
     # A run's steps. "bought" is shown as Purchased (the key is kept so saved runs still work); loading is

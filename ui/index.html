@@ -1231,8 +1231,77 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .sw-t td.act .cart-btn{width:26px;height:26px;vertical-align:middle;margin-right:4px}.sw-t td.act .cart-btn svg{width:15px;height:15px}
 .slot .acts .cart-btn{width:28px;height:28px}
 .cart-all svg,[data-grshopset] svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
-.empty svg.inl{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;vertical-align:-3px}
+.empty svg.inl,.she svg.inl,.shr svg.inl{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;vertical-align:-3px}
 /* Shopping list */
+.she{max-width:980px;margin:0 auto;padding:30px 4px 10px}
+.she-hero{text-align:center;max-width:600px;margin:0 auto 26px}
+.she-badge{width:76px;height:76px;margin:0 auto 14px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 25%,#1d3a6b,#0c1629 70%);border:1px solid var(--line-2);box-shadow:0 0 40px rgba(75,141,255,.18)}
+.she-badge svg{width:34px;height:34px;stroke:var(--route-2);fill:none;stroke-width:1.7}
+.she-hero h2{margin:0 0 6px;font:700 26px var(--display)}.she-hero p{margin:0;color:var(--ink-2);line-height:1.55}
+.she-how{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.she-how{grid-template-columns:1fr}}
+.she-how li{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.she-how .n{width:28px;height:28px;border-radius:50%;background:var(--route);color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px var(--display)}
+.she-how b{font:600 15px var(--display)}.she-how li>span:last-child{font-size:13px;color:var(--ink-2);line-height:1.5}
+.she-go{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.she-tile{display:flex;gap:12px;align-items:center;text-align:left;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);min-height:64px;transition:border-color .15s,transform .15s}
+.she-tile:hover{border-color:rgba(140,196,255,.55);transform:translateY(-1px)}
+.she-tile svg{width:24px;height:24px;flex:none;fill:none;stroke:var(--route-2);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.she-tile svg.solid{fill:var(--route-2);stroke:none}
+.she-tile b{display:block;font-weight:600}.she-tile small{display:block;font-size:12px;color:var(--ink-2);line-height:1.4}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Cart, "receipt" layout: the table of everything in the cart over the map, the receipt in the sidebar */
+.shr{display:flex;flex-direction:column;gap:14px}
+.shr-card{background:var(--panel-2);border:1px solid var(--line-2);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.shr-k{font:600 10.5px var(--text);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.shr-stops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.shr-stops li{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px;align-items:baseline;font-size:13px}
+.shr-stops li .n{font:700 12px var(--display);color:var(--route-2)}.shr-stops li.past{color:var(--dim)}.shr-stops li.past .n{color:#57e39b}
+.shr-stops li .w{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shr-stops li .w a{cursor:pointer;color:inherit}.shr-stops li .w a:hover{text-decoration:underline}
+.shr-stops li .v{color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.shr-rule{border-top:1px dashed var(--line-2)}
+.shr-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.shr-total b{font:400 24px "Michroma","Exo 2",sans-serif;color:#57e39b;white-space:nowrap}.shr-total b small{font:600 12px var(--display);color:var(--ink-2);margin-left:4px}
+.shr-meta{font-size:12px;color:var(--dim);margin-top:-8px}
+.shr-mode{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.shr-mode legend{padding:0;margin-bottom:6px}
+.shr-mode label{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;border:1px solid var(--line-2);cursor:pointer}
+.shr-mode label.on{border-color:var(--route);background:rgba(75,141,255,.1)}
+.shr-mode input{margin-top:3px;accent-color:var(--route)}.shr-mode b{display:block;font-weight:600}.shr-mode small{display:block;font-size:12px;color:var(--ink-2)}
+.shr-go{min-height:46px;border:0;border-radius:11px;background:var(--brand-grad);color:#fff;font:700 14.5px var(--display)}
+.shr-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.shr-two .btn{min-height:38px;justify-content:center}
+.sht-top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 18px;margin-bottom:14px}
+.sht-top h2{margin:0;font:700 24px var(--display)}.sht-top .muted{font-size:13px}
+.sht-top label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}.sht-top select{width:auto;min-height:36px}
+.sht-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.sht{width:100%;min-width:760px;border-collapse:collapse;font-size:13.5px}
+.sht thead th{text-align:left;padding:11px 10px;font:600 10.5px var(--text);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.sht th.r,.sht td.r{text-align:right}
+.sht td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:middle}
+.sht td.ck{width:28px;padding-left:14px}.sht td.ck input{width:18px;height:18px;accent-color:#3ccf6e}
+.sht .grp th{text-align:left;padding:12px 14px 9px;background:var(--panel-2);border-top:1px solid var(--line);font:600 14px var(--display)}
+.sht .grp .gi{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sht .grp .dot{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:700 12px var(--display);background:var(--panel-3);color:var(--ink-2);flex:none}
+.sht .grp.cur .dot{background:var(--route);color:#fff}.sht .grp.past .dot{background:#3ccf6e;color:#fff}
+.sht .grp a{cursor:pointer;color:inherit}.sht .grp a:hover{text-decoration:underline}
+.sht .grp .m{font:500 12px var(--text);color:var(--dim)}.sht .grp .m b{color:#57e39b}
+.sht .grp .s{margin-left:auto;font:600 13px var(--text);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.sht .grp .btn{margin-left:6px}
+.sht-it{display:flex;align-items:center;gap:10px;min-width:0}
+.sht-ph{width:42px;height:42px;flex:none;border-radius:8px;background:var(--panel-3);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--dim)}
+.sht-ph img{width:100%;height:100%;object-fit:contain}.sht-ph svg{width:20px;height:20px}
+.sht-it .t{min-width:0}.sht-it .t a{font-weight:600;cursor:pointer;color:var(--ink)}.sht-it .t a:hover{text-decoration:underline}
+.sht-it .t small{display:block;font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:420px}
+.sht tr.got .t a{text-decoration:line-through;color:var(--dim)}
+.sht-q{display:inline-flex;align-items:center;gap:4px}
+.sht-q button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--ink-2);font-size:15px;line-height:1}
+.sht-q button:hover{color:var(--ink);border-color:var(--route)}
+.sht-q input{width:64px;height:30px;text-align:center;border-radius:8px;border:1px solid var(--line-2);background:var(--ground);color:var(--ink);font:700 14px var(--display);font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.sht-q input::-webkit-outer-spin-button,.sht-q input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.sht-q input:focus{border-color:var(--route);outline:none}
+.sht-q .got{font-size:11px;color:var(--dim);margin-left:4px;white-space:nowrap}
+.sht td.x{width:36px;padding-right:12px}.sht td.x button{width:30px;height:30px;border-radius:8px;border:0;background:none;color:var(--dim);font-size:15px}.sht td.x button:hover{color:var(--danger);background:var(--panel-2)}
+.sht .sum{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}.sht .each{color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .sh-modelab{display:flex;flex-direction:column;flex:1;gap:3px;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
 #sh-plan{align-self:flex-end;height:32px;padding-top:0;padding-bottom:0}
 .sh-item .hd{align-items:center}.sh-item.done .nm{color:var(--dim);text-decoration:line-through}
@@ -1732,8 +1801,6 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
     <section class="pane" id="pane-pm-mine"></section>
     <section class="pane" id="pane-pm-standing"></section>
     <section class="pane" id="pane-shopping">
-      <div class="row" style="gap:6px;align-items:flex-end"><label class="sh-modelab"><span>Plan for</span><select class="field" id="sh-mode"><option value="fewest">Fewest stops</option><option value="cheapest">Lowest price</option></select></label>
-        <button class="btn primary" id="sh-plan">Update route</button></div>
       <div id="sh-out"></div>
     </section>
 
@@ -6183,7 +6250,9 @@ function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) r
   const byGrade=sl?.type==="Radar"&&!r.items.some(i=>i.stats?.aim_range), k=byGrade?null:r.key, cur=k&&now?.stats?.[k];
   const ranked=k||byGrade, sort=S.flSort||(ranked?"best":"price");
   const gradeN=g=>({A:0,B:1,C:2,D:3}[String(g||"").toUpperCase()]??9);
-  const q=(S.flQuery||"").trim().toLowerCase(), lab=k?ITEM_STAT[k][0]:null, fmt=k?ITEM_STAT[k][1]:null, sh=sl?.type==="Shield", rackN=sl?.type==="Missile"&&sl.rack?S.flLoad.slots.filter(x=>x.rack===sl.rack).length:0;
+  const q=(S.flQuery||"").trim().toLowerCase(), lab=k?ITEM_STAT[k][0]:null, fmt=k?ITEM_STAT[k][1]:null, sh=sl?.type==="Shield", rackN=sl?.type==="Missile"&&sl.rack?S.flLoad.slots.filter(x=>x.rack===sl.rack).length:0,
+    // Every missile slot of this size on the ship (all its racks), for fitting the same missile everywhere
+    shipN=sl?.type==="Missile"?S.flLoad.slots.filter(x=>x.type==="Missile"&&String(x.size??"")===String(sl.size??"")).length:0;
   const L=r.items.filter(i=>!q||`${i.name} ${i.maker} ${i.class||""} ${i.grade||""}`.toLowerCase().includes(q)).sort(sort==="best"&&byGrade?(a,b)=>gradeN(a.grade)-gradeN(b.grade)||(a.stats.em??9e9)-(b.stats.em??9e9)||(b.stats.health||0)-(a.stats.health||0)
     :sort==="best"&&k==="missiles"?(a,b)=>((b.stats.missiles||0)*(b.stats.missile_size||1)**2)-((a.stats.missiles||0)*(a.stats.missile_size||1)**2)||(b.stats.missile_size||0)-(a.stats.missile_size||0)
     :sort==="best"&&k?(a,b)=>(b.stats[k]||0)-(a.stats[k]||0)
@@ -6211,7 +6280,7 @@ function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) r
           <td class="num">${i.stats.qt_cooldown!=null?`${nf(i.stats.qt_cooldown)} s${now?.stats?.qt_cooldown!=null&&!here?`<div>${cmpDelta("qt_cooldown",+now.stats.qt_cooldown,+i.stats.qt_cooldown)}</div>`:""}`:"–"}</td>`:""}
         <td class="num">${i.stats.em!=null?fmtBig(i.stats.em):"–"}</td>
         <td class="num">${i.price?money(i.price):'<span class="muted">–</span>'}</td>
-        <td class="act">${i.buy?.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}${rackN>1?`<button class="btn small ghost" data-flfill="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to all ${rackN} slots on ${esc(sl.rack_name||"this rack")}">All ${rackN}</button>`:""}</td></tr>`; }).join("")}
+        <td class="act">${i.buy?.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}${rackN>1&&rackN<shipN?`<button class="btn small ghost" data-flfill="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to all ${rackN} slots on ${esc(sl.rack_name||"this rack")}">This rack (${rackN})</button>`:""}${shipN>1?`<button class="btn small primary" data-flfillall="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to every size ${esc(String(sl.size??""))} missile slot on the ship: all ${shipN}, on every rack">All ${shipN} slots</button>`:""}</td></tr>`; }).join("")}
     </tbody></table></div>`;
   const so=$("fl-sort"); if(so) so.onchange=()=>{ S.flSort=so.value; renderSlotOptions(); };
   const qi=$("fl-q"); if(qi){ qi.oninput=()=>{ S.flQuery=qi.value; const pos=qi.selectionStart; renderSlotOptions(); const n=$("fl-q"); n.focus(); n.setSelectionRange(pos,pos); };
@@ -6253,6 +6322,9 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;
     const r=await api().fleet_loadout_switch(S.flSel,ll.dataset.flload); if(!r.ok) return toast(r.error); S.flSlot=null; S.flOpts=null; S.flLoMode=null; return renderShip(S.flSel); }
   if(e.target.closest("[data-flcmpclose]")){ S.flCmp=null; return renderSlotOptions(); }
+  const fa=e.target.closest("[data-flfillall]"); if(fa){ const sl=S.flLoad?.slots.find(x=>x.port===S.flSlot); if(!sl) return;
+    const r=await api().fleet_fill_missiles(S.flSel,sl.size,fa.dataset.flfillall,fa.dataset.uuid||null); if(!r.ok) return toast(r.error);
+    toast(`Fitted ${fa.dataset.flfillall} to all ${r.count} missile slots`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
   const fill=e.target.closest("[data-flfill]"); if(fill){ const sl=S.flLoad?.slots.find(x=>x.port===S.flSlot); if(!sl?.rack) return;
     const r=await api().fleet_fill_rack(S.flSel,sl.rack,fill.dataset.flfill,fill.dataset.uuid||null); if(!r.ok) return toast(r.error);
     toast(`Fitted ${fill.dataset.flfill} × ${r.count}`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
@@ -8295,57 +8367,120 @@ async function cartOpenItem(x){ if(!x) return;
   grOpenItem(tab,it.uuid||it.name,null); }
 async function openShopping(){ $("sh-panel").classList.add("show"); await renderShopping(true); }
 async function renderShopping(autoPlan){ let r=await api().shop_list(); S.slData=r; if(S.tab!=="shopping") return;
-  // Opening the cart with things in it that aren't planned yet works out the route straight away
+  // Opening the cart (or changing an amount) with things in it that aren't planned yet works out the route straight away
   if(autoPlan&&!r.plan&&r.left){ $("sh-panel").innerHTML=qLoader("Finding the shops and the quickest way round…"); const p=await api().shop_plan(null);
     if(p.ok){ r=await api().shop_list(); S.slData=r; } if(S.tab!=="shopping") return; }
   setCartCount(r.left);
-  const left=x=>Math.max(0,(x.qty||1)-(x.bought||0));
-  $("sh-out").innerHTML=r.items.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${plural(r.items.length,"item")} in your cart · ${r.left} still to buy</div>`
-    +r.items.map(x=>`<div class="vh sh-item ${left(x)?"":"done"}"><div class="hd"><div style="min-width:0"><div class="nm">${left(x)?"":"✓ "}<a class="cart-open" data-shopen="${esc(x.id)}" title="Open ${esc(x.name)}">${esc(x.name)}</a></div>
-        <div class="mk">${esc(SH_KIND[x.kind]||x.kind)}${x.source?` · ${esc(x.source)}`:""} · ${x.price!=null?`from ${money(x.price)}${x.where?` at ${esc(x.where)}`:""}`:"not in shops"}</div></div>
-        <div class="sh-qty"><button class="iconbtn" data-shq="${x.id}" data-d="-1" title="One less">−</button><b title="${x.bought||0} of ${x.qty} bought">${x.bought?`${x.bought}/`:""}${x.qty}</b><button class="iconbtn" data-shq="${x.id}" data-d="1" title="One more">+</button>
-          <button class="iconbtn" data-shdel="${x.id}" title="Take it out of the cart">✕</button></div></div></div>`).join("")
-    +`<div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn small ghost" data-shclear="bought">Remove bought</button><button class="btn small ghost" data-shclear="all">Empty cart</button></div>`
-    :`<div class="empty"><strong>Your cart is empty</strong>Use the ${CART_SVG.replace('<svg','<svg class="inl"')} button on anything you'd like to buy: parts in <b>Components</b> and <b>My Fleet</b> (or every part you've swapped into a loadout at once), and gear in <b>Weapons</b> and <b>Armor</b>.</div>`;
-  $("sh-mode").value=r.mode||"fewest";
-  shRenderPlan(r); }
+  shRenderReceipt(r); shRenderPlan(r); }
+// The sidebar: the receipt. Each stop and what you'll spend there, the total, how to plan, and what to do with it.
+function shRenderReceipt(r){ const p=r.plan, cur=r.step, mode=r.mode||"fewest", el=$("sh-out");
+  const total=p?p.total:r.items.reduce((t,x)=>t+(x.price!=null?x.price*Math.max(0,(x.qty||1)-(x.bought||0)):0),0);
+  const bought=r.items.reduce((t,x)=>t+(x.bought||0),0), all=r.items.reduce((t,x)=>t+(x.qty||1),0);
+  el.innerHTML=`<div class="shr">
+    ${r.items.length?`<div class="shr-card">
+      ${p?.steps?.length?`<span class="shr-k">Shopping route</span><ol class="shr-stops">${p.steps.map((st,i)=>{ const past=cur==null||i<cur;
+          return `<li class="${past&&i!==cur?"past":""}"><span class="n">${past&&i!==cur?"✓":i+1}</span><span class="w">${st.place?`<a data-open="${esc(st.place)}">${esc(st.where)}</a>`:esc(st.where)}</span><span class="v">${money(st.subtotal)}</span></li>`; }).join("")}</ol><div class="shr-rule"></div>`:""}
+      <div class="shr-total"><span class="shr-k">${p?"Total":"About"}</span><b>${Math.round(total).toLocaleString()}<small>aUEC</small></b></div>
+      <div class="shr-meta">${plural(r.items.length,"item")} · ${Math.max(0,all-bought).toLocaleString()} still to buy${p?.steps?.length?` · ${plural(p.steps.length,"stop")}`:""}${bought?` · ${bought.toLocaleString()} already bought`:""}${p?.distance?` · ${fmtDist(p.distance)}${p.from_you?" from you":""}`:""}</div>
+      <fieldset class="shr-mode"><legend class="shr-k">Plan for</legend>
+        ${[["fewest","Fewest stops","Get it all in as few places as possible"],["cheapest","Lowest price","Each item where it's cheapest, more stops"]].map(([v,t,d])=>`<label class="${mode===v?"on":""}"><input type="radio" name="sh-mode" value="${v}" ${mode===v?"checked":""}><span><b>${t}</b><small>${d}</small></span></label>`).join("")}</fieldset>
+      ${p?.steps?.length?`<button type="button" class="shr-go" data-shroute="add">Add the stops to my route</button>
+        <div class="shr-two"><button type="button" class="btn small" data-shroute="replace">Replace my route</button><button type="button" class="btn small" data-shplan="1" title="${S.live?.player?"Work the trip out again from where you are":"Work the trip out again"}">Plan again</button></div>`
+        :`<button type="button" class="shr-go" data-shplan="1">Plan the trip</button>`}
+      <div class="shr-two"><button type="button" class="btn small ghost" data-shclear="bought">Remove bought</button><button type="button" class="btn small ghost" data-shclear="all">Empty cart</button></div></div>`
+    :`<div class="shr-card"><span class="shr-k">Nothing in your cart yet</span><div style="font-size:13px;color:var(--ink-2);line-height:1.55">Look for the ${CART_SVG.replace('<svg','<svg class="inl"')} button on parts, weapons, armor and more. Quantum then plans the trip to buy it all.</div></div>`}</div>`; }
+// An empty cart: how it works, and where to start filling it
+const SH_START=[["components","Ship components","Coolers, shields, quantum drives, power plants","component"],["shipweapons","Ship weapons","Guns, cannons, repeaters and missiles","turret"],
+  ["weapons","Weapons","Pistols, rifles and launchers","pistol"],["armor","Armor","Helmets, cores, arms, legs and undersuits","armor"],
+  ["clothing","Clothing","Jackets, pants and footwear","shirt"],["consumables","Consumables","Food, drinks and MedPens","med"],["gearlo","Gear loadouts","Kit for a job: add every piece in one go","kit"]];
+const SH_IC={component:'<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+  armor:'<path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/>',shirt:'<path d="M8 3l-5 3 2 4 3-1v12h8V9l3 1 2-4-5-3c-1 2-2.5 3-4 3s-3-1-4-3z"/>',
+  med:'<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',kit:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>'};
+function shEmptyHtml(){
+  // Weapons and ship weapons use the same game-style icons as everywhere else in Quantum (the service tiles)
+  const ic=k=>k==="pistol"||k==="turret"?`<svg class="solid" viewBox="${SVC_SOLID[k][0]}" aria-hidden="true"><path d="${SVC_SOLID[k][1]}"/></svg>`:`<svg viewBox="0 0 24 24" aria-hidden="true">${SH_IC[k]}</svg>`;
+  return `<div class="she"><div class="she-hero"><div class="she-badge" aria-hidden="true">${CART_SVG}</div>
+      <h2>Your cart is empty</h2><p>Select anything you want for a new ship, weapon or gear loadout, equipment, food or drinks, and add them to the cart. Quantum finds the shops which sell it and optimizes your route so you can purchase them efficiently.</p></div>
+    <ol class="she-how">
+      <li><span class="n">1</span><b>Add items to Cart</b><span>Click the ${CART_SVG.replace('<svg','<svg class="inl"')} button on any part, weapon, armor or consumable. Set how many you need.</span></li>
+      <li><span class="n">2</span><b>Quantum plans the trip</b><span>Pick fewest stops or lowest price. You get each shop to visit, in order, and what to buy there.</span></li>
+      <li><span class="n">3</span><b>Fly and buy</b><span>Add the stops to your route. What you buy in game is read from the game log and marked bought here.</span></li></ol>
+    <div class="mk-h" style="margin:26px 2px 10px">Start shopping</div>
+    <div class="she-go">${SH_START.map(([tab,t,d,k])=>`<button type="button" class="she-tile" data-shgo="${tab}">${ic(k)}<span><b>${esc(t)}</b><small>${esc(d)}</small></span></button>`).join("")}</div></div>`; }
+// Over the map: everything in the cart as one table, grouped by stop (or by kind of item, or what it's for)
+const SH_GEAR_KINDS=new Set(["weapon","armor","gadget","clothing","consumable","utility"]);
 function shRenderPlan(r){ const p=r.plan, g=$("sh-panel");
-  if(!r.items.length){ g.innerHTML=`<div class="empty" style="margin-top:60px"><strong>Your cart</strong>Put everything you want for a new ship (or yourself) in the cart, and Quantum works out the quickest trip to buy it all: which shops to stop at, in what order, and what to buy at each.</div>`; return; }
-  if(!p){ g.innerHTML=`<div class="empty" style="margin-top:60px"><strong>${plural(r.left,"item")} to buy</strong>Plan the trip to see which shops to visit and in what order.<br><br><button class="btn primary" data-shplan="1">Plan the trip</button></div>`; return; }
-  const byid=Object.fromEntries(r.items.map(x=>[x.id,x])), cur=r.step, done=cur==null&&p.steps.length;
-  const itemRow=(it,on)=>{ const e=byid[it.id], got=e&&(e.bought||0)>=(e.qty||1);
-    return `<label class="sh-buy ${got?"got":""}"><input type="checkbox" data-shbought="${it.id}" ${got?"checked":""} ${on?"":"disabled"}><span class="n"><a class="cart-open" data-shopen="${esc(it.id)}" title="Open ${esc(it.name)}">${esc(it.name)}</a>${it.qty>1?` <b>× ${it.qty}</b>`:""}<small>${esc(SH_KIND[it.kind]||"")}${it.shop?` · ${esc(it.shop)}`:""}</small></span><span class="p">${money(it.cost)}</span></label>`; };
-  const step=(s,i)=>{ const isCur=i===cur, past=cur==null||i<cur, here=r.here&&s.place===r.here;
-    return `<div class="sh-step ${isCur?"cur":""} ${past&&!isCur?"past":""}"><div class="sh-num">${past&&!isCur?"✓":i+1}</div><div class="sh-body">
-      <div class="sh-head"><div><b>${s.place?`<a data-open="${esc(s.place)}">${esc(s.where)}</a>`:esc(s.where)}</b><span class="muted">${esc(s.system||"")}${isCur?(here?" · <b class=\"sh-here\">You're here</b>":" · next stop"):""}</span></div>
-        <div class="sh-sub">${money(s.subtotal)}</div></div>
-      <div class="sh-items">${s.items.map(it=>itemRow(it,true)).join("")}</div>
-      ${isCur?`<div class="row" style="gap:6px;margin-top:8px;justify-content:flex-end">${s.place&&!S.live?.route?.includes(s.place)?`<button class="btn small ghost" data-add="${esc(s.place)}">Add to route</button>`:""}<button class="btn small primary" data-shstep="${i}">Bought everything here · next stop</button></div>`:""}</div></div>`; };
-  g.innerHTML=`<div class="gh"><b>Your shopping route</b>${plural(p.steps.length,"stop")}${p.distance?` · ${fmtDist(p.distance)}${p.from_you?" from where you are":""}`:""} · ${money(p.total)} in all</div>
+  if(!r.items.length){ g.innerHTML=shEmptyHtml(); return; }
+  const byid=Object.fromEntries(r.items.map(x=>[x.id,x])), cur=r.step, done=cur==null&&p?.steps?.length;
+  const by=S.shGroup==="type"||S.shGroup==="for"?S.shGroup:p?.steps?.length?"stop":"type";
+  const row=(x,{shop=null,cost=null,qty=null}={})=>{ if(!x) return ""; const left=Math.max(0,(x.qty||1)-(x.bought||0)), got=!left, n=qty??x.qty;
+    const each=cost!=null&&n?cost/n:x.price, sum=cost!=null?cost:(x.price!=null?x.price*(x.qty||1):null);
+    const pic=SH_GEAR_KINDS.has(x.kind)?`data-gpic="${esc(x.name)}"`:`data-pic="${esc(x.name)}"`;
+    return `<tr class="${got?"got":""}"><td class="ck"><input type="checkbox" aria-label="Bought ${esc(x.name)}" data-shbought="${esc(x.id)}" ${got?"checked":""}></td>
+      <td><div class="sht-it"><div class="sht-ph" ${pic}>${phCard(x.kind==="component"?"component":"commodity")}</div><div class="t"><a class="cart-open" data-shopen="${esc(x.id)}" title="Open ${esc(x.name)}">${esc(x.name)}</a>
+        <small>${esc([SH_KIND[x.kind]||x.kind,x.source?`for ${x.source}`:"",shop||(!p&&x.where?x.where:"")].filter(Boolean).join(" · "))}</small></div></div></td>
+      <td><div class="sht-q"><button type="button" data-shq="${esc(x.id)}" data-d="-1" aria-label="One fewer ${esc(x.name)}">−</button><input type="number" min="1" max="100000" step="1" inputmode="numeric" data-shqin="${esc(x.id)}" value="${x.qty||1}" aria-label="How many ${esc(x.name)}"><button type="button" data-shq="${esc(x.id)}" data-d="1" aria-label="One more ${esc(x.name)}">+</button>${x.bought&&!got?`<span class="got">${x.bought.toLocaleString()} bought</span>`:""}</div></td>
+      <td class="r each">${each!=null?money(each):'<span class="muted">–</span>'}</td><td class="r sum">${sum!=null?money(sum):'<span class="muted">not in shops</span>'}</td>
+      <td class="x"><button type="button" data-shdel="${esc(x.id)}" aria-label="Take ${esc(x.name)} out of the cart" title="Take it out of the cart">✕</button></td></tr>`; };
+  const group=(head,rows,cls="")=>`<tbody><tr class="grp ${cls}"><th colspan="6" scope="colgroup"><div class="gi">${head}</div></th></tr>${rows}</tbody>`;
+  let body="";
+  if(by==="stop"){ const seen=new Set();
+    body=p.steps.map((st,i)=>{ const isCur=i===cur, past=cur==null||i<cur, here=r.here&&st.place===r.here;
+      for(const it of st.items) seen.add(it.id);
+      return group(`<span class="dot">${past&&!isCur?"✓":i+1}</span>${st.place?`<a data-open="${esc(st.place)}">${esc(st.where)}</a>`:esc(st.where)}<span class="m">${esc(st.system||"")}${isCur?(here?" · <b>You're here</b>":" · next stop"):past?" · bought":""}</span>
+          <span class="s">${money(st.subtotal)}</span>${isCur?`${st.place&&!S.live?.route?.includes(st.place)?`<button class="btn small ghost" data-add="${esc(st.place)}">Add to route</button>`:""}<button class="btn small primary" data-shstep="${i}">Bought everything here · next stop</button>`:""}`,
+        st.items.map(it=>row(byid[it.id],{shop:it.shop,cost:it.cost,qty:it.qty})).join(""),isCur?"cur":past?"past":""); }).join("");
+    for(const s2 of p.offmap||[]){ for(const it of s2.items) seen.add(it.id);
+      body+=group(`<span class="dot">·</span>${esc(s2.where)}<span class="m">${esc(s2.system||"")} · not on Quantum's map</span><span class="s">${money(s2.subtotal)}</span>`,s2.items.map(it=>row(byid[it.id],{shop:it.shop,cost:it.cost,qty:it.qty})).join("")); }
+    const un=(p.unavailable||[]).filter(id=>byid[id]&&!seen.has(id)); for(const id of un) seen.add(id);
+    if(un.length) body+=group(`<span class="dot">?</span>Not sold in any shop<span class="m">loot, rewards, crafting or stock on a ship: open one to see how to get it</span>`,un.map(id=>row(byid[id])).join(""));
+    const rest=r.items.filter(x=>!seen.has(x.id));
+    if(rest.length) body+=group(`<span class="dot">+</span>Not planned yet<span class="m">plan again to fit them into the route</span>`,rest.map(x=>row(x)).join("")); }
+  else { const key=by==="for"?(x=>x.source||"Yourself"):(x=>SH_KIND[x.kind]||x.kind||"Other"), groups=new Map();
+    for(const x of r.items){ const k=key(x); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(x); }
+    body=[...groups].sort((a,b)=>a[0].localeCompare(b[0])).map(([k,L])=>{ const sub=L.reduce((t,x)=>t+(x.price!=null?x.price*(x.qty||1):0),0);
+      return group(`<span class="dot">${L.length}</span>${esc(k)}<span class="s">${sub?money(sub):""}</span>`,L.map(x=>row(x)).join("")); }).join(""); }
+  g.innerHTML=`<div class="sht-top"><div style="flex:1 1 280px"><h2>${p?.steps?.length?"Your shopping list":"Your cart"}</h2>
+      <div class="muted">${plural(r.items.length,"item")} · ${r.left.toLocaleString()} still to buy${by==="stop"?" · grouped by where you'll buy them":""}</div></div>
+    <label>Group by <select class="field" data-shgroup="1">${[...(p?.steps?.length?[["stop","Stop"]]:[]),["type","Kind of item"],["for","What it's for"]].map(([v,t])=>`<option value="${v}" ${by===v?"selected":""}>${t}</option>`).join("")}</select></label></div>
     ${done?`<div class="sh-done">✓ All bought. Enjoy the new kit.</div>`:""}
-    <div class="row" style="gap:8px;margin:0 2px 14px;flex-wrap:wrap"><button class="btn small primary" data-shroute="add">Add the stops to my route</button><button class="btn small ghost" data-shroute="replace">Replace my route with them</button>
-      <button class="btn small ghost" data-shplan="1">Plan again${S.live?.player?" from here":""}</button></div>
-    ${p.steps.map(step).join("")}
-    ${p.offmap?.length?`<div class="mk-h" style="margin-top:16px">Also sold at places not on Quantum's map</div>${p.offmap.map(s=>`<div class="sh-step"><div class="sh-num">·</div><div class="sh-body"><div class="sh-head"><div><b>${esc(s.where)}</b><span class="muted">${esc(s.system||"")}</span></div><div class="sh-sub">${money(s.subtotal)}</div></div><div class="sh-items">${s.items.map(it=>itemRow(it,true)).join("")}</div></div></div>`).join("")}`:""}
-    ${p.unavailable?.length?`<div class="mk-h" style="margin-top:16px">Not sold in any shop</div><div class="muted" style="font-size:13px;line-height:1.6;margin:0 2px">${p.unavailable.filter(id=>byid[id]).map(id=>`<a class="cart-open" data-shopen="${esc(id)}" title="See how to get it">${esc(byid[id].name)}</a>`).join(", ")}: loot, rewards, crafting or stock on a ship. Open one to see where it drops or what unlocks it.</div>`:""}
-    <div class="uex-credit">${p.mode==="cheapest"?"Each item where it's cheapest.":"As few stops as possible; each item at the cheapest of them."} Prices from UEX, reported by players, so check the terminal before you buy. Purchases you make in game tick themselves off.</div>`; }
-$("sh-mode").addEventListener("change",async()=>{ const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); });
-$("sh-plan").onclick=async()=>{ $("sh-panel").innerHTML=qLoader("Finding the shops and the shortest way round…"); const r=await api().shop_plan($("sh-mode").value); if(!r.ok) toast(r.error); renderShopping(); };
-$("sh-out").onclick=async e=>{
-  const so=e.target.closest("[data-shopen]"); if(so){ e.preventDefault(); return cartOpenItem(S.slData?.items.find(i=>i.id===so.dataset.shopen)); }
-  const q=e.target.closest("[data-shq]"); if(q){ const x=S.slData?.items.find(i=>i.id===q.dataset.shq); if(!x) return; const n=(x.qty||1)+(+q.dataset.d);
-    if(n<1) await api().shop_remove(x.id); else await api().shop_set(x.id,n,null); return renderShopping(); }
-  const d=e.target.closest("[data-shdel]"); if(d){ await api().shop_remove(d.dataset.shdel); return renderShopping(); }
-  const c=e.target.closest("[data-shclear]"); if(c){ if(c.dataset.shclear==="all"&&!S.shClearAsk){ S.shClearAsk=true; c.textContent="Click again to clear everything"; setTimeout(()=>{ S.shClearAsk=false; },3000); return; }
-    S.shClearAsk=false; await api().shop_remove(null,c.dataset.shclear==="bought",c.dataset.shclear==="all"); return renderShopping(); } };
-$("sh-panel").addEventListener("click",async e=>{
+    <div class="sht-wrap"><table class="sht"><thead><tr><th class="ck"><span class="sr-only">Bought</span></th><th>Item</th><th>How many</th><th class="r">Each</th><th class="r">Subtotal</th><th><span class="sr-only">Remove</span></th></tr></thead>${body}</table></div>
+    <div class="uex-credit" style="margin-top:12px">${p?.mode==="cheapest"?"Each item where it's cheapest.":p?"As few stops as possible; each item at the cheapest of them.":""} Prices from UEX, reported by players, so check the terminal before you buy. Purchases you make in game tick themselves off. Type an amount to buy lots at once.</div>`;
+  fillGearPictures(g); fillPictures(g); }
+// Planning (Plan for, Plan again): works the trip out again and redraws
+async function shPlan(mode){ $("sh-panel").innerHTML=qLoader("Finding the shops and the shortest way round…"); const r=await api().shop_plan(mode||S.slData?.mode||null); if(!r.ok) toast(r.error); renderShopping(); }
+// A new amount: saved, then the trip is worked out again for it
+async function shSetQty(id,n){ const x=S.slData?.items.find(i=>i.id===id); if(!x) return;
+  n=Math.floor(+n); if(!isFinite(n)) return renderShopping();
+  if(n<1){ await api().shop_remove(x.id); toast(`${x.name} taken out of the cart`); }
+  else { n=Math.min(100000,n); if(n===x.qty) return; await api().shop_set(x.id,n,null); }
+  renderShopping(true); }
+async function shClick(e){
+  const go=e.target.closest("[data-shgo]"); if(go){
+    // Ship weapons: the Components tab, opened on its ship guns
+    if(go.dataset.shgo==="shipweapons"){ document.querySelector('.tab[data-tab="components"]')?.click();
+      for(let k=0;k<40&&!S.cpCats;k++) await new Promise(r=>setTimeout(r,250));
+      const c=(S.cpCats||[]).find(x=>x.slot==="WeaponGun"); if(c) openCpCat(c.id); return; }
+    document.querySelector(`.tab[data-tab="${go.dataset.shgo}"]`)?.click(); return; }
   const so=e.target.closest("[data-shopen]"); if(so){ e.preventDefault(); e.stopPropagation(); return cartOpenItem(S.slData?.items.find(i=>i.id===so.dataset.shopen)); }
+  const q=e.target.closest("[data-shq]"); if(q){ const x=S.slData?.items.find(i=>i.id===q.dataset.shq); if(!x) return; return shSetQty(x.id,(x.qty||1)+(+q.dataset.d)); }
+  const d=e.target.closest("[data-shdel]"); if(d){ await api().shop_remove(d.dataset.shdel); return renderShopping(true); }
+  const c=e.target.closest("[data-shclear]"); if(c){ if(c.dataset.shclear==="all"&&!S.shClearAsk){ S.shClearAsk=true; c.textContent="Sure? Click again"; setTimeout(()=>{ S.shClearAsk=false; if(c.isConnected) c.textContent="Empty cart"; },3000); return; }
+    S.shClearAsk=false; await api().shop_remove(null,c.dataset.shclear==="bought",c.dataset.shclear==="all"); return renderShopping(); }
   if(await tradeClick(e)) return;
-  if(e.target.closest("[data-shplan]")){ $("sh-plan").click(); return; }
-  const st=e.target.closest("[data-shstep]"); if(st){ await api().shop_step_done(+st.dataset.shstep); toast("Ticked off. On to the next stop"); return renderShopping(); }
-  const ro=e.target.closest("[data-shroute]"); if(ro){ const r=await api().shop_to_route(ro.dataset.shroute==="replace"); await poll(); toast(r.ok?(ro.dataset.shroute==="replace"?"Your route is now the shopping trip":`Added ${plural(r.added?.length||0,"stop")} to your route`):r.error); return; } });
-$("sh-panel").addEventListener("change",async e=>{ const b=e.target.closest("[data-shbought]"); if(!b) return; const x=S.slData?.items.find(i=>i.id===b.dataset.shbought); if(!x) return;
-  await api().shop_set(x.id,null,b.checked?x.qty:0); renderShopping(); });
+  if(e.target.closest("[data-shplan]")) return shPlan();
+  const st=e.target.closest("[data-shstep]"); if(st){ await api().shop_step_done(+st.dataset.shstep); toast("Purchased"); return renderShopping(); }
+  const ro=e.target.closest("[data-shroute]"); if(ro){ const r=await api().shop_to_route(ro.dataset.shroute==="replace"); await poll(); toast(r.ok?(ro.dataset.shroute==="replace"?"Your route is now the shopping trip":`Added ${plural(r.added?.length||0,"stop")} to your route`):r.error); return; } }
+async function shChange(e){
+  const b=e.target.closest("[data-shbought]"); if(b){ const x=S.slData?.items.find(i=>i.id===b.dataset.shbought); if(!x) return; await api().shop_set(x.id,null,b.checked?x.qty:0); return renderShopping(); }
+  const qi=e.target.closest("[data-shqin]"); if(qi) return shSetQty(qi.dataset.shqin,qi.value);
+  const m=e.target.closest('input[name="sh-mode"]'); if(m) return shPlan(m.value);
+  const gr=e.target.closest("[data-shgroup]"); if(gr){ S.shGroup=gr.value; return shRenderPlan(S.slData); } }
+for(const id of ["sh-out","sh-panel"]){ $(id).addEventListener("click",shClick); $(id).addEventListener("change",shChange);
+  // Enter in an amount box saves it straight away; Esc puts the old amount back
+  $(id).addEventListener("keydown",e=>{ const qi=e.target.closest?.("[data-shqin]"); if(!qi) return;
+    if(e.key==="Enter"){ e.preventDefault(); qi.blur(); }
+    else if(e.key==="Escape"){ const x=S.slData?.items.find(i=>i.id===qi.dataset.shqin); if(x) qi.value=x.qty; qi.blur(); } }); }
 
 function syncUexTabs(on){ if(S.uexTabs===on) return; S.uexTabs=on;
   for(const t of document.querySelectorAll(".uex-tab")) t.hidden=!on;
