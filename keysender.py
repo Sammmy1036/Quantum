@@ -280,8 +280,8 @@ class ShowLocationSender:
             self.afk_action = action
         if focus is not None:
             self.afk_focus = bool(focus)
-        if on is not None:
-            self.set_afk(bool(on), quiet=True)
+        if on is not None and bool(on) != self.afk_on:
+            self.set_afk(bool(on))                     # logged (Settings > Log) whichever way it was switched
         if hotkey is not None:
             hk = hotkey if hotkey in FKEYS and hotkey not in (self.hotkey, self.loc_hotkey, self.shot_hotkey, self.chat_key) else ""
             if hk != self.afk_hotkey:
@@ -314,6 +314,8 @@ class ShowLocationSender:
                 self._event("Anti-AFK: blocked. Star Citizen runs as administrator; restart Quantum as administrator")
                 self.afk_next = time.time() + 60
                 continue
+            if not self.afk_on:
+                continue                                   # switched off while it waited or brought the game forward
             try:
                 with self._lock:
                     if self.afk_action == "f13":
@@ -331,7 +333,7 @@ class ShowLocationSender:
                 self._event(f"Anti-AFK: {'pressed F13' if self.afk_action == 'f13' else 'opened and closed mobiGlas' if self.afk_action == 'mobiglas' else 'nudged the mouse'}")
             except Exception as e:
                 self._event(f"Anti-AFK: couldn't send ({e})")
-            self.afk_next = time.time() + random.uniform(self.afk_min, self.afk_max)
+            self.afk_next = time.time() + random.uniform(self.afk_min, self.afk_max) if self.afk_on else None
 
     def _restart_hotkeys(self):
         self._stop_hotkey()

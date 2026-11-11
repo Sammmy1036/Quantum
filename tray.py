@@ -138,6 +138,16 @@ class Tray:
             except Exception:
                 pass
 
+    def notify(self, title, message):
+        """A Windows notification from the tray icon (price alerts). Nothing without a tray icon."""
+        if not self.icon:
+            return False
+        try:
+            self.icon.notify(message, title)
+            return True
+        except Exception:
+            return False
+
     def _refresh(self):
         if self.icon:
             try:

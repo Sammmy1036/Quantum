@@ -319,7 +319,7 @@ class Community:
             return None
         import urllib.parse
         try:
-            r = self._req("/v1/trust?" + urllib.parse.urlencode({"username": username}), timeout=6)
+            r = self._req("/v1/trust?" + urllib.parse.urlencode({"username": username}), timeout=12)
             return r if r.get("status") == "ok" else None
         except Exception:
             return None

@@ -808,7 +808,8 @@ class Wiki:
                     beds = (d.get("seating") or {}).get("medical_beds")
                     n = sum(v for v in beds.values() if isinstance(v, (int, float))) if isinstance(beds, dict) \
                         else beds if isinstance(beds, (int, float)) else 0
-                    rec = {"medical_beds": n, "medical_tier": d.get("max_medical_tier"), "cargo": d.get("cargo_capacity") or 0}
+                    rec = {"medical_beds": n, "medical_tier": d.get("max_medical_tier"), "cargo": d.get("cargo_capacity") or 0,
+                           "uuid": d.get("uuid")}                    # for the cargo planner's per-ship grids
                     for k in (d.get("uuid"), d.get("name"), d.get("slug"), d.get("shipmatrix_name")):
                         if k:
                             out[str(k).lower()] = rec
