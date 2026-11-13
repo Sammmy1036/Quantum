@@ -698,6 +698,71 @@ def _span(text, year, end_of_event=None):
     return s, e
 
 
+# Twitch drops: what each campaign gives and after how many hours of watching. RSI's Twitch Drops post and the
+# wiki are read for these too; the ones listed here are already known (RSI's post doesn't always give the hours).
+# Times are Twitch's own campaign window, UTC.
+TWITCH_DROPS = [
+    {"campaign": "IAE 2956", "starts": "2026-11-13T15:30:00Z", "ends": "2026-11-27T19:59:00Z",
+     "rewards": [{"name": "Venture Undersuit Black", "hours": 2}, {"name": "Venture Armor Black", "hours": 4},
+                 {"name": "MacFlex Backpack Orange", "hours": 6}]},
+]
+TWITCH_LINKS = {"inventory": "https://www.twitch.tv/drops/inventory",
+                "streams": "https://www.twitch.tv/directory/category/star-citizen?filter=drops"}
+TWITCH_RE = re.compile(r"(?i)twitch\s*drops?")
+
+
+def _hours(x):
+    try:
+        return float(str(x).strip().split()[0])
+    except (ValueError, IndexError):
+        return None
+
+
+def clean_rewards(rows):
+    """[{"name", "hours", "image"?}], one per item, in the order they unlock."""
+    out, seen = [], set()
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("name"):
+            continue
+        name = re.sub(r"\s+", " ", str(r["name"])).strip(" .:-–—\"'")
+        if not name or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        h = _hours(r.get("hours"))
+        out.append({"name": name, "hours": int(h) if h is not None and h == int(h) else h,
+                    **({"image": r["image"]} if r.get("image") else {})})
+    return sorted(out, key=lambda r: r["hours"] if r["hours"] is not None else 1e9)
+
+
+def drop_rewards(text):
+    """A Twitch Drops post's rewards, from lines like "Watch for 2 hours and claim the reward Venture Undersuit
+    Black", "2 hours: Venture Undersuit Black" or "Venture Undersuit Black - 2 hours"."""
+    H = r"(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b"
+    rows = []
+    for m in re.finditer(r"(?i)watch(?:\s+for)?\s+" + H + r"[^\n]{0,40}?\b(?:claim|earn|receive|unlock|get)\s+(?:the\s+)?(?:reward\s+)?([^\n.,;]{3,60})", text or ""):
+        rows.append({"hours": m.group(1), "name": m.group(2)})
+    if not rows:
+        for m in re.finditer(r"(?im)^\s*" + H + r"\s*(?:of watching\s*)?[:\-–—]\s*([^\n]{3,60})$", text or ""):
+            rows.append({"hours": m.group(1), "name": m.group(2)})
+        for m in re.finditer(r"(?im)^\s*([A-Z][^\n:]{2,60}?)\s*[:\-–—(]\s*" + H, text or ""):
+            rows.append({"hours": m.group(2), "name": m.group(1)})
+    return clean_rewards(rows)
+
+
+def table_rewards(tables):
+    """Rewards from a wiki table with a reward (or item) column and an hours (or watch time) column."""
+    col = lambda head, *names: next((i for i, h in enumerate(head) if any(n in h.lower() for n in names)), None)
+    for t in tables or []:
+        h = t["head"]
+        ir, ih = col(h, "reward", "item"), col(h, "hour", "watch", "time")
+        if ir is None or ih is None:
+            continue
+        rows = [{"name": r[ir], "hours": r[ih]} for r in t["rows"] if max(ir, ih) < len(r)]
+        if rows:
+            return clean_rewards(rows)
+    return []
+
+
 def wiki_page_html(title):
     """A wiki page as the browser shows it (templates already turned into dates and tables): (html, image files)."""
     r = _json(f"{SCT}/api.php?" + urllib.parse.urlencode({"action": "parse", "page": title, "prop": "text|images",
@@ -819,8 +884,11 @@ def wiki_events(log=None, extra=()):
             e["where"] = ", ".join(x for x in (f.get("location"), f.get("planet"), f.get("system")) if x) or None
         if not e.get("free_fly") and re.search(r"(?i)free[\s-]*fly", f.get("activities") or html[:20000]):
             e["free_fly"] = True
+        tables = html_tables(html)
         sch = event_schedule("", year, e["ends"] + 20 * 3600 if e["ends"] and e["ends"] % 86400 == 0 else e["ends"],
-                             tables=html_tables(html))
+                             tables=tables)
+        if TWITCH_RE.search(e["name"]) and not e.get("rewards"):
+            e["rewards"] = table_rewards(tables) or None
         if sch and (not e.get("schedule") or sum(map(len, sch.values())) > sum(map(len, (e["schedule"] or {}).values()))):
             e["schedule"] = sch
         if not e.get("schedule_image"):
@@ -1517,6 +1585,8 @@ class Hub:
             rec = {"name": name, "starts": s, "ends": e, "url": c.get("url"), "image": info.get("image"), "from": "rsi",
                    "note": info.get("summary") or _summary(text, name),
                    "free_fly": bool(re.search(r"(?i)free[\s-]*fly|play (star citizen )?for free|free to play", name + " " + text[:4000]))}
+            if TWITCH_RE.search(name):
+                rec["rewards"] = drop_rewards(text) or None
             if s or any(ev_words(name) & ev_words(o["name"]) for o in events):
                 add(rec)
             else:
@@ -1538,6 +1608,26 @@ class Hub:
                 nm = re.sub(r"(?i)\s+(begins|starts|kicks off|opens|launches)$", "", item)
                 add({"name": nm, "starts": day, "ends": None, "url": (tw or {}).get("url"), "from": "schedule"})
         dbg["schedule"] = sched
+        # Twitch drops: the campaign's rewards and Twitch's exact window on the wiki's "Twitch drops" event (or a
+        # card of its own when nothing else lists it)
+        for c in TWITCH_DROPS:
+            cs, cf = _ts(c["starts"]), _ts(c["ends"])
+            if cf < now - 86400 or cs > now + 60 * 86400:
+                continue
+            ev = next((e for e in events if TWITCH_RE.search(e["name"]) and
+                       (not e.get("starts") or e["starts"] <= cf + 86400) and (not e.get("ends") or e["ends"] >= cs - 86400)), None)
+            if ev is None:
+                ev = {"name": f"Twitch drops: {c['campaign']}", "from": "quantum", "url": TWITCH_LINKS["streams"]}
+                events.append(ev)
+            if not ev.get("rewards"):
+                ev["rewards"] = c["rewards"]
+            ev["campaign"] = ev.get("campaign") or c["campaign"]
+            if not ev.get("starts") or ev.get("approx") or ev.get("from") != "quantum":
+                ev["starts"], ev["ends"], ev["approx"] = cs, cf, False
+        for e in events:
+            if TWITCH_RE.search(e["name"]):
+                e["rewards"] = clean_rewards(e.get("rewards")) or None
+                e["twitch"] = TWITCH_LINKS
         # an event's free rental & pledge schedule (IAE) is a card of its own: who's featured now and next,
         # with its own countdown; the event's card keeps the sales and concept reveals
         for e in list(events):

@@ -149,6 +149,12 @@ function phEvents(h){ const L=h.events?.list||[], A=h.events?.announced||[], lin
       ${C.length?`<details class="ph-sec"><summary>Concept reveals <span class="ph-chip">${C.length}</span></summary><div class="ph-rent">${C.map(c=>`<div><span class="d">Day ${esc(c.day||"")}<small>${esc(dayDate(c.day))}</small></span><span class="m">${phShipName({name:c.name})}${c.desc?`<small>${esc(c.desc)}</small>`:""}</span></div>`).join("")}</div></details>`:""}
       ${e.schedule_image?`<button class="ph-schedimg" data-ext="${esc(e.schedule_image.full||e.schedule_image.thumb)}" title="Open the official schedule full size"><img src="${esc(e.schedule_image.thumb||e.schedule_image.full)}" alt="The official schedule" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>Official schedule ${PH_IC.ext}</span></button>`:""}
     </div>`; };
+  // a Twitch drops campaign's rewards: each item and the total watch time that unlocks it
+  const drops=e=>{ const R=e.rewards||[]; if(!R.length) return "";
+    const hrs=h=>h==null?"?":String(h);
+    return `<div class="ph-drops"><div class="ph-lbl">Rewards${e.campaign?` · ${esc(e.campaign)}`:""}</div>
+      <ol>${R.map(r=>`<li>${r.image?`<img src="${esc(r.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:""}<span class="h"><b>${esc(hrs(r.hours))}</b><small>${r.hours===1?"hr":"hrs"}</small></span><span class="n">${esc(r.name)}<small>Watch ${esc(hrs(r.hours))} ${r.hours===1?"hour":"hours"} in total, then claim it on Twitch</small></span></li>`).join("")}</ol>
+      <div class="ph-sub">Any Drops-enabled Star Citizen stream counts, one stream at a time. Your RSI and Twitch accounts need to be linked.</div></div>`; };
   const card=(e,hero)=>{ const live=e.state==="live";
     const R=(e.schedule?.rentals||[]).filter(r=>r.starts), nowS=Date.now()/1000;
     const nextR=e.rentals&&live?R.find(r=>r.starts>nowS):null;
@@ -163,8 +169,8 @@ function phEvents(h){ const L=h.events?.list||[], A=h.events?.announced||[], lin
         ${tags(e)?`<div class="tags">${tags(e)}</div>`:""}
         ${e.note?`<p>${esc(e.note)}</p>`:""}
         ${live&&e.ends&&e.starts?`<div class="ph-bar" role="progressbar" aria-valuenow="${e.pct||0}" aria-valuemin="0" aria-valuemax="100" aria-label="How far through ${esc(e.name)}"><i style="width:${e.pct||0}%"></i></div>`:""}
-        ${sc}
-        <div class="acts">${e.url?phLink(e.url,e.from==="wiki"?"Read about it on the wiki":"Details on RSI"):""}${e.wiki&&e.url&&e.rsi?phLink(e.rsi,"RSI post"):""}</div></div></article>`; };
+        ${sc}${drops(e)}
+        <div class="acts">${e.twitch?phLink(e.twitch.streams,"Find a Drops stream")+phLink(e.twitch.inventory,"Drops inventory"):""}${e.url&&!(e.twitch&&e.url===e.twitch.streams)?phLink(e.url,e.from==="wiki"?"Read about it on the wiki":"Details on RSI"):""}${(e.wiki||e.twitch)&&e.url&&e.rsi&&e.rsi!==e.url?phLink(e.rsi,"RSI post"):""}</div></div></article>`; };
   const all=[...now,...soon].sort((a,b)=>(a.rentals?1:0)-(b.rentals?1:0));     // the rental schedule: a full-width row of its own, last
   const body=all.length?`<div class="ph-evs n${Math.min(all.length,3)}">${all.slice(0,6).map((e,i)=>card(e,i===0&&all.length<3)).join("")}</div>`
       :phEmpty("No events running or announced for the next few weeks.");

@@ -1819,6 +1819,15 @@ button.ph-ver:hover{border-color:var(--route-2)}
 .ph-evc.wide{grid-column:1/-1}
 .ph-evc.wide .art{aspect-ratio:auto;height:clamp(160px,18vw,260px)}
 .ph-sched{display:flex;flex-direction:column;gap:6px}
+.ph-drops{display:flex;flex-direction:column;gap:8px}
+.ph-drops ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ph-drops li{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:10px;background:rgba(3,6,12,.35);border:1px solid var(--line-2)}
+.ph-drops li img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none}
+.ph-drops .h{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:46px;height:44px;border-radius:9px;border:1px solid #24603d;background:rgba(60,207,110,.08);flex:none}
+.ph-drops .h b{font:700 17px/1 var(--display);color:#8ff0b1}.ph-drops .h small{font-size:10.5px;color:var(--ink-2)}
+.ph-evc.soon .ph-drops .h{border-color:#5c4714;background:rgba(246,207,109,.08)}.ph-evc.soon .ph-drops .h b{color:#f6cf6d}
+.ph-drops .n{display:flex;flex-direction:column;font:600 14px var(--text);color:#e6eefa;min-width:0}
+.ph-drops .n small{font-weight:500;font-size:11.5px;color:var(--ink-2)}
 .ph-now{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:12px;background:rgba(3,6,12,.45);border:1px solid var(--line-2)}
 .ph-now:empty{display:none}
 .ph-now>div{display:flex;flex-direction:column;gap:2px}.ph-now b{font:600 16px var(--display)}.ph-now small{color:var(--ink-2);font-size:12.5px;line-height:1.45}
