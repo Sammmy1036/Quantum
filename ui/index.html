@@ -27,6 +27,7 @@
     <button class="rail-btn" data-group="exchange" title="Marketplace: buy and sell items and services with other players, for aUEC"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg>Market<b class="rail-n" id="rail-pm-n" hidden>0</b></button>
     <button class="rail-btn" data-group="org" title="Your orgs: members, ranks, calendar and events"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/></svg>Org<b class="rail-n" id="rail-og-n" hidden>0</b></button>
     <button class="rail-btn" data-group="social" title="Friends and messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Social<b class="rail-n" id="rail-so-n" hidden>0</b></button>
+    <button class="rail-btn" data-group="patch" title="Patch Hub: new ships, events, LIVE and PTU patch notes, the RSI store and upcoming ships"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-6M21 19H3"/></svg>Patch Hub<b class="rail-n" id="rail-ph-n" hidden>0</b></button>
     <span class="rail-gap"></span>
     <button class="rail-btn" data-group="cart" title="Your cart: everything you want to buy, and the quickest trip to buy it all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Cart<b class="rail-n" id="rail-cart-n" hidden>0</b></button>
     <button class="rail-btn" id="rail-settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
@@ -66,6 +67,7 @@
       <button class="tab" role="tab" data-group="org" data-tab="orgs" aria-selected="false">Orgs</button>
       <button class="tab" role="tab" data-group="social" data-tab="friends" aria-selected="false" title="Your friends, friend requests and messages">Friends <span class="count" id="c-friends" hidden>0</span></button>
       <button class="tab" role="tab" data-group="social" data-tab="friendmap" aria-selected="false" title="Friends and org mates who share their location, on the map">Friend Map <span class="count" id="c-fmap" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="patch" data-tab="patchhub" aria-selected="false">Patch Hub</button>
       <button class="tab" role="tab" data-group="profile" data-tab="profile" aria-selected="false">Profile</button>
     </div>
 
@@ -207,6 +209,7 @@
     <section class="pane" id="pane-pm-services"></section>
     <section class="pane" id="pane-pm-mine"></section>
     <section class="pane" id="pane-pm-standing"></section>
+    <section class="pane" id="pane-patchhub"></section>
     <section class="pane" id="pane-shopping">
       <div id="sh-out"></div>
     </section>
@@ -242,6 +245,7 @@
     <div id="so-panel" class="pic-panel"></div>
     <div id="pm-panel" class="pic-panel"></div>
     <div id="og-panel" class="pic-panel"></div>
+    <div id="ph-panel" class="pic-panel" aria-label="Patch Hub"></div>
     <div id="stk-panel" class="pic-panel stk-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
@@ -275,6 +279,7 @@
 <script src="js/friendmap.js"></script>
 <script src="js/cargo.js"></script>
 <script src="js/orgs.js"></script>
+<script src="js/patchhub.js"></script>
 <script src="js/main.js"></script>
 <!-- The self-running feature tour, for screen recording: Ctrl+Shift+D, or launch with --demo -->
 <!-- 3D cities (optional). city3d-core.js is the shared engine and goes first; then one file per city.

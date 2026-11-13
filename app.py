@@ -24,6 +24,7 @@ import api_contracts
 import api_watch
 import api_friendmap
 import api_cargo
+import api_patchhub
 
 
 # The page's API. Its methods live in the api_*.py mixins by subject; this class keeps start-up (__init__).
@@ -45,7 +46,8 @@ class Api(api_contracts.ContractsMixin,
           api_core.CoreMixin,
           api_watch.WatchMixin,
           api_friendmap.FriendMapMixin,
-          api_cargo.CargoMixin):
+          api_cargo.CargoMixin,
+          api_patchhub.PatchHubMixin):
 
     def __init__(self):
         self._lock = threading.RLock()

@@ -203,6 +203,76 @@ def _fix_makers(rows):
     return out
 
 
+# Ships new in this release (the Patch Hub's list) that UEX doesn't list yet: added to Vehicles, My Fleet and
+# the rest by themselves, from the wiki's game data and RSI's store page, and dropped by themselves once UEX
+# lists them. (EXTRA_VEHICLES above is for the ones that need numbers by hand.)
+_AUTO = {"key": None, "rows": []}
+_ROLE_FLAGS = (("is_military", r"combat|fighter|gunship|military|interdiction|bomber"), ("is_cargo", r"cargo|freight|hauler"),
+               ("is_mining", r"mining"), ("is_salvage", r"salvage"), ("is_exploration", r"exploration|expedition|pathfinder"),
+               ("is_medical", r"medical"), ("is_racing", r"racing"), ("is_passenger", r"touring|passenger|luxury"),
+               ("is_starter", r"starter"), ("is_industrial", r"industrial|construction"))
+
+
+def _sq(t):
+    return re.sub(r"[^a-z0-9]+", "", str(t or "").lower())
+
+
+def auto_extra_vehicles():
+    """The Patch Hub's new ships as UEX-style rows, from the newest hub saved on this PC (the server's copy or
+    Quantum's own). Read again only when one of those files changes."""
+    files = [HERE / "uex_cache" / "patchhub.json", HERE / "uex_cache" / "patchhub_server.json"]
+    stamp = tuple((f.stat().st_mtime if f.exists() else 0) for f in files)
+    if _AUTO["key"] == stamp:
+        return _AUTO["rows"]
+    hub = None
+    for f in sorted((f for f in files if f.exists()), key=lambda f: -f.stat().st_mtime):
+        try:
+            hub = json.loads(f.read_text(encoding="utf-8"))
+            break
+        except Exception:
+            continue
+    rows = []
+    for s in ((hub or {}).get("ships") or {}).get("list") or []:
+        full = str(s.get("name") or "").strip()
+        if not full:
+            continue
+        maker = str(s.get("maker") or "")
+        first = maker.split(" ")[0] if maker else ""
+        short = full[len(first) + 1:] if first and full.lower().startswith(first.lower() + " ") else full
+        role = str(s.get("role") or "")
+        fb = {k: s[k] for k in ("length", "beam", "height", "mass") if s.get(k)}
+        if role:
+            fb["career"] = role
+        if s.get("crew"):
+            fb["crew_min"] = str(s["crew"]).split("–")[0]
+        if s.get("size"):
+            fb["size_class"] = s["size"]
+        row = {"id": 991000 + int(hashlib.md5(full.lower().encode()).hexdigest(), 16) % 8000, "name": short, "name_full": full,
+               "slug": re.sub(r"[^a-z0-9]+", "-", full.lower()).strip("-"), "uuid": s.get("key"), "company_name": maker,
+               "scu": int(s.get("cargo") or 0), "crew": str(s.get("crew") or "").replace("–", ","), "size": s.get("size"),
+               "pad_type": "", "is_spaceship": 0 if s.get("vehicle") else 1, "is_ground_vehicle": 1 if s.get("vehicle") else 0,
+               "is_addon": 0, "is_concept": 0, "url_store": s.get("store"), "url_photo": s.get("image"),
+               "quantum_extra": True, "auto": True, "wiki_page": full, "desc": s.get("desc"), "fallback": fb}
+        for flag, rx in _ROLE_FLAGS:
+            if re.search(rx, role, re.I):
+                row[flag] = 1
+        rows.append(row)
+    _AUTO.update(key=stamp, rows=rows)
+    return rows
+
+
+def _same_auto(x, v):
+    """Is row v the Patch Hub's ship x? The same name, or one ends with the other with only a short word in
+    front (a maker: "RSI Constellation Mk V Centaurus", "S-65 Stingray" / "Stingray"). A longer ship name
+    doesn't match a shorter one at its start: UEX's "Sabre Raven" isn't the "Sabre Raven EX"."""
+    a = {_sq(x.get("name")), _sq(x.get("name_full"))} - {""}
+    b = {_sq(v.get("name")), _sq(v.get("name_full"))} - {""}
+    if a & b:
+        return True
+    return any(min(len(p), len(q)) >= 5 and abs(len(p) - len(q)) <= 14 and (p.endswith(q) or q.endswith(p))
+               for p in a for q in b)
+
+
 def with_extra_vehicles(rows):
     """UEX's vehicles, plus EXTRA_VEHICLES it doesn't have yet. When UEX does list one but with blanks
     (a new ship often comes in with 0 SCU, which hid the Mk V Centaurus from the trade route ship list
@@ -215,7 +285,16 @@ def with_extra_vehicles(rows):
             if any(not v.get(k) and x.get(k) for k in EXTRA_FILL):
                 v = dict(v, **{k: x[k] for k in EXTRA_FILL if not v.get(k) and x.get(k)})
         out.append(v)
-    return _fix_makers(out + [dict(x) for x in EXTRA_VEHICLES if x["id"] not in used])
+    extra = [dict(x) for x in EXTRA_VEHICLES if x["id"] not in used]
+    try:
+        auto = auto_extra_vehicles()
+    except Exception:
+        auto = []
+    for x in auto:                                        # the Patch Hub's new ships UEX doesn't list yet
+        if any(_same_auto(x, v) for v in rows) or any(_same_ship(e, x) or _same_auto(x, e) for e in EXTRA_VEHICLES):
+            continue
+        extra.append(dict(x))
+    return _fix_makers(out + extra)
 
 
 def store_url(v):

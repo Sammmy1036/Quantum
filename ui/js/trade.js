@@ -661,7 +661,7 @@ function renderVehicles(){
 function renderGallery(L){
   const g=$("vh-gallery"), q=$("vh-search").value.trim(), c=vehCat(), all=c.id==="all";
   const sel=(id,opts,cur)=>`<select class="field" data-vhset="${id}">${opts.map(([v,t])=>`<option value="${v}" ${v===cur?"selected":""}>${t}</option>`).join("")}</select>`;
-  g.innerHTML=`<div class="gh vh-head">${all?"":`<button class="btn small" data-vhcat="all" title="Take the filter off: every vehicle">← All vehicles</button>`}<b>${q?`“${esc(q)}”${all?"":` in ${esc(c.name)}`}`:esc(c.name)}</b><span>${L.length} shown · click one for prices and where to get it</span>
+  g.innerHTML=`<div class="gh vh-head">${S.vehFrom?`<button class="btn small primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}${all?"":`<button class="btn small" data-vhcat="all" title="Take the filter off: every vehicle">← All vehicles</button>`}<b>${q?`“${esc(q)}”${all?"":` in ${esc(c.name)}`}`:esc(c.name)}</b><span>${L.length} shown · click one for prices and where to get it</span>
       <span class="spacer"></span>${sel("avail",[["","Any"],["buy","Sold in game"],["rent","Rentable"]],S.vehAvail||"")}${sel("sort",[["price","Price: low to high"],["price_desc","Price: high to low"],["scu","Most cargo"],["name","A–Z"]],S.vehSort||"price")}</div>
     ${L.length?`<div class="grid">${L.map(v=>{ const b=v.buy[0], r=v.rent[0];
     return `<div class="vg" data-vg="${v.id}"><div class="ph ph-g">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=phCard('vehicle')">`:phCard("vehicle")}</div>
@@ -672,7 +672,8 @@ function openVehCat(id){ S.vehCat={id}; S.vehDetail=null; S.vehGalKey=null; $("v
 $("vh-nav").onclick=e=>{ const c=e.target.closest("[data-vhcat]"); if(c) openVehCat(c.dataset.vhcat); };
 $("vh-gallery").onchange=e=>{ const s=e.target.closest("[data-vhset]"); if(!s) return;
   if(s.dataset.vhset==="avail") S.vehAvail=s.value; else S.vehSort=s.value; S.vehGalKey=null; renderVehicles(); };
-$("vh-gallery").onclick=async e=>{ if(await tradeClick(e)) return;
+$("vh-gallery").onclick=async e=>{ if(e.target.closest("[data-act=vhfrom]")) return phBackFromVehicles();   // opened from the Patch Hub
+  if(await tradeClick(e)) return;
   if(e.target.closest("[data-act=vhback]")){ const back=S.vehBack; S.vehDetail=null; S.vehGalKey=null; renderVehicles();
     // Back where you were in the list. Same list (filter, sort, search): the same scroll position; if it changed
     // meanwhile, the vehicle you opened is brought into view instead. Kept only while Quantum is open.
@@ -694,7 +695,7 @@ async function renderVehicleDetail(id){
   const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
   const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
   const cat=vehCat(), isAll=cat.id==="all";
-  g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px"><button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
+  g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${S.vehFrom?`<button class="btn primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}<button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
     <div class="mkp-head"><div class="mkp-img">${picShown(v.photo,"vehicle",v.full)}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div></div>${titleLogo(v.maker,true)}</div>
         ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
