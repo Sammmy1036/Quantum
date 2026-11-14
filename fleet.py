@@ -60,6 +60,15 @@ KEY_STAT = {"WeaponGun": "dps", "Missile": "missile", "Shield": "shield_hp", "Qu
             "Cooler": "cooling", "PowerPlant": "power"}
 
 
+def _flight_ready(d):
+    """True when a wiki vehicle record says the ship is flight ready (in the game). The wiki gives the status
+    as a string or as translations ({"en_EN": "Flight Ready"}), under one of two names."""
+    st = d.get("production_status") or d.get("status") or ""
+    if isinstance(st, dict):
+        st = st.get("en_EN") or next((x for x in st.values() if isinstance(x, str)), "")
+    return bool(re.search(r"flight[\s_-]*ready", str(st), re.I))
+
+
 def _get(url, timeout=20):
     with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
@@ -809,6 +818,7 @@ class Wiki:
                     n = sum(v for v in beds.values() if isinstance(v, (int, float))) if isinstance(beds, dict) \
                         else beds if isinstance(beds, (int, float)) else 0
                     rec = {"medical_beds": n, "medical_tier": d.get("max_medical_tier"), "cargo": d.get("cargo_capacity") or 0,
+                           "ready": _flight_ready(d),
                            "uuid": d.get("uuid")}                    # for the cargo planner's per-ship grids
                     for k in (d.get("uuid"), d.get("name"), d.get("slug"), d.get("shipmatrix_name")):
                         if k:

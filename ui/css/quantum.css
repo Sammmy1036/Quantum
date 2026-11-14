@@ -1842,3 +1842,25 @@ button.ph-ver:hover{border-color:var(--route-2)}
 .ph-schedimg span{position:absolute;right:8px;bottom:8px;display:inline-flex;gap:5px;align-items:center;padding:5px 10px;border-radius:999px;background:rgba(3,6,12,.8);color:#dbe9fb;font:600 12px var(--text)}
 .ph-schedimg span svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2}
 .ph-clocks{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+/* Modular ships (the RSI Galaxy): module picker and the Vehicles page's module table */
+.mod-seg button{display:inline-flex;align-items:center;gap:5px}
+.mod-seg .mod-c{font:700 9px var(--text);letter-spacing:.06em;text-transform:uppercase;color:#f2c14e;border:1px solid rgba(242,193,78,.45);border-radius:4px;padding:0 4px}
+.mod-seg button.on .mod-c{color:#fff;border-color:rgba(255,255,255,.55)}
+.vd-mods{margin:0 0 14px}
+.mod-t{width:100%;border-collapse:collapse;font-size:12.5px}
+.mod-t th{text-align:left;font:700 10.5px var(--text);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);padding:6px 8px;border-bottom:1px solid var(--line)}
+.mod-t td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.mod-t .num{text-align:right;white-space:nowrap}
+.mod-t td small{display:block;color:var(--ink-2);font-size:11px;margin-top:1px}
+.mod-t tbody tr{cursor:pointer}.mod-t tbody tr:hover{background:rgba(255,255,255,.03)}
+.mod-t tbody tr.on{background:rgba(80,140,255,.10);box-shadow:inset 3px 0 0 var(--route)}
+/* Patch Hub: Twitch drop rewards you've marked as claimed */
+.ph-drops li .n{flex:1}
+.ph-claim{flex:none;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:rgba(3,6,12,.4);display:grid;place-items:center;cursor:pointer;padding:0}
+.ph-claim svg{width:16px;height:16px;fill:none;stroke:transparent;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.ph-claim:hover{border-color:#3ccf6e}.ph-claim:hover svg{stroke:rgba(143,240,177,.45)}
+.ph-claim.on{background:#1f8a4c;border-color:#3ccf6e}.ph-claim.on svg{stroke:#fff}
+.ph-drops li.claimed{opacity:.72;border-color:#24603d}
+.ph-drops li.claimed .n{text-decoration:line-through;text-decoration-color:rgba(143,240,177,.5)}
+.ph-drops li.claimed .n small{text-decoration:none;color:#8ff0b1}
+.ph-got{color:#8ff0b1;text-transform:none;letter-spacing:0}

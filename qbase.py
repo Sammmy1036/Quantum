@@ -29,6 +29,7 @@ import fleet
 import gateways
 import gear
 import shopping
+import ship_modules
 import tray
 import services
 import uex
@@ -131,21 +132,31 @@ EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake C
                    "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "is_military": 1, "url_store": None,
                    "url_photo": None, "quantum_extra": True, "wiki_page": "Skylark"}]
 # Ships UEX still flags as concepts (or as add-ons, for a snub) that are flying in game.
-IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"}, {"skylark"})
+IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"}, {"skylark"},
+           {"galaxy"})                                   # RSI Galaxy: flight ready in 4.10.3 (IAE 2956)
 
 
-def is_concept(v):
+def is_concept(v, wiki=None):
     """A ship that isn't in the game yet (UEX's flag, unless we know it's flying). Word order doesn't
-    matter ("Constellation Andromeda Mk V" is the same ship)."""
+    matter ("Constellation Andromeda Mk V" is the same ship). wiki: the wiki's vehicle summary; a ship it
+    lists as flight ready counts as in the game, so a new release stops showing as a concept by itself,
+    without waiting for UEX or a Quantum update."""
     if not v.get("is_concept"):
         return False
     words = set(re.findall(r"[a-z0-9]+", f"{v.get('name') or ''} {v.get('name_full') or ''}".lower()))
-    return not any(w <= words for w in IN_GAME)
+    if any(w <= words for w in IN_GAME):
+        return False
+    if wiki:
+        w = next((wiki[str(k).lower()] for k in (v.get("uuid"), v.get("name"), v.get("slug"), v.get("name_full"))
+                  if k and str(k).lower() in wiki), None)
+        if w and w.get("ready"):
+            return False
+    return True
 
 
-def listed_vehicle(v):
+def listed_vehicle(v, wiki=None):
     """Shown in Vehicles, My Fleet and the trade route ship list: in the game, and a ship (not a module)."""
-    if is_concept(v):
+    if is_concept(v, wiki):
         return False
     return not v.get("is_addon") or any(a in str(v.get("name_full") or v.get("name") or "").lower() for a in FLYING_ADDONS)
 

@@ -438,13 +438,14 @@ class AccountMixin:
                 continue
             v = rows.get(f.get("vehicle_id"), {})
             out = {"uid": f["uid"], "vehicle_id": f.get("vehicle_id"), "name": f.get("name"), "nickname": f.get("nickname"),
-                   "full": v.get("name_full") or f.get("name"), "maker": v.get("company_name") or "", "scu": v.get("scu") or 0,
+                   "full": v.get("name_full") or f.get("name"), "maker": v.get("company_name") or "", "scu": self._ship_scu(f, v, self._loadout_of(f, "primary")),
                    "pad": v.get("pad_type"), "main": bool(f.get("main")), "primary": f.get("primary_loadout"),
                    "photo": self._vehicle_photo(v) if v else None, "loadouts": []}
             for lo in f["loadouts"]:
                 c = json.loads(json.dumps(f, default=str))
                 c["active_loadout"] = lo["id"]
-                entry = {"id": lo["id"], "name": lo["name"], "livery": (lo.get("livery") or {}).get("name")}
+                entry = {"id": lo["id"], "name": lo["name"], "livery": (lo.get("livery") or {}).get("name"),
+                         "module": (ship_modules.module_of(v or f.get("name") or "", lo.get("module")) or {}).get("name")}
                 try:
                     r = self.fleet_loadout(f["uid"], _ship=c)
                 except Exception as e:

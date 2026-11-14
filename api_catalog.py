@@ -206,7 +206,7 @@ class CatalogMixin:
             for v in vehicles:
                 # Concepts are shown too (flagged), so a ship you've pledged for, like a new Constellation
                 # Mk V, can be looked up; add-on modules that aren't ships stay out.
-                if not listed_vehicle(v) and not (is_concept(v) and not v.get("is_addon")):
+                if not listed_vehicle(v, wiki) and not (is_concept(v, wiki) and not v.get("is_addon")):
                     continue
                 sp = spots.get(v["id"], {"buy": [], "rent": []})
                 for k in ("buy", "rent"):
@@ -217,7 +217,7 @@ class CatalogMixin:
                     "pad": v.get("pad_type"), "ground": bool(v.get("is_ground_vehicle")),
                     "roles": self._vehicle_roles(v, wiki),
                     "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
-                    "addon": bool(v.get("is_addon")), "concept": is_concept(v), "aka": vehicle_aka(v),
+                    "addon": bool(v.get("is_addon")), "concept": is_concept(v, wiki), "aka": vehicle_aka(v),
                     "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"]})
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
@@ -798,6 +798,8 @@ class CatalogMixin:
             "countermeasures": g("weapon_snapshot", "countermeasures_count"),
             "ir": g("signature", "ir_shields") or g("emission", "ir"), "em": g("signature", "em_shields") or g("emission", "em_idle"),
             "cs": d.get("cross_section_max"), "claim": g("insurance", "claim_time"), "expedite": g("insurance", "expedite_time"),
+            # A modular ship (the Galaxy): each module's cargo, beds and refinery, for the page's module picker
+            "modules": ship_modules.module_options(v),
         }
         return out
 

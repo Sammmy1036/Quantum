@@ -76,7 +76,20 @@ class PatchHubMixin:
         except Exception:
             pass
         return {"ok": True, "hub": hub, "source": source, "seen": self._settings.get("patchhub_seen") or [],
-                "game": game, "building": building, "progress": progress}
+                "claimed": self._settings.get("patchhub_claimed") or [], "game": game, "building": building, "progress": progress}
+
+    def patchhub_claim(self, key, on=True):
+        """Tick (or untick) a Twitch drop reward as claimed. Kept by its key ("campaign|reward name"), so the
+        tick stays through restarts and when the campaign's list is fetched again; only the most recent 300 kept."""
+        key = str(key or "").strip()[:200]
+        if not key:
+            return {"ok": False, "error": "No reward given"}
+        L = [k for k in self._settings.get("patchhub_claimed") or [] if k != key]
+        if on:
+            L.append(key)
+        self._settings["patchhub_claimed"] = L[-300:]
+        self._save_settings()
+        return {"ok": True, "claimed": self._settings["patchhub_claimed"]}
 
     def patchhub_seen(self, keys):
         """The items you've now seen (their keys), so the rail's count only shows what's new to you."""

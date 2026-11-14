@@ -109,12 +109,13 @@ class BackupMixin:
                     continue
                 if not name or len(mine) >= self.MAX_LOADOUTS:
                     continue
+                mod = lo.get("module") if isinstance(lo.get("module"), str) and len(lo["module"]) <= 20 else None
                 n = 1
                 while f"l{n}" in {x["id"] for x in mine}:
                     n += 1
                 mine.append({"id": f"l{n}", "name": name[:40], "loadout": lo.get("loadout") if isinstance(lo.get("loadout"), dict) else {},
                              "power": lo.get("power") if isinstance(lo.get("power"), dict) else {},
-                             **({"livery": lv} if lv else {})})
+                             **({"livery": lv} if lv else {}), **({"module": mod} if mod else {})})
                 added["loadouts"] += 1
         if fleet and not any(f.get("main") for f in fleet):
             fleet[0]["main"] = True

@@ -34,7 +34,7 @@ async function phLoad1(refresh){
   try{ const r=await api().patchhub_get(!!refresh);
     if(r.ok){ if(r.hub||!r.building) S.ph.data=r.hub;
       // new ships UEX doesn't list join the Vehicles list (qbase.auto_extra_vehicles): reload it when they change
-      if(r.hub&&!r.building&&S.veh&&S.tab!=="vehicles"&&(r.hub.ships?.list||[]).some(s=>!phUexExact(s.name))){ S.veh=null; S.vehGalKey=null; } S.ph.source=r.source; S.ph.game=r.game||{}; S.ph.seen=r.seen||[]; S.ph.error=null;
+      if(r.hub&&!r.building&&S.veh&&S.tab!=="vehicles"&&(r.hub.ships?.list||[]).some(s=>!phUexExact(s.name))){ S.veh=null; S.vehGalKey=null; } S.ph.source=r.source; S.ph.game=r.game||{}; S.ph.seen=r.seen||[]; S.ph.claimed=r.claimed||[]; S.ph.error=null;
       S.ph.building=!!r.building; S.ph.progress=r.progress||{}; }
     else S.ph.error=r.error||"Couldn't load the Patch Hub"; }
   catch(e){ S.ph.error=String(e); }
@@ -150,10 +150,12 @@ function phEvents(h){ const L=h.events?.list||[], A=h.events?.announced||[], lin
       ${e.schedule_image?`<button class="ph-schedimg" data-ext="${esc(e.schedule_image.full||e.schedule_image.thumb)}" title="Open the official schedule full size"><img src="${esc(e.schedule_image.thumb||e.schedule_image.full)}" alt="The official schedule" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><span>Official schedule ${PH_IC.ext}</span></button>`:""}
     </div>`; };
   // a Twitch drops campaign's rewards: each item and the total watch time that unlocks it
+  // Each reward has a tick box: mark the ones you've claimed on Twitch (kept in your settings)
   const drops=e=>{ const R=e.rewards||[]; if(!R.length) return "";
-    const hrs=h=>h==null?"?":String(h);
-    return `<div class="ph-drops"><div class="ph-lbl">Rewards${e.campaign?` · ${esc(e.campaign)}`:""}</div>
-      <ol>${R.map(r=>`<li>${r.image?`<img src="${esc(r.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:""}<span class="h"><b>${esc(hrs(r.hours))}</b><small>${r.hours===1?"hr":"hrs"}</small></span><span class="n">${esc(r.name)}<small>Watch ${esc(hrs(r.hours))} ${r.hours===1?"hour":"hours"} in total, then claim it on Twitch</small></span></li>`).join("")}</ol>
+    const hrs=h=>h==null?"?":String(h), got=new Set(S.ph.claimed||[]), key=r=>phDropKey(e,r), n=R.filter(r=>got.has(key(r))).length;
+    return `<div class="ph-drops"><div class="ph-lbl">Rewards${e.campaign?` · ${esc(e.campaign)}`:""}${n?` · <span class="ph-got">${n===R.length?"all claimed ✓":`${n} of ${R.length} claimed`}</span>`:""}</div>
+      <ol>${R.map(r=>{ const c=got.has(key(r)); return `<li class="${c?"claimed":""}">${r.image?`<img src="${esc(r.image)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:""}<span class="h"><b>${esc(hrs(r.hours))}</b><small>${r.hours===1?"hr":"hrs"}</small></span><span class="n">${esc(r.name)}<small>${c?"Claimed":`Watch ${esc(hrs(r.hours))} ${r.hours===1?"hour":"hours"} in total, then claim it on Twitch`}</small></span>
+        <button class="ph-claim ${c?"on":""}" data-phclaim="${esc(key(r))}" role="checkbox" aria-checked="${c}" title="${c?"Claimed. Click to unmark it":"Mark as claimed"}" aria-label="${esc(r.name)}: ${c?"claimed":"not claimed"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></li>`; }).join("")}</ol>
       <div class="ph-sub">Any Drops-enabled Star Citizen stream counts, one stream at a time. Your RSI and Twitch accounts need to be linked.</div></div>`; };
   const card=(e,hero)=>{ const live=e.state==="live";
     const R=(e.schedule?.rentals||[]).filter(r=>r.starts), nowS=Date.now()/1000;
@@ -273,6 +275,8 @@ function renderPhSide(){
     <div class="ph-srcs">${srcs.map(([k,t,s,u])=>`<button ${u?`data-ext="${esc(u)}"`:"disabled"} title="${u?"Open where this came from":""}"><span class="dot ${ok(k)?"on":"bad"}"></span><span>${t}</span><small>${s}${u?" ↗":""}</small></button>`).join("")}</div>
     <div class="cc-foot">Quantum gathers this from publicly available sources (RSI and the Star Citizen Wiki). It may not always be 100% accurate and can change, so please check the sources above before relying on it. Updated ${esc(phAgo(h.at))}.</div></div>`; }
 
+// a drop reward's key for the "claimed" tick: its campaign (or event) and its name
+const phDropKey=(e,r)=>`${e.campaign||e.name||""}|${r.name||""}`.slice(0,200);
 // one click handler for the page and the sidebar
 for(const id of ["ph-panel","pane-patchhub"]){ const el=$(id); if(!el) continue;
   el.addEventListener("click",e=>{ const t=e.target.closest("button,a"); if(!t||t.disabled) return;
@@ -280,6 +284,10 @@ for(const id of ["ph-panel","pane-patchhub"]){ const el=$(id); if(!el) continue;
     if(t.dataset.phshipback) return phShipBack();
     if(t.dataset.ext) return api().open_url(t.dataset.ext);
     if(t.dataset.phrefresh) return openPatchHub(true);
+    if(t.dataset.phclaim!==undefined){ const k=t.dataset.phclaim, on=!(S.ph.claimed||[]).includes(k);
+      S.ph.claimed=on?[...(S.ph.claimed||[]),k]:(S.ph.claimed||[]).filter(x=>x!==k); phRerender();     // ticked straight away
+      api().patchhub_claim(k,on).then(r=>{ if(r?.ok) S.ph.claimed=r.claimed; else toast(r?.error||"Couldn't save that"); }).catch(()=>{});
+      return; }
     if(t.dataset.phb){ S.ph.build=t.dataset.phb; return phRerender(); }
     if(t.dataset.phfull){ S.ph.full=!S.ph.full; renderPatchHub(); return $("ph-notes")?.scrollIntoView({block:"start",behavior:"smooth"}); }
     if(t.dataset.phjump){ if(S.ph.ship){ S.ph.ship=null; renderPatchHub(); } return $(`ph-${t.dataset.phjump}`)?.scrollIntoView({block:"start",behavior:"smooth"}); } }); }

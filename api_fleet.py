@@ -57,7 +57,8 @@ class FleetMixin:
         if not f:
             return {"ok": False, "error": "That ship isn't in your fleet"}
         return {"ok": True, "active": f["active_loadout"], "primary": f["primary_loadout"], "max": self.MAX_LOADOUTS,
-                "loadouts": [{"id": x["id"], "name": x["name"], "swaps": len(x["loadout"]), "livery": (x.get("livery") or {}).get("name")}
+                "loadouts": [{"id": x["id"], "name": x["name"], "swaps": len(x["loadout"]), "livery": (x.get("livery") or {}).get("name"),
+                              "module": (ship_modules.module_of(f.get("name") or "", x.get("module")) or {}).get("name")}
                              for x in f["loadouts"]]}
 
     def fleet_loadout_new(self, uid, name, copy=True):
@@ -78,7 +79,8 @@ class FleetMixin:
         cur = self._loadout_of(f)
         L.append({"id": f"l{n}", "name": name, "loadout": json.loads(json.dumps(cur["loadout"])) if copy else {},
                   "power": json.loads(json.dumps(cur["power"])) if copy else {},
-                  **({"livery": dict(cur["livery"])} if copy and cur.get("livery") else {})})
+                  **({"livery": dict(cur["livery"])} if copy and cur.get("livery") else {}),
+                  **({"module": cur["module"]} if copy and cur.get("module") else {})})
         f["active_loadout"] = f"l{n}"
         self._loadouts(f)
         self._save_settings()
@@ -195,11 +197,41 @@ class FleetMixin:
             prim = self._loadout_of(f, "primary")
             out.append(dict({k: x for k, x in f.items() if k not in ("loadouts", "loadout", "power")},
                             full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
-                            scu=v.get("scu") or 0, pad=v.get("pad_type"),
+                            scu=self._ship_scu(f, v, prim), pad=v.get("pad_type"),
+                            module=(ship_modules.module_of(v or f.get("name") or "", prim.get("module")) or {}).get("name"),
                             photo=self._livery_photo(prim.get("livery"), v, cached_only=True) or self._vehicle_photo(v),
                             swaps=len(prim["loadout"]), loadouts=len(f["loadouts"]), primary_name=prim["name"],
                             total_swaps=sum(len(x["loadout"]) for x in f["loadouts"])))
         return {"ok": True, "ships": out, "main": next((f["uid"] for f in self._fleet() if f.get("main")), None)}
+
+    @staticmethod
+    def _ship_scu(f, v, lo=None):
+        """A fleet ship's cargo grid in SCU: its module's when it takes modules (the Galaxy with the Cargo
+        module carries 720 SCU), else UEX's figure."""
+        m = ship_modules.module_of(v or f.get("name") or "", (lo or {}).get("module"))
+        return m["scu"] if m and m.get("scu") is not None else (v.get("scu") or 0)
+
+    # ------------------------------------------------------------ modules (the Galaxy's cargo, med bay, refinery)
+    def fleet_set_module(self, uid, module_id=None):
+        """Fit a module to the loadout being shown (None: the ship's default). Its numbers (cargo, medical
+        beds) replace the ship's own in this loadout's stats, and in trade runs when it's the primary loadout."""
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        v = self._vehicle_rows().get(f["vehicle_id"], {})
+        opts = ship_modules.module_options(v or f.get("name") or "")
+        if not opts:
+            return {"ok": False, "error": f"{f.get('name') or 'This ship'} doesn't take modules"}
+        m = next((x for x in opts["modules"] if x["id"] == module_id), None)
+        if module_id and not m:
+            return {"ok": False, "error": "That module isn't made for this ship"}
+        lo = self._loadout_of(f)
+        if not m or m["id"] == opts["default"]:
+            lo.pop("module", None)
+        else:
+            lo["module"] = m["id"]
+        self._save_settings()
+        return {"ok": True, "module": ship_modules.module_of(v or f.get("name") or "", lo.get("module"))}
 
     def fleet_add(self, vehicle_id):
         v = self._vehicle_rows().get(int(vehicle_id))
@@ -380,6 +412,13 @@ class FleetMixin:
                           for s_ in lo["slots"] if s_["type"] == "Shield")
                 if tot:
                     lo["stats"][ship_k] = tot
+        # The module fitted in this loadout (the Galaxy's Cargo, Med Bay or Refinery): its cargo and beds are the
+        # ship's in this loadout. It isn't a swapped part, so it goes into the stock numbers too (no "+656" delta).
+        cur = (f.get("loadouts") and self._loadout_of(f)) or {}
+        mod_v = v or f.get("name") or ""
+        mods = ship_modules.module_options(mod_v, cur.get("module"))
+        if mods:
+            lo["stats"] = ship_modules.apply_module(lo["stats"], ship_modules.module_of(mod_v, cur.get("module")))
         lo["stock_stats"] = dict(lo["stats"])
         lo["stats"], lo["delta"] = fleet.apply_swaps(lo["stats"], lo["slots"])
         if removed_missile and lo["stats"].get("missile_dmg") is not None:   # missiles on a stock rack you swapped out
@@ -445,8 +484,8 @@ class FleetMixin:
                                                      photo=self._livery_photo((self._loadout_of(f) or {}).get("livery"), v) or self._vehicle_photo(v),
                                                      stock_photo=self._vehicle_photo(v),
                                                      livery_photo=bool(self._livery_photo((self._loadout_of(f) or {}).get("livery"), v)),
-                                                     scu=v.get("scu") or 0, maker=v.get("company_name") or ""),
-                "loadouts": self.fleet_loadouts(uid),
+                                                     scu=self._ship_scu(f, v, cur), maker=v.get("company_name") or ""),
+                "loadouts": self.fleet_loadouts(uid), "modules": mods,
                 "game_data": self._game.generated, **lo}
 
     # ------------------------------------------------------------ liveries (paints)

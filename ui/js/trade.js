@@ -682,15 +682,26 @@ $("vh-gallery").onclick=async e=>{ if(e.target.closest("[data-act=vhfrom]")) ret
     else if(back) g.querySelector(`[data-vg="${CSS.escape(String(back.id))}"]`)?.scrollIntoView({block:"center"});
     return; }
   if(e.target.closest("[data-act=vhall]")){ return openVehCat("all"); }
+  const vm=e.target.closest("[data-vdmod]"); if(vm&&S.vehDetail){ S.vdMod=S.vdMod||{}; S.vdMod[S.vehDetail]=vm.dataset.vdmod; return renderVehicleDetail(S.vehDetail); }
   const cat=e.target.closest("[data-vhcat]"); if(cat) return openVehCat(cat.dataset.vhcat);
   const c=e.target.closest("[data-vg]"); if(!c) return;
   S.vehBack={key:S.vehGalKey, top:$("vh-gallery").scrollTop, id:c.dataset.vg};      // where Back returns to
   S.vehDetail=c.dataset.vg; renderVehicles(); };
+// ---- Modular ships (the RSI Galaxy): a module picker, and the ship's numbers with a module fitted.
+// The picker is a row of buttons (attr: the data attribute its buttons carry); a concept module is marked.
+const modPicker=(M,cur,attr)=>`<span class="lo-lab">Module</span><div class="seg-mini mod-seg">${M.modules.map(m=>
+  `<button ${attr}="${esc(m.id)}" class="${m.id===cur?"on":""}" title="${esc(`${m.full||m.name}${m.concept?" (concept, not in the game yet)":""}${m.notes?`: ${m.notes}`:""}`)}">${esc(m.name)}${m.concept?`<small class="mod-c">concept</small>`:""}</button>`).join("")}</div>`;
+const modTiers=m=>m?.medical_tiers?Object.entries(m.medical_tiers).sort((a,b)=>a[0]-b[0]).map(([t,n])=>`${n} × T${t}`).join(", "):"";
+const modBeds=m=>m?.medical_beds?`${m.medical_beds}${modTiers(m)?` (${modTiers(m)})`:""}`:null;
 // A vehicle's own page: picture, roles, crew and beds, cargo, size, flight, quantum, defences, weapons.
 async function renderVehicleDetail(id){
   const g=$("vh-gallery"), v=S.veh.find(x=>String(x.id)===String(id)); if(!v) return;
   if(g.dataset.detail!==String(id)) g.innerHTML=qLoader(`Loading ${v.full}…`); g.dataset.detail=String(id); g.scrollTop=0;
-  const d=await api().vehicle_detail(v.id); if(S.vehDetail!==String(id)) return;
+  S.vdCache=S.vdCache||{}; const d0=S.vdCache[id]||(S.vdCache[id]=await api().vehicle_detail(v.id)); if(S.vehDetail!==String(id)) return;
+  // A modular ship: the numbers below are the picked module's (Base by default); the table compares them all
+  const M=d0.modules, mod=M?(M.modules.find(x=>x.id===(S.vdMod?.[id]||M.current))||M.modules[0]):null;
+  const d=mod?{...d0,scu:mod.scu??d0.scu,medical_beds:mod.medical_beds||null,medical_tier:mod.medical_tier||null,refinery:mod.refinery||null}:d0;
+  const scu=mod?d.scu:v.scu;
   const n=x=>x==null||x===""?null:Math.round(x).toLocaleString(), dash=x=>x??"–";
   const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
   const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
@@ -700,13 +711,21 @@ async function renderVehicleDetail(id){
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div></div>${titleLogo(v.maker,true)}</div>
         ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
         ${statBlock([{label:"Buy price",value:v.buy[0]?money(v.buy[0].price):"Not sold"},{label:"Rent price",value:v.rent[0]?`${money(v.rent[0].price)}/day`:"None"},
-            {label:"Crew size",value:crew||"–"},{label:"SCU capacity",value:v.scu?`${v.scu} SCU`:"None"}],
+            {label:"Crew size",value:crew||"–"},{label:"SCU capacity",value:scu?`${Number(scu).toLocaleString()} SCU`:"None"}],
           [{label:"Beds",value:d.beds||null},{label:"Medical beds",value:d.medical_beds||null},{label:"Landing pad",value:d.pad||null}])}
+        ${M?`<div class="lv-row" style="margin-top:12px">${modPicker(M,mod.id,"data-vdmod")}<span class="muted" style="font-size:12px">${mod.concept?`<span style="color:#f2c14e">Concept · not in game yet.</span> `:""}${esc(mod.notes||"")}</span></div>`:""}
         <div class="row" style="gap:8px;margin-top:12px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
+    ${M?`<div class="vd-sec vd-mods"><div class="mk-h">Modules</div><table class="mod-t"><thead><tr><th>Module</th><th class="num">Cargo</th><th class="num">Medical beds</th><th class="num">Refinery</th><th>Status</th></tr></thead><tbody>
+      ${M.modules.map(m=>`<tr class="${m.id===mod.id?"on":""}" data-vdmod="${esc(m.id)}" title="Show ${esc(v.full)} with this module"><td><b>${esc(m.name)}</b><small>${esc(m.full||"")}</small></td>
+        <td class="num">${m.scu?`${Number(m.scu).toLocaleString()} SCU`:"–"}${m.module_scu?`<small>${m.module_scu} in the module</small>`:""}</td>
+        <td class="num">${m.medical_beds||"–"}${modTiers(m)?`<small>${esc(modTiers(m))}</small>`:""}</td>
+        <td class="num">${m.refinery?`${m.refinery} reactors`:"–"}</td>
+        <td>${m.concept?`<span style="color:#f2c14e">Concept</span>`:"In game"}</td></tr>`).join("")}</tbody></table>
+      <div class="muted" style="font-size:11.5px;margin-top:8px">Click a module to see the ship with it. Modules are swapped at a port; in My Fleet each loadout can have its own.</div></div>`:""}
     ${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
     <div class="vd-grid vd-flat">
-      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
-      ${sec("Cargo & storage",[["Cargo grid",d.scu?`${d.scu} SCU`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
+      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
+      ${sec("Cargo & storage",[["Cargo grid",d.scu?`${Number(d.scu).toLocaleString()} SCU`:null],["Refinery",d.refinery?`${d.refinery} refining reactors`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
       ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
       ${sec("Flight",[["SCM",d.scm&&`${d.scm} m/s`],["Boost",d.boost&&`${d.boost} m/s`],["Max",d.max&&`${d.max} m/s`],["Pitch / yaw / roll",d.pitch&&`${d.pitch} / ${d.yaw} / ${d.roll} °/s`],["Hydrogen fuel",d.h_fuel&&`${d.h_fuel} SCU`]])}
       ${sec("Quantum",[["Speed",d.qt_speed&&`${fmtBig(d.qt_speed)}/s`],["Range",d.qt_range&&fmtBig(d.qt_range)],["Spool",d.qt_spool&&`${d.qt_spool} s`],["Quantum fuel",d.q_fuel&&`${d.q_fuel} SCU`]])}
@@ -1053,7 +1072,7 @@ async function renderFleet(){
   if(!S.flSel||!fl.ships.some(x=>x.uid===S.flSel)) S.flSel=fl.main||fl.ships[0]?.uid||null;
   $("fl-out").innerHTML=fl.ships.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${fl.ships.length} ship${fl.ships.length===1?"":"s"} · ★ marks your primary ship (used for fitting components, determining trade routes, etc.)${fl.ships.length>1?" · Drag a ship to change the order":""}</div>`
     +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}" ${fl.ships.length>1?`draggable="true" data-fldrag="${x.uid}" title="Drag to move ${esc(x.full)} in your fleet"`:""}><div class="hd" data-fl="${x.uid}">${brandTile(x.maker)}<div class="fl-name"><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
-      <div class="mk">${esc(x.maker)}${x.scu?` · ${x.scu} SCU`:""}${x.loadouts>1?` · ${x.loadouts} loadouts`:x.swaps?` · ${x.swaps} upgrade${x.swaps===1?"":"s"}`:" · stock"}</div></div>
+      <div class="mk">${esc(x.maker)}${x.module?` · ${esc(x.module)} module`:""}${x.scu?` · ${x.scu} SCU`:""}${x.loadouts>1?` · ${x.loadouts} loadouts`:x.swaps?` · ${x.swaps} upgrade${x.swaps===1?"":"s"}`:" · stock"}</div></div>
       <div class="row" style="gap:4px">${x.main?"":`<button class="btn small ghost" data-flmain="${x.uid}" title="Make this your primary ship">★</button>`}<button class="btn small ghost" data-fldel="${x.uid}" title="Remove from your fleet">✕</button></div></div>
       ${S.flDel===x.uid?`<div class="fl-confirm"><div><b>Remove ${esc(x.full)} from your fleet?</b>
         <div>${x.total_swaps?`Its ${x.loadouts>1?`${x.loadouts} loadouts and `:""}${x.total_swaps} component swap${x.total_swaps===1?"":"s"} will be deleted too. `:"It has no component swaps saved. "}${x.main?"It's your primary ship, so trade runs and the Components tab will use another ship. ":""}This can't be undone.</div></div>
@@ -1064,7 +1083,8 @@ async function renderFleet(){
 const SHIP_STATS=[["dps","DPS (pilot)",n=>Math.round(n).toLocaleString()],["missile_dmg","Missile dmg",n=>Math.round(n).toLocaleString()],
   ["shield","Shield HP",n=>Math.round(n).toLocaleString()],["shield_regen","Shield regen",n=>`${Math.round(n).toLocaleString()}/s`],["hull","Hull HP",n=>Math.round(n).toLocaleString()],
   ["scm","SCM",n=>`${nf(n)} m/s`],["max","Max speed",n=>`${nf(n)} m/s`],["qt_speed","Quantum",n=>`${fmtBig(n)}/s`],["qt_range","QT range",n=>fmtBig(n)],
-  ["em","EM",n=>fmtBig(n),true],["ir","IR",n=>fmtBig(n),true]];
+  ["em","EM",n=>fmtBig(n),true],["ir","IR",n=>fmtBig(n),true],
+  ["medical_beds","Medical beds",n=>String(n)],["refinery","Refinery",n=>`${n} reactors`]];
 const ITEM_STAT={dps:["DPS",n=>Math.round(n).toLocaleString()],missile:["Damage",n=>Math.round(n).toLocaleString()],shield_hp:["Shield HP",n=>Math.round(n).toLocaleString()],
   aim_range:["Aim assist",n=>`${Math.round(n).toLocaleString()} m`],
   missiles:["Missiles",(n,st)=>st?.missile_size?`${n} × S${st.missile_size}`:String(n)],
@@ -1137,6 +1157,8 @@ async function renderShip(uid){
       <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
         ${loadoutBar(r.loadouts)}
         <div id="fl-livery" class="lv-row">${liveryHtml(uid)}</div>
+        ${r.modules?(()=>{ const m=r.modules.modules.find(x=>x.id===r.modules.current)||{};
+          return `<div class="lv-row">${modPicker(r.modules,r.modules.current,"data-flmod")}<span class="muted" style="font-size:12px">${m.concept?`<span style="color:#f2c14e">Concept · not in game yet.</span> `:""}${esc(m.notes||"")}</span></div>`; })():""}
         ${changed?`<div class="row" style="gap:8px;margin:2px 0 8px"><button class="btn small ghost cart-all" data-flshop="1" title="Put every part you've swapped into this loadout in your cart">${CART_SVG}Add this loadout's ${plural(changed,"swapped part")} to cart</button></div>`:""}
         ${stats}
         ${r.power?.pips_gen?`<div class="pwr-row">
@@ -1199,7 +1221,7 @@ $("fl-panel").addEventListener("wheel",()=>{ S.flScrollUntil=0; },{passive:true}
 // ---- Loadouts: up to 5 named sets of parts per ship. The one shown is edited; the primary one (★) is the one
 // the rest of Quantum uses for this ship, like the Components tab's "Fit to a ship".
 function loadoutBar(L){ if(!L?.ok) return ""; const act=L.loadouts.find(x=>x.id===L.active), mode=S.flLoMode;
-  const chip=x=>`<button class="lo-chip ${x.id===L.active?"on":""}" data-flload="${esc(x.id)}" title="${x.id===L.primary?"Primary loadout: used across Quantum for this ship":"Show this loadout"}${x.livery?` · Livery: ${esc(x.livery)}`:""}">${x.id===L.primary?`<span class="lo-star" aria-label="Primary">★</span>`:""}${esc(x.name)}${x.swaps?`<small>${x.swaps}</small>`:""}</button>`;
+  const chip=x=>`<button class="lo-chip ${x.id===L.active?"on":""}" data-flload="${esc(x.id)}" title="${x.id===L.primary?"Primary loadout: used across Quantum for this ship":"Show this loadout"}${x.module?` · Module: ${esc(x.module)}`:""}${x.livery?` · Livery: ${esc(x.livery)}`:""}">${x.id===L.primary?`<span class="lo-star" aria-label="Primary">★</span>`:""}${esc(x.name)}${x.swaps?`<small>${x.swaps}</small>`:""}</button>`;
   let form="";
   if(mode==="new") form=`<div class="lo-form"><input class="field" id="lo-name" maxlength="40" placeholder="Name it, like “PvP” or “Stealth”" autocomplete="off">
       <select class="field" id="lo-from" style="width:auto"><option value="copy">Copy of ${esc(act?.name||"this one")}</option><option value="stock">Stock parts</option></select>
@@ -1342,6 +1364,9 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const pip=e.target.closest("[data-ppip]"); if(pip){ const sl=[...S.flLoad.slots,...(S.flLoad.fixed||[])].find(x=>x.port===pip.dataset.ppip), n=+pip.dataset.n;
     await api().fleet_set_part_power(S.flSel,pip.dataset.ppip,sl?.power?.pips===n?n-1:n); return renderShip(S.flSel); }
   if(e.target.closest("[data-pauto]")){ await api().fleet_set_power(S.flSel,null,null,null,true); return renderShip(S.flSel); }
+  const md=e.target.closest("[data-flmod]"); if(md){ const r=await api().fleet_set_module(S.flSel,md.dataset.flmod); if(!r.ok) return toast(r.error);
+    toast(`${r.module.full||r.module.name} on this loadout${r.module.concept?" · a concept, not in the game yet":""}${r.module.scu!=null?` · ${Number(r.module.scu).toLocaleString()} SCU`:""}`);
+    S.flLoad=null; return renderFleet(); }
   const pm=e.target.closest("[data-pmode]"); if(pm){ await api().fleet_set_power(S.flSel,null,pm.dataset.pmode,null); return renderShip(S.flSel); }
   if(e.target.closest("[data-ptoggle]")){ S.flPowerOpen=!S.flPowerOpen; return renderShip(S.flSel); }
   if(e.target.closest("[data-coolauto]")){ await api().fleet_set_power(S.flSel,null,null,"auto"); return renderShip(S.flSel); }
