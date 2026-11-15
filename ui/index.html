@@ -29,7 +29,7 @@
     <button class="rail-btn" data-group="social" title="Friends and messages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>Social<b class="rail-n" id="rail-so-n" hidden>0</b></button>
     <button class="rail-btn" data-group="patch" title="Patch Hub: new ships, events, LIVE and PTU patch notes, the RSI store and upcoming ships"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-6M21 19H3"/></svg>Patch Hub<b class="rail-n" id="rail-ph-n" hidden>0</b></button>
     <span class="rail-gap"></span>
-    <button class="rail-btn" data-group="cart" title="Your cart: everything you want to buy, and the quickest trip to buy it all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Cart<b class="rail-n" id="rail-cart-n" hidden>0</b></button>
+    <button class="rail-btn" data-group="cart" title="Your cart and wish list: everything you want to buy, and the quickest trip to buy it all"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 10h10l2-7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/></svg>Cart<b class="rail-n" id="rail-cart-n" hidden>0</b></button>
     <button class="rail-btn" id="rail-settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings</button>
   </nav>
   <aside class="side">
@@ -60,6 +60,7 @@
       <button class="tab" role="tab" data-group="gear" data-tab="gearlo" aria-selected="false" title="Your own gear loadouts: what you wear and carry for each kind of job">Loadouts</button>
       <button class="tab" role="tab" data-group="crafting" data-tab="blueprints" aria-selected="false" title="Crafting blueprints, from the Star Citizen Wiki">Blueprints</button>
       <button class="tab" role="tab" data-group="cart" data-tab="shopping" aria-selected="false" title="Your cart: everything you want to buy, and the quickest trip to buy it all">Cart <span class="count" id="c-cart" hidden>0</span></button>
+      <button class="tab" role="tab" data-group="cart" data-tab="wishlist" aria-selected="false" title="Your wish list: ships, parts and gear you want, kept with your Quantum account">Wish list <span class="count" id="c-wish" hidden>0</span></button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-items" aria-selected="false" title="Items other players are selling">Items</button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-services" aria-selected="false" title="Services other players offer: protection, hauling, mining…">Services</button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-mine" aria-selected="false" title="Your listings, requests and trades">Listings <span class="count" id="c-pm-mine" hidden>0</span></button>
@@ -210,6 +211,7 @@
     <section class="pane" id="pane-pm-mine"></section>
     <section class="pane" id="pane-pm-standing"></section>
     <section class="pane" id="pane-patchhub"></section>
+    <section class="pane" id="pane-wishlist"></section>
     <section class="pane" id="pane-shopping">
       <div id="sh-out"></div>
     </section>
@@ -242,6 +244,7 @@
     <div id="sh-panel" class="pic-panel"></div>
     <div id="pf-panel" class="pic-panel"></div>
     <div id="gl-panel" class="pic-panel"></div>
+    <div id="wi-panel" class="pic-panel" aria-label="Wish list"></div>
     <div id="so-panel" class="pic-panel"></div>
     <div id="pm-panel" class="pic-panel"></div>
     <div id="og-panel" class="pic-panel"></div>
@@ -275,6 +278,7 @@
 <script src="js/datarunner.js"></script>
 <script src="js/gear.js"></script>
 <script src="js/shopping.js"></script>
+<script src="js/wishlist.js"></script>
 <script src="js/social.js"></script>
 <script src="js/friendmap.js"></script>
 <script src="js/cargo.js"></script>

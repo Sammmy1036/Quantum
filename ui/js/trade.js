@@ -418,17 +418,26 @@ $("tr-go").onclick=runTrade;
 // ---- The ship for a trade run: type any ship. The ships in your fleet are listed first, then every
 // other ship with cargo space. Picking one fills in its cargo space.
 async function trLoadVehicles(){ if(S.veh) return; try{ const r=await api().uex_vehicles(); if(r.ok){ S.veh=r.vehicles; S.vehAt=r.at; S.vehOpen=S.vehOpen||{}; } }catch(_){} }
+// A modular ship (the Galaxy) is offered once per module that changes its cargo space: "RSI Galaxy · Cargo module ·
+// 720 SCU" and "RSI Galaxy · Base · 64 SCU". The key carries the module: f:<uid>:<module> or v:<id>:<module>.
+function trShipEntries(x,fleet){ const mods=x.cargo_modules||[], base=fleet?`f:${x.uid}`:`v:${x.id}`, star=fleet&&x.main?" ★":"";
+  if(!mods.length) return x.scu>0?[{key:base,label:`${x.full} · ${x.scu} SCU${star}`,scu:x.scu}]:[];
+  const cur=fleet?x.module_id:null;
+  const seen=new Set();               // one entry per cargo space: the Med Bay's 64 SCU is the same as no module
+  return mods.slice().sort((a,b)=>(b.id===cur)-(a.id===cur)||(b.id==="base")-(a.id==="base")).filter(m=>m.scu>0&&!seen.has(m.scu)&&seen.add(m.scu))
+    .sort((a,b)=>(b.id===cur)-(a.id===cur)||b.scu-a.scu).map(m=>({key:`${base}:${m.id}`,scu:m.scu,
+    label:`${x.full} · ${m.id==="base"?"no module":`${m.name} module`} · ${m.scu.toLocaleString()} SCU${star}${fleet&&m.id!==cur?" (if you fit it)":""}`})); }
 function trShipFind(key){ if(!key) return null; if(!key.includes(":")) key=`f:${key}`;          // older saves: a fleet uid
-  const id=key.slice(2);
-  if(key[0]==="f"){ const x=(S.trFleet||[]).find(x=>String(x.uid)===id); return x&&x.scu>0?{key,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}:null; }
-  const v=(S.veh||[]).find(v=>String(v.id)===id); return v&&v.scu>0?{key,label:`${v.full} · ${v.scu} SCU`,scu:v.scu}:null; }
+  const [k,id,mod]=key.split(":");
+  const x=k==="f"?(S.trFleet||[]).find(x=>String(x.uid)===id):(S.veh||[]).find(v=>String(v.id)===id); if(!x) return null;
+  const L=trShipEntries(x,k==="f"); return L.find(o=>o.key===key)||(mod?null:L[0])||null; }
 function trShipSet(p){ S.trShip=p||null; $("tr-ship").value=p?p.label:""; trPref("ship",p?p.key:""); }
 function trShipOptions(q){ q=q.trim().toLowerCase(); const qw=q.split(/[^a-z0-9]+/).filter(Boolean);
   // every word typed, in any order: "mk v", "centaurus mk v" and "rsi const" all find the Constellation Mk V
   const has=t=>{ if(!q) return true; t=t.toLowerCase(); const tw=t.split(/[^a-z0-9]+/);
     return t.includes(q)||qw.every(w=>tw.some(x=>x.startsWith(w))); }, own=new Set(), mine=[], rest=[];
-  for(const x of S.trFleet||[]){ own.add(x.vehicle_id); if(x.scu>0&&has(`${x.full} ${x.maker||""}`)) mine.push({key:`f:${x.uid}`,label:`${x.full} · ${x.scu} SCU${x.main?" ★":""}`,scu:x.scu}); }
-  for(const v of S.veh||[]) if(v.scu>0&&!v.concept&&!own.has(v.id)&&has(`${v.full} ${v.maker||""} ${v.aka||""}`)) rest.push({key:`v:${v.id}`,label:`${v.full} · ${v.scu} SCU`,scu:v.scu});
+  for(const x of S.trFleet||[]){ own.add(x.vehicle_id); if(has(`${x.full} ${x.maker||""} ${(x.cargo_modules||[]).map(m=>m.name).join(" ")}`)) mine.push(...trShipEntries(x,true)); }
+  for(const v of S.veh||[]) if(!v.concept&&!own.has(v.id)&&has(`${v.full} ${v.maker||""} ${v.aka||""} ${(v.cargo_modules||[]).map(m=>m.name).join(" ")}`)) rest.push(...trShipEntries(v,false));
   rest.sort((a,b)=>a.label.localeCompare(b.label)); return {mine, rest:rest.slice(0,80), more:Math.max(0,rest.length-80)}; }
 function trShipList(){ const box=$("tr-ship-list"), inp=$("tr-ship");
   const q=S.trShip&&inp.value===S.trShip.label?"":inp.value, {mine,rest,more}=trShipOptions(q); S.trShipOpts=[...mine,...rest];
@@ -664,7 +673,7 @@ function renderGallery(L){
   g.innerHTML=`<div class="gh vh-head">${S.vehFrom?`<button class="btn small primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}${all?"":`<button class="btn small" data-vhcat="all" title="Take the filter off: every vehicle">← All vehicles</button>`}<b>${q?`“${esc(q)}”${all?"":` in ${esc(c.name)}`}`:esc(c.name)}</b><span>${L.length} shown · click one for prices and where to get it</span>
       <span class="spacer"></span>${sel("avail",[["","Any"],["buy","Sold in game"],["rent","Rentable"]],S.vehAvail||"")}${sel("sort",[["price","Price: low to high"],["price_desc","Price: high to low"],["scu","Most cargo"],["name","A–Z"]],S.vehSort||"price")}</div>
     ${L.length?`<div class="grid">${L.map(v=>{ const b=v.buy[0], r=v.rent[0];
-    return `<div class="vg" data-vg="${v.id}"><div class="ph ph-g">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=phCard('vehicle')">`:phCard("vehicle")}</div>
+    return `<div class="vg" data-vg="${v.id}">${wishBtn({kind:"ship",name:v.full,uex_id:v.id,maker:v.maker||null,photo:typeof v.photo==="string"&&v.photo.startsWith("https://")?v.photo:null})}<div class="ph ph-g">${v.photo?`<img src="${esc(v.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.outerHTML=phCard('vehicle')">`:phCard("vehicle")}</div>
       <div class="tx"><b>${esc(v.full)}</b>${v.aka?`<span class="muted" style="font-size:11.5px">${esc(v.aka)}</span>`:""}<span>${v.concept?`<span style="color:#f2c14e">Concept · not in game yet</span>`:b?money(b.price):r?`Rent ${shortMoney(r.price)}/day`:"Not sold in game"}${v.scu?` · ${v.scu} SCU`:""}</span></div></div>`; }).join("")}</div>`
       :`<div class="empty" style="margin-top:30px">Nothing here${q?` matches “${esc(q)}”`:""}.${all?"":` <a data-vhcat="all" style="cursor:pointer;text-decoration:underline">Show all vehicles</a>`}</div>`}
     ${uexCredit(S.vehAt)}`; }
@@ -706,7 +715,7 @@ async function renderVehicleDetail(id){
   const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
   const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
   const cat=vehCat(), isAll=cat.id==="all";
-  g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${S.vehFrom?`<button class="btn primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}<button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
+  g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn("vehicles")}${S.vehFrom?`<button class="btn primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}<button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
     <div class="mkp-head"><div class="mkp-img">${picShown(v.photo,"vehicle",v.full)}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(v.full)}</h2><div class="sub">${esc(v.maker)}${d.career?` · ${esc(d.career)}`:""}</div></div>${titleLogo(v.maker,true)}</div>
         ${v.roles.length?`<div class="tags vd-tags">${v.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
@@ -714,7 +723,7 @@ async function renderVehicleDetail(id){
             {label:"Crew size",value:crew||"–"},{label:"SCU capacity",value:scu?`${Number(scu).toLocaleString()} SCU`:"None"}],
           [{label:"Beds",value:d.beds||null},{label:"Medical beds",value:d.medical_beds||null},{label:"Landing pad",value:d.pad||null}])}
         ${M?`<div class="lv-row" style="margin-top:12px">${modPicker(M,mod.id,"data-vdmod")}<span class="muted" style="font-size:12px">${mod.concept?`<span style="color:#f2c14e">Concept · not in game yet.</span> `:""}${esc(mod.notes||"")}</span></div>`:""}
-        <div class="row" style="gap:8px;margin-top:12px">${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
+        <div class="row" style="gap:8px;margin-top:12px">${wishBtn({kind:"ship",name:v.full,uex_id:v.id,maker:v.maker||null,photo:typeof v.photo==="string"&&v.photo.startsWith("https://")?v.photo:null},"Add to wish list")}${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
     ${M?`<div class="vd-sec vd-mods"><div class="mk-h">Modules</div><table class="mod-t"><thead><tr><th>Module</th><th class="num">Cargo</th><th class="num">Medical beds</th><th class="num">Refinery</th><th>Status</th></tr></thead><tbody>
       ${M.modules.map(m=>`<tr class="${m.id===mod.id?"on":""}" data-vdmod="${esc(m.id)}" title="Show ${esc(v.full)} with this module"><td><b>${esc(m.name)}</b><small>${esc(m.full||"")}</small></td>
         <td class="num">${m.scu?`${Number(m.scu).toLocaleString()} SCU`:"–"}${m.module_scu?`<small>${m.module_scu} in the module</small>`:""}</td>
@@ -996,7 +1005,7 @@ async function renderComponentDetail(id){
   const rows=CP_STATS.filter(([k])=>st[k]!=null&&st[k]!==0&&st[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(st[k]))}</b></div>`).join("")
     // parts only the Star Citizen Wiki has: its own numbers (mining power and range, flight speeds…)
     +(!rows0(st)&&i.extra?.length?i.extra.map(([lab,v])=>`<div class="vd-row"><span>${esc(lab)}</span><b>${esc(typeof v==="number"?(Math.abs(v)>=1000?Math.round(v).toLocaleString():String(v)):v)}</b></div>`).join(""):"");
-  g.innerHTML=`<button class="btn" data-act="cpback" style="margin-bottom:14px">← All ${esc(S.cpCat?.name||"components")}</button>
+  g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn("components")}<button class="btn" data-act="cpback">← All ${esc(S.cpCat?.name||"components")}</button></div>
     <div class="mkp-head"><div class="mkp-img" id="cpd-img">${qPic()}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc(gm.maker||i.maker)}${i.vehicle?` · for ${esc(i.vehicle)}`:""}</div></div>${titleLogo(gm.maker||i.maker,false,true)}</div>
         <div class="cp-fits" id="cpd-fits">${cpFitsBadges(i)}</div>
@@ -1004,15 +1013,43 @@ async function renderComponentDetail(id){
             {label:"Price",value:i.buy[0]?money(i.buy[0].price):"Not in shops"}],
           [{label:"Sold at",value:i.buy.length?plural(i.buy.length,"shop"):null},...(()=>{ const k=(CP_KEY[S.cpCat?.slot]||[])[0], f=CP_STATS.find(x=>x[0]===k);
             return f&&st[k]!=null?[{label:f[1],value:f[2](st[k])}]:[]; })()])}
-        <div class="row" style="gap:8px;margin-top:12px">${i.buy.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null},"Add to cart"):""}${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
+        <div class="row" style="gap:8px;margin-top:12px">${i.buy.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null},"Add to cart"):""}${wishBtn({kind:"component",name:i.name,uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null,maker:gm.maker||i.maker||null})}${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
     ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px">${esc(i.note)}</div>`:""}
     <div class="vd-grid vd-flat">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
-      <div class="vd-sec"><div class="mk-h">Where to buy</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows. It comes as loot, from crafting, or fitted stock on a ship.</div>`}</div>
+      <div class="vd-sec"><div class="mk-h">${i.buy.length?"Where to buy":"How to get it"}</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div id="cpd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div>
       <div class="vd-sec cp-fit" id="cpd-fit"><div class="mk-h">Fit to a ship in My Fleet</div><div class="muted" style="font-size:13px">Checking your ships…</div></div></div>
     <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki; ship slots from the Star Citizen Wiki.</div>`;
-  g.scrollTop=0; renderCpFit(i);
+  g.scrollTop=0; renderCpFit(i); if(!i.buy.length) cpObtain(i,gm,id);
   const img=await api().wiki_image(i.wiki||i.name); if(String(S.cpDetail)!==String(id)) return;
   const box=$("cpd-img"); if(box) box.innerHTML=picShown(img||i.image||null,"component",i.wiki||i.name); }
+// How to get a ship part no shop sells: the ships that come with it fitted (strip it from a wreck, a derelict or a
+// ship you've disabled), the blueprint that makes it and the missions that unlock that, whether it can be loot,
+// what the game files say it is, and any RSI store pack. Each ship opens its page in Vehicles.
+async function cpObtain(i,gm,id){ let r; try{ r=await api().gear_obtain(i.uuid||null,i.name,gm.maker||i.maker||null,"component"); }catch(e){ r=null; }
+  if(String(S.cpDetail)!==String(id)) return; const box=$("cpd-get"); if(!box) return;
+  const out=[], top=()=>out.join("")?12:4, ships=r?.ships||[], bp=r?.blueprint, hints=(r?.hints||[]).filter(h=>h.kind!=="loot"), store=r?.store||[];
+  if(ships.length){ const shown=ships.slice(0,8);
+    out.push(`<div class="mk-h" style="margin-top:${top()}px">Comes fitted on<span class="mk-note">${plural(ships.length,"ship")}</span></div>
+      <div class="muted" style="font-size:12px;line-height:1.5;padding:2px 0 6px">Take it off one of these: a wreck or derelict, a ship you've disabled in a bounty or a fight, or one of your own.</div>
+      ${shown.map(s=>`<div class="mk-row"><div class="w">${s.id!=null?`<a data-cpveh="${s.id}" title="Open the ${esc(s.name)} in Vehicles">${esc(s.name)}</a>`:esc(s.name)}<div class="m">${s.buy?`Sold in game from ${money(s.buy.price)}`:s.rent?`Rent from ${money(s.rent.price)}/day`:"Not sold in game"}</div></div><div class="p"></div><span></span></div>`).join("")}
+      ${ships.length>shown.length?`<div class="muted" style="font-size:12px;padding:4px 0">+${ships.length-shown.length} more ships</div>`:""}`); }
+  if(bp) out.push(`<div class="mk-h" style="margin-top:${top()}px">Craft it</div>
+      <div class="mk-row"><div class="w"><a data-cpbp="${esc(bp.uuid)}" title="Open the blueprint">${esc(bp.name)} blueprint</a><div class="m">${bp.default?"Every player knows it from the start":bp.unlocks?.length?`Unlocked by ${plural(bp.unlocks.length,"mission")}`:bp.missions?`${plural(bp.missions,"mission")} unlock it`:"How to unlock it isn't on the wiki yet"}${bp.time_label?` · ${esc(bp.time_label)} to craft`:""}</div></div><div class="p"></div><span></span></div>
+      ${(bp.unlocks||[]).slice(0,6).map(m=>`<div class="mk-row"><div class="w">${esc(m.title)}<div class="m">${esc(m.scope||"Mission")}${(m.places||[]).length?` · ${esc(m.places.slice(0,3).map(p=>p.name).join(", "))}${m.places.length>3||m.places_more?"…":""}`:""}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>`).join("")}`);
+  if(r?.lootable||(r?.loot||[]).length&&r?.lootable!==false&&!hints.some(h=>h.kind==="noloot")) out.push(`<div class="mk-h" style="margin-top:${top()}px">Loot</div>
+      <div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">${r?.lootable?"The game files let it spawn as loot. ":""}Ship parts turn up in wrecks and derelicts${(r?.loot||[])[0]?.places?.length?`: the nearest are ${esc(r.loot[0].places.map(p=>p.name).join(", "))}`:""}.
+      ${(r?.loot||[])[0]?`<button class="btn small ghost" data-mapsearch="${esc(r.loot[0].search)}" style="margin-left:4px">Map · ${r.loot[0].count}</button>`:""}</div>`);
+  if(store.length) out.push(`<div class="mk-h" style="margin-top:${top()}px">RSI pledge store<span class="mk-note">real money, not aUEC</span></div>${store.map(grStoreRow).join("")}`);
+  if(hints.length) out.push(`<div class="mk-h" style="margin-top:${top()}px">From the game files</div><div class="gr-hints">${hints.map(h=>`<div class="gr-hint k-${esc(h.kind)}"><b>${esc(h.label)}</b><span>${esc(h.text)}</span></div>`).join("")}</div>`);
+  box.innerHTML=out.join("")||`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows, and the wiki doesn't list a ship that carries it, a blueprint or loot for it. It may be new this patch, or only given as a reward.</div>`; }
+// A ship that carries the part: its page in Vehicles
+document.addEventListener("click",e=>{ const v=e.target.closest("[data-cpveh]"); if(!v) return;
+  S.vehDetail=String(v.dataset.cpveh); S.vehGalKey=null; document.querySelector('.tab[data-tab="vehicles"]')?.click(); });
+// "Open the blueprint" from a part's page: the Blueprints tab, on that blueprint
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-cpbp]"); if(!b) return; const id=b.dataset.cpbp;
+  document.querySelector('.tab[data-tab="blueprints"]')?.click();
+  for(let k=0;k<40&&!grState("blueprints").data?.items;k++) await new Promise(r=>setTimeout(r,250));
+  const bs=grState("blueprints"); bs.mission=null; bs.sel=id; grRender("blueprints"); $("gr-panel").scrollTop=0; });
 function cpFitsBadges(i){ const L=cpFitsShips(i), main=S.cpFit?.ships?.find(s=>s.main); if(!L||!main) return "";
   return L.some(s=>s.main)?`<span class="fit-yes">✓ Fits your ${esc(main.name)}</span>`:`<span class="fit-no">Doesn't fit your ${esc(main.name)}</span>`; }
 // Each ship in the fleet with the slots this part fits (same kind, same size), what's in them now, and Fit here.

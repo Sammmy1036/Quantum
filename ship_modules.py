@@ -70,6 +70,17 @@ def module_options(v, module_id=None):
             "modules": [dict(m) for m in s["modules"]]}
 
 
+def cargo_options(v):
+    """[{id, name, scu}] for the ship's modules that change its cargo space (concepts left out), for picking
+    a ship's cargo space in trade routes; [] when the ship has no modules or they all carry the same."""
+    s = ship_modules(v)
+    if not s:
+        return []
+    out = [{"id": m["id"], "name": m["name"], "scu": m["scu"]} for m in s["modules"]
+           if m.get("scu") is not None and not m.get("concept")]
+    return out if len({m["scu"] for m in out}) > 1 else []
+
+
 def apply_module(stats, m):
     """The ship's stats with module m fitted (a new dict): cargo, medical beds and refinery."""
     out = dict(stats or {})

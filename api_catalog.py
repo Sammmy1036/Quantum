@@ -218,7 +218,8 @@ class CatalogMixin:
                     "roles": self._vehicle_roles(v, wiki),
                     "qfuel": v.get("fuel_quantum"), "hfuel": v.get("fuel_hydrogen"),
                     "addon": bool(v.get("is_addon")), "concept": is_concept(v, wiki), "aka": vehicle_aka(v),
-                    "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"]})
+                    "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"],
+                    "cargo_modules": ship_modules.cargo_options(v)})
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
         return self._uex_call(run)

@@ -28,6 +28,7 @@ import datarunner
 import fleet
 import gateways
 import gear
+import pledgestore
 import shopping
 import ship_modules
 import tray

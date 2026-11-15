@@ -24,6 +24,7 @@ function soApply(r){ if(!r) return; const was=JSON.stringify([S.so.signed,S.so.s
   if(typeof pmTodo==="function") pmTodo(st?.status==="ok"?(st.market_todo||0):0);
   if(typeof ogTodo==="function") ogTodo(st?.status==="ok"?(st.org_todo||0):0);
   for(const n of r.notes||[]){
+    if(n.wish){ toast(`On your wish list: a player is selling ${n.title}${n.price?` for ${money(n.price)}`:""}. Open it from Cart › Wish list`,6000); if(typeof wlLoad==="function") wlLoad(); continue; }
     if(n.request) toast(`${n.name} sent you a friend request`);
     else if(!(S.tab==="friends"&&S.so.open===n.from)) toast(`${n.name}: ${n.body}`); }
   if(S.tab==="friends"&&JSON.stringify([S.so.signed,S.so.st])!==was){ renderSocialLists(); if(!S.so.open||!S.so.conv) renderSocialPanel(); else soHead(); } }
@@ -254,7 +255,7 @@ function pmBrowseHtml(){ const d=S.pm.data, svc=S.pm.kind==="service";
       ${(l.kind==="item"&&l.qty>1)||l.location?`<span class="muted" style="font-size:12px">${[l.location?"◆ "+esc(l.location):"",l.kind==="item"&&l.qty>1?`${l.qty.toLocaleString()} available`:""].filter(Boolean).join(" · ")}</span>`:""}
       <div class="pm-meta">${soAv(l.seller)}<span>${esc(l.seller.name)}</span>${pmStars(l.seller.rating)}</div></div></div>`).join("")}</div>
     ${d.pages>1?`<div class="row" style="justify-content:center;gap:8px;margin-top:16px"><button class="btn small" data-pmpage="-1" ${d.page<1?"disabled":""}>Previous</button><span class="muted">Page ${d.page+1} of ${d.pages}</span><button class="btn small" data-pmpage="1" ${d.page+1>=d.pages?"disabled":""}>Next</button></div>`:""}`; }
-function pmListingHtml(){ const l=S.pm.listing, back=`<button class="btn small ghost" data-pmback="1" style="margin-bottom:14px">← Back to ${l?.kind==="service"?"services":"items"}</button>`;
+function pmListingHtml(){ const l=S.pm.listing, back=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn("pm-items",true)}<button class="btn small ghost" data-pmback="1">← Back to ${l?.kind==="service"?"services":"items"}</button></div>`;
   if(!l||l.loading) return back+`<div class="so-empty">Loading…</div>`; if(l.error) return back+`<div class="note">${esc(l.error)}</div>`;
   const s=l.seller, b=S.pm.buy||{}, qty=Math.max(1,Math.min(l.qty||1,+b.qty||1)), total=l.price*(l.kind==="item"?qty:1), escOk=l.unit!=="quote"&&total>=l._min;
   const agents=(S.pm.esc?.agents||[]).filter(a=>a.id!==s.id);

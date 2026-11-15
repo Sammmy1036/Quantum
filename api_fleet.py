@@ -199,6 +199,8 @@ class FleetMixin:
                             full=v.get("name_full") or f.get("name"), maker=v.get("company_name") or "",
                             scu=self._ship_scu(f, v, prim), pad=v.get("pad_type"),
                             module=(ship_modules.module_of(v or f.get("name") or "", prim.get("module")) or {}).get("name"),
+                            module_id=(ship_modules.module_of(v or f.get("name") or "", prim.get("module")) or {}).get("id"),
+                            cargo_modules=ship_modules.cargo_options(v or f.get("name") or ""),
                             photo=self._livery_photo(prim.get("livery"), v, cached_only=True) or self._vehicle_photo(v),
                             swaps=len(prim["loadout"]), loadouts=len(f["loadouts"]), primary_name=prim["name"],
                             total_swaps=sum(len(x["loadout"]) for x in f["loadouts"])))

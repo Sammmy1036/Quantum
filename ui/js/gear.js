@@ -199,7 +199,7 @@ function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-$
   $("gr-panel").innerHTML=`<div class="gh"><b>${esc(G.title)}</b>${sets?`${plural(sets.length,"armor set")}`:`${n.toLocaleString()} shown`} · click one for its page</div>
     ${shown.length?`<div class="grid">${shown.map(i=>sets?`<div class="vg" data-gset="${esc(i.name)}">${grSetCartPieces(i).length?cartBtn(grSetCartPieces(i).map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:i.name}))):""}<div class="ph ph-g" data-gpic="${esc(i.pieces.find(p=>p.slot==="Core")?.name||i.pieces[0].name)}">${phCard("armor")}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([i.maker,i.weight].filter(Boolean).join(" · "))}${i.price!=null?` · ${money(i.price)}`:""}</span><span class="kt">${esc(i.pieces.map(p=>p.slot).join(" · "))}${i.dr?` · up to ${nf(i.dr)}% DR`:""}</span></div></div>`
-      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}):""}<div class="ph${kind==="blueprints"?" bp":" ph-g"}" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:kind==="blueprints"?BP_PLACEHOLDER:phCard(grArt(kind,i))}</div>
+      :`<div class="vg" data-gi="${esc(i.uuid||i.name)}">${kind!=="blueprints"&&i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}):""}${kind!=="blueprints"?wishBtn({kind:GR_CART[kind],name:i.name,uuid:i.uuid,class_name:i.class_name,maker:i.maker,photo:i.image||null}):""}<div class="ph${kind==="blueprints"?" bp":" ph-g"}" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:kind==="blueprints"?BP_PLACEHOLDER:phCard(grArt(kind,i))}</div>
         <div class="tx"><b>${esc(i.name)}</b><span>${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"?i.slot:kind==="weapons"||GR_ITEM[kind]?i.kind:i.grade?`grade ${i.grade}`:""].filter(Boolean).join(" · "))}${kind!=="blueprints"?(grPrice(i)!=null?` · ${money(grPrice(i))}`:" · not in shops"):""}</span>${G.key(i)?`<span class="kt">${esc(G.key(i))}</span>`:""}</div></div>`).join("")}</div>`
       :`<div class="empty">Nothing matches these filters.</div>`}`;
   fillGearPictures($("gr-panel"));
@@ -236,7 +236,7 @@ function grSpecPairs(kind,i){ const G=GEAR[kind]; if(!G||!i) return [];
   return out; }
 async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.items, g=$("gr-panel");
   if(st.mission) return grMission(kind);
-  const back=`<button class="btn" data-grback="1" style="margin-bottom:14px">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button>`;
+  const back=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn(kind)}<button class="btn" data-grback="1">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button></div>`;
   if(String(st.sel).startsWith("set:")){ const name=st.sel.slice(4), s=grSets(L).find(x=>x.name===name); if(!s){ st.sel=null; return grRender(kind); }
     g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(s.name)}</h2><div class="sub">${esc([s.maker,s.weight&&`${s.weight} armor`].filter(Boolean).join(" · "))}</div></div>${titleLogo(s.maker,false,true)}</div>
@@ -257,7 +257,7 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
   g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):GR_ITEM[kind]?i.kind:`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
       ${statBlock(G.hero(i),[{label:"Sold at",value:i.buy?.length?plural(i.buy.length,"shop"):null}])}
-      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${glKinds.has(kind)?`<button class="btn ghost" data-gladd="${esc(i.uuid||i.name)}">Add to loadout</button>`:""}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${glKinds.has(kind)?`<button class="btn ghost" data-gladd="${esc(i.uuid||i.name)}">Add to loadout</button>`:""}${wishBtn({kind:GR_CART[kind],name:i.name,uuid:i.uuid,class_name:i.class_name,maker:i.maker,photo:i.image||null})}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
       <div class="vd-sec"><div class="mk-h">${i.buy?.length?"Where to buy":"How to get it"}</div>${i.buy?.length?vehSpots(i.buy,"buy")+`<div id="grd-get"></div>`:`<div id="grd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
@@ -269,10 +269,17 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
 // How to get gear no shop sells: where players have found it, the blueprint that makes it (and the missions
 // that unlock that blueprint, each opening its own page), and whether the wiki marks it as loot.
 function knownSourcesHtml(notes){ return notes?.length?`<div class="mk-h" style="margin-top:4px">Found at</div>${notes.map(n=>`<div class="mk-row"><div class="w">${esc(n.text)}</div><div class="p"></div>${n.search?`<button class="btn small ghost" data-mapsearch="${esc(n.search)}" title="Find them on the map">Map</button>`:"<span></span>"}</div>`).join("")}`:""; }
-async function grObtain(i,kind){ const st=grState(kind); let r; try{ r=await api().gear_obtain(i.uuid||null,i.name); }catch(e){ r=null; }
+async function grObtain(i,kind){ const st=grState(kind); let r; try{ r=await api().gear_obtain(i.uuid||null,i.name,i.maker||null); }catch(e){ r=null; }
   if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-get"); if(!box) return;
   const sold=!!i.buy?.length, bp=r?.blueprint, notes=r?.notes||[], out=[];
   out.push(knownSourcesHtml(notes));
+  // The RSI pledge store packs it comes in (real money), and what the game files say it is
+  const store=r?.store||[], hints=(r?.hints||[]).filter(h=>h.kind!=="loot"), promo=hints.some(h=>["pledge","event","subscriber"].includes(h.kind));
+  if(store.length) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">RSI pledge store<span class="mk-note">real money, not aUEC</span></div>${store.map(grStoreRow).join("")}
+    ${r.store_stale?`<div class="muted" style="font-size:11.5px;padding:4px 0">The RSI store couldn't be reached just now; this is its last list.</div>`:""}`);
+  else if(promo&&!sold) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">RSI pledge store</div><div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">${r?.store_error?`${esc(r.store_error)}. `:"No pack on the store has it right now. "}It may come back in a sale (IAE, Invictus, Luminalia) or be found on the grey market.
+    <button class="btn small ghost" data-ext="https://robertsspaceindustries.com/en/pledge" style="margin-left:4px">Open the RSI store</button></div>`);
+  if(hints.length) out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">From the game files</div><div class="gr-hints">${hints.map(h=>`<div class="gr-hint k-${esc(h.kind)}"><b>${esc(h.label)}</b><span>${esc(h.text)}</span></div>`).join("")}</div>`);
   if(bp){ out.push(`<div class="mk-h" style="margin-top:${out.join("")?12:4}px">Craft it</div>
       <div class="mk-row"><div class="w"><a data-grbpopen="${esc(bp.uuid)}" title="Open the blueprint">${esc(bp.name)} blueprint</a><div class="m">${bp.default?"Every player knows it from the start":bp.unlocks?.length?`Unlocked by ${plural(bp.unlocks.length,"mission")}`:bp.missions?`${plural(bp.missions,"mission")} unlock it`:"How to unlock it isn't on the wiki yet"}${bp.time_label?` · ${esc(bp.time_label)} to craft`:""}</div></div><div class="p"></div><span></span></div>
       ${(bp.unlocks||[]).slice(0,6).map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.raw_title||m.title}))}" title="Where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"Mission")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>
@@ -283,8 +290,13 @@ async function grObtain(i,kind){ const st=grState(kind); let r; try{ r=await api
   // Not in any shop, but there is a way to get it (loot, a blueprint or a known spot): it can go in the cart too,
   // where it's listed with how to get it rather than a shop stop
   if(!sold&&(i.lootable||bp||notes.length)) out.push(`<div class="row" style="margin-top:10px">${cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart to find")}</div>`);
-  if(!sold&&!out.join("")) out.push(`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows, and the wiki doesn't list a blueprint or mark it as loot. Items like this are usually pledge, event, subscriber or reward items.</div>`);
+  if(!sold&&!out.join("")) out.push(`<div class="muted" style="font-size:13px;padding:6px 0;line-height:1.5">No shop sells this as far as UEX knows, the wiki doesn't list a blueprint or mark it as loot, and no RSI store pack matches it. Items like this are usually pledge, event, subscriber or reward items.</div>`);
   box.innerHTML=out.join(""); }
+// One pledge store pack: its name, why it matches, price and a link to its store page
+function grStoreRow(x){ const why=x.checked?(x.on_sale?"On sale now":"Checked by hand · may be off sale"):x.why==="collection"?"A collection with this paint":x.why==="maker"?"Same maker and paint":"Same model and paint";
+  return `<div class="mk-row gr-store"><div class="w">${esc(x.title)}<div class="m">${esc([x.kind,why,x.note].filter(Boolean).join(" · "))}</div></div>
+    <div class="p">${x.price!=null?`$${Number(x.price).toLocaleString(undefined,{minimumFractionDigits:x.price%1?2:0,maximumFractionDigits:2})}`:""}</div>
+    ${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}" title="Open it on the RSI store">RSI store</button>`:"<span></span>"}</div>`; }
 // Where loot turns up, one card per kind of place: what drops there, how many are on the map, the nearest few
 const GR_WHERE_IC={"Contested Zones":'<path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7z"/><path d="M9 12l2 2 4-4"/>',
   "Bunkers and security posts":'<path d="M3 20h18M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/>',

@@ -437,6 +437,37 @@ class Gear:
         f.write_text(json.dumps(out), encoding="utf-8")
         return out
 
+    def item_record(self, uuid):
+        """One item's own record (what the game files say about it): its entity tags (PromotionalItem,
+        CanGenerateAsLoot…), item tags, event source and class name. Cached for a week; None when unknown."""
+        uuid = str(uuid or "").strip()
+        if not re.fullmatch(r"[0-9a-fA-F-]{32,36}", uuid):
+            return None
+        f = self._file(f"rec2_{uuid}")                # rec2: with the ships that carry it fitted
+        if f.exists() and time.time() - f.stat().st_mtime < 7 * DAY:
+            try:
+                return json.loads(f.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        d = _get(f"{API}/items/{urllib.parse.quote(uuid)}?include=vehicles").get("data") or {}
+        if not d:
+            return None
+        tags = d.get("entity_tag_map") or []
+        out = {"uuid": uuid, "name": (d.get("name") or "").strip(), "class_name": d.get("class_name") or "",
+               "maker": _maker(d), "maker_code": _maker_code(d),
+               "entity_tags": [t.get("name") for t in tags if isinstance(t, dict) and t.get("name")],
+               "tags": [str(t) for t in (d.get("tags") or []) if isinstance(t, (str, int))][:40],
+               "event_source": [str(e) for e in (d.get("event_source") or []) if e],
+               "lootable": bool(d.get("is_lootable")), "craftable": bool(d.get("is_craftable")),
+               "base": ((d.get("base_variant") or {}).get("name") if isinstance(d.get("base_variant"), dict) else None),
+               # ships and vehicles that come with it fitted (their stock loadout, from the game files)
+               "vehicles": sorted({(v.get("name") or "").strip() for v in d.get("vehicles") or []
+                                   if isinstance(v, dict) and (v.get("name") or "").strip()
+                                   and not JUNK.search(f"{v.get('name')} {v.get('class_name') or ''}")})}
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(out), encoding="utf-8")
+        return out
+
 
 # Where items no shop sells can be found, as players have reported it (the wiki's data doesn't say where
 # loot spawns). Keyed by lower-case name; each is a list of places. Shown under "How to get it" for gear,
@@ -454,6 +485,97 @@ def known_sources(name):
     """[{text, search}] for an item or commodity players have found somewhere, else []."""
     key = re.sub(r"\s+", " ", str(name or "").strip().lower())
     return [{"text": t, "search": SOURCE_SEARCH.get(t)} for t in KNOWN_SOURCES.get(key, [])]
+
+
+# Pledge store packs an item comes in, checked by hand: shown even when RSI has the pack off sale (and so
+# missing from the live store list, pledgestore.py). Keyed by lower-case item name; price is US dollars as
+# last seen (the live store's own price wins when the pack is on sale). Add to it as more are checked.
+_RED_ALERT_ADP = [
+    {"title": "\"Red Alert\" Weapons & Armor Collection", "price": 89,
+     "note": "Every Red Alert armor set and weapon in one collection"},
+    {"title": "CDS ADP-mk4 \"Red Alert\" Gear Pack", "price": None, "note": "The ADP-mk4 Red Alert armor with its gear"},
+    {"title": "CDS ADP-mk4 \"Red Alert\" Armor", "price": 14, "note": "The ADP-mk4 Red Alert armor set on its own"},
+]
+PLEDGE_SOURCES = {
+    "csp-68h backpack red alert": _RED_ALERT_ADP,
+    "adp-mk4 helmet red alert": _RED_ALERT_ADP,
+    "adp-mk4 core red alert": _RED_ALERT_ADP,
+    "adp-mk4 arms red alert": _RED_ALERT_ADP,
+    "adp-mk4 legs red alert": _RED_ALERT_ADP,
+}
+
+
+def pledge_sources(name):
+    key = re.sub(r"\s+", " ", str(name or "").strip().lower())
+    return [dict(x) for x in PLEDGE_SOURCES.get(key, [])]
+
+
+# ---- What the game files say about where an item comes from. The Star Citizen Wiki's API copies each item's
+# record out of the game files (Data.p4k), with its entity tags, item tags and class name. Those don't name a
+# pack or a shop, but they do say what kind of item it is: a promotional (pledge store) item, event flair, a
+# subscriber item, or whether it may spawn as loot at all.
+EVENT_TEXT = {
+    "iae": "Intergalactic Aerospace Expo (IAE): sold on the pledge store during the expo, or an expo reward",
+    "invictus": "Invictus Launch Week: a pledge store or event item from Invictus",
+    "citizencon": "CitizenCon: a pledge store or attendee item from CitizenCon",
+    "luminalia": "Luminalia: a holiday event gift or pledge store item",
+    "xenothreat": "XenoThreat: a reward from the XenoThreat event",
+    "jumptown": "Jump Town: a reward from the Jump Town event",
+    "coramor": "Coramor: a Valentine's event gift or pledge store item",
+    "stella fortuna": "Stella Fortuna: a St Patrick's event item",
+    "red festival": "Red Festival: a Lunar New Year event item",
+    "foundation festival": "Foundation Festival: a community event reward",
+    "subscriber": "Subscriber item: given to RSI subscribers (Centurion/Imperator) in a monthly promotion",
+    "referral": "Referral Program: earned by recruiting new players",
+}
+# Event and promotion hints in class names ("cds_combat_heavy_backpack_01_iae2022_01")
+CLASS_HINTS = [
+    (r"iae[_]?(\d{4})", lambda m: f"IAE {int(m.group(1)) + 930}", "iae"),
+    (r"invictus", lambda m: "Invictus", "invictus"),
+    (r"citizen_?con|_cc(\d{4})", lambda m: "CitizenCon", "citizencon"),
+    (r"luminalia|xmas|holiday", lambda m: "Luminalia", "luminalia"),
+    (r"xeno_?threat", lambda m: "XenoThreat", "xenothreat"),
+    (r"coramor|valentine", lambda m: "Coramor", "coramor"),
+    (r"(?:^|_)sub(?:scriber)?(?:_|\d|$)", lambda m: "Subscriber", "subscriber"),
+    (r"referral", lambda m: "Referral", "referral"),
+]
+
+
+def acquisition_hints(rec):
+    """[{kind: pledge|event|subscriber|noloot|loot, label, text}] from an item record (Gear.item_record)."""
+    if not rec:
+        return []
+    tags = {str(t).strip() for t in rec.get("entity_tags") or []}
+    out, seen = [], set()
+
+    def add(kind, label, text):
+        if label.lower() in seen:
+            return
+        seen.add(label.lower())
+        out.append({"kind": kind, "label": label, "text": text})
+
+    events = [str(e) for e in rec.get("event_source") or [] if e]
+    # the class name and item tags ("Color_iae2022") both carry event names
+    cls = " ".join([str(rec.get("class_name") or "")] + [str(t) for t in rec.get("tags") or []]).lower().replace(" ", "_")
+    for rx, label, key in CLASS_HINTS:
+        m = re.search(rx, cls)
+        if m:
+            events.append(label(m))
+    # "IAE" from the wiki and "IAE 2952" from the class name: just the one that says more
+    events = [e for e in dict.fromkeys(events) if not any(o != e and o.lower().startswith(e.lower() + " ") for o in events)]
+    for e in events:
+        k = next((k for k in EVENT_TEXT if k in e.lower()), None)
+        add("subscriber" if k == "subscriber" else "event", e, EVENT_TEXT.get(k) or f"Tied to {e}")
+    if "PromotionalItem" in tags:
+        add("pledge", "Promotional item", "The game files mark it as a promotional item: it comes from the RSI pledge "
+                                          "store (often in a pack) or a promotion, not from an in-game shop.")
+    if "SpecialEventFlair" in tags and not events:
+        add("event", "Event item", "The game files mark it as special event flair: handed out during an event.")
+    if "CannotGenerateAsLoot" in tags:
+        add("noloot", "Never loot", "The game files rule it out as loot: it won't turn up in crates or on enemies.")
+    elif "CanGenerateAsLoot" in tags:
+        add("loot", "Can be loot", "The game files let it spawn as loot.")
+    return out
 
 
 # How a deposit is gathered, from the wiki's resource group names

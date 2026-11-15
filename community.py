@@ -136,6 +136,15 @@ class Community:
         r = self._acct("/v1/fleet/sync", data, token=token, timeout=60)
         return {"status": "signed_out"} if r.get("status") == "http_401" else r
 
+    def wishlist_sync(self, token, items):
+        """Put this PC's wish list together with the account's (server: wishlist.py).
+        {status: ok, items, updated} | too_big | signed_out | not_found (server without wish lists yet) ..."""
+        r = self._acct("/v1/wishlist/sync", {"items": items}, token=token, timeout=20)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
+    def wishlist_clear(self, token):
+        return self._acct("/v1/wishlist/clear", {}, token=token, timeout=10)
+
     def fleet_clear(self, token):
         """Remove the website's copy of My Fleet."""
         return self._acct("/v1/fleet/clear", {}, token=token, timeout=10)

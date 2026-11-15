@@ -4,11 +4,12 @@
 // =================================================================== Shopping list
 // The parts and gear you want, then the trip: fewest stops (or cheapest), in order from where you are. Each stop
 // lists what to buy there; buying it in game ticks it off (Game.log shows shop purchases), or tick it yourself.
-const SH_KIND={component:"Ship part",weapon:"Weapon",armor:"Armor",gadget:"Gadget",clothing:"Clothing",consumable:"Consumable",utility:"Utility item"};
+const SH_KIND={ship:"Ship",component:"Ship part",weapon:"Weapon",armor:"Armor",gadget:"Gadget",clothing:"Clothing",consumable:"Consumable",utility:"Utility item"};
 // Clicking something in the cart opens its own page: parts in Components, gear in its Gear tab
 const GR_TAB_OF=Object.fromEntries(Object.entries(GR_CART).map(([t,k])=>[k,t]));
 async function cartOpenItem(x){ if(!x) return;
   const waitFor=async(f,n=40)=>{ for(let k=0;k<n&&!f();k++) await new Promise(r=>setTimeout(r,200)); return f(); };
+  if(x.kind==="ship") return wlOpen(x);                       // a ship from the wish list: its page in Vehicles
   if(x.kind==="component"){ const t=document.querySelector('.tab[data-tab="components"]'); if(!t||t.hidden) return toast("Components needs your UEX token in Settings");
     t.click(); await waitFor(()=>S.cpCats); const ix=await cpLoadIndex();
     const nm=(x.name||"").toLowerCase(), hit=ix?.items?.find(i=>(x.uex_id!=null&&String(i.id)===String(x.uex_id))||(x.uuid&&i.uuid&&String(i.uuid).toLowerCase()===String(x.uuid).toLowerCase()))||ix?.items?.find(i=>(i.name||"").toLowerCase()===nm);

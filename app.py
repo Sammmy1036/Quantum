@@ -25,12 +25,14 @@ import api_watch
 import api_friendmap
 import api_cargo
 import api_patchhub
+import api_wishlist
 
 
 # The page's API. Its methods live in the api_*.py mixins by subject; this class keeps start-up (__init__).
 # One Api made of mixins, one per subject (api_*.py). No name may be defined in two of them (one would silently
 # win): _check_mixins below stops Quantum at start if that ever happens.
 class Api(api_contracts.ContractsMixin,
+          api_wishlist.WishlistMixin,
           api_shopping.ShoppingMixin,
           api_fleet.FleetMixin,
           api_catalog.CatalogMixin,
@@ -114,6 +116,7 @@ class Api(api_contracts.ContractsMixin,
         # Component numbers from the game files which are preferred over the wiki.
         self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
         self._gear = gear.Gear(HERE / "uex_cache")          # personal weapons, armor and blueprints (wiki)
+        self._store = pledgestore.Store(HERE / "uex_cache")  # the RSI pledge store's gear and packs (pledge-only items)
         self._renamed.update(getattr(self._db, "merged", {}))   # places listed twice, merged (Port Tressler)
         self._renamed.update(self._apply_uex_stations(offline=True))
         ren = self._renamed

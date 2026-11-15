@@ -54,7 +54,19 @@ class ShoppingMixin:
         if e["id"] in cache:
             return cache[e["id"]]
         spots = []
-        if e.get("kind") in self.SHOP_GEAR:
+        if e.get("kind") == "ship":                  # a ship from the wish list: the ship shops that sell it (UEX)
+            if "_ships" not in cache:
+                try:
+                    r = self.uex_vehicles()
+                    cache["_ships"] = {v["id"]: v for v in r.get("vehicles") or []} if r.get("ok") else {}
+                except Exception:
+                    cache["_ships"] = {}
+            v = cache["_ships"].get(e.get("uex_id")) or next(
+                (v for v in cache["_ships"].values() if (v.get("full") or "").lower() == (e.get("name") or "").lower()
+                 or (v.get("name") or "").lower() == (e.get("name") or "").lower()), None)
+            spots = [{"place": s.get("place"), "where": s.get("where"), "shop": "Ship shop", "system": s.get("system"),
+                      "price": s.get("price")} for s in (v or {}).get("buy") or []]
+        elif e.get("kind") in self.SHOP_GEAR:
             ix = cache.setdefault("_" + e["kind"], self._gear_by_uuid(self.SHOP_GEAR[e["kind"]]))
             g = ix.get(str(e.get("uuid") or "").lower())
             if g:

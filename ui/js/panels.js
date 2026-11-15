@@ -625,6 +625,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("sh-panel").classList.toggle("show",S.tab==="shopping"); if(S.tab==="shopping") openShopping();
   $("pf-panel").classList.toggle("show",S.tab==="profile"); if(S.tab==="profile") openProfile();
   $("gl-panel").classList.toggle("show",S.tab==="gearlo"); if(S.tab==="gearlo") openGearLoadouts();
+  $("wi-panel").classList.toggle("show",S.tab==="wishlist"); if(S.tab==="wishlist") openWishlist();
   $("so-panel").classList.toggle("show",S.tab==="friends"); if(S.tab==="friends") openSocial();
   if(S.tab==="friendmap") openFriendMap();                     // no panel over the map: the map is the Friend Map
   $("pm-panel").classList.toggle("show",S.tab.startsWith("pm-")); if(S.tab.startsWith("pm-")) openPm(S.tab);
@@ -636,7 +637,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";

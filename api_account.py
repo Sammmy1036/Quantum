@@ -286,6 +286,7 @@ class AccountMixin:
         self._soc.update(state=None, top=None)
         self._save_settings()
         self._acct_checked = time.time()
+        self._wish_sync_soon()                           # the wish list: this PC's put together with the account's
         self._account_keys(p.get("uex_keys"))
         if not p.get("uex") and not a.get("uex"):
             self._account_link()
@@ -527,6 +528,8 @@ class AccountMixin:
         if self._settings.get("profile_photo_shared") or a.get("token"):
             self._settings.pop("profile_photo", None)    # it was the account's picture (kept with the account)
         self._settings["profile_photo_shared"] = False
+        if (self._settings.get("wishlist") or {}).get("synced_at"):
+            self._settings.pop("wishlist", None)        # it's kept with that account, and comes back when it signs in
         self._soc.update(state=None, top=None)
 
     def account_sign_out(self):

@@ -49,6 +49,10 @@ class SocialMixin:
             f = next((x for x in [*(r.get("friends") or []), *(r.get("chats") or [])] if x["id"] == m["sender"]), None)
             so["notes"].append({"id": m["id"], "from": m["sender"], "name": f["name"] if f else "A friend",
                                 "body": m["body"][:140], "avatar": f.get("avatar") if f else None})
+        try:
+            so["notes"] += self._wish_market_notes(r)      # players selling something on your wish list
+        except Exception:
+            watcher_mod.log_error("wish market")
         so["notes"] = so["notes"][-20:]
         so["top"] = max(r.get("top") or 0, so["top"] or 0)
         known = {x["id"] for x in (so["state"] or {}).get("incoming") or []}

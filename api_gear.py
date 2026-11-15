@@ -753,10 +753,77 @@ class GearMixin:
         """Where players have found an item or commodity no shop sells (gear.KNOWN_SOURCES)."""
         return {"ok": True, "notes": gear.known_sources(name)}
 
-    def gear_obtain(self, uuid=None, name=None):
+    def gear_obtain(self, uuid=None, name=None, maker=None, kind=None):
         """How to get a piece of gear no shop sells: the blueprint that makes it (and the missions that unlock
-        that blueprint), whether it's loot, and where players have found it. {ok, blueprint, notes}."""
+        that blueprint), whether it's loot, where players have found it, what the game files say it is
+        (promotional, event or subscriber item, never loot) and the RSI pledge store packs it's in.
+        {ok, blueprint, notes, hints, store, store_error}."""
         out = {"ok": True, "blueprint": None, "notes": gear.known_sources(name)}
+        rec = None
+        try:
+            rec = self._gear.item_record(uuid) if uuid else None
+        except Exception as e:
+            print("item record:", e, flush=True)
+        out["hints"] = gear.acquisition_hints(rec)
+        out.update(self._pledge_packs(name, rec, maker, any(h["kind"] in ("pledge", "event", "subscriber") for h in out["hints"])))
+        out.update(self._gear_obtain_craft(uuid, name))
+        if kind == "component":
+            # a ship part: the ships that come with it fitted (strip it from one: a wreck, a derelict, a ship you
+            # disabled, or one you own or rent), and loot only from the places where ship wrecks are
+            out["ships"] = self._ships_fitted((rec or {}).get("vehicles") or [])
+            out["loot"] = [g for g in out.get("loot") or [] if g["label"].startswith("Derelict")]
+            out["lootable"] = bool((rec or {}).get("lootable"))
+        return out
+
+    def _ships_fitted(self, names):
+        """The ships that carry a part as stock, with Quantum's vehicle id when it knows the ship (to open its page)."""
+        try:
+            vs = self.uex_vehicles().get("vehicles") or []
+        except Exception:
+            vs = []
+        norm = lambda s: re.sub(r"[^a-z0-9]", "", str(s or "").lower())
+        by = {}
+        for v in vs:
+            for k in (v.get("full"), v.get("name")):
+                by.setdefault(norm(k), v)
+        out = []
+        for n in names[:60]:
+            v = by.get(norm(n)) or next((x for k, x in by.items() if k and (k.endswith(norm(n)) or norm(n).endswith(k)) and len(k) > 4), None)
+            out.append({"name": (v or {}).get("full") or n, "id": (v or {}).get("id"), "buy": ((v or {}).get("buy") or [None])[0],
+                        "rent": ((v or {}).get("rent") or [None])[0]})
+        out.sort(key=lambda x: (x["buy"] is None and x["rent"] is None, (x["rent"] or x["buy"] or {}).get("price") or 9e12, x["name"]))
+        return out
+
+    def _pledge_packs(self, name, rec, maker=None, promo=False):
+        """The RSI pledge store packs an item is in: the hand-checked ones (gear.PLEDGE_SOURCES), with the live
+        store's price and link when the pack is on sale, then any other listing that matches by name.
+        Only asked of the store for items the game files call promotional or event items, or that have a
+        paint in their name and are neither loot nor craftable; a plain item ("CSP-68H Backpack") is sold in
+        game or not at all."""
+        known = gear.pledge_sources(name)
+        maybe = pledgestore.paint_of(name) and not (rec and (rec.get("lootable") or rec.get("craftable")))
+        if not (known or promo or maybe):
+            return {"store": [], "store_error": None}
+        maker = (rec or {}).get("maker") or maker
+        code = (rec or {}).get("maker_code")
+        models = pledgestore._model_words((rec or {}).get("base") or "")
+        r = self._store.find(name, maker, code, models)
+        live = r.get("items") or [] if r.get("ok") else []
+        norm = pledgestore._norm
+        rows = []
+        for k in known:
+            hit = next((x for x in live if norm(x["title"]) == norm(k["title"])), None)
+            rows.append({"title": k["title"], "price": (hit or {}).get("price") or k.get("price"), "note": k.get("note"),
+                         "url": (hit or {}).get("url") or pledgestore.RSI + "/en/pledge", "on_sale": bool(hit),
+                         "kind": (hit or {}).get("kind") or "Pack", "checked": True})
+        for x in live:
+            if not any(norm(x["title"]) == norm(y["title"]) for y in rows):
+                rows.append({"title": x["title"], "price": x.get("price"), "url": x.get("url"), "on_sale": x.get("available", True),
+                             "kind": x.get("kind"), "why": x.get("why"), "checked": False})
+        return {"store": rows, "store_error": None if r.get("ok") else r.get("error"), "store_stale": bool(r.get("stale"))}
+
+    def _gear_obtain_craft(self, uuid, name):
+        out = {"blueprint": None}
         try:
             bps = self._gear.items("blueprints").get("items") or []
         except Exception:
