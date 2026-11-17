@@ -33,7 +33,7 @@ Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases
 | **Cart** | Put anything you want to buy in one cart, and Quantum plans the fewest stops to buy it all. Click an item to open its page; items you can only loot or craft aren't added. |
 | **Data** | The datarunner program: report terminal prices to UEX from inside Quantum, hold up to 5 jobs at a time, and climb the leaderboard. |
 | **Social** | Friends, messages and online status. |
-| **Market** | Buy and sell items and services with other players, **aUEC only**. Rate each other after a trade (stars plus tags, like OfferUp) and see anyone's rating and trust badges. Optional escrow for trades of 1,000,000 aUEC or more. |
+| **Market** | Buy and sell items and services with other players, **aUEC only**. Rate each other after a trade and see anyone's rating and trust badges. Optional escrow for trades of 1,000,000 aUEC or more. |
 | **Org** | Your org's members, ranks with icons, banner, an About page with formatting, calendar, events with crew seats, and invites. Orgs verified with RSI are listed in Find orgs and link to their RSI page. |
 | **Patch Hub** | Dedicated section for ongoing and upcoming events in Star Citizen, along with patch notes, new ships, gear, twitch drops, with links to official RSI information where the data was obtained. |
 | **Profile** | Your fleet, loadouts, orgs, listings, ratings and datarunner stats, with control over what others see. Click a name on the leaderboard to open their profile. |
