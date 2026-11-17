@@ -26,6 +26,8 @@ import api_friendmap
 import api_cargo
 import api_patchhub
 import api_wishlist
+import netcache
+import gamefiles
 
 
 # The page's API. Its methods live in the api_*.py mixins by subject; this class keeps start-up (__init__).
@@ -50,6 +52,35 @@ class Api(api_contracts.ContractsMixin,
           api_friendmap.FriendMapMixin,
           api_cargo.CargoMixin,
           api_patchhub.PatchHubMixin):
+
+    def _refresh_game_data(self):
+        """Newer game data from the server's assets (data/): component numbers, then contracts, gear and
+        vehicles. Each file on its own, so one that's missing or fails doesn't hold up the others."""
+        for name in ("component_stats.json", *gamefiles.NAMES):
+            try:
+                p = self._assets.get("data/" + name)
+                if not p:
+                    continue
+                new = self._game.update_from(p) if name == "component_stats.json" else self._files.update_from(name, p)
+                if new:
+                    watcher_mod.log_error(f"game data updated from the server: {name}")
+            except Exception as e:
+                watcher_mod.log_error(f"game data from the server ({name}): {e}")
+
+    def _patch_key(self):
+        """The game version reference data is tied to (netcache.py). The LIVE Game.log's build when Quantum
+        has read one (our own data, no API call); otherwise UEX's LIVE version, from the copy cached hourly.
+        PTU logs are left out: UEX and the wiki describe LIVE, and switching would look like a patch."""
+        t = getattr(self, "_tracker", None)
+        path = (getattr(t, "log_path", "") or "").replace("/", "\\").lower()
+        if t is not None and getattr(t, "build", "") and "\\live\\" in path:
+            return f"log:{t.build}"
+        try:
+            rows, _ = self._uex.get("game_versions", offline=not self._uex.token)
+            live = (rows[0] if rows else {}).get("live")
+            return f"uex:{live}" if live else None
+        except Exception:
+            return None
 
     def __init__(self):
         self._lock = threading.RLock()
@@ -114,8 +145,16 @@ class Api(api_contracts.ContractsMixin,
         self._part_images = {}               # wiki page title (lowercase) -> the wiki API's picture of that part
         self._missions = missions_wiki.MissionWiki(HERE / "uex_cache")   # contract details (wiki API)
         # Component numbers from the game files which are preferred over the wiki.
-        self._game = fleet.GameData(HERE / "component_stats.json", RES / "component_stats.json")
+        self._game = fleet.GameData(HERE / "asset_cache" / "data" / "component_stats.json",   # the server's, from the last download
+                                    HERE / "component_stats.json", RES / "component_stats.json")
         self._gear = gear.Gear(HERE / "uex_cache")          # personal weapons, armor and blueprints (wiki)
+        # Contracts, gear and vehicles from the game files (gamefiles.py): first, with the wiki filling in
+        # what they don't have. From the server's assets (data/), or a copy next to the app.
+        self._files = gamefiles.GameFiles(HERE / "asset_cache" / "data", HERE, RES)
+        self._missions.files = self._files.contracts
+        self._gear.files = self._files.gear
+        self._wikiapi.files = self._files.vehicles
+        self._wikiapi.part_info = lambda uid: self._game.find(uid, None, None)
         self._store = pledgestore.Store(HERE / "uex_cache")  # the RSI pledge store's gear and packs (pledge-only items)
         self._renamed.update(getattr(self._db, "merged", {}))   # places listed twice, merged (Port Tressler)
         self._renamed.update(self._apply_uex_stations(offline=True))
@@ -131,6 +170,9 @@ class Api(api_contracts.ContractsMixin,
         self._player = self._player_t = self._player_sys = None
         # Map data (cities, citylights, planets, terrain) comes from the Quantum server, cached here
         self._assets = assets.AssetCache(HERE / "asset_cache", log=lambda m: watcher_mod.log_error(m))
+        # Component numbers rebuilt from the game files after a patch are uploaded to the server's assets
+        # (data/component_stats.json): fetch a newer copy in the background, no app update needed
+        threading.Thread(target=self._refresh_game_data, daemon=True).start()
         self._last_cal_key = None
         self._arrive_seen = None
         self._arrived_note = None
@@ -144,6 +186,9 @@ class Api(api_contracts.ContractsMixin,
         if self._settings.get("clear_log_on_start", True):      # on unless the user turned it off
             self._log_cleared = clear_game_log(self._settings.get("log_path"))
         self._tracker = ContractTracker(MISSIONS_PATH, self._db, self._settings.get("log_path"))
+        # Reference data from UEX and the wiki is kept until the game patch changes (netcache.py)
+        netcache.init(HERE / "uex_cache")
+        netcache.set_patch_source(self._patch_key)
         self._tracker.player_ref = lambda: (self._player, self._player_sys, self._player_t)
         self._tracker.start()
         self._watcher = ClipboardWatcher(self._on_position)

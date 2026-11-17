@@ -10,7 +10,8 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://quantumsc.org/assets/"
-FOLDERS = ("cities/", "citylights/", "planets/", "terrain/", "stations/", "outposts/", "onyx/")   # onyx/: the Onyx Facility floor plans
+FOLDERS = ("cities/", "citylights/", "planets/", "terrain/", "stations/", "outposts/", "onyx/",   # onyx/: the Onyx Facility floor plans
+           "data/")                    # data/: game data built from the game files after each patch (component_stats.json)
 MANIFEST_TTL = 600            # re-check the manifest at most every 10 minutes
 
 

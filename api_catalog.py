@@ -564,6 +564,8 @@ class CatalogMixin:
             return " ".join(x for x in w if x not in self.NAME_NOISE)
         out, seen = [], {str(h).lower() for h in have if h}
         seen |= {norm(h) for h in seen}
+        if slot in fleet.FIXED_TYPES:     # flight blades and life support are listed their own way
+            return out
         for g in self._game.of_kind(slot, None):
             nm = (g.get("name") or "").strip()
             if not nm or self.GAME_JUNK.search(nm) or not g.get("maker") or g.get("maker") == "Unknown":

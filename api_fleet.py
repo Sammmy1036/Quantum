@@ -464,10 +464,15 @@ class FleetMixin:
             blade = {"port": fc["port"], "type": "FlightController", "label": "Flight blade", "size": fc.get("size") or 1,
                      "where": "", "stock": fc.get("stock"), "fitted": fit["name"] if fit else None}
             if fit:
-                rec = self._wikiapi.item(fit.get("uuid"), None) if fit.get("uuid") else None
-                scm, mx = fleet.flight_speeds(rec)
+                mine = self._blade_speeds(fit.get("uuid"))
+                if mine:                                 # speeds from the game files, no wiki call
+                    scm, mx, g = mine
+                    blade["fitted_grade"], blade["fitted_maker"] = g.get("grade"), g.get("maker")
+                else:
+                    rec = self._wikiapi.item(fit.get("uuid"), None) if fit.get("uuid") else None
+                    scm, mx = fleet.flight_speeds(rec)
+                    blade["fitted_grade"], blade["fitted_maker"] = (rec or {}).get("grade"), ((rec or {}).get("manufacturer") or {}).get("name")
                 blade["fitted_stats"] = {k: v for k, v in (("scm", scm), ("max", mx)) if v}
-                blade["fitted_grade"], blade["fitted_maker"] = (rec or {}).get("grade"), ((rec or {}).get("manufacturer") or {}).get("name")
                 fc["stock"] = dict(fc.get("stock") or {}, name=fit["name"])
                 for k, v in blade["fitted_stats"].items():          # the ship's speeds with this blade
                     if lo["stats"].get(k):
@@ -775,14 +780,16 @@ class FleetMixin:
         """[(uuid, name, class)] of the flight blades that fit the ship whose stock controller is `stock`."""
         cls = ((stock or {}).get("class_name") or "").lower()
         if not cls:
-            g = self._game.find((stock or {}).get("uuid"), None, None)
-            cls = (g or {}).get("name", "").lower() if g and str(g.get("name", "")).startswith("controller_flight") else ""
+            g = self._game.find((stock or {}).get("uuid"), None, None) or {}
+            # Newer component_stats.json files carry class_name and the in-game name; older ones had the
+            # class name in "name"
+            cls = (g.get("class_name") or (g.get("name") if str(g.get("name", "")).startswith("controller_flight") else "") or "").lower()
         if not cls:
             return []
         base = re.sub(r"_(?:flight_)?blade_(spd|hnd)$", "", cls)
         out = []
         for g in self._game.of_kind("FlightController", None):
-            n = (g.get("name") or "").lower()
+            n = (g.get("class_name") or g.get("name") or "").lower()
             if re.fullmatch(re.escape(base) + r"_(?:flight_)?blade_(spd|hnd)", n):
                 out.append((g["uuid"], n))
         if not out:                                    # not in the game files yet: the wiki's list
@@ -803,7 +810,24 @@ class FleetMixin:
         ship, kind = self._blade_ship(cls)
         return f"{ship.split(' ', 1)[-1]} {kind} Flight Blade" if ship else cls
 
+    BLADE_ROWS = (("boost_forward", "Boost forward"), ("boost_backward", "Boost backward"), ("pitch", "Pitch"),
+                  ("yaw", "Yaw"), ("roll", "Roll"))
+
+    def _blade_speeds(self, uuid):
+        """(scm, max, game part) for a flight blade from the game files (component_stats.json), or None."""
+        g = self._game.find(uuid, None, None) if uuid else None
+        st = (g or {}).get("stats") or {}
+        return (st["scm_speed"], st.get("max_speed"), g) if st.get("scm_speed") else None
+
     def _blade_option(self, uuid, name, cls):
+        mine = self._blade_speeds(uuid)
+        if mine:                                     # the game files have its speeds: no wiki call needed
+            scm, mx, g = mine
+            st = g.get("stats") or {}
+            return {"id": uuid, "uuid": uuid, "name": name, "maker": g.get("maker") or "", "size": g.get("size") or 1,
+                    "grade": g.get("grade"), "stats": {k: v for k, v in (("scm", scm), ("max", mx)) if v},
+                    "price": None, "buy": [], "class_name": cls,
+                    "extra": [[label, st[k]] for k, label in self.BLADE_ROWS if st.get(k)]}
         rec = self._wikiapi.item(uuid, None) if uuid else None
         scm, mx = fleet.flight_speeds(rec)
         st = {k: v for k, v in (("scm", scm), ("max", mx)) if v}

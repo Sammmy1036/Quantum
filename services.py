@@ -13,6 +13,8 @@ import time
 import urllib.request
 from pathlib import Path
 
+import netcache
+
 API = "https://api.star-citizen.wiki/api/locations"
 UA = {"User-Agent": "quantum-nav (personal Star Citizen route planner)", "Accept": "application/json"}
 PAD_ORDER = ["small", "medium", "large", "xl"]
@@ -20,7 +22,7 @@ PAD_CODES = {"S": "small", "M": "medium", "L": "large", "XL": "xl"}
 
 
 def _get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+    with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=60) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

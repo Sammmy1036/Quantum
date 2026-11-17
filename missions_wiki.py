@@ -20,6 +20,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import netcache
+import gamefiles
+
 API = "https://api.star-citizen.wiki/api/missions"
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}
 HIT_TTL, MISS_TTL = 7 * 86400, 86400
@@ -27,7 +30,7 @@ MAX_PLACES = 12                                   # per group; some missions lis
 
 
 def _get(url, timeout=20):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
+    with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -77,9 +80,29 @@ class MissionWiki:
         return e.get("data")
 
     # ------------------------------------------------------------ lookup
+    def local(self, code, name):
+        """The contract from Quantum's own game data (gamefiles.Contracts), as a summary, or None."""
+        files = getattr(self, "files", None)
+        if not files:
+            return None
+        _, c = files.find(code, name, _title_guesses(name) if name else ())
+        return files.summary(c) if c else None
+
     def lookup(self, code, name, system=None):
-        """Summary of the wiki's mission for a contract, or None if the wiki doesn't have it.
-        Raises OSError-like errors only when the wiki can't be reached (nothing is cached then)."""
+        """Summary of a contract: Quantum's own game data (this patch's title, reward, cargo, reputation)
+        with the wiki's mission record filling in the rest (the places it can send you, blueprints, time
+        limits). None if neither has it. Raises OSError-like errors only when the game data doesn't have it
+        and the wiki can't be reached."""
+        mine = self.local(code, name)
+        try:
+            wiki = self._wiki_lookup(code, name, system)
+        except Exception:
+            if mine:
+                return mine                         # the wiki is down or rate limited: ours still answers
+            raise
+        return gamefiles.merge_contract(mine, wiki)
+
+    def _wiki_lookup(self, code, name, system=None):
         hit = self.cached(code, name)
         if hit is not ...:
             return hit

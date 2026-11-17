@@ -13,6 +13,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import netcache
+
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)", "Accept": "application/json"}
 API = "https://api.star-citizen.wiki/api"
 DAY = 86400
@@ -53,7 +55,7 @@ JUNK = re.compile(r"(?i)\b(test|template|placeholder|dummy)\b|_ai_|_npc|\[PH\]|P
 
 def _get(url, timeout=30):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with netcache.fetch(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -408,6 +410,32 @@ def dedupe(items, kind):
 class Gear:
     def __init__(self, cache_dir):
         self.dir = Path(cache_dir)
+        self.files = None              # gamefiles.Gear: Quantum's own data from the game files (set by the app)
+
+    def _game_list(self, kind):
+        """This tab from Quantum's own game data, in the same shape as the wiki's (no prices or pictures)."""
+        if not self.files or kind == "blueprints":
+            return []
+        return self.files.trimmed(kind, TRIM[kind], skip=_skip, dedupe=dedupe if kind != "blueprints" else None, junk=JUNK)
+
+    def _with_game(self, res, kind):
+        """The wiki's list with any number it lacks filled in from the game files (matched by the game's
+        own id, then by name). The cached file isn't changed: a newer game data file applies at once."""
+        game = self._game_list(kind)
+        if not game or not res or not res.get("items"):
+            return res
+        by_id = {t["uuid"]: t for t in game if t.get("uuid")}
+        by_name = {t["name"].strip().lower(): t for t in game}
+        items = []
+        for t in res["items"]:
+            g = by_id.get(t.get("uuid")) or next((by_id[a] for a in t.get("alias_uuids") or [] if a in by_id), None) \
+                or by_name.get((t.get("name") or "").strip().lower())
+            if g and g.get("stats"):
+                missing = {k: v for k, v in g["stats"].items() if (t.get("stats") or {}).get(k) in (None, "", 0)}
+                if missing:
+                    t = dict(t, stats={**(t.get("stats") or {}), **missing})
+            items.append(t)
+        return dict(res, items=items)
 
     def _file(self, name):
         return self.dir / f"gear_v6_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v5: MedGel in Consumables, CureLife, fire modes
@@ -419,8 +447,10 @@ class Gear:
         if f.exists():
             try:
                 old = json.loads(f.read_text(encoding="utf-8"))
-                if not fresh and time.time() - f.stat().st_mtime < DAY:
-                    return old
+                # The wiki builds these from the game files, so they're kept until the patch changes
+                # (netcache: daily for the first days of a patch, never past a week)
+                if not fresh and netcache.static_fresh(old.get("at") or f.stat().st_mtime, old.get("patch")):
+                    return self._with_game(old, kind)
             except Exception:
                 old = None
         out, seen = [], set()
@@ -447,14 +477,17 @@ class Gear:
                     page += 1
         except Exception:
             if old is not None:
-                return dict(old, stale=True)
+                return self._with_game(dict(old, stale=True), kind)
+            game = self._game_list(kind)
+            if game:                                 # the wiki can't be reached and nothing's saved: ours
+                return {"items": game, "at": self.files.at, "stale": False, "source": "game"}
             raise
         if kind != "blueprints":
             out = dedupe(out, kind)
-        res = {"items": out, "at": time.time(), "stale": False}
+        res = {"items": out, "at": time.time(), "stale": False, "patch": netcache.patch_key()}
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(res), encoding="utf-8")
-        return res
+        return self._with_game(res, kind)
 
     def commodity_sources(self, name):
         """Where a commodity is mined or harvested, from the wiki's resource data: {name, from, sources,

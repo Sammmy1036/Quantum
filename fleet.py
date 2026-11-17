@@ -13,6 +13,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import netcache
+import gamefiles
+
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}
 PAGES_API = "https://starcitizen.tools/api.php"
 VEHICLE_API = "https://api.star-citizen.wiki/api/v3/vehicles/"
@@ -70,7 +73,7 @@ def _flight_ready(d):
 
 
 def _get(url, timeout=20):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
+    with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 
@@ -525,7 +528,7 @@ class Wiki:
         """A logo file as a data: URL the page can use as a mask: SVG as it is, pictures made into a shape."""
         import base64
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+            with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=20) as r:
                 raw = r.read(1024 * 1024)
         except Exception:
             return None
@@ -570,7 +573,7 @@ class Wiki:
             if not url:
                 continue
             try:
-                with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+                with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=20) as r:
                     raw = r.read(1024 * 1024)
             except Exception:
                 continue                                  # tried again next time
@@ -846,6 +849,20 @@ class Wiki:
         return getattr(self, "_summary", None) or cached or {}
 
     def vehicle(self, keys):
+        """A ship's record: its slots, speeds and cargo from Quantum's own game data (gamefiles.Vehicles,
+        when the app has set self.files), with the wiki's record adding the rest. When the wiki can't be
+        reached, the game data's record alone, so the loadout editor still works."""
+        files = getattr(self, "files", None)
+        mine = files.lookup(keys) if files else None
+        try:
+            wiki = self._wiki_vehicle(keys)
+        except Exception:
+            wiki = None
+        if mine:
+            return gamefiles.merge_vehicle(files.wiki_record(mine, getattr(self, "part_info", None)), wiki)
+        return wiki
+
+    def _wiki_vehicle(self, keys):
         """The wiki's record for a ship, trying each identifier (uuid, name, slug) in turn."""
         for key in [k for k in keys if k]:
             f = self.dir / f"wiki_vehicle_{re.sub(r'[^A-Za-z0-9_-]+', '_', str(key))[:80]}.json"
@@ -1052,20 +1069,42 @@ class GameData:
     """Component numbers from the game files (component_stats.json, made by build_component_stats.py),
     by game UUID, with a name+size fallback. Preferred over the wiki for anything it has."""
     def __init__(self, *paths):
-        self.items, self.generated = {}, None
+        """paths: copies to choose from (the server's download, a local rebuild, the one in the installer).
+        The newest by its "generated" time is used, so a copy uploaded after a patch beats the installer's."""
+        self.items, self.generated, self.by_name = {}, None, {}
+        best = None
         for path in paths:
-            try:
-                raw = json.loads(Path(path).read_text(encoding="utf-8"))
-            except Exception:
-                continue
-            self.items, self.generated = raw.get("items", {}), raw.get("generated")
-            break
-        if not any(x.get("type") == "JumpDrive" for x in self.items.values()):     # not in the game files yet
-            self.items = {**self.items, **{u: dict(m) for u, m in JUMP_MODULES.items()}}
-        self.by_name = {}
-        for uid, it in self.items.items():
-            self.by_name.setdefault(((it.get("name") or "").lower().strip(), it.get("size")), uid)
-            self.by_name.setdefault(((it.get("name") or "").lower().strip(), None), uid)
+            raw = self._read(path)
+            if raw and (best is None or str(raw.get("generated") or "") > str(best.get("generated") or "")):
+                best = raw
+        self._use(best or {})
+
+    @staticmethod
+    def _read(path):
+        try:
+            raw = json.loads(Path(path).read_text(encoding="utf-8"))
+            return raw if isinstance(raw.get("items"), dict) and raw["items"] else None
+        except Exception:
+            return None
+
+    def _use(self, raw):
+        items = raw.get("items", {})
+        if not any(x.get("type") == "JumpDrive" for x in items.values()):     # not in the game files yet
+            items = {**items, **{u: dict(m) for u, m in JUMP_MODULES.items()}}
+        by_name = {}
+        for uid, it in items.items():
+            by_name.setdefault(((it.get("name") or "").lower().strip(), it.get("size")), uid)
+            by_name.setdefault(((it.get("name") or "").lower().strip(), None), uid)
+        # swapped in whole, so a lookup running on another thread sees the old set or the new one, never half
+        self.items, self.by_name, self.generated = items, by_name, raw.get("generated")
+
+    def update_from(self, path):
+        """Use the copy at path if it's newer than the one in use. True when it was."""
+        raw = self._read(path)
+        if raw and str(raw.get("generated") or "") > str(self.generated or ""):
+            self._use(raw)
+            return True
+        return False
 
     def find(self, uuid=None, name=None, size=None):
         if uuid and uuid in self.items:

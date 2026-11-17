@@ -23,6 +23,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import netcache
+
 API = "https://api.star-citizen.wiki/api/shipmatrix/vehicles"
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}
 STALE = 6 * 3600                 # sales change daily: a fresh list after 6 hours
@@ -107,10 +109,13 @@ class Rsi:
         self._last = time.time()
         data = json.dumps(body).encode("utf-8") if body is not None else None
         req = urllib.request.Request(RSI + path, data=data, headers=self._hdr(body is not None), method=method)
+        if netcache.cooling(RSI):
+            raise RsiError(f"{path}: RSI asked us to slow down, trying again later")
         try:
             with self._op.open(req, timeout=self.timeout) as r:
                 text = r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as e:
+            netcache.note_error(RSI + path, e)
             raise RsiError(f"{path}: HTTP {e.code}") from None
         return text
 
@@ -213,7 +218,7 @@ class Rsi:
 
 
 def _get(url, timeout=40):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
+    with netcache.fetch(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
 
 

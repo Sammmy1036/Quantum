@@ -1,9 +1,12 @@
 """UEX Corp API 2.0 (https://uexcorp.space/api/documentation): commodity prices, trade routes and
 fuel prices, crowdsourced by the Star Citizen community. Needs your own access token (Settings).
 
-Everything is cached in uex_cache/ next to the app: the place lists for a day, prices and routes for
+Everything is cached in uex_cache/ next to the app. Reference data (terminals, commodities, item
+lists, ships: STATIC) is kept until the game patch changes (see netcache.py: refreshed daily for the
+first days of a new patch while UEX catches up, and never kept past a week). Prices and routes are kept
 30 minutes (UEX itself refreshes routes hourly). Requests are spaced out to stay far under UEX's limit
-of 120 a minute.
+of 120 a minute, and when UEX says the limit is reached, nothing more is asked of it for a while and
+the cached copies are served instead.
 
 UEX has no coordinates, so each terminal is tied to a Quantum place by name (its station, city or
 outpost). Terminals that don't match still show, just without "add to route".
@@ -19,6 +22,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import netcache
 from services import _key
 
 BASE = "https://api.uexcorp.uk/2.0/"
@@ -26,6 +30,8 @@ TTL = {"terminals": 86400, "outposts": 86400, "categories": 86400, "items": 8640
        "vehicles_rentals_prices_all": 3600, "commodities": 86400, "planets": 86400,
        "commodities_prices_all": 1800, "fuel_prices_all": 1800, "commodities_routes": 1800,
        "game_versions": 3600, "data_parameters": 3600}
+STATIC = {"terminals", "outposts", "categories", "items", "space_stations", "vehicles", "commodities", "planets",
+          "star_systems", "moons", "cities", "companies"}      # change with patches, not with the hour
 SYSTEMS = ("Stanton", "Pyro", "Nyx")           # what Quantum maps
 
 
@@ -73,10 +79,17 @@ class Uex:
                 self._mem[f] = cached
             except Exception:
                 cached = None
-        if cached and (offline or (not fresh and time.time() - cached["at"] < ttl)):
+        static = resource in STATIC
+        if cached and (offline or (not fresh and (netcache.static_fresh(cached["at"], cached.get("patch")) if static
+                                                  else time.time() - cached["at"] < ttl))):
             return cached["rows"], cached["at"]
         if offline:
             raise UexError("Not downloaded yet")
+        wait = netcache.cooling(BASE)
+        if wait:                                # UEX said "slow down": serve what we have, ask nobody
+            if cached:
+                return cached["rows"], cached["at"]
+            raise UexError(f"UEX request limit reached, try again in {wait} s")
         if not self.token:
             if cached:
                 return cached["rows"], cached["at"]
@@ -88,6 +101,8 @@ class Uex:
                 return cached["rows"], cached["at"]
             raise
         entry = {"at": time.time(), "rows": rows}
+        if static:
+            entry["patch"] = netcache.patch_key()   # the game version it belongs to
         self._mem[f] = entry
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(entry), encoding="utf-8")
@@ -110,10 +125,15 @@ class Uex:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 body = json.loads(r.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
+            netcache.note_error(url, e)
+            if e.code == 429:
+                raise UexError("UEX request limit reached, try again in a minute")
             raise UexError("UEX rejected the token" if e.code in (401, 403) else f"UEX error {e.code}")
         except Exception:
             raise UexError("Couldn't reach UEX")
         if body.get("status") != "ok":
+            if body.get("status") == "requests_limit_reached":
+                netcache.cool(BASE, 60)
             raise UexError({"requests_limit_reached": "UEX request limit reached, try again in a minute"}
                            .get(body.get("status"), f"UEX: {body.get('message') or body.get('status')}"))
         data = body.get("data")
