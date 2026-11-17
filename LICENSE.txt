@@ -100,7 +100,10 @@ ships keeps its own terms:
     under their own licenses.
   - Roberts Space Industries (robertsspaceindustries.com): to verify an org,
     the Quantum server reads that org's public RSI page.
-  - Component statistics extracted from the Star Citizen game files.
+  - Ship, component, gear and contract data (stats, loadouts, cargo,
+    rewards) extracted from the Star Citizen game files, the property of
+    Cloud Imperium Games, and downloaded from the Quantum server after each
+    patch.
   - Manufacturer logos, downloaded at run time from the Star Citizen Wiki (and,
     for the Vanduul, the Star Citizen Fandom wiki), the property of Cloud
     Imperium Games, shown to identify each manufacturer.
@@ -147,8 +150,8 @@ Privacy
 
 How Quantum and the Quantum server handle your data (accounts, usernames,
 friends and messages, marketplace, ratings and reviews, orgs, public profiles,
-report screenshots, the build of Quantum you use, emails the server sends,
-backups and UEX keys) is described in the privacy policy at
+report screenshots, the build of Quantum you use, emails the server and the
+moderation team send, backups and UEX keys) is described in the privacy policy at
 https://quantumsc.org/privacy.
 Anyone running their own community server receives the same kinds of data
 and should handle them with the same care.
