@@ -23,7 +23,7 @@ Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases
 
 | | |
 |---|---|
-| **Home** | 3D map of Stanton, Pyro and Nyx with 3D cities and stations. Shows where you are from `/showlocation` and the game log and follows you as you fly, plans multi-stop routes across systems (every pickup before its drop-off), and guides you to each stop. The Alignment tab shows which planets line up for a quick jump, and why. |
+| **Home** | 3D map of Stanton, Pyro and Nyx with 3D cities and stations. Shows where you are from `/showlocation` and the game log and follows you as you fly, plans multi-stop routes across systems, and guides you to each stop. |
 | **Contracts** | Hauling contracts are picked up from the game log and pinned on the map, pickups listed first, with a tracker for each one. Gaps in mission text, like a bounty's target and location, are filled in. |
 | **Location Clock Overlay** | When you land or spawn in a city, the overlay shows its name and local time over the game. Choose how long it stays, where it sits and how big it is in Settings. |
 | **Trade** | Commodity prices, where mined resources are found, and ranked trade routes for your ship and budget, using UEX and Quantum's own fresh reports. |
