@@ -29,7 +29,7 @@ Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases
 | **Trade** | Commodity prices, where mined resources are found, and ranked trade routes for your ship and budget, using UEX and Quantum's own fresh reports. |
 | **Ships** | Every vehicle and component with stats read from the game files, paints for each generation, and where to buy them, sorted by cheapest or closest to you. My Fleet keeps your ships with up to 5 loadouts each. |
 | **Gear** | Weapons, armor, clothing, gadgets and blueprints, with **Where to find it** for loot (Contested Zones, bunkers, Distribution Centres, wrecks) and the nearest places to go. Save your own gear loadouts for each kind of job. |
-| **Consumables** | Food, drink, medical (MedPens and MedGel) and keys, each in its own tab. |
+| **Consumables** | Search for any consumables such as food, drink, medical, and keys. |
 | **Cart** | Put anything you want to buy in one cart, and Quantum plans the fewest stops to buy it all. Click an item to open its page; items you can only loot or craft aren't added. |
 | **Data** | The datarunner program: report terminal prices to UEX from inside Quantum, hold up to 5 jobs at a time, and climb the leaderboard. |
 | **Social** | Friends, messages and online status. |
