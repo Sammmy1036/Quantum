@@ -4,7 +4,7 @@
 
 # Quantum
 
-**A free Star Citizen companion for Windows:** a live 3D map and route planner, contract tracker, trade and fleet tools, a player marketplace, org tools and friends, all in one app.
+**A free Star Citizen companion for Windows** with a live 3D map, route planner, contract tracker, trade and fleet tools, player marketplace, org tools, friends management, messaging, and patch update information all in one app.
 
 <p align="center">
   <a href="https://quantumsc.org/media/Quantum-Demo.mp4">▶ Watch the demo</a><br>
@@ -27,14 +27,15 @@ Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases
 | **Contracts** | Hauling contracts are picked up from the game log and pinned on the map, pickups listed first, with a tracker for each one. Gaps in mission text, like a bounty's target and location, are filled in. |
 | **Location Clock Overlay** | When you land or spawn in a city, the overlay shows its name and local time over the game. Choose how long it stays, where it sits and how big it is in Settings. |
 | **Trade** | Commodity prices, where mined resources are found, and ranked trade routes for your ship and budget, using UEX and Quantum's own fresh reports. |
-| **Ships** | Every vehicle and component with stats, paints for each generation, and where to buy them, sorted by cheapest or closest to you. My Fleet keeps your ships with up to 5 loadouts each. |
+| **Ships** | Every vehicle and component with stats read from the game files, paints for each generation, and where to buy them, sorted by cheapest or closest to you. My Fleet keeps your ships with up to 5 loadouts each. |
 | **Gear** | Weapons, armor, clothing, gadgets and blueprints, with **Where to find it** for loot (Contested Zones, bunkers, Distribution Centres, wrecks) and the nearest places to go. Save your own gear loadouts for each kind of job. |
-| **Consumables** | Food, drink, medical and keys, each in its own tab. |
+| **Consumables** | Food, drink, medical (MedPens and MedGel) and keys, each in its own tab. |
 | **Cart** | Put anything you want to buy in one cart, and Quantum plans the fewest stops to buy it all. Click an item to open its page; items you can only loot or craft aren't added. |
 | **Data** | The datarunner program: report terminal prices to UEX from inside Quantum, hold up to 5 jobs at a time, and climb the leaderboard. |
 | **Social** | Friends, messages and online status. |
 | **Market** | Buy and sell items and services with other players, **aUEC only**. Rate each other after a trade (stars plus tags, like OfferUp) and see anyone's rating and trust badges. Optional escrow for trades of 1,000,000 aUEC or more. |
 | **Org** | Your org's members, ranks with icons, banner, an About page with formatting, calendar, events with crew seats, and invites. Orgs verified with RSI are listed in Find orgs and link to their RSI page. |
+| **Patch Hub** | Dedicated section for ongoing and upcoming events in Star Citizen, along with patch notes, new ships, gear, twitch drops, with links to official RSI information where the data was obtained. |
 | **Profile** | Your fleet, loadouts, orgs, listings, ratings and datarunner stats, with control over what others see. Click a name on the leaderboard to open their profile. |
 
 ## Getting set up
@@ -70,7 +71,8 @@ Quantum's code is free to use, change and share under the MIT License. The commu
 - **Official releases only.** Only unmodified releases from this repo's [Releases](https://github.com/Sammmy1036/Quantum/releases) may connect. If you build your own version, point it at your own server with the `community_url` setting, or set `"community_url": "off"`.
 - **Account required.** Sending anything to the server needs a Quantum account with your UEX name linked. One person, one account.
 - **No scraping or automated access** without written permission.
-- **Enforcement.** The server checks which build of Quantum is connecting. Builds and accounts that break these rules can be refused, suspended or banned.
+- **Enforcement.** The server checks which build of Quantum is connecting. Builds and accounts that break these rules can be refused, suspended or banned. A suspended account keeps using the app but can't message, add friends, trade or take part in orgs until the suspension ends.
+- **Moderation.** Reported listings and uploaded pictures are reviewed by the moderation team. To reach them, or to appeal, email **moderator@quantumsc.org**.
 
 ## Backups
 
@@ -82,7 +84,7 @@ Quantum keeps your keys and data on your PC unless you choose otherwise, and the
 
 - **Which build you're using.** The app sends its version and a fingerprint of the program, so the server can tell official releases from modified copies. It identifies the program, never you or your PC.
 - **Price report screenshots** are kept for **14 days** so reports can be reviewed, then deleted.
-- **Emails** the server sends you are logged (address, subject and whether it was delivered) for **30 days**. The message itself is never stored.
+- **Emails** the server sends you are logged (address, subject, whether it was delivered, and a copy with every sign-in link removed) for **30 days**. Emails with the moderation team are kept for up to a year.
 
 The full details are in the [privacy policy](https://quantumsc.org/privacy) and the [Terms of Use](https://quantumsc.org/terms). You can download or delete everything your account holds from [your account page](https://quantumsc.org/account?tab=security). To run Quantum without any community features, use **Settings → Disable community features**.
 
@@ -91,7 +93,7 @@ The full details are in the [privacy policy](https://quantumsc.org/privacy) and 
 - **[UEX Corp](https://uexcorp.space):** prices, trade data, vehicles, items and the datarunner program
 - **[Star Citizen Wiki](https://starcitizen.tools)** and its **[API](https://api.star-citizen.wiki):** ships, gear, blueprints, missions and pictures
 - **[Valalol / Star-Citizen-Navigation](https://github.com/Valalol/Star-Citizen-Navigation)** and **[starnav](https://crates.io/crates/starnav):** navigation data
-- **[unp4k](https://github.com/dolkensp/unp4k):** game-file extraction for component stats
+- **[unp4k](https://github.com/dolkensp/unp4k):** game-file extraction for ship, component, gear and contract data
 - **Quantum datarunners:** the prices, station positions and pictures they share
 
 Quantum's code is under the [MIT License](LICENSE.txt), which also lists third-party code and data and the rules for the community server. [CHANGELOG.md](CHANGELOG.md) lists what's new in each version.
