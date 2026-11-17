@@ -72,7 +72,6 @@ Quantum's code is free to use, change and share under the MIT License. The commu
 - **Account required.** Sending anything to the server needs a Quantum account with your UEX name linked. One person, one account.
 - **No scraping or automated access** without written permission.
 - **Enforcement.** The server checks which build of Quantum is connecting. Builds and accounts that break these rules can be refused, suspended or banned.
-- **Moderation.** Reported listings and uploaded pictures are reviewed by the moderation team. To reach them, or to appeal, email **moderator@quantumsc.org**.
 
 ## Backups
 
