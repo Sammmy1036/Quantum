@@ -51,7 +51,7 @@ QUERY = """query GetBrowseSkusByFilter($query: SearchQuery, $storeFront: String 
   }
 }"""
 # Words that make a listing a bundle of many items (it holds every piece of its paint, whoever makes them)
-BUNDLE = re.compile(r"\b(collection|bundle|complete|ultimate|everything)\b", re.I)
+BUNDLE = re.compile(r"\b(collection|bundle|complete|ultimate|everything|set|kit)\b", re.I)   # "Monde 'Keystone' Armor Set"
 # Words that name the kind of piece, not the paint ("ADP-mk4 Core Red Alert" is the Core of the Red Alert ADP-mk4)
 PIECE = {"helmet", "helm", "core", "torso", "arms", "arm", "legs", "leg", "backpack", "pack", "undersuit", "suit",
          "armor", "armour", "rifle", "pistol", "smg", "lmg", "shotgun", "sniper", "launcher", "knife", "gloves",
@@ -69,8 +69,13 @@ def _model_words(name):
 
 
 def paint_of(name):
-    """The paint or edition in an item's name: what's left without its model codes and the piece words.
-    "CSP-68H Backpack Red Alert" -> "red alert"; "ADP-mk4 Core Woodland" -> "woodland"; "CSP-68H Backpack" -> ""."""
+    """The paint or edition in an item's name. Names go model, piece, paint, so it's the words after the piece:
+    "Warden Backpack Keystone" -> "keystone"; "CSP-68H Backpack Red Alert" -> "red alert"; "CSP-68H Backpack" -> "".
+    With no piece word in the name, what's left without its model codes ("ADP-mk4 Woodland" -> "woodland")."""
+    w = _norm(name).split()
+    last = max((i for i, x in enumerate(w) if x in PIECE), default=-1)
+    if last >= 0:
+        return " ".join(x for x in w[last + 1:] if x not in PIECE)
     models = set(_model_words(name))
     words = [w for w in _norm(name).split() if w not in models and w not in PIECE]
     return " ".join(words)
@@ -85,7 +90,11 @@ def match(listings, name, maker=None, maker_code=None, extra_models=()):
     A listing matches when it has the item's paint and its maker or model, or is a collection of that paint.
     An item with no paint (a base item) matches only a listing naming its model."""
     paint = paint_of(name)
-    models = list(dict.fromkeys(_model_words(name) + [m.lower() for m in extra_models if m]))
+    # the model: words with a digit or hyphen ("CSP-68H"), and the name's words before its piece word ("Warden")
+    w = _norm(name).split()
+    last = max((i for i, x in enumerate(w) if x in PIECE), default=-1)
+    named = [x for x in w[:max(last, 0)] if x not in PIECE and len(x) > 2]
+    models = list(dict.fromkeys(_model_words(name) + named + [m.lower() for m in extra_models if m]))
     mk = _norm(maker)
     code = _norm(maker_code)
     out, titles = [], set()

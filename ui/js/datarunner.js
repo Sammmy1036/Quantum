@@ -90,7 +90,7 @@ function drRowHtml(x,i){ const d=S.dr, st=d.pf.status_names, age=drAge(x.updated
     <div class="val"><input class="field" data-k="scu" inputmode="decimal" ${ro} value="${esc(x.scu??"")}" placeholder="SCU" aria-label="${x.side==="buy"?"Stock":"Demand"} in SCU"><div class="was">${x.side==="buy"?"Stock":"Demand"}</div></div>
     <div class="val"><input class="field" data-k="price" inputmode="decimal" ${ro} value="${esc(x.price??"")}" placeholder="aUEC" aria-label="Price per SCU"><div class="was">Price per SCU${diff}</div></div>
     <div class="inv"><div class="segs l${lvl}">${[1,2,3,4,5,6,7].map(n=>`<button data-lvl="${n}" class="${n<=lvl?"f":""}" title="${n} · ${esc(st[n])}" aria-label="${esc(st[n])}"></button>`).join("")}</div><span>${lvl?esc(st[lvl]):"Inventory?"}</span></div>
-    <div class="acts"><button class="ok ${x.state==="same"?"on":""}" data-act="same" title="Price, stock and inventory all match the kiosk (Space)">${x.state==="same"?"✓ No Changes":"No Changes"}</button><button class="gn ${x.state==="gone"?"on":""}" data-act="gone" title="The kiosk doesn't list this commodity any more (G). For no stock, set the inventory bar to Out of stock instead.">Not Sold Here</button></div></div>`; }
+    <div class="acts">${x.state==="edit"?`<button class="ok on" data-act="same" title="You changed this from what UEX had. Click to put UEX's values back (Space)">✓ Updated</button>`:`<button class="ok ${x.state==="same"?"on":""}" data-act="same" title="Price, stock and inventory all match the kiosk (Space)">${x.state==="same"?"✓ No Changes":"No Changes"}</button>`}<button class="gn ${x.state==="gone"?"on":""}" data-act="gone" title="The kiosk doesn't list this commodity any more (G). For no stock, set the inventory bar to Out of stock instead.">Not Sold Here</button></div></div>`; }
 // Data can only be entered once there's a screenshot: UEX checks every report against it.
 // Locked until there's a screenshot, unless UEX no longer needs one from you (or you've chosen to try
 // without one after the 90-day evaluation; UEX's answer then settles it).
@@ -387,7 +387,13 @@ async function drAccept(job){
   const mine=drMyJobIds(); if(!mine.includes(job)&&mine.length>=DR_MAX_JOBS){ toast(`You have ${DR_MAX_JOBS} jobs on the go. Finish or let go of one first`); return null; }
   const r=await api().dr_claim(job); if(!r.ok){ toast(r.error); await drLoadClaims(); return null; }
   const u=r.until?r.until*1000:Date.now()+CLAIM_MIN*60000; if(S.drHeld?.[job]) S.drHeld[job].until=u; return u; }
-function drRelease(job){ if(S.drHeld) delete S.drHeld[job]; api().dr_claim(job,true).catch(()=>{}); }
+// Letting go (or finishing) drops the job here at once: the claims list loaded earlier still shows it as yours
+// until it's fetched again, and drSyncHeld would otherwise put it straight back into "Your jobs".
+function drRelease(job){ if(S.drHeld) delete S.drHeld[job]; if(S.drClaims) delete S.drClaims[job];
+  (S.drDone=S.drDone||{})[job]=Date.now(); return api().dr_claim(job,true).catch(()=>{}); }
+// A job finished in the last few minutes, or a planet that's already lined up: never one of "Your jobs".
+function drJobFinished(id){ const t=S.drDone?.[id]; if(t&&Date.now()-t<CLAIM_MIN*60000) return true;
+  return id.startsWith("a:")&&!!S.drAlignedSet?.has(id.slice(2)); }
 // Up to DR_MAX_JOBS jobs can be held at once. One of each kind is "open" (its steps shown); the rest wait in
 // "Your jobs" until you switch to them. S.drHeld keeps what each needs to be opened again.
 const DR_MAX_JOBS=5;
@@ -398,6 +404,9 @@ function drMyJobIds(){ const ids=new Set(Object.keys(S.drHeld||{}));
 // The server is the record: a job it no longer holds for you (done, or timed out) leaves the list; one it holds
 // that this window doesn't know of (Quantum restarted) is added.
 function drSyncHeld(){ if(!S.drClaims) return; S.drHeld=S.drHeld||{};
+  for(const id of Object.keys(S.drHeld)) if(drJobFinished(id)) delete S.drHeld[id];
+  // A finished job the server still holds for you (sent from the map, or the release didn't get through): let it go.
+  for(const [id,c] of Object.entries(S.drClaims)) if(c.mine&&drJobFinished(id)){ delete S.drClaims[id]; api().dr_claim(id,true).catch(()=>{}); }
   const mine=Object.entries(S.drClaims).filter(([,c])=>c.mine);
   if(Object.keys(S.drClaims).length||!Object.keys(S.drHeld).length){
     for(const id of Object.keys(S.drHeld)) if(!S.drClaims[id]?.mine&&S.drHeld[id].until<Date.now()+CLAIM_MIN*60000-90000) delete S.drHeld[id]; }
@@ -682,6 +691,7 @@ async function drAllExtras(){ if(!S.drExtra||Date.now()-S.drExtra.at>60000)
 
 // How many jobs of each kind there are, so a tab with none hides itself (and comes back when there are).
 function drJobCounts(a,p){ const n=S.drJobN=S.drJobN||{};
+  if(a?.ok) S.drAlignedSet=new Set(a.jobs.filter(j=>j.status==="mine"||j.status==="live").map(j=>j.body));
   if(a?.ok) n.align=a.jobs.filter(j=>j.status==="open"||j.status==="waiting").length;
   if(p?.ok){ n.photos=p.jobs.length; n.photoKinds=p.counts||{}; }
   const t=$("dr-job-tabs"); if(t) t.outerHTML=drJobTabs(t.dataset.kind,drUnmappedN()); }
@@ -757,14 +767,14 @@ async function drAlignCheck(){ const aj=S.drAlignJob; if(!aj||!aj.arrived||aj.st
 async function drAlignClick(e){ const a=e.target.closest("[data-aj]"); if(!a) return false; const aj=S.drAlignJob, w=a.dataset.aj; if(!aj) return true;
   if(w==="arrived"){ aj.arrived=Date.now(); aj.reading=null; drAlignPaint(); drAlignCheck(); return true; }
   if(w==="notyet"){ aj.arrived=null; aj.reading=null; drAlignPaint(); return true; }
-  if(w==="done"){ S.drAlignJob=null; S.drExtra=null; renderDrJobs(); return true; }
+  if(w==="done"){ drRelease(`a:${aj.body}`); S.drAlignJob=null; S.drExtra=null; await drLoadClaims(); renderDrJobs(); return true; }
   if(w==="submit"){ a.disabled=true; a.textContent="Submitting…"; const r=await api().dr_align_submit(aj.body, aj.arrived);
     if(!r.ok){ toast(r.error); a.disabled=false; a.textContent=`Submit alignment for ${aj.body}`; aj.reading=null; drAlignCheck(); return true; }
-    aj.state="sent"; aj.result=r; drRelease(`a:${aj.body}`); S.drExtra=null; await poll(); drAlignPaint(); toast(`${aj.body} lined up`); return true; }
+    aj.state="sent"; aj.result=r; await drRelease(`a:${aj.body}`); (S.drAlignedSet=S.drAlignedSet||new Set()).add(aj.body); S.drExtra=null; await poll(); drAlignPaint(); toast(`${aj.body} lined up`); return true; }
   return true; }
 // The held alignment job is done once the server lists it as yours (or live)
 function drAlignDone(r){ const aj=S.drAlignJob; if(!aj||aj.state==="sent") return; const j=r.jobs.find(x=>x.body===aj.body&&(x.status==="mine"||x.status==="live")); if(!j) return;
-  S.drAlignJob=null; toast(j.status==="live"?`${aj.body} lined up and live for everyone`:`${aj.body} lined up and sent. It counts once another datarunner's alignment agrees`); }
+  S.drAlignJob=null; drRelease(`a:${aj.body}`); toast(j.status==="live"?`${aj.body} lined up and live for everyone`:`${aj.body} lined up and sent. It counts once another datarunner's alignment agrees`); }
 
 // Why alignment is a job at all: shown at the top of the tab, folded away once read (remembered per PC).
 function ajWhyHtml(){ if(S.ajWhyOpen===undefined){ try{ S.ajWhyOpen=localStorage.getItem("ajWhyOpen")!=="0"; }catch(_){ S.ajWhyOpen=true; } }

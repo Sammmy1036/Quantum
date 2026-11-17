@@ -66,8 +66,12 @@ City3D.define({
     const portY=AIM?(AIM.pin?Math.max(AIM.y,hgt(...portT))+20:AIM.y):(PT?.y??hgt(...portT)+40), toPort=Math.atan2(portT[0],-portT[1]);
     const portD=GP?Math.min(6000,Math.max(1400,GP.r*2.8)):3000;
     const cityT=SK?.t||[0,0], cityY=SK?SK.ground+(SK.top-SK.ground)*0.3:hgt(0,0)+200, cityD=SK?Math.min(10000,Math.max(3000,SK.spread*2.6)):5000;
+    // Teasa's pin came from one /showlocation whose time wasn't known, so it can sit a km or so east or west
+    // of the real spaceport (its label beside the port, not on it). Where the game's own spaceport container
+    // is in the layout, the label is moved onto it (see placeAt in city3d-core.js).
+    const placeAt=GP&&(!PIN||Math.hypot(PIN.x-GP.t[0],PIN.z-GP.t[1])>150)?{[PORT_NAME]:{t:GP.t,y:GP.base}}:null;
     return {
-      hgt, ready:G.loadNear(),
+      hgt, ready:G.loadNear(), placeAt,
       views:{
         overview:{label:"Overview",t:[portT[0]*0.4,portT[1]*0.4],y:hgt(0,0)+200,d:26000,yaw:toPort+Math.PI+0.5,p:0.6},
         city:{label:"The city",t:cityT,y:cityY,d:cityD,yaw:toPort+0.3,p:0.5},

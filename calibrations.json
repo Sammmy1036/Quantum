@@ -82,10 +82,163 @@
    "reading_utc": 1794713690.1,
    "build": "13165946",
    "session": "09ec670888"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D8",
+   "residual_deg": 0.0217,
+   "reading_utc": 1794761988.5,
+   "build": "13165946",
+   "session": "9aab304b7a"
+  },
+  {
+   "kind": "auto-hangar",
+   "body": "Hurston",
+   "place": "Lorville",
+   "residual_deg": 0.0251,
+   "reading_utc": 1794776821.9,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": 0.0395,
+   "reading_utc": 1794778779.1,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": -0.0355,
+   "reading_utc": 1794778840.4,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": -0.0018,
+   "reading_utc": 1794778844.1,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": 0.0019,
+   "reading_utc": 1794778864.6,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": -0.0403,
+   "reading_utc": 1794779382.8,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "auto-place",
+   "body": "Arial",
+   "place": "Onyx Facility S1A6",
+   "residual_deg": -0.0071,
+   "reading_utc": 1794779480.3,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": -0.0034,
+   "reading_utc": 1794781896.7,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D2",
+   "residual_deg": -0.0157,
+   "reading_utc": 1794783250.0,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "OM-3 (Ita)",
+   "residual_deg": -0.0621,
+   "reading_utc": 1794783402.3,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": 0.0607,
+   "reading_utc": 1794784865.2,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": 0.0609,
+   "reading_utc": 1794784991.6,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": 0.2879,
+   "reading_utc": 1794785002.7,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": 0.0554,
+   "reading_utc": 1794785263.3,
+   "build": "13165946",
+   "session": "9378751c1d"
+  },
+  {
+   "kind": "check",
+   "body": "Ita",
+   "place": "Onyx Facility S1D7",
+   "residual_deg": 0.0609,
+   "reading_utc": 1794785303.2,
+   "build": "13165946",
+   "session": "9378751c1d"
   }
  ],
- "updated": "2026-11-14 19:34:50",
+ "updated": "2026-11-15 15:28:23",
  "bodies": {
+  "Arial": {
+   "system": "Stanton",
+   "rotation_offset_deg": 23.701802,
+   "rotation_period_h": 5.51000023,
+   "epoch_utc": 1577836800.0,
+   "calibrated_at": 1794779480.292956,
+   "place": "Onyx Facility S1A6",
+   "quality": "place"
+  },
   "Cellin": {
    "system": "Stanton",
    "rotation_offset_deg": 30.576096,
@@ -124,10 +277,10 @@
   },
   "Hurston": {
    "system": "Stanton",
-   "rotation_offset_deg": 117.684483,
+   "rotation_offset_deg": 117.659362,
    "rotation_period_h": 2.48000002,
    "epoch_utc": 1577836800.0,
-   "calibrated_at": 1794713690.13694,
+   "calibrated_at": 1794776821.9203606,
    "place": "Lorville",
    "quality": "hangar"
   },

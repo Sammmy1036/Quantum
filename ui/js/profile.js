@@ -471,6 +471,13 @@ function roleTags(roles){ return (roles||[]).map(r=>r.kind==="gate"?`<span class
   :r.kind==="gate-in"?`<span class="role gate">Gateway${r.from?" · arrive from "+esc(r.from):""}</span>`
   :`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
 const isGateStop=roles=>(roles||[]).some(r=>r.kind==="gate"||r.kind==="gate-in");
+// A stop with no quantum marker of its own (an Onyx Facility, a cave, a derelict): how to get there anyway.
+// With a contract for it the game gives it a marker; without, quantum to the nearest marker and fly the rest.
+function noQtHint(n){ const q=S.live?.no_qt?.[n]; if(!q) return "";
+  if(q.contract) return `<div class="qt-hint" style="font-size:11.5px;color:#9fe0b4;margin-top:2px">Your contract gives it a quantum marker</div>`;
+  const a=q.approach?.[0]; if(!a) return `<div class="qt-hint" style="font-size:11.5px;color:#ffb46b;margin-top:2px">No quantum marker: fly there</div>`;
+  const fly=a.ground!=null?`${a.orbit?"descend and ":""}fly ${fmtDist(a.ground)}${a.heading!=null?` heading ${Math.round(a.heading)}°`:""}`:`fly ${fmtDist(a.straight)}`;
+  return `<div class="qt-hint" style="font-size:11.5px;color:#ffb46b;margin-top:2px" title="The game only gives it a quantum marker while you have a contract there">No quantum marker: ${q.closer?"you're closer than any marker, fly straight there":`quantum to <b>${esc(a.name)}</b>, then ${fly}`}</div>`; }
 function renderRoute(){
   const live=S.live, route=live.route, el=$("stops"); $("c-route").textContent=route.length;
   $("route-summary").style.display=route.length?"":"none";      // nothing to total up without stops $("btn-arrived").style.display=route.length?"block":"none";
@@ -482,7 +489,7 @@ function renderRoute(){
   el.innerHTML=route.map((n,i)=>{ const L=S.locMap[n]||{}; const leg=live.legs[i]; const jump=i>0&&L.system!==S.locMap[route[i-1]]?.system;
     const back=route.indexOf(n)<i?'<span class="role back">Return visit</span>':"";
     return `<li class="stop" draggable="true" data-i="${i}"><div class="num">${i+1}</div>
-      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padLabel(padOf(L)))}</span>`:""}</div></div>
+      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padLabel(padOf(L)))}</span>`:""}</div>${noQtHint(n)}</div>
       <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system)+(leg!=null?" · "+fmtDist(leg):""):leg!=null?fmtDist(leg):""}</div>${isGateStop(live.stop_roles?.[i])?`<span class="x" title="Added by Quantum: the route jumps to another system here" style="opacity:.35;cursor:default">⇄</span>`:`<button class="x" aria-label="Remove stop ${i+1}">×</button>`}</div></li>`; }).join("");
   for(const li of el.children){ const i=+li.dataset.i, n=route[i];
     li.querySelector(".name").onclick=()=>{ select({kind:"loc",name:n}); focusLoc(n); };
@@ -744,6 +751,11 @@ async function watchNewObjectives(live){
       if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); }
     toast(`New objective: ${o.label}. Add it to your route from the Contracts tab`);
   } finally { S.objBusy=false; } }
+// The Onyx Facility a contract sends you to ("Go to Onyx Facility S1A8"), or true for a Hockrow facility delve
+// that hasn't named it yet, or null
+function onyxOf(c){ const txt=[c.name,c.code,...(c.objectives||[]).map(o=>[o.label,o.location].join(" "))].join(" ");
+  const m=txt.match(/Onyx Facility S\d[A-Z]\d{1,2}\b/i); if(m) return m[0].replace(/^onyx facility/i,"Onyx Facility").replace(/s(\d)([a-z])/i,(a,b,c)=>"S"+b+c.toUpperCase());
+  return /FacilityDelve|Jorrit|Onyx/i.test(txt)?true:null; }
 function renderContracts(force){
   const typing=$("contracts").contains(document.activeElement)&&document.activeElement.tagName==="INPUT";
   if(typing&&!force) return;
@@ -867,7 +879,7 @@ function renderContracts(force){
     return `<div class="contract ${active?"":isDelivered?"delivered":"done"}" data-id="${c.id}"><h3>${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</h3>
       <div class="sub">${isDelivered?`<span class="dlv-pill">✓ Delivered</span>`:status}${c.system?" · "+esc(c.system):""}</div>
       ${c.tracking_no||c.job_id?`<div class="trackids">${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${c.job_id?`<div class="trackno" title="The game's own id for this contract (from Game.log). Click to copy">Job ID <b>${esc(c.job_id)}</b></div>`:""}</div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
-      <div class="row" style="margin-top:10px">${routeBtn}<span class="spacer"></span>${isDelivered?`<button class="btn small primary" data-act="closeout" title="Move it to Finished">Close out job</button>`:`<button class="btn small ghost" data-act="dismiss">Dismiss</button>`}</div></div>`; };
+      <div class="row" style="margin-top:10px">${routeBtn}${onyxOf(c)?`<button class="btn small" data-act="onyx" title="The facility's floor plans: the way out, enemy spawns, hazards, loot and mission terminals">Floor plans</button>`:""}<span class="spacer"></span>${isDelivered?`<button class="btn small primary" data-act="closeout" title="Move it to Finished">Close out job</button>`:`<button class="btn small ghost" data-act="dismiss">Dismiss</button>`}</div></div>`; };
   $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
   const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
@@ -899,6 +911,7 @@ function renderContracts(force){
       toast(r.sending?"Marked collected. Sending /showlocation to Star Citizen":`Marked collected. ${r.note||""}`); }
     // The reply carries how many stops it added ("added"), not their names: r.names threw here, so the toast never
     // showed and nothing moved. Now the map also swings to the route so you can see the way to the new stops.
+    if(act==="onyx"){ const f=onyxOf(c); return openOnyx(f===true?null:f); }
     if(act==="route"){ const r=await api().add_contract_stops(c.id,null); await poll(); renderContracts(true); if(!r.ok) return toast(r.error);
       toast(r.added?`Added ${r.added} stop${r.added>1?"s":""} to route`:"Already in your route"); fitRoute(false); }
     if(act==="showroute"){ fitRoute(); }
@@ -983,15 +996,32 @@ function renderPlayTime(){ const pl=S.live?.play||{}, row=$("play-row"); if(!row
   const now=S.live.now+((performance.now()-(S.liveAt||performance.now()))/1000);
   row.style.display=""; $("play-text").innerHTML=`Playing <b>${fmtSpan(now-pl.since)}</b>${pl.today>(now-pl.since)+60?` <span class="muted">· ${fmtSpan(pl.today)} today</span>`:""}`; }
 setInterval(()=>{ if(S.live) renderPlayTime(); },1000);
-function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
+// ---- Ship contacts ("pirate detector"): ships Game.log says streamed in near you while you're out in the open.
+// The log gives only the model, never the pilot or where it is, so it's a heads-up: a fighter turning up next
+// to you away from any station is worth a look. Red for fighters and interdictors in the last 3 minutes.
+const CT_WORD={interdict:"interdiction ship",combat:"combat ship",ship:"ship"};
+function contactsNear(){ return (S.live?.contacts||[]).filter(c=>c.level!=="seen"); }
+function contactsHtml(L){ return L.slice(0,4).map(c=>`<span style="color:${c.level==="high"?"#ff6b6b":"#ffd38a"}" title="Streamed into your area ${c.age} s ago. Game.log only names the ship, not its pilot or position">${c.level==="high"?"⚠ ":""}${esc(c.name)} nearby <span class="muted">(${esc(CT_WORD[c.threat])}, ${c.age<60?c.age+" s":Math.round(c.age/60)+" min"} ago)</span></span>`).join("<br>"); }
+function contactsAlert(){ const L=(S.live?.contacts||[]).filter(c=>c.level==="high"); S.ctSeen=S.ctSeen||new Set();
+  for(const c of L){ if(S.ctSeen.has(c.id)) continue; S.ctSeen.add(c.id);
+    toast(`⚠ Possible threat: ${/^[AEIOU]/i.test(c.name)?"an":"a"} ${c.name} just showed up near you`); } }
+// What killed you, as the log has it: "Killed by PlayerName", or "The game destroyed your 890 Jump due to a
+// Boundary Violation" when no player was credited. Nothing when the log doesn't say.
+function deathCause(c){ if(!c) return "";
+  const t=c.by?`Killed by <b>${esc(c.by)}</b>`
+    :c.how==="ship destroyed"?`The game destroyed your ${esc(c.ship||"ship")}${c.reason?` due to a ${esc(c.reason.replace(/([a-z])([A-Z])/g,"$1 $2"))}`:""}`:"";
+  return t?`<div style="font-size:12.5px;margin-top:3px;color:${c.by?"#ff8a8a":"var(--ink-2)"}">${t}</div>`:""; }
+function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
   if(!pt.dataset.sysBound){ pt.dataset.sysBound=1; pt.addEventListener("change",async e=>{ if(!e.target.classList.contains("sys-pick")) return;
     const v=e.target.value, r=await api().set_my_system(v); if(!r.ok) return toast(r.error); await poll(); toast(`Got it: you're in ${v}`); }); }
   if(pt.querySelector("select.sys-pick:focus")) return;     // don't redraw under an open picker
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
   renderPlayTime();
   if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b>`; }
-  else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
-  else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
+  else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`
+    +deathCause(tv.cause)
+    +(tv.threats?.length?`<div class="muted" style="font-size:12px;margin-top:2px">Ships that showed up near you just before: ${tv.threats.map(c=>`<span style="color:${c.threat==="ship"?"#ffd38a":"#ff6b6b"}">${esc(c.name)}</span> (${c.age<60?c.age+" s":Math.round(c.age/60)+" min"} before)`).join(", ")}</div>`:""); }
+  else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`+deathCause(tv.cause); }
   else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="arrived" && (!p || p.approx || (p.t||0) < tv.at)){ pd.className="dot on";
     pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown spot <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
@@ -1009,6 +1039,7 @@ function renderStatus(){ const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"
   if(tv.activity) bits.push(`Last report: ${esc(tv.activity.text.charAt(0).toLowerCase()+tv.activity.text.slice(1))} <span class="muted">(${ago(tv.activity.at)})</span>`);
   if(tv.vehicle) bits.push(`Ship: <b>${esc(tv.vehicle.name)}</b>`);
   if(tv.armistice===false) bits.push(`<span style="color:#ffb454">Outside the armistice zone</span>`);
+  const ct=contactsNear(); if(ct.length) bits.push(contactsHtml(ct));
   if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join("<br>")}</div>`;
   const lg=S.live.log; $("log-dot").className="dot"+(lg.status==="watching"?" on":lg.status==="idle"?"":" warn");
   // Only worth a line when something's wrong: tracking contracts is the normal state.

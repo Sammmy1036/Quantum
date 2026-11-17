@@ -152,6 +152,8 @@ class Api(api_contracts.ContractsMixin,
         self._sender = ShowLocationSender()
         self._sender.on_overlay = lambda: overlay.toggle(restore_cb=self._restore_window, show_cb=self._show_window,
                                                          after_show_cb=self._nudge_redraw)
+        self._sender.on_focus_game = overlay.focus_game
+        self._sender.app_in_front = overlay.is_front
         a = {"hotkey": "F9", "loc_hotkey": "", "interval": 0, "open_chat": "enter", "on_arrival": False,
              **self._settings.get("autoloc", {})}
         if a.get("action") == "showlocation" and not a.get("loc_hotkey"):

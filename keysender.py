@@ -187,6 +187,16 @@ if AVAILABLE:
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
 
+    class _LASTINPUTINFO(ctypes.Structure):
+        _fields_ = [("cbSize", wintypes.UINT), ("dwTime", wintypes.DWORD)]
+
+    def idle_seconds():
+        """How long since the last keyboard or mouse input anywhere (anti-AFK's own inputs count too)."""
+        li = _LASTINPUTINFO(ctypes.sizeof(_LASTINPUTINFO), 0)
+        if not user32.GetLastInputInfo(ctypes.byref(li)):
+            return 1e9
+        return ((kernel32.GetTickCount() - li.dwTime) & 0xFFFFFFFF) / 1000.0
+
     def we_are_admin():
         try:
             return bool(ctypes.windll.shell32.IsUserAnAdmin())
@@ -233,6 +243,9 @@ else:
     def foreground_elevated():
         return False
 
+    def idle_seconds():
+        return 1e9
+
 
 class ShowLocationSender:
     """Hotkey + timer. configure() can be called any time; changes apply immediately."""
@@ -246,6 +259,8 @@ class ShowLocationSender:
         self.open_chat = "enter"    # "enter" = press Enter to open chat first, "none" = chat already open
         self.action = "overlay"     # hotkey: "overlay" = show/hide Quantum over the game, "showlocation" = type it
         self.on_overlay = None      # set by the app: toggles the window, returns a short result
+        self.on_focus_game = None   # set by the app: un-pins Quantum and gives the game focus (as F9 hiding it does)
+        self.app_in_front = None    # set by the app: True when Quantum is the focused window
         self.qt_only = True         # the timer only runs during quantum travel
         self.on_arrival = False     # ...and optionally sends once when a jump ends
         self.qt_policy = None       # set by the app: -> {"send", "interval", "reason", "arrived"}
@@ -306,7 +321,14 @@ class ShowLocationSender:
             if not game_window_open():
                 self.afk_next = time.time() + 30
                 continue
-            if not game_in_focus() and not (self.afk_focus and focus_game()):
+            if not game_in_focus() and self.afk_focus and self.app_in_front and self.app_in_front() and idle_seconds() < 90:
+                # you're using Quantum right now: don't pull the game over it; try again in a minute
+                self.last_result = "Anti-AFK: you're using Quantum, so it isn't bringing the game forward yet"
+                self.afk_next = time.time() + 60
+                continue
+            # Bringing the game forward goes through the app when it can: that also un-pins Quantum, so the next F9
+            # shows it (left pinned behind a borderless game, F9 took it for showing and "hid" it instead)
+            if not game_in_focus() and not (self.afk_focus and ((self.on_focus_game or focus_game)() or game_in_focus())):
                 self.last_result = "Anti-AFK: waiting for Star Citizen to be the focused window"
                 self.afk_next = time.time() + 15           # tries again soon; keeps well inside the game's timer
                 continue

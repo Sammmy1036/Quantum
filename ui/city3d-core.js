@@ -635,6 +635,11 @@ function define(spec){
       ctx.aimAt=(pin,gp)=>{ if(pin&&(!gp||Math.hypot(pin.x-gp.t[0],pin.z-gp.t[1])<Math.max(800,gp.r*1.5))) return {t:[pin.x,pin.z], y:pin.alt-C.alt0, pin:true};
         return gp?{t:gp.t, y:gp.base+(gp.top-gp.base)*0.25}:null; };         // a city drawn from the game's own layout (see above)
       const model=await C.build(ctx);
+      // Places the city's own layout puts more exactly than Quantum's data (Teasa Spaceport): their map labels
+      // move onto the game's spot, and stay there when the map data is reloaded (QPLACE_FIX, see loadStatic).
+      for(const [name,a] of Object.entries(model?.placeAt||{})){ const d=dirAt(a.t[0],a.t[1]), r=F.B.radius+C.alt0+a.y;
+        const pos=d.map(v=>v*r); (window.QPLACE_FIX=window.QPLACE_FIX||{})[name]=pos;
+        const L=S.locMap?.[name]; if(L&&L.source==="db") L.pos=pos; }
       inner.traverse(o=>{ if(o.material) fade(o.material); });      // everything the city added fades with it
       // swap in the new model (a planet's terrain is rebuilt as you travel; the old one stays up meanwhile)
       const old=st.root; if(old){ scene.remove(old); old.traverse(o=>{ o.geometry?.dispose?.(); o.material?.dispose?.(); }); }

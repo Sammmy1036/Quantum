@@ -32,7 +32,7 @@ class MapMixin:
                 out_b.append({"name": b.name, "center": b.center, "radius": b.radius_m, "system": b.system,
                               "kind": b.kind, "period": b.rotation_period_h, "offset": b.rotation_offset_deg,
                               "epoch": b.epoch_utc, "om": b.om_radius_m, "calibrated": b.calibrated,
-                              "alignable": can_align(b),
+                              "alignable": can_align(b), "align_note": NO_ALIGN.get(b.name),
                               "parent": parent.name if parent and b.kind != "star" else None})
             hidden_keys = self._hidden_keys()
             unverified = gateways.unverified(self._learned_places())     # "Check its position" jobs
@@ -62,7 +62,11 @@ class MapMixin:
                     for l in [*self._db.locations.values(), *self._unplaced.values()]
                     if l.pos is not None or _place_key(l.name) not in hidden_keys]
             info = {b["name"]: wiki.for_game_body(self._wiki, b["name"], b["kind"], b["system"]) for b in out_b}
-            return {"version": self._static_version, "bodies": out_b, "locations": locs, "systems": SYSTEMS,
+            # Onyx Facilities' own frames (build_game_planet.py --onyx), for their floor plans (ui/js/onyx.js)
+            onyx = {q["name"]: {"body": q.get("body"), "pos": q["local"], "rot": q["rot"]}
+                    for q in ((getattr(self, "_game_bodies", None) or {}).get("places") or [])
+                    if str(q.get("name", "")).startswith("Onyx Facility") and q.get("rot") and q.get("local")}
+            return {"version": self._static_version, "bodies": out_b, "locations": locs, "systems": SYSTEMS, "onyx": onyx,
                     "wiki": {"bodies": info, "systems": (self._wiki or {}).get("systems", {})}}
 
     # ------------------------------------------------------------ live data
@@ -170,6 +174,9 @@ class MapMixin:
                     "social": self._social_badge(),
                     "city_clock": {**self._clock_cfg(), "available": city_clock.AVAILABLE, "in_city": self._clock_city},
                     "travel": self._travel_view(cur, t) if game_on else None,
+                    "contacts": self._tracker.contacts_view() if game_on and self._settings.get("contacts_on", True) else [],
+                    # the Onyx Facility you're in, from the location the game logs when you land there
+                    "onyx_here": gamelog.onyx_name((self._tracker.where or {}).get("code")) if game_on else None,
                     "arrived": self._arrived_note if game_on else None, "game_off": not game_on,
                     "play": self._play_tick(game_on, t),
                     "trade_ver": getattr(self, "_trade_changed", 0)}
@@ -187,6 +194,7 @@ class MapMixin:
                 live["player"] = info
             tc = ptime if p else t   # evaluate at the moment of the reading (or now, for a logged arrival)
             live["legs"] = self._db.route_length(p, psys, names, tc)
+            live["no_qt"] = self._no_qt_stops(names, p, psys, tc)
             live["total"] = sum(d for d in live["legs"] if d)
             if names:
                 loc = self._db.locations[names[0]]
@@ -620,6 +628,27 @@ class MapMixin:
                 self._route.append({"place": place, "task": tid})
                 added += 1
         return added
+
+    def _no_qt_stops(self, names, p, psys, t):
+        """Route stops you can't quantum to: no marker of their own (an Onyx Facility, a cave, a derelict).
+        For each: the nearest quantum markers to jump to first and how far you fly from there, or that an
+        active contract puts a marker on it (the game gives mission sites one while you have the job)."""
+        out, texts = {}, None
+        for n in dict.fromkeys(names):
+            loc = self._db.locations.get(n)
+            if not loc or loc.qt or classify(loc.name, loc.category) in ("om", "station", "city", "lpoint", "jump"):
+                continue
+            if texts is None:
+                texts = [" ".join([c.name] + [o.text for o in c.objectives]).lower()
+                         for c in self._tracker.contracts.values() if c.status == "active"]
+            if any(n.lower() in tx for tx in texts):
+                out[n] = {"contract": True}
+                continue
+            g = self._db.guidance(loc, p, psys, t)
+            out[n] = {"approach": [{k: a.get(k) for k in ("name", "ground", "straight", "heading", "orbit")}
+                                   for a in g.get("approach", [])[:2]],
+                      "closer": g.get("ground") is not None and bool(g.get("approach")) and g["ground"] < g["approach"][0]["ground"]}
+        return out
 
     def plan_route(self, include_contracts=True):
         """Order the trip for the shortest distance that still collects each cargo before delivering it.

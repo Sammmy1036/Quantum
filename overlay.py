@@ -140,7 +140,7 @@ if AVAILABLE:
         # Up = pinned AND actually in front. Pinned alone isn't enough: the game can end up drawn over a
         # pinned Quantum (it took the foreground back on its own, or after a click into it), and then the
         # first F9 only "hid" a window that was already out of sight, so it took a second press to show it.
-        if _is_overlay_up(hwnd) and _in_front(hwnd):
+        if _is_overlay_up(hwnd) and _in_front(hwnd) and not _game_covers(hwnd):
             user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
             game = _find_game()
             if game:
@@ -175,6 +175,11 @@ if AVAILABLE:
             user32.SetWindowPos(me, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
         game = _find_game()
         return bool(game) and _force_foreground(game)
+
+    def is_front(title=WINDOW_TITLE):
+        """True when Quantum is the focused window."""
+        hwnd = user32.FindWindowW(None, title)
+        return bool(hwnd) and user32.GetForegroundWindow() == hwnd
 
     def bring_to_front(title=WINDOW_TITLE):
         """Put Quantum in front of whatever's open (without pinning it on top)."""
@@ -241,6 +246,17 @@ if AVAILABLE:
     user32.WindowFromPoint.restype = wintypes.HWND
     user32.GetAncestor.argtypes = (wintypes.HWND, wintypes.UINT)
     user32.GetAncestor.restype = wintypes.HWND
+
+    def _game_covers(hwnd):
+        """The game is the focused window and covers all of Quantum: a borderless game in front is drawn over
+        even a pinned window, so Quantum can't be seen though Windows still lists it on top."""
+        game = _find_game()
+        if not game or user32.GetForegroundWindow() != game:
+            return False
+        q, g = _RECT(), _RECT()
+        if not (user32.GetWindowRect(hwnd, ctypes.byref(q)) and user32.GetWindowRect(game, ctypes.byref(g))):
+            return False
+        return g.left <= q.left and g.top <= q.top and g.right >= q.right and g.bottom >= q.bottom
 
     def _in_front(hwnd):
         """Can you actually see Quantum? It's the focused window, or it's what's on screen at its centre."""
@@ -328,6 +344,9 @@ else:
 
     def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None, show_cb=None):
         return "Only works on Windows"
+
+    def is_front(title=WINDOW_TITLE):
+        return False
 
     def bring_to_front(title=WINDOW_TITLE):
         return False

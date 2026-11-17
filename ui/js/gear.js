@@ -17,7 +17,8 @@ function linkLpoints(){
     P.mergedInto=at[0].name; for(const T of at) T.atLpoint=P.name; } }
 async function loadStatic(){
   const st=await api().get_static(); S.staticVersion=st.version; S.systems=st.systems||S.systems; S.wiki=st.wiki;
-  S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l])); linkLpoints(); S.svcCache={}; renderOffmap();
+  S.onyxSites=st.onyx||{}; S.bodies=st.bodies; S.bodyMap=Object.fromEntries(st.bodies.map(b=>[b.name,b])); S.locs=st.locations; S.locMap=Object.fromEntries(st.locations.map(l=>[l.name,l])); linkLpoints(); S.svcCache={}; renderOffmap();
+  for(const [n,p] of Object.entries(window.QPLACE_FIX||{})){ const L=S.locMap[n]; if(L&&L.source==="db"&&L.pos) L.pos=p; }   // spots a 3D city corrected
   $("places-dl").innerHTML=S.locs.filter(L=>L.source==="db"&&L.pos&&L.type!=="om"&&L.type!=="lpoint").map(L=>`<option value="${esc(L.name)}">${esc(L.body||L.system)}</option>`).join("");
   buildSystem(); renderResults(); renderWaypoints(true); renderSysSeg(); if(S.selected) renderDetail(); }
 // The UEX tabs only appear once a UEX token is saved; removing it hides them again.
@@ -96,7 +97,7 @@ const GEAR={
 const GR_ITEM={gadgets:1,clothing:1,consumables:1,utility:1};
 const GR_CART={weapons:"weapon",armor:"armor",gadgets:"gadget",clothing:"clothing",consumables:"consumable",utility:"utility"};
 S.gr=S.gr||{};
-const grState=k=>S.gr[k]=S.gr[k]||{data:null,loading:false,error:null,sel:null,view:k==="armor"?"sets":"items"};
+const grState=k=>S.gr[k]=S.gr[k]||{data:null,loading:false,error:null,sel:null,view:"items"};   // armor starts on single pieces
 async function openGear(kind){ const st=grState(kind);
   $("gr-panel").classList.add("show"); grSide(kind);
   if(st.data&&!st.filled){ st.filled=1; grFillFilters(kind); grLogos(kind); }
@@ -121,9 +122,9 @@ async function grLogos(kind){ const st=grState(kind); if(kind==="blueprints"||!s
 // The sidebar's controls are made once per tab, so typing in the search box keeps its focus
 function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.dataset.built="1"; const G=GEAR[kind];
   p.innerHTML=`<input class="search" id="gr-q-${kind}" placeholder="${esc(G.ph)}" autocomplete="off">
-    ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="sets" class="on">Sets</button><button data-grview="items">Single pieces</button></div>`:""}
+    ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="items" class="on">Single pieces</button><button data-grview="sets">Sets</button></div>`:""}
     <div class="cp-filters">
-      <label${kind==="consumables"?" hidden":""}><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
+      <label id="gr-catw-${kind}"${kind==="consumables"||(kind==="armor"&&grState(kind).view==="sets")?" hidden":""}><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
       ${G.subLab?`<label><span>${esc(G.subLab)}</span><select class="field" id="gr-sub-${kind}"><option value="">Any</option></select></label>`:""}
       ${kind!=="blueprints"?`<label id="gr-mkw-${kind}"${kind==="utility"?" hidden":""}><span>Maker</span><select class="field" id="gr-mk-${kind}"><option value="">Any</option></select></label>
       <label><span>Where</span><select class="field" id="gr-av-${kind}"><option value="">Anywhere</option><option value="buy">Sold in shops</option><option value="noshop">Not in shops</option></select></label>`:""}
@@ -139,6 +140,8 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
   for(const id of ["cat","sub","mk","av","sort"]){ const el=$(`gr-${id}-${kind}`); if(el) el.addEventListener("change",re); }
   $(`gr-reset-${kind}`).onclick=()=>{ for(const id of ["q","cat","sub","mk","av"]){ const el=$(`gr-${id}-${kind}`); if(el) el.value=""; } re(); };
   p.addEventListener("click",e=>{ const v=e.target.closest("[data-grview]"); if(v){ const st=grState(kind); st.view=v.dataset.grview; st.sel=null;
+      // a set is every piece, so filtering sets by piece makes no sense: the Piece filter only shows for single pieces
+      if(kind==="armor"){ const w=$("gr-catw-armor"), c=$("gr-cat-armor"); if(w) w.hidden=st.view==="sets"; if(c&&st.view==="sets") c.value=""; }
       for(const b of p.querySelectorAll("[data-grview]")) b.classList.toggle("on",b===v); return grRender(kind); }
     const h=e.target.closest("[data-gi],[data-gset]"); if(h){ grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); } }); }
 // Consumables: no Kind filter (the Food / Drink / Medical tab is the kind), and Maker only on Medical (food and
@@ -219,7 +222,7 @@ function grOpenItem(kind,id,set){ const st=grState(kind);
 // A gear page's extra rows (damage type, fire modes, armor resistances, effects…) as [label, value]: the Gear
 // page and a marketplace listing linked to the item show the same ones
 function grExtraPairs(kind,i){
-  if(kind==="weapons") return [i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.length&&["Fire modes",i.modes.join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean);
+  if(kind==="weapons") return [i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.filter(m=>m&&!/placeholder/i.test(m)).length&&["Fire modes",i.modes.filter(m=>m&&!/placeholder/i.test(m)).join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean);
   if(kind==="armor") return [["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean);
   if(GR_ITEM[kind]) return [...(i.effects?.length?[["Effects",i.effects.join(", ")]]:[]),...(i.buffs?.length?[["Buffs",i.buffs.join(", ")]]:[]),
       ...(i.facts||[]).filter(([a])=>!/^(effects?|buffs?)$/i.test(a)),i.sub&&i.sub!==i.kind?["Type",i.sub]:null,

@@ -196,6 +196,9 @@ class CityClock:
         screen = u32.GetDC(None)
         mem = g32.CreateCompatibleDC(screen)
         bmp, size, key, alpha, shown, last_top = None, (0, 0), None, 0.0, False, 0.0
+        pushed = None            # what the window last showed (picture, place, fade): pushed again only when it changes
+        u32.GetWindowLongW.argtypes = (wintypes.HWND, ctypes.c_int)
+        u32.GetWindowLongW.restype = ctypes.c_long
         msg = wintypes.MSG()
         last = time.monotonic()
         while True:
@@ -215,8 +218,8 @@ class CityClock:
             if alpha <= 0 and not visible:
                 if shown:
                     u32.ShowWindow(hwnd, 0)
-                    shown = False
-                time.sleep(0.25)
+                    shown, pushed = False, None
+                time.sleep(0.5)
                 continue
             if want:
                 rc = wintypes.RECT()
@@ -252,13 +255,20 @@ class CityClock:
                 else:
                     frac = {"top": 0.07, "upper": 0.20, "bottom": 0.72}.get(position, 0.07)
                     pt = wintypes.POINT(rc.left + (gw - size[0]) // 2, rc.top + int(gh * frac))
-            blend = BLENDFUNCTION(0, 0, int(alpha), 1)        # AC_SRC_OVER, AC_SRC_ALPHA
-            u32.UpdateLayeredWindow(hwnd, screen, ctypes.byref(pt), ctypes.byref(wintypes.SIZE(*size)), mem,
-                                    ctypes.byref(wintypes.POINT(0, 0)), 0, ctypes.byref(blend), 2)   # ULW_ALPHA
+            # Hand Windows the picture only when it changed (the minute, the fade, where it sits): it was pushed
+            # five times a second, which made Windows recompose it over the game each time for nothing
+            state = (key, pt.x, pt.y, int(alpha))
+            if state != pushed:
+                blend = BLENDFUNCTION(0, 0, int(alpha), 1)    # AC_SRC_OVER, AC_SRC_ALPHA
+                u32.UpdateLayeredWindow(hwnd, screen, ctypes.byref(pt), ctypes.byref(wintypes.SIZE(*size)), mem,
+                                        ctypes.byref(wintypes.POINT(0, 0)), 0, ctypes.byref(blend), 2)   # ULW_ALPHA
+                pushed = state
             if not shown:
                 u32.ShowWindow(hwnd, 4)                        # SW_SHOWNOACTIVATE
                 shown = True
-            if now - last_top > 2:                             # games like to take the top spot back
-                u32.SetWindowPos(hwnd, wintypes.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010)
+            # back on top only if it lost its place there (it was re-pinned every 2 s whatever happened)
+            if now - last_top > 3:
                 last_top = now
-            time.sleep(1 / 30 if 0 < alpha < 255 else 0.2)
+                if not (u32.GetWindowLongW(hwnd, -20) & 0x00000008):         # GWL_EXSTYLE, WS_EX_TOPMOST
+                    u32.SetWindowPos(hwnd, wintypes.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010)
+            time.sleep(1 / 30 if 0 < alpha < 255 else 0.25)

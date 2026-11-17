@@ -550,6 +550,39 @@ class GearMixin:
                 self._static_version += 1
             return res
 
+    def onyx_line_up(self, site, fx, fy, fz):
+        """Inside an Onyx Facility: the player has marked on its floor plan where they stood for their last
+        /showlocation (fx, fy, fz: the facility's own frame). That spot on the moon is known exactly, so line the
+        moon's rotation up on it, like calibrating at a place. Latitude and depth don't depend on the rotation, so
+        if those miss, it's the facility's placement that's off, not the rotation, and nothing is changed."""
+        with self._lock:
+            q = next((q for q in ((getattr(self, "_game_bodies", None) or {}).get("places") or [])
+                      if q.get("name") == site and q.get("rot") and q.get("local")), None)
+            if not q:
+                return {"ok": False, "error": f"Quantum doesn't have {site}'s position from the game files"}
+            if not self._player:
+                return {"ok": False, "error": "Type /showlocation in game first, standing where you'll mark"}
+            body = self._db.bodies.get(q["body"])
+            if not body or self._player_sys != body.system:
+                return {"ok": False, "error": f"Your last /showlocation isn't at {site}"}
+            R, t, f = q["rot"], q["local"], (float(fx), float(fy), float(fz))
+            pos = tuple(t[i] + sum(R[i * 3 + j] * f[j] for j in range(3)) for i in range(3))
+            known = Location(site, "surface", pos, body.name, system=body.system)
+            lat_c, _, alt_c = body.lat_lon_alt(body.to_local(self._player, self._player_t))
+            lat_k, _, alt_k = body.lat_lon_alt(pos)
+            miss_n = abs(lat_c - lat_k) * math.pi / 180 * body.radius_m
+            if miss_n > 60 or abs(alt_c - alt_k) > 20:
+                return {"ok": False, "error": f"Your /showlocation is {miss_n:,.0f} m north or south and {abs(alt_c - alt_k):,.0f} m "
+                        "up or down from the spot you marked. The moon's rotation can't cause that, so it's the facility's "
+                        "position from the game files that's off, not the rotation. Nothing was changed."}
+            res = self._db.auto_calibrate(body.name, known, self._player, self._player_t, lat_tol=1, alt_tol=1e9)
+            if res.get("ok"):
+                self._record_cal("manual", body.name, site, res["correction"])
+                self._static_version += 1
+                res["metres"] = abs(res["correction"]) * math.pi / 180 * math.hypot(pos[0], pos[1])
+                res["body"] = body.name
+            return res
+
     def set_autoloc(self, hotkey=None, interval=None, open_chat=None, loc_hotkey=None, chat_key=None, *_ignored):
         """hotkey: show/hide Quantum. loc_hotkey: type /showlocation. chat_key: the game's chat show/hide
         key, watched so /showlocation isn't typed while chat is hidden ("" = off). (interval is ignored:
@@ -611,6 +644,34 @@ class GearMixin:
         out.sort(key=lambda x: x["price"])
         return out
 
+    @staticmethod
+    def _norm_item(name):
+        return re.sub(r"[^a-z0-9]+", "", str(name or "").lower().replace("cannister", "canister"))
+
+    def _uex_item_spots(self, terms, places):
+        """UEX's shop prices for every item ({item uuid or name: [where to buy, cheapest first]}), or {} without
+        a UEX token or connection."""
+        try:
+            rows = self._uex.get("items_prices_all")[0]
+        except Exception:
+            return {}
+        out = {}
+        for r in rows or []:
+            price, t = r.get("price_buy"), terms.get(r.get("id_terminal")) if terms else None
+            if not price or not t:
+                continue
+            place = (places or {}).get(r.get("id_terminal"))
+            where = uex.where(t)
+            row = {"where": where, "shop": self._shop_name(r.get("terminal_name") or t.get("name"), where), "place": place,
+                   "system": t.get("star_system_name"), "price": price, "dist": self._dist_from_you(place),
+                   "updated": r.get("date_modified")}
+            for k in {str(r.get("item_uuid") or r.get("uuid") or "").lower(), self._norm_item(r.get("item_name"))} - {""}:
+                out.setdefault(k, []).append(row)
+        for v in out.values():
+            v.sort(key=lambda x: x["price"])
+            del v[10:]
+        return out
+
     GEAR_KINDS = ("weapons", "armor", "blueprints", "gadgets", "clothing", "consumables", "utility")
     # A shopping-list entry's kind -> the tab whose list knows its shops
     SHOP_GEAR = {"weapon": "weapons", "armor": "armor", "gadget": "gadgets", "clothing": "clothing",
@@ -631,10 +692,17 @@ class GearMixin:
                 terms, places = self._uex.terminals(), self._uex.place_map(self._db.locations)
             except Exception:
                 terms, places = {}, {}
-            out = []
+            out, direct = [], None
             for i in items:
                 i = dict(i)
                 i["buy"] = self._wiki_spots(i.pop("prices", None), terms, places)[:10]
+                if not i["buy"]:
+                    # The wiki's copy of UEX misses some items UEX sells (the Pancea MedGel Canister sits under
+                    # Containers there): ask UEX's own shop prices, by the item's id or else its name
+                    if direct is None:
+                        direct = self._uex_item_spots(terms, places)
+                    key = (i.get("uuid") or "").lower()
+                    i["buy"] = (direct.get(key) if key else None) or direct.get(self._norm_item(i.get("name"))) or []
                 out.append(i)
             items = out
         else:                                   # what a blueprint makes: the part's numbers when the game files have it
@@ -798,10 +866,9 @@ class GearMixin:
         """The RSI pledge store packs an item is in: the hand-checked ones (gear.PLEDGE_SOURCES), with the live
         store's price and link when the pack is on sale, then any other listing that matches by name.
         Only asked of the store for items the game files call promotional or event items, or that have a
-        paint in their name and are neither loot nor craftable; a plain item ("CSP-68H Backpack") is sold in
-        game or not at all."""
+        paint in their name; a plain item ("CSP-68H Backpack") is sold in game or not at all."""
         known = gear.pledge_sources(name)
-        maybe = pledgestore.paint_of(name) and not (rec and (rec.get("lootable") or rec.get("craftable")))
+        maybe = bool(pledgestore.paint_of(name))      # loot and craftable items can be in a pack too
         if not (known or promo or maybe):
             return {"store": [], "store_error": None}
         maker = (rec or {}).get("maker") or maker

@@ -347,7 +347,26 @@ def load_bodies(*paths):
             continue
         if isinstance(d, dict) and (not best or d.get("generated", 0) > best.get("generated", 0)):
             best = d
+    if best:
+        onyx_names(best)
     return best
+
+
+ONYX_FILE = re.compile(r"(?i)(?:^|[^a-z0-9])(s\d[a-z])_asd_facility_0*(\d{1,3})(?!\d)")
+
+
+def onyx_names(data):
+    """The game numbers its Onyx Facilities by their files: s1d_asd_facility_007 is Onyx Facility S1D7, the
+    name its contracts and its Game.log use. Older runs of build_game_planet.py --onyx numbered them north to
+    south instead, so those names point at the wrong facility; this puts each back under its own number."""
+    fixed = 0
+    for q in data.get("places") or []:
+        m = ONYX_FILE.search(str(q.get("container") or ""))
+        if m and str(q.get("name", "")).startswith("Onyx Facility"):
+            nm = f"Onyx Facility {m.group(1).upper()}{int(m.group(2))}"
+            if q["name"] != nm:
+                q["name"], fixed = nm, fixed + 1
+    return fixed
 
 
 def apply_bodies(db, data, keep=None):

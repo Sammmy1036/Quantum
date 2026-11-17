@@ -51,17 +51,17 @@
    ],
    "radius_m": 344500.0,
    "rotation_period_h": 5.51000023,
-   "rotation_offset_deg": 23.698837,
+   "rotation_offset_deg": 23.701801968800826,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 501541.0,
    "system": "Stanton",
    "internal": "Stanton1a",
    "kind": "moon",
    "calibrated": true,
-   "calibrated_at": 1792910625.0,
-   "calibrated_place": "Quantum datarunners",
+   "calibrated_at": 1794779480.292956,
+   "calibrated_place": "Onyx Facility S1A6",
    "community_offset_deg": 41.50707375,
-   "calibration_quality": "community"
+   "calibration_quality": "place"
   },
   {
    "name": "Calliope",
@@ -198,17 +198,17 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 2.48000002,
-   "rotation_offset_deg": 117.76944,
+   "rotation_offset_deg": 117.65936216900955,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1436815.0,
    "system": "Stanton",
    "internal": "Stanton1",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1793552472.0,
-   "calibrated_place": "Quantum datarunners",
+   "calibrated_at": 1794776821.9203606,
+   "calibrated_place": "Lorville",
    "community_offset_deg": 152.9598871,
-   "calibration_quality": "community"
+   "calibration_quality": "hangar"
   },
   {
    "name": "Ita",
@@ -282,14 +282,14 @@
    ],
    "radius_m": 1000000.0,
    "rotation_period_h": 4.11999989,
-   "rotation_offset_deg": 221.495775,
+   "rotation_offset_deg": 221.476955,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 1439593.0,
    "system": "Stanton",
    "internal": "Stanton4",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1793426668.0,
+   "calibrated_at": 1794548614.0,
    "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 248.19629679,
    "calibration_quality": "community"
@@ -450,17 +450,17 @@
    ],
    "radius_m": 431000,
    "rotation_period_h": 2.3699999,
-   "rotation_offset_deg": 0,
+   "rotation_offset_deg": 282.948734,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 622355,
    "system": "Pyro",
    "internal": "Pyro5c",
    "kind": "moon",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1794754368.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 0,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Vatra",
@@ -471,17 +471,17 @@
    ],
    "radius_m": 365810,
    "rotation_period_h": 3.4200001,
-   "rotation_offset_deg": 0,
+   "rotation_offset_deg": 321.85545,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 530162,
    "system": "Pyro",
    "internal": "Pyro5b",
    "kind": "moon",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1794753937.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 0,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Ignis",
@@ -534,17 +534,17 @@
    ],
    "radius_m": 321400,
    "rotation_period_h": 4.0900002,
-   "rotation_offset_deg": 0,
+   "rotation_offset_deg": 203.238895,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 475842,
    "system": "Pyro",
    "internal": "Pyro4",
    "kind": "planet",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1794754924.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 0,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Bloom",
@@ -555,17 +555,17 @@
    ],
    "radius_m": 413900,
    "rotation_period_h": 5.0300002,
-   "rotation_offset_deg": 199.4794168,
+   "rotation_offset_deg": 199.118927,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 601114,
    "system": "Pyro",
    "internal": "pyro3",
    "kind": "planet",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1794727711.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 199.4794168,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Monox",
@@ -576,17 +576,17 @@
    ],
    "radius_m": 529500,
    "rotation_period_h": 3.1099999,
-   "rotation_offset_deg": 178.405387,
+   "rotation_offset_deg": 178.590673,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 765583,
    "system": "Pyro",
    "internal": "Pyro2",
    "kind": "planet",
-   "calibrated": false,
-   "calibrated_at": 0.0,
-   "calibrated_place": "",
+   "calibrated": true,
+   "calibrated_at": 1794752922.0,
+   "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 178.405387,
-   "calibration_quality": ""
+   "calibration_quality": "community"
   },
   {
    "name": "Pyro1",
@@ -597,14 +597,14 @@
    ],
    "radius_m": 411700,
    "rotation_period_h": 2.4200001,
-   "rotation_offset_deg": 346.950718,
+   "rotation_offset_deg": 346.99502,
    "epoch_utc": 1577836800.0,
    "om_radius_m": 602993,
    "system": "Pyro",
    "internal": "Pyro1",
    "kind": "planet",
    "calibrated": true,
-   "calibrated_at": 1791624001.0,
+   "calibrated_at": 1794726897.0,
    "calibrated_place": "Quantum datarunners",
    "community_offset_deg": 22.4002208,
    "calibration_quality": "community"
@@ -49822,6 +49822,2166 @@
    "pinned": false,
    "category": "outpost",
    "created": 1794377330.194527
+  },
+  {
+   "name": "Onyx Facility S1B1",
+   "kind": "surface",
+   "pos": [
+    234353.391,
+    -131073.002,
+    58899.545
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5392225
+  },
+  {
+   "name": "Onyx Facility S1B2",
+   "kind": "surface",
+   "pos": [
+    213757.979,
+    124261.002,
+    119737.433
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539243
+  },
+  {
+   "name": "Onyx Facility S1B3",
+   "kind": "surface",
+   "pos": [
+    -119102.357,
+    246710.409,
+    -25576.979
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5392656
+  },
+  {
+   "name": "Onyx Facility S1B4",
+   "kind": "surface",
+   "pos": [
+    -235996.598,
+    -107176.052,
+    -92353.06
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393496
+  },
+  {
+   "name": "Onyx Facility S1B5",
+   "kind": "surface",
+   "pos": [
+    3429.783,
+    -251293.518,
+    112251.376
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393598
+  },
+  {
+   "name": "Onyx Facility S1B6",
+   "kind": "surface",
+   "pos": [
+    -236120.749,
+    134305.255,
+    45387.027
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393674
+  },
+  {
+   "name": "Onyx Facility S1B7",
+   "kind": "surface",
+   "pos": [
+    -202268.234,
+    -185882.403,
+    14625.112
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393746
+  },
+  {
+   "name": "Onyx Facility S1B8",
+   "kind": "surface",
+   "pos": [
+    -70285.906,
+    136108.869,
+    -228353.404
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393815
+  },
+  {
+   "name": "Onyx Facility S1B9",
+   "kind": "surface",
+   "pos": [
+    57604.948,
+    -259862.018,
+    -69328.099
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5393884
+  },
+  {
+   "name": "Onyx Facility S1B10",
+   "kind": "surface",
+   "pos": [
+    46855.276,
+    -100029.639,
+    251831.423
+   ],
+   "body": "Aberdeen",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539395
+  },
+  {
+   "name": "Onyx Facility S1A1",
+   "kind": "surface",
+   "pos": [
+    130656.93,
+    -243036.524,
+    -207059.94
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539403
+  },
+  {
+   "name": "Onyx Facility S1A2",
+   "kind": "surface",
+   "pos": [
+    132035.434,
+    311316.665,
+    70006.207
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394094
+  },
+  {
+   "name": "Onyx Facility S1A3",
+   "kind": "surface",
+   "pos": [
+    -241477.775,
+    162130.506,
+    186651.315
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394158
+  },
+  {
+   "name": "Onyx Facility S1A4",
+   "kind": "surface",
+   "pos": [
+    -244435.366,
+    -220397.286,
+    104248.124
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394225
+  },
+  {
+   "name": "Onyx Facility S1A5",
+   "kind": "surface",
+   "pos": [
+    301416.405,
+    1405.009,
+    168536.634
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539429
+  },
+  {
+   "name": "Onyx Facility S1A6",
+   "kind": "surface",
+   "pos": [
+    -302533.377,
+    -92754.344,
+    -138020.339
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539435
+  },
+  {
+   "name": "Onyx Facility S1A7",
+   "kind": "surface",
+   "pos": [
+    -295631.421,
+    178401.127,
+    -5887.718
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539441
+  },
+  {
+   "name": "Onyx Facility S1A8",
+   "kind": "surface",
+   "pos": [
+    11777.045,
+    343887.521,
+    29717.546
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394478
+  },
+  {
+   "name": "Onyx Facility S1A9",
+   "kind": "surface",
+   "pos": [
+    224919.833,
+    138107.835,
+    222253.015
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394542
+  },
+  {
+   "name": "Onyx Facility S1A10",
+   "kind": "surface",
+   "pos": [
+    229023.423,
+    -256766.942,
+    -26961.668
+   ],
+   "body": "Arial",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539461
+  },
+  {
+   "name": "Onyx Facility S4A1",
+   "kind": "surface",
+   "pos": [
+    20562.494,
+    -236173.506,
+    -38637.053
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394685
+  },
+  {
+   "name": "Onyx Facility S4A2",
+   "kind": "surface",
+   "pos": [
+    -169870.573,
+    -120333.34,
+    -119518.011
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539475
+  },
+  {
+   "name": "Onyx Facility S4A3",
+   "kind": "surface",
+   "pos": [
+    -152877.341,
+    183939.33,
+    19942.398
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394814
+  },
+  {
+   "name": "Onyx Facility S4A4",
+   "kind": "surface",
+   "pos": [
+    166649.734,
+    108856.26,
+    134119.485
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5394876
+  },
+  {
+   "name": "Onyx Facility S4A5",
+   "kind": "surface",
+   "pos": [
+    54002.143,
+    197775.462,
+    -125600.191
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5395122
+  },
+  {
+   "name": "Onyx Facility S4A6",
+   "kind": "surface",
+   "pos": [
+    175373.545,
+    157196.28,
+    46203.402
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539521
+  },
+  {
+   "name": "Onyx Facility S4A7",
+   "kind": "surface",
+   "pos": [
+    123779.543,
+    22665.131,
+    -204403.676
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5395277
+  },
+  {
+   "name": "Onyx Facility S4A8",
+   "kind": "surface",
+   "pos": [
+    -168851.586,
+    94709.546,
+    141893.048
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539533
+  },
+  {
+   "name": "Onyx Facility S4A9",
+   "kind": "surface",
+   "pos": [
+    -70647.545,
+    215374.382,
+    79466.436
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5395977
+  },
+  {
+   "name": "Onyx Facility S4A10",
+   "kind": "surface",
+   "pos": [
+    58206.893,
+    -116375.578,
+    201692.782
+   ],
+   "body": "Calliope",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396073
+  },
+  {
+   "name": "Onyx Facility S2A1",
+   "kind": "surface",
+   "pos": [
+    -21617.546,
+    260130.86,
+    7443.369
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539614
+  },
+  {
+   "name": "Onyx Facility S2A2",
+   "kind": "surface",
+   "pos": [
+    174258.953,
+    -182968.277,
+    66966.897
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396183
+  },
+  {
+   "name": "Onyx Facility S2A3",
+   "kind": "surface",
+   "pos": [
+    20585.055,
+    -80694.495,
+    246800.848
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396223
+  },
+  {
+   "name": "Onyx Facility S2A4",
+   "kind": "surface",
+   "pos": [
+    204694.897,
+    -154661.474,
+    -46140.584
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539626
+  },
+  {
+   "name": "Onyx Facility S2A5",
+   "kind": "surface",
+   "pos": [
+    -19727.62,
+    257238.239,
+    -37281.491
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.53963
+  },
+  {
+   "name": "Onyx Facility S2A6",
+   "kind": "surface",
+   "pos": [
+    -240992.839,
+    82895.617,
+    -56455.698
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396335
+  },
+  {
+   "name": "Onyx Facility S2A7",
+   "kind": "surface",
+   "pos": [
+    -58461.512,
+    -231373.542,
+    -104826.229
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396676
+  },
+  {
+   "name": "Onyx Facility S2A8",
+   "kind": "surface",
+   "pos": [
+    -26608.561,
+    -133673.453,
+    221949.323
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396805
+  },
+  {
+   "name": "Onyx Facility S2A9",
+   "kind": "surface",
+   "pos": [
+    -138368.39,
+    -165234.089,
+    -146306.881
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396886
+  },
+  {
+   "name": "Onyx Facility S2A10",
+   "kind": "surface",
+   "pos": [
+    112741.657,
+    -200818.556,
+    -122751.129
+   ],
+   "body": "Cellin",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5396962
+  },
+  {
+   "name": "Onyx Facility S4B1",
+   "kind": "surface",
+   "pos": [
+    282771.764,
+    -56655.936,
+    175755.672
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397036
+  },
+  {
+   "name": "Onyx Facility S4B2",
+   "kind": "surface",
+   "pos": [
+    236654.689,
+    198819.565,
+    -136119.108
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397108
+  },
+  {
+   "name": "Onyx Facility S4B3",
+   "kind": "surface",
+   "pos": [
+    -45021.833,
+    171130.9,
+    -287405.307
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397172
+  },
+  {
+   "name": "Onyx Facility S4B4",
+   "kind": "surface",
+   "pos": [
+    22635.79,
+    -312541.442,
+    -125977.014
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397232
+  },
+  {
+   "name": "Onyx Facility S4B5",
+   "kind": "surface",
+   "pos": [
+    -322132.696,
+    7142.157,
+    100787.001
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397298
+  },
+  {
+   "name": "Onyx Facility S4B6",
+   "kind": "surface",
+   "pos": [
+    -219398.933,
+    -243638.69,
+    78755.882
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397365
+  },
+  {
+   "name": "Onyx Facility S4B7",
+   "kind": "surface",
+   "pos": [
+    -223533.02,
+    -187640.502,
+    168903.266
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539743
+  },
+  {
+   "name": "Onyx Facility S4B8",
+   "kind": "surface",
+   "pos": [
+    8435.175,
+    -310111.634,
+    132982.205
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397491
+  },
+  {
+   "name": "Onyx Facility S4B9",
+   "kind": "surface",
+   "pos": [
+    212356.541,
+    -150513.576,
+    -214498.326
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397568
+  },
+  {
+   "name": "Onyx Facility S4B10",
+   "kind": "surface",
+   "pos": [
+    141889.565,
+    253517.635,
+    -171125.698
+   ],
+   "body": "Clio",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397637
+  },
+  {
+   "name": "Onyx Facility S2B1",
+   "kind": "surface",
+   "pos": [
+    242038.483,
+    -168329.964,
+    -13306.659
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397708
+  },
+  {
+   "name": "Onyx Facility S2B2",
+   "kind": "surface",
+   "pos": [
+    -146445.481,
+    -252667.659,
+    44455.784
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5397773
+  },
+  {
+   "name": "Onyx Facility S2B3",
+   "kind": "surface",
+   "pos": [
+    252677.357,
+    55095.714,
+    -142078.448
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398018
+  },
+  {
+   "name": "Onyx Facility S2B4",
+   "kind": "surface",
+   "pos": [
+    272333.726,
+    -5632.41,
+    113682.792
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398107
+  },
+  {
+   "name": "Onyx Facility S2B5",
+   "kind": "surface",
+   "pos": [
+    122566.377,
+    39772.552,
+    265444.963
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398176
+  },
+  {
+   "name": "Onyx Facility S2B6",
+   "kind": "surface",
+   "pos": [
+    -123044.41,
+    29224.422,
+    266653.52
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398235
+  },
+  {
+   "name": "Onyx Facility S2B7",
+   "kind": "surface",
+   "pos": [
+    -119043.588,
+    242238.942,
+    119095.69
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398297
+  },
+  {
+   "name": "Onyx Facility S2B8",
+   "kind": "surface",
+   "pos": [
+    -201410.809,
+    213094.572,
+    -38568.275
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539836
+  },
+  {
+   "name": "Onyx Facility S2B9",
+   "kind": "surface",
+   "pos": [
+    -230920.884,
+    -116335.078,
+    -141897.084
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539842
+  },
+  {
+   "name": "Onyx Facility S2B10",
+   "kind": "surface",
+   "pos": [
+    -78437.263,
+    -154694.353,
+    238719.396
+   ],
+   "body": "Daymar",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398486
+  },
+  {
+   "name": "Onyx Facility S4C1",
+   "kind": "surface",
+   "pos": [
+    160522.667,
+    91377.432,
+    106406.368
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398548
+  },
+  {
+   "name": "Onyx Facility S4C2",
+   "kind": "surface",
+   "pos": [
+    173244.66,
+    -115866.551,
+    44539.295
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398612
+  },
+  {
+   "name": "Onyx Facility S4C3",
+   "kind": "surface",
+   "pos": [
+    -181436.783,
+    -18239.263,
+    110768.404
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398679
+  },
+  {
+   "name": "Onyx Facility S4C4",
+   "kind": "surface",
+   "pos": [
+    -105106.961,
+    171991.184,
+    -69198.197
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398738
+  },
+  {
+   "name": "Onyx Facility S4C5",
+   "kind": "surface",
+   "pos": [
+    -14828.954,
+    -177808.196,
+    -117055.231
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.53988
+  },
+  {
+   "name": "Onyx Facility S4C6",
+   "kind": "surface",
+   "pos": [
+    187483.416,
+    100234.549,
+    16972.23
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398862
+  },
+  {
+   "name": "Onyx Facility S4C7",
+   "kind": "surface",
+   "pos": [
+    25725.154,
+    148921.75,
+    -150201.861
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398922
+  },
+  {
+   "name": "Onyx Facility S4C8",
+   "kind": "surface",
+   "pos": [
+    -128180.56,
+    122719.947,
+    -118613.885
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5398984
+  },
+  {
+   "name": "Onyx Facility S4C9",
+   "kind": "surface",
+   "pos": [
+    -56776.55,
+    22985.308,
+    204417.621
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399046
+  },
+  {
+   "name": "Onyx Facility S4C10",
+   "kind": "surface",
+   "pos": [
+    8843.234,
+    -210520.691,
+    -33737.833
+   ],
+   "body": "Euterpe",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399113
+  },
+  {
+   "name": "Onyx Facility S1D1",
+   "kind": "surface",
+   "pos": [
+    86574.188,
+    -186511.15,
+    251742.158
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399184
+  },
+  {
+   "name": "Onyx Facility S1D2",
+   "kind": "surface",
+   "pos": [
+    286935.628,
+    -137699.356,
+    67341.614
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399253
+  },
+  {
+   "name": "Onyx Facility S1D3",
+   "kind": "surface",
+   "pos": [
+    280600.373,
+    113633.534,
+    -118749.311
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399315
+  },
+  {
+   "name": "Onyx Facility S1D4",
+   "kind": "surface",
+   "pos": [
+    -307404.188,
+    80573.498,
+    68728.959
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399377
+  },
+  {
+   "name": "Onyx Facility S1D5",
+   "kind": "surface",
+   "pos": [
+    -155823.449,
+    -251755.994,
+    -135896.028
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399437
+  },
+  {
+   "name": "Onyx Facility S1D6",
+   "kind": "surface",
+   "pos": [
+    -143308.524,
+    -230603.898,
+    179541.035
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399504
+  },
+  {
+   "name": "Onyx Facility S1D7",
+   "kind": "surface",
+   "pos": [
+    3548.758,
+    325201.333,
+    -4226.385
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539957
+  },
+  {
+   "name": "Onyx Facility S1D8",
+   "kind": "surface",
+   "pos": [
+    -54895.603,
+    100329.388,
+    304342.829
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399635
+  },
+  {
+   "name": "Onyx Facility S1D9",
+   "kind": "surface",
+   "pos": [
+    -30505.76,
+    -276138.148,
+    169046.427
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399697
+  },
+  {
+   "name": "Onyx Facility S1D10",
+   "kind": "surface",
+   "pos": [
+    -172102.511,
+    -81732.025,
+    263174.281
+   ],
+   "body": "Ita",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399764
+  },
+  {
+   "name": "Onyx Facility S3A1",
+   "kind": "surface",
+   "pos": [
+    -97228.633,
+    178894.182,
+    -93370.315
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.539983
+  },
+  {
+   "name": "Onyx Facility S3A2",
+   "kind": "surface",
+   "pos": [
+    51311.409,
+    207717.981,
+    65963.822
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.53999
+  },
+  {
+   "name": "Onyx Facility S3A3",
+   "kind": "surface",
+   "pos": [
+    -142859.281,
+    -155280.621,
+    -75232.126
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5399961
+  },
+  {
+   "name": "Onyx Facility S3A4",
+   "kind": "surface",
+   "pos": [
+    147846.351,
+    11600.456,
+    -167831.514
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400026
+  },
+  {
+   "name": "Onyx Facility S3A5",
+   "kind": "surface",
+   "pos": [
+    66941.901,
+    -206797.429,
+    54819.501
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400088
+  },
+  {
+   "name": "Onyx Facility S3A6",
+   "kind": "surface",
+   "pos": [
+    -165589.023,
+    -135848.993,
+    65948.918
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400152
+  },
+  {
+   "name": "Onyx Facility S3A7",
+   "kind": "surface",
+   "pos": [
+    -146744.19,
+    119636.335,
+    119669.366
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400212
+  },
+  {
+   "name": "Onyx Facility S3A8",
+   "kind": "surface",
+   "pos": [
+    160531.582,
+    147335.632,
+    -51694.467
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400274
+  },
+  {
+   "name": "Onyx Facility S3A9",
+   "kind": "surface",
+   "pos": [
+    207781.123,
+    4431.118,
+    84102.774
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400333
+  },
+  {
+   "name": "Onyx Facility S3A10",
+   "kind": "surface",
+   "pos": [
+    66488.857,
+    -53542.957,
+    206792.422
+   ],
+   "body": "Lyria",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400398
+  },
+  {
+   "name": "Onyx Facility S1C1",
+   "kind": "surface",
+   "pos": [
+    189099.623,
+    -11605.124,
+    283428.388
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400467
+  },
+  {
+   "name": "Onyx Facility S1C2",
+   "kind": "surface",
+   "pos": [
+    200466.245,
+    274658.478,
+    -22453.97
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400527
+  },
+  {
+   "name": "Onyx Facility S1C3",
+   "kind": "surface",
+   "pos": [
+    -273455.181,
+    135679.029,
+    152212.777
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540059
+  },
+  {
+   "name": "Onyx Facility S1C4",
+   "kind": "surface",
+   "pos": [
+    -195873.657,
+    -252334.914,
+    -118837.21
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400658
+  },
+  {
+   "name": "Onyx Facility S1C5",
+   "kind": "surface",
+   "pos": [
+    34155.465,
+    -246252.479,
+    -233398.424
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400722
+  },
+  {
+   "name": "Onyx Facility S1C6",
+   "kind": "surface",
+   "pos": [
+    -143798.516,
+    -307799.133,
+    -29790.344
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400784
+  },
+  {
+   "name": "Onyx Facility S1C7",
+   "kind": "surface",
+   "pos": [
+    -8041.258,
+    -156444.802,
+    303017.584
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540085
+  },
+  {
+   "name": "Onyx Facility S1C8",
+   "kind": "surface",
+   "pos": [
+    -32110.49,
+    215939.092,
+    -261765.308
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400913
+  },
+  {
+   "name": "Onyx Facility S1C9",
+   "kind": "surface",
+   "pos": [
+    290667.24,
+    -177822.511,
+    11715.328
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5400975
+  },
+  {
+   "name": "Onyx Facility S1C10",
+   "kind": "surface",
+   "pos": [
+    101831.664,
+    -274673.576,
+    174613.048
+   ],
+   "body": "Magda",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540104
+  },
+  {
+   "name": "Onyx Facility S3B1",
+   "kind": "surface",
+   "pos": [
+    257179.065,
+    83640.556,
+    -85751.125
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540111
+  },
+  {
+   "name": "Onyx Facility S3B2",
+   "kind": "surface",
+   "pos": [
+    263290.146,
+    30583.028,
+    97731.53
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540118
+  },
+  {
+   "name": "Onyx Facility S3B3",
+   "kind": "surface",
+   "pos": [
+    -208159.238,
+    -175715.185,
+    -75123.751
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401247
+  },
+  {
+   "name": "Onyx Facility S3B4",
+   "kind": "surface",
+   "pos": [
+    23284.611,
+    269080.389,
+    -85561.265
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401306
+  },
+  {
+   "name": "Onyx Facility S3B5",
+   "kind": "surface",
+   "pos": [
+    -222502.489,
+    -117275.94,
+    129046.38
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401378
+  },
+  {
+   "name": "Onyx Facility S3B6",
+   "kind": "surface",
+   "pos": [
+    -81112.562,
+    265641.079,
+    55102.039
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540144
+  },
+  {
+   "name": "Onyx Facility S3B7",
+   "kind": "surface",
+   "pos": [
+    -181405.189,
+    217827.51,
+    3825.119
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.54015
+  },
+  {
+   "name": "Onyx Facility S3B8",
+   "kind": "surface",
+   "pos": [
+    197836.894,
+    170817.07,
+    108065.975
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401566
+  },
+  {
+   "name": "Onyx Facility S3B9",
+   "kind": "surface",
+   "pos": [
+    102283.946,
+    -260065.536,
+    -46491.076
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401628
+  },
+  {
+   "name": "Onyx Facility S3B10",
+   "kind": "surface",
+   "pos": [
+    249038.024,
+    -108551.754,
+    82023.117
+   ],
+   "body": "Wala",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540169
+  },
+  {
+   "name": "Onyx Facility S2C1",
+   "kind": "surface",
+   "pos": [
+    301409.432,
+    -76151.692,
+    -38446.48
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401757
+  },
+  {
+   "name": "Onyx Facility S2C2",
+   "kind": "surface",
+   "pos": [
+    90220.158,
+    158834.924,
+    -254335.432
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401824
+  },
+  {
+   "name": "Onyx Facility S2C3",
+   "kind": "surface",
+   "pos": [
+    300590.238,
+    -58086.183,
+    -65217.319
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401883
+  },
+  {
+   "name": "Onyx Facility S2C4",
+   "kind": "surface",
+   "pos": [
+    260357.791,
+    174724.62,
+    782.236
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5401947
+  },
+  {
+   "name": "Onyx Facility S2C5",
+   "kind": "surface",
+   "pos": [
+    292851.543,
+    54679.014,
+    96089.956
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5402012
+  },
+  {
+   "name": "Onyx Facility S2C6",
+   "kind": "surface",
+   "pos": [
+    120608.834,
+    -279272.906,
+    74592.78
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540208
+  },
+  {
+   "name": "Onyx Facility S2C7",
+   "kind": "surface",
+   "pos": [
+    59965.691,
+    -175196.819,
+    252382.516
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5402143
+  },
+  {
+   "name": "Onyx Facility S2C8",
+   "kind": "surface",
+   "pos": [
+    -233553.675,
+    -205798.275,
+    33278.948
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.540221
+  },
+  {
+   "name": "Onyx Facility S2C9",
+   "kind": "surface",
+   "pos": [
+    -39650.83,
+    -293908.681,
+    -101617.627
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5402272
+  },
+  {
+   "name": "Onyx Facility S2C10",
+   "kind": "surface",
+   "pos": [
+    200844.681,
+    -199456.485,
+    134662.525
+   ],
+   "body": "Yela",
+   "pad": "unknown",
+   "notes": "Position from the game files (PTU)",
+   "source": "db",
+   "system": "Stanton",
+   "qt": false,
+   "pinned": false,
+   "category": "outpost",
+   "created": 1794760726.5402336
   }
  ]
 }

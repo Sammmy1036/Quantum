@@ -77,9 +77,8 @@ function wlCard(x){ const art=WL_ART[x.kind]||"box", cartable=x.kind!=="other";
       <div class="wl-price ${sold?"":"no"}">${sold?`<b>${money(x.price)}</b><span>${x.where?`cheapest at ${esc(x.where)}`:""}${x.shops>1?` · ${plural(x.shops,"shop")}`:""}</span>`
         :`<b>Not sold in game</b><span>${x.kind==="ship"?"Pledge store, or wait for it to reach the ship shops":"Loot, crafting, a reward or the pledge store: open it to see how to get it"}</span>`}</div>
       ${wlMarketLine(x)}
-      <div class="row" style="gap:6px;margin-top:8px">${cartable&&sold?`<button class="btn small primary" data-wlcart="${esc(x.id)}">${CART_SVG} Add to cart</button>`:""}
-        <button class="btn small ghost" data-wlopen="${esc(x.id)}">Open</button><span class="spacer"></span>
-        <button class="btn small ghost" data-wlrm="${esc(x.id)}" aria-label="Take ${esc(x.name)} off your wish list">Remove</button></div></div></div>`; }
+      <div class="wl-btns">${cartable&&sold?`<button class="btn small primary" data-wlcart="${esc(x.id)}">${CART_SVG} Add to cart</button>`:""}
+        <button class="btn small ghost wl-rm" data-wlrm="${esc(x.id)}" aria-label="Take ${esc(x.name)} off your wish list">Remove</button></div></div></div>`; }
 // Players selling it in the Market right now: the cheapest, and a link to it
 function wlMarketLine(x){ const L=x.market||[]; if(!L.length) return "";
   const c=L.slice().sort((a,b)=>(a.price||0)-(b.price||0))[0];

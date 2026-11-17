@@ -457,7 +457,7 @@ function renderDetail(){
       <span class="k">POI</span><span>${n}</span>
       ${b.alignable?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
       ${b.kind==="asteroid"?`<span class="k">Landing</span><span>${S.locs.some(L=>L.body===b.name&&L.type==="station")?`At ${S.locs.filter(L=>L.body===b.name&&L.type==="station").map(L=>esc(L.name)).join(", ")} (station)`:"No landing zones"}</span>`:""}
-      ${b.kind==="planet"&&!b.alignable?`<span class="k">Landing</span><span>Not accessible in game yet</span>`:""}
+      ${b.align_note?`<span class="k">Rotation</span><span>${esc(b.align_note)}</span>`:b.kind==="planet"&&!b.alignable?`<span class="k">Landing</span><span>Not accessible in game yet</span>`:""}
       ${distFromYou(b.center,b.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(b.center,b.system)-b.radius)} to surface</span>`:""}</div>
       <div class="acts"><button class="btn primary" data-a="zoom">Fly to</button></div>${wikiFor(b.name)?CREDIT(wikiFor(b.name).url):""}`;
   } else if(sel.kind==="mission"){ const m=sel.m;
@@ -501,6 +501,7 @@ function renderDetail(){
         ${inRoute?`<button class="btn" data-a="route" title="Visit it again later in the trip">Add again</button><button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
         ${S.tradePlaces?.has(L.name)&&!(L.amen&&S.svcCache[L.name]?.amenities)?`<button class="btn${S.stock?.place===L.name?" primary":""}" data-a="stock" title="What the commodity terminals here buy and sell, and how recent the prices are">Commodities</button>`:""}
+        ${isOnyxPlace(L.name)?`<button class="btn" data-a="onyx" title="The facility's floor plans: every wing and storey, the way out, and where enemies spawn">Floor plans</button>`:""}
         ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
         ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
@@ -541,6 +542,7 @@ function renderDetail(){
     if(a==="focus") focusLoc(sel.name,true);
     if(a==="padfix"){ S.padFix=sel.name; renderDetail(); $("d-pad")?.focus(); }
     if(a==="city3d") city3dFor(sel.name)?.open(sel.name);
+    if(a==="onyx") return openOnyx(sel.name);
     if(a==="stock") return toggleStock(sel.name);
     if(a==="guide"){ await api().set_guide(sel.name); await poll(); renderDetail(); showRoute(); setFollow(true); followNow(); toast(`Guiding you to ${sel.name}`); }
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }

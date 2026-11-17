@@ -40,7 +40,7 @@ import wiki
 
 from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
 import gamelog
-from nav_core import Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
+from nav_core import NO_ALIGN, Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
 import nav_core
 import missions_wiki
 import starmap_import

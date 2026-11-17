@@ -876,6 +876,14 @@ function drawOverlay(t){
     if(S.live.player?.approx||pn.stale){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
     ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke();
     labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label(pn.stale?"You (last seen)":"You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
+    // Ships that just streamed in near you (profile.js contactsNear): a red ring round you and their names to
+    // the left. The log never says where they are, only that they're within streaming range.
+    const ct=typeof contactsNear==="function"?contactsNear():[];
+    if(ct.length){ const hi=ct.some(c=>c.level==="high"), ph2=(performance.now()/900)%1;
+      ctx.strokeStyle=hi?`rgba(255,90,90,${.8*(1-ph2)})`:`rgba(255,211,138,${.6*(1-ph2)})`; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(q[0],q[1],16+ph2*34,0,7); ctx.stroke();
+      ct.slice(0,4).forEach((c,k)=>{ const tx=`${c.level==="high"?"⚠ ":""}${c.name}`; ctx.font="700 11.5px 'Exo 2',sans-serif";
+        const w=ctx.measureText(tx).width; label(tx,q[0]-18-w,q[1]-8+k*14,{color:c.level==="high"?"#ff6b6b":"#ffd38a",font:"700 11.5px 'Exo 2',sans-serif",force:true}); }); }
     // The place you're at sits under the "You" marker: name it just below "You" so both show.
     const under=drawn.filter(d=>!d.isWp).map(d=>[d,Math.hypot(d.q[0]-q[0],d.q[1]-q[1])]).filter(x=>x[1]<24).sort((a,b)=>a[1]-b[1])[0]?.[0];
     S.youAt=under?.L.name||null;

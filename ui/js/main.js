@@ -29,11 +29,12 @@ async function poll(){
   if(here && here!==prevSys){ renderSysSeg();
     if(prevSys){ S.autoSystem=true; if(here!==S.system) setSystem(here, !S.follow); if(S.follow&&live.player) setTimeout(followNow,80); }
     else if(S.autoSystem && here!==S.system) setSystem(here); }
-  const rk=JSON.stringify([live.route,live.legs.map(x=>x&&Math.round(x/1000)),live.stop_roles,live.route_warning]); if(rk!==S.routeKey){ S.routeKey=rk; renderRoute(); renderResults(); }
+  const rk=JSON.stringify([live.route,live.legs.map(x=>x&&Math.round(x/1000)),live.stop_roles,live.route_warning,Object.entries(live.no_qt||{}).map(([n,q])=>[n,q.contract,q.approach?.[0]?.name,Math.round((q.approach?.[0]?.ground||0)/1000)])]); if(rk!==S.routeKey){ S.routeKey=rk; renderRoute(); renderResults(); }
   const ck=JSON.stringify([live.contracts_version,live.route,live.contracts.map(c=>c.tracking&&[c.tracking.stage,Math.round((c.tracking.to_go||0)/100)])]);
   if(ck!==S.contractsKey||Math.round(live.now)%30===0){ S.contractsKey=ck; renderContracts(); }
   const ar=live.arrived; if(ar&&ar.at!==S.arrSeen){ if(S.arrSeen!==undefined) toast(ar.advanced?`Arrived at ${ar.place}${live.route.length?". Next: "+live.route[0]:". Route complete"}`:`Arrived at ${ar.place}`); S.arrSeen=ar.at; }
   renderHud(); renderStatus(); renderCapture(); renderWaypoints(false);
+  try{ window.onyxTick?.(); }catch(e){ console.warn("onyx",e); }        // a /showlocation inside an Onyx Facility: its floor plans
   if(S.qVersion===undefined){ S.qVersion=""; api().update_status().then(st=>{ S.qVersion=st.current; S.qBuild=st.build||""; if(st.just_updated) toast(`Quantum updated to ${st.current}`); }); }
   if((live.update?.version||null)!==(S.updSeen||null)){ S.updSeen=live.update?.version||null; renderUpdateBar(); }
   if((live.game_update?.build||null)!==(S.gameUpdSeen||null)){ S.gameUpdSeen=live.game_update?.build||null; renderGameUpdate(); }

@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 
 BASE_URL = "https://quantumsc.org/assets/"
-FOLDERS = ("cities/", "citylights/", "planets/", "terrain/", "stations/", "outposts/")
+FOLDERS = ("cities/", "citylights/", "planets/", "terrain/", "stations/", "outposts/", "onyx/")   # onyx/: the Onyx Facility floor plans
 MANIFEST_TTL = 600            # re-check the manifest at most every 10 minutes
 
 

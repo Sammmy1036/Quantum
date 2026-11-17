@@ -50,7 +50,20 @@ RE_END_MISSION = re.compile(r"<EndMission>.*?MissionId\[([0-9a-f-]+)\].*?Complet
 RE_QT_SHIP = re.compile(r"\| ([A-Za-z0-9_]+?)_?\[(\d+)\]\|CSCItemNavigation")
 RE_QT_SELECT = re.compile(r"Player has selected point (\S+) as their destination")
 RE_QT_START = re.compile(r"Projected Start Location is (.+?) for route to destination (\S+)")
-RE_DEATH = re.compile(r"Actor '([^']+)' \[\d+\] ejected from zone '[^']*' \[\d+\] to zone '([^']+)'")
+RE_DEATH = re.compile(r"Actor '([^']+)' \[\d+\] ejected from zone '([^']*)' \[\d+\] to zone '([^']+)'")
+# A ship destroyed, who the game credits and why: "<Vehicle Destroyed> Vehicle 'ORIG_890Jump_9334…' [9334…] class
+# 'ORIG_890Jump' (owner player [8099…], driver [0]) destroyed: reason [BoundaryViolation] level [0] -> [2] … killer
+# 'SentimentalCoconut' [8099…]". When the game destroys a ship itself, the killer is its owner.
+RE_VEH_DESTROYED = re.compile(r"Vehicle '([^']+)' \[\d+\] class '([^']+)' \(owner player \[(\d+)\][^)]*\) destroyed: "
+                              r"reason \[([^\]]*)\] level \[(\d+)\] -> \[(\d+)\].*?killer '([^']*)' \[(\d+)\]")
+# Older game versions also logged who killed you on foot: "<Actor Death> CActor::Kill: 'You' [id] in zone '…' killed by
+# 'Them' [id] using 'weapon_123' [Class behr_rifle_…] with damage type 'Bullet'". Read if it's there.
+RE_ACTOR_KILL = re.compile(r"CActor::Kill: '([^']+)' \[\d+\] in zone '([^']*)' killed by '([^']*)' \[\d+\] using '([^']*)'"
+                           r"(?: \[Class ([^\]]+)\])?(?: with damage type '([^']*)')?")
+# The game's reasons for destroying a ship, for people
+WRECK_REASONS = {"BoundaryViolation": "the game destroyed it for being somewhere it can't go",
+                 "Collision": "a collision", "Combat": "weapons fire", "SelfDestruct": "self-destruct",
+                 "Crash": "a crash", "Suicide": "self-destruct", "Unknown": "unknown"}
 RE_OOC = re.compile(r"OOC_(Stanton|Pyro|Nyx)_\d+[a-z]?_(\w+)", re.I)
 RE_INV_MOVE = re.compile(r"<Update Inventory Location> Player \[[^\]]*\] is changing location\. Landing \[(\d+)\] -> "
                          r"\[(\d+)\]\. Location \[(\d+)\] -> \[(\d+)\]")
@@ -104,7 +117,38 @@ RE_SHOP = re.compile(r"playerId\[(\d+)\] shopId\[\d+\] shopName\[SCShop_([A-Za-z
 RE_SHOP_QTY = re.compile(r"\bquantity\[(\d+)\]", re.I)
 MAKERS = {"AEGS": "Aegis", "ANVL": "Anvil", "ARGO": "Argo", "BANU": "Banu", "CNOU": "C.O.", "CRUS": "Crusader",
           "DRAK": "Drake", "ESPR": "Esperia", "GAMA": "Gatac", "GLSN": "Gallenson", "GRIN": "Greycat", "KRIG": "Kruger",
-          "MISC": "MISC", "MRAI": "Mirai", "ORIG": "Origin", "RSI": "RSI", "TMBL": "Tumbril", "XIAN": "Aopoa", "XNAA": "Aopoa"}
+          "MISC": "MISC", "MRAI": "Mirai", "ORIG": "Origin", "RSI": "RSI", "TMBL": "Tumbril", "XIAN": "Aopoa", "XNAA": "Aopoa",
+          "VNCL": "Vanduul"}
+
+# ---- Ship contacts (the "pirate detector")
+# Every ship that streams into your game client's bubble (roughly tens of km round you) writes a line like
+#   <ATC_Reset_VehiclesBeingStoredCleared> ATC 'VNCL_Glaive_ShipATCDataManager_932644448094' [932644448094] ...
+# That's all Game.log says about other ships: the model and an entity id. No pilot name, no position, nothing
+# about whether it's hostile. At a station or city dozens arrive at once (they're parked there); out in the
+# open, one turning up is a ship coming to you. Sam's death on Pyro IV (15 Nov 2026): a Galaxy, an Avenger and
+# then a Vanduul Glaive streamed in over the 5 minutes before his Centaurus went down, the Glaive 95 s before.
+RE_SHIP_ATC = re.compile(r"ATC '([A-Za-z0-9]+_[A-Za-z0-9_]+?)_ShipATCDataManager_(\d+)'")
+# Ship models by how worried to be when one shows up out in the open: "interdict" can pull you out of
+# quantum or shut your ship down (Mantis, Antares, Warlock), "combat" is a fighter or gunship.
+THREAT_INTERDICT = re.compile(r"^(RSI_Mantis|RSI_Scorpius_Antares|AEGS_Avenger_Warlock|MISC_Fury_MIRU|DRAK_Cutlass_Blue)", re.I)
+THREAT_COMBAT = re.compile(r"^(VNCL_|ESPR_(Talon|Blade|Prowler)|ANVL_(Hornet|Arrow|Gladiator|Hurricane|Lightning|Hawk|"
+                           r"Valkyrie|F7|F8|Terrapin_Medic)|AEGS_(Gladius|Sabre|Vanguard|Eclipse|Redeemer|Hammerhead|"
+                           r"Retaliator|Avenger_Stalker|Idris)|DRAK_(Buccaneer|Cutlass_Black|Cutlass_Steel|Corsair|Herald_Ghost)|"
+                           r"CRUS_Star_Fighter|CRUS_Ares|RSI_Scorpius|RSI_Polaris|RSI_Perseus|RSI_Constellation_Phoenix_Emerald|"
+                           r"MISC_Fury|MRAI_Guardian|ORIG_(325a|350r|M50|85x)|CNOU_Mustang_Delta|BANU_Defender|KRIG_L21|"
+                           r"KRIG_P52|GAMA_Syulen_Gunship|AEGS_Avenger$)", re.I)
+
+
+def onyx_name(code):
+    """The game's code for an Onyx Facility (landing there logs Location[Stanton1a_ASD_Delve_Facility_008])
+    -> its name, "Onyx Facility S1A8"; else None."""
+    m = re.fullmatch(r"(?i)stanton(\d)([a-z])_ASD_Delve_Facility_0*(\d{1,3})", code or "")
+    return f"Onyx Facility S{m.group(1)}{m.group(2).upper()}{int(m.group(3))}" if m else None
+
+
+def ship_threat(code):
+    """'VNCL_Glaive' -> 'combat'; 'RSI_Mantis' -> 'interdict'; a hauler or anything else -> 'ship'."""
+    return "interdict" if THREAT_INTERDICT.match(code) else "combat" if THREAT_COMBAT.match(code) else "ship"
 
 
 def vehicle_name(code):
@@ -410,6 +454,7 @@ class ContractTracker(threading.Thread):
         self.loading = False       # the game's loading screen is up (from "OpenLoadingScreen" to "Loading screen ... closed")
         self.spawned_at = None     # when you last spawned in the game world (logging in, or respawning after death)
         self.armistice = None      # (inside: bool, at)
+        self.contacts = []         # ships that streamed in near you: {"id", "code", "name", "threat", "at", "safe"}
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
         self._build_read = False   # read from this log yet (it's read again for every new game session)
@@ -1215,6 +1260,8 @@ class ContractTracker(threading.Thread):
             return name if name in self.nav.locations else None
         if (code or "").startswith(("ACTIVITY:", "HANGAR:", "QTSTART:", "TUNNEL:")):  # only the system is known
             return None
+        if name := onyx_name(code):                    # Stanton1a_ASD_Delve_Facility_008 -> Onyx Facility S1A8
+            return name if name in self.nav.locations else None
         jp = self.jump_station(code)
         if jp:
             return jp[1] if jp[1] in self.nav.locations else None
@@ -1408,6 +1455,8 @@ class ContractTracker(threading.Thread):
                                                          "qty": max(1, int(q.group(1))) if q else 1,
                                                          "at": log_time(line) or time.time(), "n": self.purchase_n}])[-50:]
                 return self._activity(text, line, place=where)
+        if "_ShipATCDataManager_" in line and (m := RE_SHIP_ATC.search(line)):
+            return self._contact(m.group(1), m.group(2), log_time(line) or time.time())
         if "ATC_DataManager_Port_" in line:
             for name, eid in RE_ATC.findall(line):
                 self.atc[int(eid)] = name
@@ -1441,8 +1490,18 @@ class ContractTracker(threading.Thread):
         if "<Update Inventory Location>" in line and (m := RE_INV_MOVE.search(line)):
             return self._moved(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)),
                                log_time(line) or time.time())
+        if "<Vehicle Destroyed>" in line and (m := RE_VEH_DESTROYED.search(line)):
+            self.wrecks = [w for w in getattr(self, "wrecks", []) if (log_time(line) or time.time()) - w["at"] < 60][-10:]
+            self.wrecks.append({"zone": m.group(1), "cls": m.group(2), "owner": m.group(3), "reason": m.group(4),
+                                "level": int(m.group(6)), "killer": m.group(7), "at": log_time(line) or time.time()})
+            return False
+        if "CActor::Kill:" in line and (m := RE_ACTOR_KILL.search(line)):
+            if not self.player_name or m.group(1) == self.player_name:
+                self.kill_line = {"killer": m.group(3), "weapon": m.group(5) or m.group(4), "damage": m.group(6),
+                                  "at": log_time(line) or time.time()}
+            return False
         if "<[ActorState] Dead>" in line and (m := RE_DEATH.search(line)):
-            return self._died(m.group(1), m.group(2), log_time(line) or time.time())
+            return self._died(m.group(1), m.group(3), log_time(line) or time.time(), m.group(2))
         if m := RE_LOCATION.search(line):
             code = m.group(1)
             sysm = SYSTEM_RE.match(code)
@@ -1569,7 +1628,8 @@ class ContractTracker(threading.Thread):
         if landing == 0 and old_landing == 0 and old_loc == 0:
             # Spawned (logging in, or respawning after death): not a take-off. Where comes next.
             self.cur = {"id": loc, "landing": 0, "at": ts, "place": self._resolve_loc(0, loc),
-                        "left": None, "spawned": True, "died_near": (self.cur or {}).get("died_near")}
+                        "left": None, "spawned": True, "died_near": (self.cur or {}).get("died_near"),
+                        "cause": (self.cur or {}).get("cause")}
             return True
         if landing == 0:
             if old_landing == 0:
@@ -1579,14 +1639,31 @@ class ContractTracker(threading.Thread):
         place = self._resolve_loc(landing, loc)
         spawned = bool(self.cur and self.cur.get("spawned") and ts - self.cur.get("at", 0) < 60)
         self.cur = {"id": loc, "landing": landing, "at": ts, "place": place, "left": None,
-                    "spawned": spawned, "died_near": (self.cur or {}).get("died_near") if spawned else None}
+                    "spawned": spawned, "died_near": (self.cur or {}).get("died_near") if spawned else None,
+                    "cause": (self.cur or {}).get("cause") if spawned else None}
         if place:
             self._learn_after_jump(place, ts, "landing")
             L = self.nav.locations[place]
             self.where = {"code": "PLACE:" + place, "system": L.system, "body": L.body, "at": ts}
         return True
 
-    def _died(self, actor, zone, ts):
+    def death_cause(self, actor, from_zone, ts):
+        """What killed you, as far as the log says: {"by": name or None, "how", "ship", "reason", "weapon", "damage"}.
+        A ship you were thrown out of was destroyed just before (its Vehicle Destroyed line names who the game credits);
+        older game versions also logged who killed you on foot. None when the log has neither."""
+        k = getattr(self, "kill_line", None)
+        if k and abs(ts - k["at"]) < 30:
+            by = k["killer"] if k["killer"] and k["killer"] != actor else None
+            return {"by": by, "how": "killed" if by else "died", "weapon": k.get("weapon"), "damage": k.get("damage"),
+                    "ship": None, "reason": None}
+        w = next((w for w in reversed(getattr(self, "wrecks", [])) if w["zone"] == from_zone and abs(ts - w["at"]) < 30), None)
+        if w:
+            by = w["killer"] if w["killer"] and w["killer"] != actor else None
+            return {"by": by, "how": "ship destroyed", "ship": re.sub(r"(\d)([A-Z])", r"\1 \2", vehicle_name(w["cls"])), "reason": w["reason"],
+                    "reason_text": WRECK_REASONS.get(w["reason"], w["reason"]), "weapon": None, "damage": None}
+        return None
+
+    def _died(self, actor, zone, ts, from_zone=""):
         """You died; the zone you were thrown into names the planet/moon you were near."""
         if self.player_name and actor != self.player_name:
             return False
@@ -1595,8 +1672,44 @@ class ContractTracker(threading.Thread):
         if m:
             name = {"ariel": "Arial"}.get(m.group(2).lower(), m.group(2))
             near = next((b for b in self.nav.bodies if b.lower() == name.lower()), name)
-        self.cur = {"id": None, "landing": 0, "at": ts, "place": None, "left": None, "dead": True, "died_near": near}
+        else:                                       # thrown into the planet's own zone ('pyro4'): its game code
+            near = self._body_by_internal(zone)
+        threats = [{k: c[k] for k in ("name", "threat", "age")} for c in self.contacts_view(ts)]     # what turned up just before
+        self.cur = {"id": None, "landing": 0, "at": ts, "place": None, "left": None, "dead": True, "died_near": near,
+                    "threats": threats, "cause": self.death_cause(actor, from_zone, ts)}
         return True
+
+    def _contact(self, code, eid, ts):
+        """A ship streamed in near you (see RE_SHIP_ATC). Kept for 15 minutes. "safe" when it came while you
+        were inside an armistice zone or landed: those are parked ships, not ones coming for you."""
+        cur = self.cur or {}
+        safe = bool(self.armistice and self.armistice[0]) or bool(cur.get("landing")) or not self.in_pu
+        old = next((c for c in self.contacts if c["id"] == eid), None)
+        if old:
+            old.update(at=ts, safe=safe)
+        else:
+            self.contacts.append({"id": eid, "code": code, "name": vehicle_name(code), "threat": ship_threat(code),
+                                  "at": ts, "safe": safe})
+        self.contacts = [c for c in self.contacts if ts - c["at"] < 900][-40:]
+        return not safe
+
+    def contacts_view(self, now=None):
+        """Ships that streamed in near you out in the open in the last 10 minutes, newest first, with a level:
+        "high" (a fighter or interdictor turned up in the last 3 minutes), "watch" (any ship in the last 3
+        minutes) or "seen". Empty while you're safe in an armistice zone or landed."""
+        now = now or time.time()
+        cur = self.cur or {}
+        if (self.armistice and self.armistice[0]) or cur.get("landing") or cur.get("dead"):
+            return []
+        out = []
+        for c in sorted(self.contacts, key=lambda c: -c["at"]):
+            age = now - c["at"]
+            if c["safe"] or age > 600 or age < -60:
+                continue
+            fresh = age < 180
+            out.append({**c, "age": max(0, round(age)),
+                        "level": "high" if fresh and c["threat"] != "ship" else "watch" if fresh else "seen"})
+        return out[:8]
 
     def _close(self, c, state, line):
         ts = log_time(line) or time.time()

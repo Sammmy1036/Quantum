@@ -32,8 +32,10 @@ KINDS = {
     "gadgets": [("items", {"filter[classification]": "FPS.Weapon.Gadget"}), ("items", {"filter[type]": "Gadget"}),
                 ("items", {"filter[classification]": "FPS.WeaponAttachment.Utility"})],
     "clothing": [("items", {"filter[classification]": "FPS.Clothing"})],
-    # Food, drinks and medical items (MedPens, OxyPens…)
-    "consumables": [("items", {"filter[type]": "Food,Bottle,Drink"}), ("items", {"filter[classification]": "FPS.Consumable"})],
+    # Food, drinks and medical items (MedPens, OxyPens…), and MedGel: the ParaMed and LifeGuard refills (filed as the
+    # medical devices' magazines) and the Pancea MedGel Canister that refills med beds
+    "consumables": [("items", {"filter[type]": "Food,Bottle,Drink"}), ("items", {"filter[classification]": "FPS.Consumable"}),
+                    ("items", {"filter[name]": "Refill"}), ("items", {"filter[name]": "MedGel"})],
     # The Keys tab (kept as "utility" inside): hacking chips, cryptokeys and keycards
     "utility": [("items", {"filter[sub_type]": "Hacking"}), ("items", {"filter[name]": "cryptokey"}),
                 ("items", {"filter[name]": "keycard"}), ("items", {"filter[name]": "key card"})],
@@ -67,7 +69,13 @@ def _num(v):
 
 def _maker(d):
     m = d.get("manufacturer")
-    return ((m.get("name") if isinstance(m, dict) else m) or d.get("manufacturer_description") or "").strip()
+    for v in ((m.get("name") if isinstance(m, dict) else m), d.get("manufacturer_description")):
+        v = str(v or "").strip()
+        if v and not re.search(r"(?i)placeholder|^unknown$|^n/?a$|^none$", v):
+            return "CureLife" if v.lower() == "curelife" else v
+    if is_medgel(d):
+        return "CureLife"                        # every MedGel product is CureLife's (the wiki leaves the canister blank)
+    return ""
 
 
 def _maker_code(d):
@@ -119,14 +127,66 @@ def _common(d):
             "web_url": d.get("web_url"), "prices": _prices(d)}
 
 
+FIRE_MODES = {"single": "Semi-auto", "semi": "Semi-auto", "rapid": "Full-auto", "auto": "Full-auto", "burst": "Burst",
+              "charge": "Charge", "beam": "Beam", "shotgun": "Spread", "sequence": "Sequence"}
+
+
+def fire_mode(m):
+    """A fire mode's name for people: the wiki's "localised" label is often "<= PLACEHOLDER =>" or "[SEMI]",
+    so go by the mode itself ("Rapid" -> "Full-auto")."""
+    for t in (m.get("mode"), m.get("localised")):
+        t = re.sub(r"[\[\]<>=]", " ", str(t or "")).strip()
+        if not t or re.search(r"(?i)placeholder|^test", t):
+            continue
+        return FIRE_MODES.get(t.lower(), t.title() if t.isupper() else t)
+    return None
+
+
+WEAPON_KINDS = ["LMG", "SMG", "Sniper Rifle", "Rifle", "Shotgun", "Pistol", "Launcher", "Railgun", "Grenade Launcher",
+                "Knife", "Grenade", "Gadget", "Medical", "Tractor Beam", "Multi-Tool"]
+# words in a name or "Item Type" line -> the kind ("Sniper Rifle" before "Rifle", "Grenade Launcher" before "Launcher")
+_WEAPON_WORDS = [("grenade launcher", "Grenade Launcher"), ("sniper", "Sniper Rifle"), ("lmg", "LMG"), ("light machine", "LMG"),
+                 ("smg", "SMG"), ("submachine", "SMG"), ("shotgun", "Shotgun"), ("scattergun", "Shotgun"), ("railgun", "Railgun"),
+                 ("launcher", "Launcher"), ("pistol", "Pistol"), ("rifle", "Rifle"), ("knife", "Knife"), ("grenade", "Grenade")]
+
+
+def weapon_kind(d, pw):
+    """What kind of weapon it is (LMG, Rifle, Pistol…). The wiki's weapon type is sometimes missing, and its fallback
+    is the size class ("Medium"), so the description's "Item Type" line and the name are asked before that."""
+    t = str(pw.get("type") or "").strip()
+    if t and t.lower() not in ("small", "medium", "large", "other", "unknown"):
+        return t
+    for src in (_desc_data(d).get("item type"), d.get("name")):
+        low = str(src or "").lower()
+        for w, k in _WEAPON_WORDS:
+            if re.search(r"(?<![a-z])" + w + r"(?![a-z])", low):
+                return k
+    t = str(d.get("sub_type_label") or d.get("sub_type") or "").strip()
+    return t if t and t.lower() not in ("small", "medium", "large") else "Other"
+
+
+def armor_weight(*vals):
+    """Light, Medium, Heavy or Super Heavy, from the wiki's sub type or the description's item type; anything else
+    (undersuits, flight suits, odd labels) has no weight class."""
+    for v in vals:
+        low = str(v or "").lower()
+        if "super" in low and "heavy" in low:
+            return "Super Heavy"
+        for w in ("heavy", "medium", "light"):
+            if re.search(r"(?<![a-z])" + w, low):
+                return w.title()
+    return None
+
+
 def trim_weapon(d):
     """A personal weapon: what it is (rifle, pistol…, ballistic or energy) and how it shoots."""
     pw = d.get("personal_weapon") or {}
     dmg = pw.get("damage") or {}
     ammo = pw.get("ammunition") or d.get("ammunition") or {}
     dtypes = [x.get("name") for x in pw.get("damages") or [] if isinstance(x, dict) and x.get("name")]
-    modes = [m.get("localised") or m.get("mode") for m in pw.get("modes") or [] if isinstance(m, dict)]
-    kind = (pw.get("type") or d.get("sub_type_label") or d.get("sub_type") or "Other").strip()
+    modes = [fire_mode(m) for m in pw.get("modes") or [] if isinstance(m, dict)] or \
+        ([fire_mode({"mode": pw["fire_mode"]})] if isinstance(pw.get("fire_mode"), str) else [])
+    kind = weapon_kind(d, pw)
     out = _common(d)
     out.update({"kind": kind, "cls": (pw.get("class") or "").strip() or None,
                 "weight": d.get("sub_type_label") or d.get("sub_type"),
@@ -167,7 +227,7 @@ def trim_armor(d):
     rad = d.get("radiation_resistance") or ca.get("radiation_resistance") or {}
     sig = ca.get("signature") or {}
     out = _common(d)
-    out.update({"slot": slot, "weight": d.get("sub_type_label") or d.get("sub_type") or None,
+    out.update({"slot": slot, "weight": armor_weight(d.get("sub_type_label"), d.get("sub_type"), dd.get("item type")),
                 "set": armor_set_name(out["name"], slot),
                 "stats": {k: v for k, v in {
                     "dr": dr, "temp_min": _num(ca.get("temp_resistance_min")), "temp_max": _num(ca.get("temp_resistance_max")),
@@ -220,6 +280,12 @@ GADGET_KIND = [(r"multi.?tool", "Multi-tool"), (r"tractor beam", "Tractor beam")
                (r"quikcade|barricade|cover", "Barricade"), (r"medgun|med gun|paramed|cure", "Medical")]
 
 
+def is_medgel(d):
+    """MedGel: the ParaMed and LifeGuard refills and the Pancea canister for med beds."""
+    return bool(re.search(r"(?i)medgel|paramed refill|lifeguard refill",
+                          f"{d.get('name') or ''} {_en(d.get('description')) or ''} {d.get('sub_type_label') or ''}"))
+
+
 def _category(kind, d, t):
     name, typ = t["name"].lower(), d.get("type") or ""
     cls = (d.get("classification") or "").lower()
@@ -232,6 +298,8 @@ def _category(kind, d, t):
     if kind == "clothing":
         return d.get("type_label") or (d.get("clothing") or {}).get("type") or "Other"
     if kind == "consumables":
+        if is_medgel(d):
+            return "Medical"
         if "medical" in cls or isinstance(d.get("medical"), dict):
             return "Medical"
         return {"Food": "Food", "Drink": "Drink", "Bottle": "Drink"}.get(typ) or d.get("type_label") or "Other"
@@ -253,6 +321,8 @@ def trim_item(d, kind):
     out["kind"] = _category(kind, d, out)
     out["sub"] = d.get("sub_type_label") if d.get("sub_type_label") not in (None, "", "UNDEFINED", "Undefined") else None
     out["type"], out["classification"] = d.get("type"), d.get("classification")
+    if kind == "consumables" and is_medgel(d):
+        out["sub"] = "MedGel (med beds)" if re.search(r"(?i)canister", out["name"]) else "MedGel refill"
     st = {"mass": _num(d.get("mass"))}
     if kind == "clothing":
         a = trim_armor(d)
@@ -282,6 +352,10 @@ def _skip(kind, d):
     utility query's ship things (weapon racks) aren't carried."""
     if kind == "weapons":
         return d.get("sub_type") == "Gadget" or (d.get("classification") or "").startswith("FPS.Weapon.Gadget")
+    if kind == "consumables" and re.search(r"(?i)refill|medgel", d.get("name") or ""):
+        if re.fullmatch(r"(?i)\s*med\s*gel\s*", d.get("name") or ""):
+            return True                          # the commodity a canister holds, not something you buy
+        return not is_medgel(d)                  # the name queries also find other refills
     if kind == "utility":
         cls = d.get("classification") or ""
         return d.get("type") in ("WeaponRack", "Container", "Cargo") or cls.startswith(("Ship.", "Vehicle."))
@@ -336,7 +410,7 @@ class Gear:
         self.dir = Path(cache_dir)
 
     def _file(self, name):
-        return self.dir / f"gear_v3_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v3: one entry per item, Keys tab
+        return self.dir / f"gear_v6_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v5: MedGel in Consumables, CureLife, fire modes
 
     def items(self, kind, max_pages=60, fresh=False):
         """Every entry of one kind, trimmed: {"items": [...], "at": when fetched, "stale": bool}."""

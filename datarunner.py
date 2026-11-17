@@ -35,7 +35,8 @@ SHOT_BUDGET = 9 * 1024 * 1024                # stay under it with room to spare
 MAX_SHOTS = 8                                # one report each: enough for a long kiosk list
 CONTAINER_SIZES = {1, 2, 4, 8, 16, 24, 32}
 DUPLICATE_WINDOW = 300                       # UEX rejects the same item at the same terminal within 5 min
-STATUS = {1: "Out of stock", 2: "Very low", 3: "Low", 4: "Medium", 5: "High", 6: "Very high", 7: "Max Inventory"}
+STATUS = {1: "Out of stock", 2: "Very Low Inventory", 3: "Low Inventory", 4: "Medium Inventory", 5: "High Inventory",
+          6: "Very High Inventory", 7: "Max Inventory"}
 
 # Plain-language versions of UEX's response codes, for the app to show.
 MESSAGES = {

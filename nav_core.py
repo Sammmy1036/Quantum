@@ -103,9 +103,18 @@ REMOVED_PLACES = {"port olisar"}      # removed from the game in Alpha 3.20.0 (S
 STATION_NAMES = {"levski", "grim hex", "grimhex"}   # data calls them landing zones; they're stations
 
 
+# Bodies that are never lined up, whatever the data says, with the reason the map shows for each.
+# Pyro V is a gas giant: nowhere to land and nothing on it to take a /showlocation from (Crusader stays
+# alignable: Orison floats in its clouds and turns with it). Fuego has no day length in any data we have
+# and nothing on its surface with a QT marker (only caves and an unmarked derelict outpost), so one reading
+# couldn't line it up anyway. Take it out of here once its day length is known.
+NO_ALIGN = {"Pyro5": "Gas giant: nowhere to land, so there's nothing to line up",
+            "Fuego": "Not needed: no known day length and no marked places on its surface to line it up from"}
+
+
 def can_align(body) -> bool:
     """A planet or moon you can land on, so a /showlocation there can line up its rotation."""
-    return (body is not None and body.kind in ("planet", "moon")
+    return (body is not None and body.kind in ("planet", "moon") and body.name not in NO_ALIGN
             and (body.name not in NO_LANDING or bool(body.internal)))
 
 

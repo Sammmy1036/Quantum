@@ -149,10 +149,11 @@ class CoreMixin:
                 (not cur or q["selected"] >= cur.get("at", 0)):
             return {**base, "state": "jumping", "from": q.get("start"), "to": q.get("place"), "at": q["selected"]}
         if cur and cur.get("dead"):
-            return {**base, "state": "dead", "near": cur.get("died_near"), "at": cur.get("at")}
+            return {**base, "state": "dead", "near": cur.get("died_near"), "at": cur.get("at"), "threats": cur.get("threats") or [],
+                    "cause": cur.get("cause")}
         if cur and cur.get("spawned"):
             return {**base, "state": "respawned", "place": cur.get("place"), "near": cur.get("died_near"),
-                    "at": cur.get("at")}
+                    "at": cur.get("at"), "cause": cur.get("cause")}
         if cur and cur.get("jump"):
             return {**base, "state": "arrived", "place": cur.get("near"), "at": cur.get("at")}
         if cur:

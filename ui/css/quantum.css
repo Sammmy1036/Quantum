@@ -615,7 +615,7 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-row{display:grid;grid-template-columns:46px minmax(150px,1.3fr) 108px 128px minmax(170px,1fr) 236px;gap:10px;align-items:center;padding:8px 12px 8px 8px;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel-2);outline:none}
 .dr-row:focus{box-shadow:0 0 0 2px rgba(127,231,255,.55)}
 .dr-row.same{border-color:rgba(60,207,110,.45);border-left-color:#3ccf6e;background:rgba(60,207,110,.06)}
-.dr-row.edit{border-color:rgba(75,141,255,.55);border-left-color:var(--route);background:rgba(75,141,255,.07)}
+.dr-row.edit{border-color:rgba(60,207,110,.45);border-left-color:#3ccf6e;background:rgba(60,207,110,.06)}
 .dr-row.gone{border-left-color:var(--danger);background:rgba(255,107,107,.05)}
 .dr-row.gone .nm b{text-decoration:line-through;color:var(--dim)}
 .dr-row.gone .val,.dr-row.gone .inv{opacity:.3;pointer-events:none}
@@ -633,7 +633,8 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .dr-row .segs button{height:16px;border:1px solid var(--line-2);border-radius:3px;background:var(--panel);padding:0}
 .dr-row .segs button.f{border-color:transparent}
 .dr-row .segs.l1 button.f,.dr-row .segs.l2 button.f{background:#ff6b6b}
-.dr-row .segs.l3 button.f,.dr-row .segs.l4 button.f{background:#f2c14e}
+.dr-row .segs.l3 button.f{background:#f2c14e}
+.dr-row .segs.l4 button.f{background:#4b9dff}
 .dr-row .segs.l5 button.f,.dr-row .segs.l6 button.f,.dr-row .segs.l7 button.f{background:#57e39b}
 .dr-row .inv span{font-size:11px;color:var(--ink-2)}
 .dr-row .acts{display:flex;gap:6px;justify-content:flex-end}
@@ -1884,6 +1885,10 @@ button.ph-ver:hover{border-color:var(--route-2)}
 .wl-filters .chip.on{background:#13254a;border-color:var(--route,#2f86ff);color:#fff}
 .wl-sync.ok{color:#8fe3b4}.wl-sync.err{color:#f3d68c}.wl-sync a{color:var(--route-2,#8fe3ff);cursor:pointer}
 .wl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+/* the card's buttons wrap onto a second line in narrow windows instead of being cut off; Remove sits at the right */
+.wl-card .bd{min-width:0}
+.wl-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.wl-btns .btn{white-space:nowrap}.wl-btns .wl-rm{margin-left:auto}
 .wl-card{display:grid;grid-template-columns:118px 1fr;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .wl-card .ph{height:100%;min-height:150px;display:grid;place-items:center;background:var(--panel-3);cursor:pointer;overflow:hidden}
 .wl-card .ph img{width:100%;height:100%;object-fit:cover}

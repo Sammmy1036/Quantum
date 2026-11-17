@@ -1,4 +1,4 @@
-// Map data (cities/, citylights/, planets/, terrain/) is hosted on the Quantum server. The app downloads
+// Map data (cities/, citylights/, planets/, terrain/, onyx/) is hosted on the Quantum server. The app downloads
 // each file when it's first needed, checks it against the server's manifest, caches it, and serves it to
 // the map from a local address. qLoadAsset("terrain/Hurston.js") loads one; if that has nothing (no app
 // side yet, offline without a cached copy), it falls back to the copy in this ui folder, if there is one.
@@ -13,7 +13,7 @@
   // Status pill while files download (the first visit to a city can be tens of MB): what it is and how far.
   const nice=p=>{ const m=p.match(/^(\w+)\/(.+?)(\.near)?\.js$/); if(!m||m[2]==="index") return "map data";
     const n=decodeURIComponent(m[2]).replace(/([a-z])([A-Z])/g,"$1 $2");
-    return {cities:`${n} 3D city${m[3]?" (close-up detail)":""}`, terrain:`${n} terrain`, planets:`${n} surface map`, citylights:`${n} city lights`}[m[1]]||n; };
+    return {cities:`${n} 3D city${m[3]?" (close-up detail)":""}`, terrain:`${n} terrain`, planets:`${n} surface map`, citylights:`${n} city lights`, onyx:"Onyx Facility floor plans"}[m[1]]||n; };
   const mb=b=>(b/1048576).toFixed(b<10485760?1:0);
   let pending=0, polling=false, pill=null, hideT=0;
   const showPill=html=>{ if(!pill){ pill=document.createElement("div"); pill.id="dl-pill";
