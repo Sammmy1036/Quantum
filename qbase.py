@@ -305,6 +305,8 @@ def with_extra_vehicles(rows):
     for x in auto:                                        # the Patch Hub's new ships UEX doesn't list yet
         if any(_same_auto(x, v) for v in rows) or any(_same_ship(e, x) or _same_auto(x, e) for e in EXTRA_VEHICLES):
             continue
+        if any(_same_auto(x, e) for e in extra):          # the hub naming one ship twice ("Aegis Sabre Raven EX" / "Sabre Raven EX")
+            continue
         extra.append(dict(x))
     return _fix_makers(out + extra)
 

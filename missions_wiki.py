@@ -166,6 +166,89 @@ class MissionWiki:
         return data
 
 
+    # ------------------------------------------------------------ employers and factions (the Missions tab)
+    def faction(self, name):
+        """What the wiki knows about a faction: its overview (type, headquarters, area, focus, founded,
+        leadership...), description and reputation ranks. The wiki keeps that on each of the faction's missions,
+        so one of them is fetched. None when it has none; raises when the wiki can't be reached."""
+        key = f"faction|{_norm(name)}"
+        with self._lock:
+            e = self._load().get(key)
+        if e and time.time() - e.get("at", 0) < (HIT_TTL if e.get("data") else MISS_TTL):
+            return e.get("data")
+        rows = _get(f"{API}?" + urllib.parse.urlencode({"filter[faction]": name, "page[size]": 5})).get("data") or []
+        fac = None
+        for r in rows[:3]:
+            f = r.get("faction") if isinstance(r.get("faction"), dict) else None
+            if (not f or len(f) < 4) and r.get("uuid"):
+                f = (_get(f"{API}/{urllib.parse.quote(r['uuid'])}", timeout=25).get("data") or {}).get("faction")
+            if isinstance(f, dict) and _norm(f.get("name")) == _norm(name):
+                fac = f
+                break
+        data = faction_summary(fac) if fac else None
+        with self._lock:
+            self._load()[key] = {"at": time.time(), "data": data}
+            self._save()
+        return data
+
+    def wiki_index(self, pages=25):
+        """Every mission the wiki lists, boiled down for the Missions tab (used when Quantum's own game data
+        isn't on this PC yet). Cached for a week."""
+        key = "index"
+        with self._lock:
+            e = self._load().get(key)
+        if e and e.get("data") and time.time() - e.get("at", 0) < HIT_TTL:
+            return e["data"]
+        out = []
+        for page in range(1, pages + 1):
+            q = urllib.parse.urlencode({"page[size]": 200, "page[number]": page})
+            got = _get(f"{API}?{q}", timeout=30)
+            rows = got.get("data") or []
+            for m in rows:
+                fac = m.get("faction")
+                out.append({"title": m.get("title"), "giver": m.get("mission_giver"),
+                            "faction": fac.get("name") if isinstance(fac, dict) else fac,
+                            "type": m.get("mission_type"), "reward": m.get("reward_min"), "reward_max": m.get("reward_max"),
+                            "currency": m.get("reward_currency"), "lawful": not m.get("illegal"), "rank": m.get("rank_index"),
+                            "ref": m.get("uuid"), "code": m.get("debug_name"), "systems": m.get("star_systems") or []})
+            last = ((got.get("meta") or {}).get("last_page")) or 0
+            if not rows or (last and page >= last):
+                break
+        with self._lock:
+            self._load()[key] = {"at": time.time(), "data": out}
+            self._save()
+        return out
+
+
+# ------------------------------------------------------------ factions
+_FAC_SKIP = {"uuid", "id", "name", "slug", "description", "web_url", "link", "image", "logo", "version", "updated_at",
+             "created_at", "class_name", "debug_name"}
+
+
+def faction_summary(f):
+    """A wiki faction record -> {name, overview: [[label, value]], description, ranks: [[name, xp]]}.
+    Read loosely: the wiki's field names change now and then, so any plain field is shown under its own name."""
+    over, ranks = [], []
+    for k, v in f.items():
+        if k in _FAC_SKIP or v in (None, "", [], {}):
+            continue
+        if isinstance(v, (str, int, float)) and not isinstance(v, bool):
+            over.append([k.replace("_", " ").strip().capitalize(), str(v)])
+        elif isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+            for x in v:                             # reputation ranks: [{name, xp / min_reputation / ...}]
+                nm = x.get("name") or x.get("label") or x.get("title")
+                num = next((x[n] for n in ("xp", "xp_required", "min_reputation", "reputation", "threshold", "value", "amount")
+                            if isinstance(x.get(n), (int, float))), None)
+                if nm:
+                    ranks.append([str(nm), num])
+        elif isinstance(v, dict):                   # {"reputation": {"ranks": [...]}}
+            for x in v.values():
+                if isinstance(x, list):
+                    ranks += faction_summary({"_r": x})["ranks"]
+    return {"name": f.get("name"), "overview": over[:12], "description": _clean_text(f.get("description"))[:1500] or None,
+            "ranks": ranks[:20], "url": f.get("web_url")}
+
+
 # ------------------------------------------------------------ summary
 def _places(group):
     names, seen = [], set()

@@ -231,7 +231,12 @@ class MapMixin:
                                 "count": sum(max(0, (e.get("qty") or 1) - (e.get("bought") or 0)) for e in cart)}
             if getattr(self, "_server_checked", None):           # the Quantum server, as last checked (see _watch_server)
                 live["server"] = {"ok": self._server_ok, "error": self._server_error, "at": self._server_checked,
-                                  "back": getattr(self, "_server_back_at", None)}
+                                  "back": getattr(self, "_server_back_at", None),
+                                  "down_since": getattr(self, "_server_down_since", None)}
+            # Suspended or banned from community features by the moderation team: the server says so in every
+            # social check-in ({until, reason}; until None = until it's lifted, i.e. banned). None when it isn't.
+            so_state = (self._soc.get("state") or {}) if getattr(self, "_soc", None) else {}
+            live["acct_block"] = so_state.get("suspended") if so_state.get("status") == "ok" else None
             if self._settings_note:
                 live["settings_note"] = self._settings_note
             live["calibration"] = self._calibration
@@ -776,6 +781,72 @@ class MapMixin:
         for i in info.get("blueprint_items") or []:
             i["bp"] = bps.get(str(i.get("uuid") or "").lower()) or bps.get("name:" + (i.get("name") or "").lower())
         return {"ok": True, "found": True, "info": info}
+
+    # ------------------------------------------------------------ the Missions tab: employers and factions
+    def missions_index(self, fresh=False):
+        """Who gives out contracts and what they offer, from Quantum's own game data (contracts_data.json),
+        or the Star Citizen Wiki's list while that isn't on this PC: {ok, source, employers: [{name, faction,
+        count, types, lawful, unlawful, reward: [min, max], ranks, missions: [...]}]}."""
+        rows, source = [], "game"
+        c = getattr(self._files, "contracts", None)
+        for uid, m in ((c.items if c else {}) or {}).items():
+            rep = [r for r in m.get("rep") or [] if r.get("amount")]
+            rows.append({"title": m.get("title"), "giver": m.get("giver"), "faction": rep[0].get("faction") if rep else None,
+                         "type": m.get("type"), "reward": m.get("reward"), "reward_max": m.get("reward_max") or m.get("reward"),
+                         "currency": m.get("currency"), "lawful": m.get("lawful") is not False, "rank": m.get("rank"),
+                         "rep": rep[0].get("amount") if rep else None, "code": m.get("class_name") or m.get("debug_name"),
+                         "ref": None, "desc": (m.get("description") or "")[:600] or None,
+                         "cargo": [o.get("resource") for o in m.get("cargo") or [] if o.get("resource")][:4],
+                         "max_players": m.get("max_players")})
+        if not rows:
+            source = "wiki"
+            try:
+                rows = self._missions.wiki_index()
+            except Exception:
+                return {"ok": False, "error": "Quantum's mission data isn't on this PC yet and the Star Citizen Wiki couldn't be reached. Try again in a minute"}
+        emp = {}
+        for m in rows:
+            title = self._mission_vars(m.get("title"), m) if m.get("title") else None
+            if not title:
+                continue
+            name = str(m.get("giver") or m.get("faction") or "Unknown employer").strip()
+            e = emp.setdefault(name.lower(), {"name": name, "factions": {}, "types": {}, "lawful": 0, "unlawful": 0,
+                                              "reward": [None, None], "missions": [], "seen": set()})
+            k = (title.lower(), m.get("type"), m.get("reward_max"))
+            if k in e["seen"]:                        # the same contract per system or per tier: once is enough
+                continue
+            e["seen"].add(k)
+            if m.get("faction"):
+                e["factions"][m["faction"]] = e["factions"].get(m["faction"], 0) + 1
+            if m.get("type"):
+                e["types"][m["type"]] = e["types"].get(m["type"], 0) + 1
+            e["lawful" if m.get("lawful", True) else "unlawful"] += 1
+            for v in (m.get("reward"), m.get("reward_max")):
+                if isinstance(v, (int, float)) and v > 0:
+                    e["reward"][0] = v if e["reward"][0] is None else min(e["reward"][0], v)
+                    e["reward"][1] = v if e["reward"][1] is None else max(e["reward"][1], v)
+            e["missions"].append(dict(m, title=title))
+        out = []
+        for e in emp.values():
+            e.pop("seen")
+            facs = sorted(e.pop("factions").items(), key=lambda x: -x[1])
+            e["faction"] = facs[0][0] if facs else None
+            e["types"] = [t for t, _ in sorted(e["types"].items(), key=lambda x: -x[1])]
+            e["count"] = len(e["missions"])
+            e["missions"].sort(key=lambda m: ((m.get("rank") if isinstance(m.get("rank"), (int, float)) else 0), m.get("reward_max") or 0, m["title"]))
+            out.append(e)
+        out.sort(key=lambda e: (-e["count"], e["name"].lower()))
+        return {"ok": True, "source": source, "at": getattr(c, "at", None) if source == "game" else None, "employers": out}
+
+    def faction_info(self, name):
+        """The wiki's page on a faction: overview, description and reputation ranks."""
+        if not name:
+            return {"ok": True, "found": False}
+        try:
+            f = self._missions.faction(name)
+        except Exception:
+            return {"ok": False, "error": "The Star Citizen Wiki couldn't be reached. Try again in a minute"}
+        return {"ok": True, "found": bool(f), "faction": f}
 
     def commodity_sources(self, name):
         """Where a commodity is mined or harvested (Star Citizen Wiki), each place matched to the map:

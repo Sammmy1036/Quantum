@@ -124,6 +124,7 @@ class AssetCache:
             want = self.manifest(fresh=True).get("files", {}).get(path)
             if want is None:
                 self.log(f"asset {path}: not in the server's manifest.json")
+                self.last_error = f"{path}: not in the server's manifest.json (upload it to the server and rebuild the manifest)"
         dest = self.dir / path
         with self._lock:
             flock = self._file_locks.setdefault(path, threading.Lock())

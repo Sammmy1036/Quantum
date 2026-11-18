@@ -130,13 +130,13 @@ function renderSocialPanel(){ const P=$("so-panel"); if(!P) return;
   if(!c){ P.innerHTML=`<div class="so-chat-h" id="so-head"></div><div class="so-msgs"><div class="so-empty" style="margin:auto">Loading…</div></div>`; soHead(); return; }
   if(c.error){ P.innerHTML=land("Couldn't open this conversation",esc(c.error)); return; }
   P.innerHTML=`<div class="so-chat-h" id="so-head"></div><div id="so-askbox"></div><div class="so-msgs" id="so-msgs"></div>
-    <div class="so-compose">${c.can_message??c.friends?`<textarea class="field" id="so-text" rows="1" maxlength="2000" placeholder="Message ${esc(c.with.name)}"></textarea><button class="btn primary" id="so-send">Send</button>`
+    <div class="so-compose">${c.can_message??c.friends?`<button class="iconbtn so-wpbtn" id="so-wpbtn" title="Share one of your waypoints" aria-label="Share a waypoint">📍</button><textarea class="field" id="so-text" rows="1" maxlength="2000" placeholder="Message ${esc(c.with.name)}"></textarea><button class="btn primary" id="so-send">Send</button>`
       :`<div class="muted" style="font-size:12.5px">You can't message ${esc(c.with.name)}: you're not friends and have no marketplace trade together.</div>`}</div>`;
   soHead(); soRenderMsgs(true);
   const T=$("so-text"); if(T){ T.value=S.so.draft[id]||""; const fit=()=>{ T.style.height="auto"; T.style.height=Math.min(140,T.scrollHeight)+"px"; }; fit();
     T.oninput=()=>{ S.so.draft[id]=T.value; fit(); };
     T.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); soSend(); } };
-    $("so-send").onclick=soSend; setTimeout(()=>T.focus(),30); } }
+    $("so-send").onclick=soSend; $("so-wpbtn").onclick=e=>wpSharePick(e.currentTarget,id); setTimeout(()=>T.focus(),30); } }
 function soHead(){ const H=$("so-head"); if(!H) return; const id=S.so.open, w=soFriend(id)||S.so.conv?.with; if(!w) return;
   const k=JSON.stringify([w,S.so.ask,S.so.conv?.friends]); if(H.dataset.k===k) return; H.dataset.k=k;
   const isF=!!soFriend(id);
@@ -162,12 +162,71 @@ function soRenderMsgs(toBottom){ const M=$("so-msgs"); const c=S.so.conv; if(!M|
   let h=c.more?`<button class="btn small ghost" style="align-self:center;margin-bottom:8px" id="so-older">Older messages</button>`:"", last="";
   if(!c.messages.length) h+=`<div class="so-empty" style="margin:auto">No messages yet. Say hi to ${esc(c.with.name)}.</div>`;
   for(const m of c.messages){ const d=day(m.sent); if(d!==last){ h+=`<div class="so-day">${d===day(Date.now()/1000)?"Today":d}</div>`; last=d; }
-    h+=`<div class="so-b ${m.mine?"mine":""}">${esc(m.body)}<time>${tm(m.sent)}</time></div>`; }
+    h+=`<div class="so-b ${m.mine?"mine":""}">${soBodyHtml(m)}<time>${tm(m.sent)}</time></div>`; }
   const lm=[...c.messages].reverse().find(m=>m.mine); if(lm&&lm===c.messages.at(-1)&&lm.read) h+=`<div class="so-seen">Seen ${soAgo(lm.read)}</div>`;
-  const prevH=M.scrollHeight, prevTop=M.scrollTop; M.innerHTML=h;
+  const prevH=M.scrollHeight, prevTop=M.scrollTop; M.innerHTML=h; soWpWire(M);
   if(toBottom||near) M.scrollTop=M.scrollHeight; else M.scrollTop=prevTop+(M.scrollHeight-prevH)*0;
   const o=$("so-older"); if(o) o.onclick=async()=>{ o.disabled=true; const id=S.so.open, first=c.messages[0]?.id; const r=await api().social_messages(id,first);
     if(S.so.open!==id||!r.ok) return; const h0=M.scrollHeight; c.messages=[...r.messages,...c.messages]; c.more=r.more; soRenderMsgs(false); M.scrollTop=M.scrollHeight-h0; }; }
+// ---- waypoints in messages: a readable line (what the website shows) plus a [qwp1:...] tag holding the waypoint.
+// Quantum shows the tag as a card you can save, guide to or add to your route.
+const WP_TAG=/\[qwp1:([A-Za-z0-9_-]{8,1800})\]/;
+function wpDecode(raw){ try{ const b=raw.replace(/-/g,"+").replace(/_/g,"/"); const s=atob(b+"=".repeat((4-b.length%4)%4));
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(s,c=>c.charCodeAt(0)))); }catch{ return null; } }
+// One of your waypoints at the same spot (already saved, or it's yours to begin with)
+function wpSavedAs(d){ return (S.locs||[]).find(L=>L.source==="user"&&L.system===d.s&&(L.body||null)===(d.b||null)&&L.pos
+  &&Math.hypot(L.pos[0]-d.p[0],L.pos[1]-d.p[1],L.pos[2]-d.p[2])<5)?.name||null; }
+function soBodyHtml(m){ const g=String(m.body||"").match(WP_TAG), d=g&&wpDecode(g[1]);
+  if(!d||!Array.isArray(d.p)) return esc(m.body);
+  const note=m.body.replace(WP_TAG,"").replace(/^📍 Shared a waypoint:[^\n]*\n?/,"").trim();
+  const where=d.b?`${d.b}${d.s&&d.s!==S.system?" · "+d.s:""}`:`In space · ${d.s}`, saved=wpSavedAs(d);
+  return `${note?`<div style="margin-bottom:6px">${esc(note)}</div>`:""}<div class="so-wp" data-wptag="${esc(g[0])}" data-wpfrom="${esc(m.mine?"":(S.so.conv?.with?.name||""))}">
+    <div class="h"><span class="pin">📍</span><div style="min-width:0"><b>${esc(d.n)}</b><small>${esc(where)}${d.no?` · ${esc(d.no)}`:""}</small></div></div>
+    <div class="acts">${saved?`<span class="ok">✓ ${m.mine&&saved===d.n?"Your waypoint":"In your waypoints"}</span><button class="btn small" data-wpgo="${esc(saved)}">Show on map</button><button class="btn small ghost" data-wpguide="${esc(saved)}">Guide</button>`
+      :`<button class="btn small primary" data-wpsave="1">Save waypoint</button>`}</div></div>`; }
+function soWpWire(M){
+  for(const b of M.querySelectorAll("[data-wpsave]")) b.onclick=async()=>{ const c=b.closest(".so-wp"); b.disabled=true;
+    const r=await api().save_shared_waypoint(c.dataset.wptag,c.dataset.wpfrom); if(!r.ok){ b.disabled=false; return toast(r.error); }
+    toast(r.already?`You already have it: ${r.name}`:`Saved ${r.name} to your waypoints`); await poll(); renderWaypoints(true); M.dataset.k=""; soRenderMsgs(false); };
+  for(const b of M.querySelectorAll("[data-wpgo]")) b.onclick=()=>{ const n=b.dataset.wpgo; if(!S.locMap[n]) return; select({kind:"loc",name:n}); focusLoc(n,true); };
+  for(const b of M.querySelectorAll("[data-wpguide]")) b.onclick=async()=>{ const n=b.dataset.wpguide; await api().set_guide(n); await poll();
+    select({kind:"loc",name:n}); setFollow(true); followNow(); toast(`Guiding you to ${n}`); }; }
+// Pick what to share. From a chat (to=a friend's id): one of your waypoints, sent straight into that conversation.
+// From the waypoints list (name=a waypoint): which friends get it, with an optional note.
+function wpPop(anchor,html){ document.querySelector(".wp-share")?.remove();
+  const m=document.createElement("div"); m.className="wp-share"; m.innerHTML=html; document.body.appendChild(m);
+  const a=anchor.getBoundingClientRect(), r=m.getBoundingClientRect();
+  m.style.left=Math.max(6,Math.min(a.left,innerWidth-r.width-6))+"px";
+  m.style.top=(a.top-r.height-6>6?a.top-r.height-6:Math.min(a.bottom+6,innerHeight-r.height-6))+"px";
+  const close=()=>{ m.remove(); removeEventListener("mousedown",away,true); removeEventListener("keydown",k,true); };
+  const away=e=>{ if(!m.contains(e.target)&&e.target!==anchor) close(); }, k=e=>{ if(e.key==="Escape") close(); };
+  setTimeout(()=>{ addEventListener("mousedown",away,true); addEventListener("keydown",k,true); },0); m.close=close; return m; }
+function wpSharePick(anchor,to){ const wps=(S.locs||[]).filter(L=>L.source==="user").sort((a,b)=>(b.pinned-a.pinned)||(b.created-a.created));
+  const m=wpPop(anchor,`<div class="h">Share a waypoint</div>${wps.length?`<input class="field" placeholder="Find a waypoint" data-q>
+    <div class="list">${wps.map(L=>`<button data-n="${esc(L.name)}"><b>${esc(L.name)}</b><small>${esc(L.body||"Space, "+L.system)}</small></button>`).join("")}</div>`
+    :`<div class="muted" style="font-size:12.5px">You have no waypoints yet. Save one from a /showlocation first.</div>`}`);
+  const q=m.querySelector("[data-q]"); if(q){ q.focus(); q.oninput=()=>{ const t=q.value.toLowerCase(); for(const b of m.querySelectorAll("[data-n]")) b.hidden=!b.textContent.toLowerCase().includes(t); }; }
+  for(const b of m.querySelectorAll("[data-n]")) b.onclick=async()=>{ b.disabled=true; const T=$("so-text"), note=T?.value.trim()||"";
+    const r=await api().share_waypoint(b.dataset.n,[to],note); if(!r.ok){ b.disabled=false; return toast(r.error); } m.close();
+    if(note&&T){ S.so.draft[to]=""; T.value=""; T.style.height="auto"; }
+    const msg=r.messages?.[to]; if(msg&&S.so.conv&&!S.so.conv.error&&S.so.open===to){ S.so.conv.messages.push(msg); soRenderMsgs(true); } else soLoadConv(true);
+    toast(`Shared ${b.dataset.n}`); }; }
+async function wpShareFriends(anchor,name){
+  if(!S.so.st){ try{ const r=await api().social_get(false); if(r.signed_in===false) return toast("Sign in to your Quantum account to share waypoints with friends"); soApply?.(r); }catch{} }
+  if(S.so.signed===false) return toast("Sign in to your Quantum account to share waypoints with friends");
+  const fr=[...(S.so.st?.friends||[])].sort((a,b)=>(b.online-a.online)||a.name.localeCompare(b.name));
+  const m=wpPop(anchor,`<div class="h">Share <b>${esc(name)}</b></div>${fr.length?`<div class="list">${fr.map(f=>`<label><input type="checkbox" value="${esc(f.id)}"><span>${esc(f.name)}</span>${f.online?`<i class="on"></i>`:""}</label>`).join("")}</div>
+    <textarea class="field" rows="2" maxlength="500" placeholder="Add a note (optional)" data-note></textarea>
+    <div class="row" style="justify-content:flex-end;gap:6px"><button class="btn small" data-x>Cancel</button><button class="btn small primary" data-go disabled>Send</button></div>`
+    :`<div class="muted" style="font-size:12.5px">No friends yet. Add people in Social, then you can share waypoints with them.</div>`}`);
+  const go=m.querySelector("[data-go]"); if(!go) return;
+  const picked=()=>[...m.querySelectorAll("input:checked")].map(i=>i.value);
+  m.onchange=()=>{ const n=picked().length; go.disabled=!n; go.textContent=n>1?`Send to ${n}`:"Send"; };
+  m.querySelector("[data-x]").onclick=()=>m.close();
+  go.onclick=async()=>{ go.disabled=true; const r=await api().share_waypoint(name,picked(),m.querySelector("[data-note]").value);
+    if(!r.ok){ go.disabled=false; return toast(r.error); } m.close();
+    toast(r.failed?`Shared with ${r.sent}, ${r.failed} didn't go through: ${r.error}`:`Shared ${name} with ${r.sent>1?r.sent+" friends":"your friend"}`); }; }
+
 async function soSend(){ const T=$("so-text"), id=S.so.open; if(!T||!id) return; const body=T.value.trim(); if(!body) return;
   $("so-send").disabled=true; const r=await api().social_send(id,body); const b=$("so-send"); if(b) b.disabled=false;
   if(!r.ok) return toast(r.error);

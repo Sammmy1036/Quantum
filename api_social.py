@@ -5,6 +5,9 @@ Module-level names come from qbase.py."""
 from qbase import *  # noqa: F401,F403
 
 
+WP_TOKEN = re.compile(r"\[qwp1:([A-Za-z0-9_-]{8,1800})\]")
+
+
 class SocialMixin:
     # ------------------------------------------------------------ social: friends and messages
     # Signed in to a Quantum account, the app checks in with the server (GET /v1/social/state) every 20 s, or
@@ -48,7 +51,7 @@ class SocialMixin:
         for m in r.get("new") or []:
             f = next((x for x in [*(r.get("friends") or []), *(r.get("chats") or [])] if x["id"] == m["sender"]), None)
             so["notes"].append({"id": m["id"], "from": m["sender"], "name": f["name"] if f else "A friend",
-                                "body": m["body"][:140], "avatar": f.get("avatar") if f else None})
+                                "body": WP_TOKEN.sub("", m["body"]).strip()[:140], "avatar": f.get("avatar") if f else None})
         try:
             so["notes"] += self._wish_market_notes(r)      # players selling something on your wish list
         except Exception:
@@ -183,6 +186,77 @@ class SocialMixin:
 
     def social_send(self, member_id, body):
         return self._social_result(self._social_call("send", {"to": member_id, "body": str(body or "")[:2000]}), refresh=False)
+
+    # ---- sharing waypoints in messages
+    # A shared waypoint travels inside an ordinary message: a readable line first (what the website and older
+    # Quantum versions show), then a short [qwp1:...] tag holding the waypoint itself, which Quantum turns into a
+    # card with Save. Nothing on the server has to know about it.
+    def _wp_payload(self, name):
+        L = self._db.locations.get(name)
+        if not L:
+            return None
+        d = {"n": L.name[:60], "k": L.kind, "p": [round(float(x), 1) for x in L.pos], "s": L.system}
+        if L.body:
+            d["b"] = L.body
+        if L.pad and L.pad != "unknown":
+            d["pad"] = L.pad
+        if L.notes:
+            d["no"] = L.notes[:200]
+        return d
+
+    def share_waypoint(self, name, to, note=""):
+        """Send your waypoint `name` to one friend or several (member ids) as a message, with an optional note."""
+        d = self._wp_payload(name)
+        if not d:
+            return {"ok": False, "error": "That waypoint isn't there any more"}
+        ids = [str(x) for x in (to if isinstance(to, (list, tuple)) else [to]) if x][:25]
+        if not ids:
+            return {"ok": False, "error": "Pick at least one friend"}
+        where = d.get("b") or f"space, {d['s']}"
+        tag = "[qwp1:" + base64.urlsafe_b64encode(json.dumps(d, separators=(",", ":")).encode()).decode().rstrip("=") + "]"
+        note = str(note or "").strip()[:500]
+        body = f"📍 Shared a waypoint: {d['n']} ({where}). Open Quantum to save it.\n" + (note + "\n" if note else "") + tag
+        sent, errs, msgs = 0, [], {}
+        for i in ids:
+            r = self.social_send(i, body)
+            if r.get("ok"):
+                sent += 1
+                msgs[i] = r.get("message")
+            else:
+                errs.append(r.get("error") or "Couldn't send it")
+        if not sent:
+            return {"ok": False, "error": errs[0] if errs else "Couldn't send it"}
+        return {"ok": True, "sent": sent, "failed": len(errs), "error": errs[0] if errs else None, "messages": msgs}
+
+    def save_shared_waypoint(self, tag, sender=""):
+        """Save a waypoint a friend sent you (the [qwp1:...] tag from their message) to your own waypoints."""
+        m = WP_TOKEN.search(str(tag or ""))
+        try:
+            raw = m.group(1)
+            d = json.loads(base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4)).decode())
+            pos = tuple(float(x) for x in d["p"])
+            assert len(pos) == 3 and all(math.isfinite(x) for x in pos)
+            kind, system, body = d.get("k"), str(d.get("s") or ""), d.get("b")
+            assert kind in ("space", "surface")
+        except Exception:
+            return {"ok": False, "error": "This shared waypoint couldn't be read"}
+        if system not in SYSTEMS:
+            return {"ok": False, "error": f"Quantum doesn't know the {system or 'unknown'} system yet"}
+        if kind == "surface" and body not in self._db.bodies:
+            return {"ok": False, "error": f"Quantum doesn't know {body} yet. An update may bring it"}
+        with self._lock:
+            for L in self._db.locations.values():         # already saved: point at it rather than make a copy
+                if L.source == "user" and L.system == system and L.body == body and dist(L.pos, pos) < 5:
+                    return {"ok": True, "name": L.name, "already": True}
+            name = self._db.unique_name(re.sub(r"\s+", " ", str(d.get("n") or "Shared waypoint")).strip()[:60] or "Shared waypoint")
+            who = str(sender or "").strip()[:40]
+            notes = " · ".join(x for x in (f"From {who}" if who else "", str(d.get("no") or "")[:200]) if x)
+            loc = Location(name, kind, pos, body if kind == "surface" else None, str(d.get("pad") or "unknown"), notes,
+                           "user", system, pinned=True, created=time.time())
+            self._db.locations[name] = loc
+            self._db.save()
+            self._db_changed()
+        return {"ok": True, "name": name, "body": loc.body, "system": system}
 
     def social_username(self, name):
         """Choose your username (@name): unique, 3-20 letters, numbers, _ and ."""

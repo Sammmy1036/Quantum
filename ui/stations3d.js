@@ -159,7 +159,7 @@ function show(o,v,d,t,f){
   if(!index){ getIndex(); return false; }
   const ent=entry(o.L);
   if(!ent){ if(typeof S!=="undefined"&&S.selected?.name===name&&d<LOAD_KM*1000)
-      note(name,`no 3D model listed for it in stations/ or outposts/index.js (${Math.floor(index.size/3)} stations listed; is the server's index.js the latest, and Quantum restarted since?)`);
+      note(name,`no 3D model listed for it in stations/index.js${OUTPOSTS?" or outposts/index.js":""} (${Math.floor(index.size/3)} stations listed; is the server's index.js the latest, and Quantum restarted since?)`);
     return false; }
   const file=ent.file;
   let e=R[name];

@@ -61,25 +61,50 @@ const SVC_ORDER=["landing pad","hangar","docking","loading dock","freight elevat
 function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.includes(k)); return i<0?99:i; }
 // A crate with a price tag: the Commodities tile (opens what the place's terminals buy and sell)
 const SVC_COMMODITY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5 11 4.5l8 4v9l-8 4-8-4z"/><path d="M3 8.5l8 4 8-4M11 12.5v9"/><path d="M15.5 13.5l5-2.5v3.2l-5 2.5z"/></svg>';
+// The largest pad at a place as the tile shows it (S/M/L/XL): your report, then Quantum users', then the game's data
+const padSize=place=>{ const L=place&&S.locMap[place]; if(!L) return null;
+  const p=L.pad&&L.pad!=="unknown"?L.pad:L.pad_shared||L.pad_auto; return {small:"S",medium:"M",large:"L",xl:"XL"}[String(p||"").toLowerCase()]||null; };
+// ---- Fuel prices on a place's card, drawn like a gas station's price sign. Nine looks to pick from in
+// Settings > Placards (stored in localStorage "q-fuel-style"); "7b", the pylon sign in glass, is the default.
+const FUEL_ICON={q:'<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.926 4.506c.53-.923 1.707-1.2 3.575-.83.254-.808.6-1.454 1.015-1.915C6.954 1.254 7.44 1 7.992 1c1.084 0 1.915.9 2.514 2.675 1.845-.369 3.045-.092 3.575.83.53.923.162 2.1-1.084 3.507.577.645.969 1.268 1.153 1.845.208.622.185 1.176-.069 1.637-.392.646-1.107.992-2.19.992a6.2 6.2 0 0 1-1.362-.162C9.93 14.102 9.1 15 8.015 15c-.53 0-1.038-.254-1.476-.761-.415-.461-.76-1.107-1.015-1.937-.507.092-.968.16-1.383.16-1.084 0-1.822-.322-2.168-.99-.277-.462-.323-1.016-.093-1.638.185-.577.577-1.2 1.154-1.846-1.292-1.406-1.638-2.56-1.108-3.482m10.38 6.804c.391-.07.645-.185.76-.392q.174-.278-.069-.83c-.161-.393-.438-.808-.83-1.27-.277.278-.669.577-1.13.946-.046.508-.139.992-.23 1.454.576.115 1.083.138 1.498.092m-5.698.738c.185.576.416 1.015.67 1.36.253.3.484.462.691.462.23 0 .462-.162.715-.461.254-.323.485-.785.67-1.361l-1.385-.53zm-.392-1.43.07.3.3-.093zm3.46.3.07-.3-.185.115-.185.092zM6.424 5.29l.184-.115-.3-.093-.069.3zm2.952-.115.37.207-.07-.3zm.554 3.967v-2.26l-.946-.577c-.07-.046-.415-.208-.992-.53-.53.3-.876.484-.991.53l-.946.576a9 9 0 0 0-.07 1.13q0 .59.07 1.108c.438.3.761.484.946.6l.991.53zm1.2-1.338v.415l.253-.207zm1.867-1.868c.162-.37.185-.646.07-.854-.093-.184-.347-.323-.762-.369-.415-.069-.922-.046-1.499.07.092.46.162.945.23 1.476.439.3.808.622 1.131.922q.588-.657.83-1.245M8.684 2.638c-.253-.323-.484-.485-.715-.485-.207 0-.461.162-.692.485-.253.322-.484.76-.669 1.337l1.361.53 1.384-.53C9.17 3.4 8.938 2.96 8.684 2.638M3.68 11.31c.415.046.923.023 1.5-.093a9 9 0 0 1-.231-1.453c-.461-.346-.83-.668-1.153-.945-.392.461-.646.876-.808 1.268q-.242.554-.069.83c.116.208.37.324.761.393m.923-3.298.254.207-.023-.207.023-.208zm.576-3.206a6.4 6.4 0 0 0-1.06-.116c-.646 0-1.061.139-1.2.415-.115.185-.092.485.07.854.16.392.415.807.807 1.245.369-.323.76-.622 1.153-.922.023-.392.115-.877.23-1.476"/></svg>',
+  h:'<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M12.899 1H6.765L4.94 2.825h-.403l-.149-.133V2.47l-.568-.572h-.209L2 3.51v.226l.572.552h.234l.132.132v.403l-.306.306v8.793L3.712 15h9.187L14 13.906V2.156zM8.305 13.38a2.988 2.988 0 0 1-2.303-4.9c1.284-1.475 1.361-3.094 2.71-4.028-.403 1.57.842 2.819 1.865 4.027a2.989 2.989 0 0 1-2.288 4.906zM13.25 2.854H5.995L7.127 1.72h5.567l.556.532zM8.14 7.356A5.9 5.9 0 0 0 9.232 8.89c.117.133.233.262.346.403a1.667 1.667 0 1 1-2.55 0 6.5 6.5 0 0 0 1.056-1.809zm.165-1.12c-.56.656-.696 1.776-1.582 2.795a2.066 2.066 0 1 0 3.166 0c-.71-.842-1.584-1.587-1.584-2.795"/></svg>'};
+const FUEL_STYLES=[["7","Pylon sign"],["8","Digit board"],["9","Pump grades"],["7a","Pylon · Tonal"],["7b","Pylon · Glass"],["7c","Pylon · Raised"],
+  ["8a","Digit board · Tonal"],["8b","Digit board · Glass"],["8c","Digit board · Raised"]];
+const FUEL_DEFAULT="7b";
+S.fuelStyle=(()=>{ try{ const v=localStorage.getItem("q-fuel-style"); return FUEL_STYLES.some(([k])=>k===v)?v:FUEL_DEFAULT; }catch{ return FUEL_DEFAULT; } })();
+function setFuelStyle(k){ if(!FUEL_STYLES.some(([x])=>x===k)) return; S.fuelStyle=k; try{ localStorage.setItem("q-fuel-style",k); }catch{}
+  for(const b of document.querySelectorAll("[data-fuelstyle]")) { b.classList.toggle("on",b.dataset.fuelstyle===k); b.setAttribute("aria-pressed",b.dataset.fuelstyle===k); } }
+function fuelHtml(fuel,style=S.fuelStyle){
+  const rows=[...fuel].map(f=>{ const q=/quantum/i.test(f.what); return {k:q?"q":"h",name:q?"QUANTUM":"HYDROGEN",price:Number(f.price).toLocaleString("en-US")}; })
+    .sort((a,b)=>(a.k==="q"?0:1)-(b.k==="q"?0:1));
+  const kind=style[0], pal=style[1]||"k", unit=`<span class="fu-u">aUEC<br>/SCU</span>`;
+  if(kind==="9") return `<div class="fu fu-9"><div class="fu-grades">${rows.map(r=>`<div class="fu-g fu-${r.k}"><div class="fu-band">${FUEL_ICON[r.k]}${r.name}</div><div class="fu-p">${r.price}</div><div class="fu-cap">aUEC PER SCU</div></div>`).join("")}</div><div class="fu-src">FUEL PRICES · UEX</div></div>`;
+  if(kind==="8") return `<div class="fu fu-8 pal-${pal}"><div class="fu-title">· FUEL ·</div>${rows.map(r=>`<div class="fu-row fu-${r.k}"><span class="fu-n">${FUEL_ICON[r.k]}<b>${r.name}</b></span>
+      <span class="fu-digits">${[...r.price.padStart(5," ")].map(c=>c===","?`<i class="c">,</i>`:`<i>${c===" "?"":c}</i>`).join("")}</span>${unit}</div>`).join("")}<div class="fu-src">PRICES FROM UEX</div></div>`;
+  return `<div class="fu fu-7 pal-${pal}"><div class="fu-head"><b>REFUEL</b><span>PRICES · UEX</span></div>${rows.map(r=>`<div class="fu-row fu-${r.k}"><span class="fu-i">${FUEL_ICON[r.k]}</span><b class="fu-n">${r.name}</b><span class="fu-pp"><b>${r.price}</b>${unit}</span></div>`).join("")}</div>`; }
+const commodityTile=on=>`<div class="svc-tile click ${on?"on":""}" data-stock="1" title="What the commodity terminals here buy and sell, with prices and how recent they are">${SVC_COMMODITY}<div class="bar"></div><div class="l">Commodities</div></div>`;
 function servicesHtml(r,place){
-  if(!r) return "";
   const trade=place&&S.tradePlaces?.has(place), on=trade&&S.stock?.place===place&&S.stock.kind!=="shop";
+  // no services (yet, or none listed for the place): a place with a commodity terminal still gets its Commodities
+  // tile, so that's where it always is; the card has no Commodities button of its own
+  if(!r) return trade?`<div class="svc"><div class="svc-grid">${commodityTile(on)}</div></div>`:"";
   // A terminal amenity the wiki lists ("Commodity Terminal", "Trade") becomes the Commodities tile itself
   const isTrade=a=>/commodit|trade|trading/i.test(a)&&!/loading dock|freight/i.test(a);
   const tiles=placeAmenities(r.amenities,place).filter(a=>!(trade&&isTrade(a))).sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
-    const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)[)]?$/i); const label=m?m[1]:a;
+    const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)?[)]?$/i); const label=m?m[1]:a;
+    if(m&&/^landing/i.test(m[1])){ const pz=padSize(place); if(pz) m[2]=pz; }
     const g=place&&shopGroupFor(a,place), gon=g&&S.stock?.kind==="shop"&&S.stock.place===place&&S.stock.group===g;
-    return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
-    +(trade?`<div class="svc-tile click ${on?"on":""}" data-stock="1" title="What the commodity terminals here buy and sell, with prices and how recent they are">${SVC_COMMODITY}<div class="bar"></div><div class="l">Commodities</div></div>`:"");
+    return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?.[2]?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
+    +(trade?commodityTile(on):"");
   // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
   // opened is kept, so the card can redraw every tick without folding it back up
-  const full=r.description||"", long=full.length>260, open=long&&S.descOpen?.has(place);
+  const full=r.description||"", long=full.length>260, open=long&&(S.descOpen?.has(place)||S.descFit===place&&!S.descShut?.has(place));
   const desc=!full?"":!long||open?esc(full)+(long?` <a class="desc-more" data-desc="less">Less</a>`:"")
     :esc(full.slice(0,full.lastIndexOf(" ",250)>180?full.lastIndexOf(" ",250):250).replace(/[\s,;:.]+$/,""))+`… <a class="desc-more" data-desc="more">More</a>`;
   return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
     ${tiles?`<div class="svc-grid">${tiles}</div>`:`<div class="none">No services listed for this location.</div>`}
     ${desc?`<div class="desc">${desc}</div>`:""}
-    ${r.fuel?`<div class="jur" style="margin-top:8px">Fuel ${r.fuel.map(f=>`<b>${esc(f.what.replace(" Fuel",""))}</b> ${money(f.price)}/SCU`).join(" · ")} <span class="muted">(UEX)</span></div>`:""}
+    ${r.fuel?fuelHtml(r.fuel):""}
     ${r.uex?`<div class="credit">Services: UEX (community data)</div>`:""}
     ${r.url||r.reported?`<div class="credit">Services: ${r.reported?"reported by players (the game data lists none here)":wikiLink(r.url,"Star Citizen Wiki API")}${r.version?` · game ${esc(r.version.split("-")[0])}`:""}</div>`:""}</div>`; }
 S.svcCache={};
@@ -98,10 +123,16 @@ async function fillPlacePic(sel){ const key=placePicKey(sel); if(!key||key in S.
   S.picCache[key]=r.url?{url:r.url,page:r.page}:{url:null}; if(!r.url) return;
   const d=$("detail"); if(!d||placePicKey(S.selected||{})!==key||d.querySelector(".dpic")) return;
   d.insertAdjacentHTML("afterbegin",placePicHtml(key)); const img=d.querySelector(".dpic img"); img.classList.remove("in");
+  if(S.descFit===sel.name&&d.scrollHeight>d.clientHeight+1){ S.descFit=null; const el=$("d-svc"); if(el) el.innerHTML=servicesHtml(S.svcCache[sel.name],sel.name); }   // the picture took the room
   const show=()=>img.classList.add("in"); img.complete?show():(img.onload=show); img.onerror=()=>img.closest(".dpic")?.remove(); }
 async function fillServices(name){
   if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
-  const el=$("d-svc"); if(el&&S.selected?.name===name) el.innerHTML=servicesHtml(S.svcCache[name],name); }
+  const el=$("d-svc"); if(el&&S.selected?.name===name){ el.innerHTML=servicesHtml(S.svcCache[name],name); fitDesc(name); } }
+// Show the whole description when the card still fits the map without scrolling; keep "More" when it wouldn't.
+// (Less still folds it, and it then stays folded for that place.)
+function fitDesc(name){ const d=$("detail"), el=$("d-svc"); if(!d||!el||!el.querySelector('[data-desc="more"]')||S.descShut?.has(name)) return;
+  const was=S.descFit; S.descFit=name; el.innerHTML=servicesHtml(S.svcCache[name],name);
+  if(d.scrollHeight>d.clientHeight+1){ S.descFit=was===name?null:was; el.innerHTML=servicesHtml(S.svcCache[name],name); } }
 // Your own pick, else what Quantum users agree on, else what the game data suggests.
 function padOf(L){ return L.pad&&L.pad!=="unknown"?L.pad:(L.pad_shared||L.pad_auto||"unknown"); }
 const PAD_LABEL={unknown:"Unknown",none:"None",vehicle:"Vehicle",small:"Small",medium:"Medium",large:"Large",xl:"XL",hangar:"Hangar"};
@@ -324,6 +355,33 @@ function shopWire(P){
   for(const b of P.querySelectorAll("[data-shopg]")) b.onclick=()=>{ S.stock.group=b.dataset.shopg; shopRender(); renderDetail(); };
   const so=P.querySelector("[data-stksort]"); if(so) so.onchange=()=>{ S.stock.sort=S.shopSort=so.value; shopRender(); };
   const q=P.querySelector("[data-stkq]"); if(q){ let t; q.oninput=()=>{ S.stock.q=q.value; clearTimeout(t); t=setTimeout(()=>{ const pos=q.selectionStart; shopRender(); const n=$("stk-panel").querySelector("[data-stkq]"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } },220); }; } }
+// "Is something inaccurate?" at the foot of a place's card: the position (sent with a /showlocation), its
+// services (which listed ones aren't there, what's missing) or anything else. Services and the rest go to the
+// team as a report (the same inbox as Report a bug), tagged with the place. Kept in S.fix so the card can redraw.
+function fixHtml(L,readingHere){
+  const F=S.fix?.name===L.name?S.fix:(S.fix={name:L.name,open:false,tab:L.fixable?"pos":"svc",not:new Set(),text:"",sent:null});
+  const tabs=[L.fixable?["pos","Position"]:null,["svc","Services"],["else","Something else"]].filter(Boolean);
+  const svc=placeAmenities(S.svcCache[L.name]?.amenities||[],L.name).map(a=>a.replace(/ *[(]?(XL|S|M|L)[)]?$/i,""));
+  if(S.tradePlaces?.has(L.name)) svc.push("Commodities");
+  const body=F.sent===F.tab?`<div class="fix-ok">Thanks, it's with the team. They check reports and fix the data for everyone.</div>`
+    :F.tab==="pos"?`<div class="muted fix-p">Go to ${esc(L.name)} (${L.kind==="surface"?"land or stand right at it":"dock there"}), type <b>/showlocation</b> in game chat and press <b>Send the right position</b>.
+        It moves on your map straight away, and for every Quantum user once another datarunner's reading agrees. Trusted datarunners' corrections count at once.</div>
+      <button class="btn small primary" data-a="fixpos" ${readingHere?"":`disabled title="Needs a /showlocation taken here in the last 15 minutes"`}>Send the right position</button>`
+    :F.tab==="svc"?`${svc.length?`<div class="muted fix-p">Tap any listed here that this place doesn't have:</div>
+        <div class="fix-chips">${[...new Set(svc)].map(a=>`<button type="button" class="fix-chip${F.not.has(a)?" on":""}" data-fixnot="${esc(a)}" aria-pressed="${F.not.has(a)}">${esc(a)}</button>`).join("")}</div>`:""}
+      <textarea class="field" id="fix-text" rows="2" maxlength="1000" placeholder="${svc.length?"Anything missing or wrong? (optional)":"What services does it have, or what's wrong?"}">${esc(F.text)}</textarea>
+      <button class="btn small primary" data-a="fixsend" ${F.not.size||F.text.trim().length>=5?"":"disabled"}>Send report</button>`
+    :`<textarea class="field" id="fix-text" rows="3" maxlength="1000" placeholder="What's wrong? The name, the description, the picture, prices…">${esc(F.text)}</textarea>
+      <button class="btn small primary" data-a="fixsend" ${F.text.trim().length>=5?"":"disabled"}>Send report</button>`;
+  return `<details class="fixpos" ${F.open?"open":""}><summary>${L.fixed?`<span style="color:#9fe0b4">Position corrected by ${L.fixed==="mine"?"you":"Quantum datarunners"}</span> · `:""}Is something inaccurate?</summary>
+    <div class="seg-mini fix-tabs" role="tablist">${tabs.map(([k,t])=>`<button type="button" role="tab" class="${F.tab===k?"on":""}" aria-selected="${F.tab===k}" data-fixtab="${k}">${t}</button>`).join("")}</div>
+    <div class="fix-body">${body}</div></details>`; }
+async function fixSend(){ const F=S.fix, L=S.locMap[F.name]; if(!F||!L) return;
+  const where=`${L.name} (${L.type||L.kind}${L.body?", "+L.body:""}, ${L.system||S.system})`;
+  const msg=F.tab==="svc"?`[Place report: services] ${where}\n${F.not.size?`Not there: ${[...F.not].join(", ")}\n`:""}${F.text.trim()?`Note: ${F.text.trim()}`:""}`
+    :`[Place report] ${where}\n${F.text.trim()}`;
+  const r=await api().send_bug_report(msg.trim()); if(!r.ok) return toast(r.error);
+  F.sent=F.tab; F.not=new Set(); F.text=""; renderDetail(); }
 function renderDetail(){
   const d=$("detail"), sel=S.selected;
   if(S.stock&&(sel?.kind!=="loc"||sel.name!==S.stock.place)) closeStock();
@@ -372,6 +430,10 @@ function renderDetail(){
         <span class="orbit-sw">${ORBIT_PRESETS.map(([c,n])=>`<button type="button" data-orbitc="${c}" class="${c===S.orbitColor?"on":""}" title="${n}" style="background:${c}" onclick="setOrbitColor('${c}')"></button>`).join("")}</span>
         <input type="color" id="s-orbitc" value="${S.orbitColor}" title="Any colour" oninput="setOrbitColor(this.value,false)" onchange="setOrbitColor(this.value)">
         ${S.orbitColor!==ORBIT_DEFAULT?`<button class="btn small ghost" type="button" onclick="setOrbitColor(ORBIT_DEFAULT);renderDetail()">Reset</button>`:""}</div></div>
+      <div class="sub">Placards</div>
+      <div class="note" style="margin:4px 0 12px"><div style="margin-bottom:8px">Fuel prices look</div>
+        <div class="fu-pick">${FUEL_STYLES.map(([k,n])=>`<button type="button" data-fuelstyle="${k}" class="${k===S.fuelStyle?"on":""}" aria-pressed="${k===S.fuelStyle}" onclick="setFuelStyle('${k}')">
+          <div class="fu-prev">${fuelHtml([{what:"Quantum Fuel",price:1800},{what:"Hydrogen Fuel",price:800}],k)}</div><span>${n}${k===FUEL_DEFAULT?` <span class="muted">(default)</span>`:""}</span></button>`).join("")}</div></div>
       <div class="sub">Map performance</div>
       <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px"><span>Map frame rate</span><span class="spacer"></span>
         <select class="field" id="s-fps" onchange="setMapFps(this.value)" style="width:auto">${[[30,"30 fps"],[60,"60 fps"],[0,"Monitor refresh rate"]].map(([v,l])=>`<option value="${v}" ${S.fpsMax===v?"selected":""}>${l}</option>`).join("")}</select></div>
@@ -474,7 +536,7 @@ function renderDetail(){
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`${placePicHtml(placePicKey(sel))}<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
       <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
-      ${unplacedBox}<div id="d-svc">${L.amen?servicesHtml(S.svcCache[L.name]||null,L.name):""}</div>
+      ${unplacedBox}<div id="d-svc">${L.amen||S.tradePlaces?.has(L.name)?servicesHtml(L.amen?S.svcCache[L.name]||null:null,L.name):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
         return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
           <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
@@ -485,44 +547,45 @@ function renderDetail(){
         ${L.atLpoint?`<span class="k">Lagrange point</span><span>${esc(L.atLpoint)} <span class="muted">· the QT marker for this L-point</span></span>`:""}
         ${(()=>{ const lt=localTime(L,t); if(!lt) return "";
           return `<span class="k">Local time</span><span title="Worked out from ${esc(L.body)}'s rotation (one day = ${lt.period.toFixed(2)} real hours)${lt.calibrated?"":", using the community alignment"}"><span data-lt-row>${ltRow(lt)}</span></span>`; })()}
-        ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}${L.qt?`<span class="k">Quantum</span><span>Has a QT marker</span>`:""}
+        ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}
         ${L.verify?`<span class="k">Position</span><span style="color:#f2c14e">Not confirmed in game yet${L.placeable?`: ${L.type==="jump"?"stop at the jump point":"dock here"}, type /showlocation and press <b>I'm here: set position</b>, or take the job in Datarunner &gt; Jobs`:""}</span>`:""}
-        ${L.unplaced||L.type==="jump"?(L.type==="jump"?`<span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`:""):`<span class="k">Landing pad</span><span>${(()=>{
-            // Already known (your own pick, Quantum users agreeing, or the game's data): just say it, with a way
-            // to report it if it's wrong. The picker only shows when nothing's known, or once you ask to correct it.
-            const known=L.pad!=="unknown"?[L.pad,"your report"]:L.pad_shared?[L.pad_shared,"agreed by Quantum users"]:L.pad_auto?[L.pad_auto,"from the game's data"]:null;
-            if(!known||L.source==="user"||S.padFix===L.name) return "";
-            return `<b>${esc(padLabel(known[0]))}</b> <span class="muted" style="font-size:12px">(${known[1]})</span>
-              <div style="font-size:12px;margin-top:3px"><a data-a="padfix" style="cursor:pointer;color:var(--route-2)">Wrong size? Report it</a></div></span><span hidden>`; })()}<select class="field" id="d-pad" title="The largest pad here">${PADS.map(p=>`<option value="${p}" ${p===L.pad?"selected":""}>${p==="unknown"?(L.pad_shared?`Unknown (Quantum users: ${padLabel(L.pad_shared)})`:L.pad_auto?`Unknown (game data: ${padLabel(L.pad_auto)})`:"Unknown"):padLabel(p)}</option>`).join("")}</select>
-          <div class="muted" style="font-size:11.5px;margin-top:4px">${L.pad_shared?`Quantum users agree: <b>${esc(padLabel(L.pad_shared))}</b>.`:""}${L.source!=="user"?" Your pick is shared; it shows for everyone once another datarunner agrees.":""}</div></span>
-        <span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`}</div>
+        ${L.source==="user"?`<span class="k">Notes</span><textarea id="d-notes" rows="1" placeholder="Add a note">${esc(L.notes)}</textarea>`:""}</div>
       ${L.unplaced?`<div class="acts"><button class="btn primary" data-a="placehere" ${readingHere?"":`disabled title="Needs a /showlocation taken at this station in the last 15 minutes"`}>I'm here: set position</button></div>`:
       `<div class="acts">${guiding?`<button class="btn" data-a="unguide">Stop guiding</button>`:`<button class="btn go" data-a="guide">Guide me</button>`}
         ${inRoute?`<button class="btn" data-a="route" title="Visit it again later in the trip">Add again</button><button class="btn" data-a="unroute">Remove from route</button>`:`<button class="btn primary" data-a="route">Add to route</button>`}
         <button class="btn" data-a="focus">Fly to</button>
-        ${S.tradePlaces?.has(L.name)&&!(L.amen&&S.svcCache[L.name]?.amenities)?`<button class="btn${S.stock?.place===L.name?" primary":""}" data-a="stock" title="What the commodity terminals here buy and sell, and how recent the prices are">Commodities</button>`:""}
+        
         ${isOnyxPlace(L.name)?`<button class="btn" data-a="onyx" title="The facility's floor plans: every wing and storey, the way out, and where enemies spawn">Floor plans</button>`:""}
         ${city3dFor(L.name)?`<button class="btn" data-a="city3d" title="Fly down into ${esc(city3dFor(L.name).titleFor?.(L.name)||L.name)} in 3D">3D city</button>`:""}
         ${canCal?`<button class="btn ghost" data-a="calibrate" title="Use this if the map puts you in the wrong spot while you're standing here">I'm here: calibrate</button>`:""}
         ${L.placeable&&readingHere?`<button class="btn ghost" data-a="placehere" title="Use your last /showlocation as this station's position">I'm here: set position</button>`:""}
         ${user?`<button class="btn ghost" data-a="delete" style="color:var(--danger)">Delete</button>`:""}</div>`}
-      ${L.fixable&&!user&&!L.unplaced?`<details class="fixpos"><summary>${L.fixed?`<span style="color:#9fe0b4">Position corrected by ${L.fixed==="mine"?"you":"Quantum datarunners"}</span> · `:""}Wrong spot on the map?</summary>
-        <div class="muted" style="font-size:12.5px;line-height:1.5;margin:6px 0 8px">Go to ${esc(L.name)} (${L.kind==="surface"?"land or stand right at it":"dock there"}), type <b>/showlocation</b> in game chat and press <b>Send the right position</b>.
-          It moves on your map straight away, and for every Quantum user once another datarunner's reading agrees. Trusted datarunners' corrections count at once.</div>
-        <button class="btn small primary" data-a="fixpos" ${readingHere?"":`disabled title="Needs a /showlocation taken here in the last 15 minutes"`}>Send the right position</button></details>`:""}`;
+      ${!user&&!L.unplaced?fixHtml(L,readingHere):""}`;
     if(L.amen&&!(L.name in S.svcCache)) fillServices(L.name);
     loadTradePlaces(); loadShopPlaces();
     if(!L.unplaced){
       if($("d-pad")) $("d-pad").onchange=e=>{ api().update_location(L.name,e.target.value,null); L.pad=e.target.value;
         toast(e.target.value==="unknown"?`Pad size for ${L.name} cleared`:`Pad size ${padLabel(e.target.value)} saved. It shows for everyone once another datarunner agrees`); };
-      $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
+      if($("d-notes")) $("d-notes").onchange=e=>{ api().update_location(L.name,null,e.target.value); L.notes=e.target.value; }; }
   }
+  // A place's buttons (Guide me, Add to route, Fly to, 3D city…) go last and stick to the bottom of the card,
+  // so they're always in view; the rest scrolls behind them when the card is taller than the window
+  if(sel.kind==="body"||sel.kind==="loc"||sel.kind==="mission"){ const A=[...d.children].filter(x=>x.classList.contains("acts"));
+    if(A.length===1){ d.appendChild(A[0]); A[0].classList.add("stick"); } }
   d.classList.add("show");
+  const fx=d.querySelector("details.fixpos");
+  if(fx&&S.fix){ fx.ontoggle=()=>{ S.fix.open=fx.open; };
+    const ta=$("fix-text"); if(ta) ta.oninput=()=>{ S.fix.text=ta.value; S.fix.sent=null;
+      const b=d.querySelector('[data-a="fixsend"]'); if(b) b.disabled=!(S.fix.not.size&&S.fix.tab==="svc"||ta.value.trim().length>=5); }; }
+  if(sel.kind==="loc"&&S.svcCache[sel.name]) fitDesc(sel.name);
   if(sel.kind==="body"||sel.kind==="loc") fillPlacePic(sel);
   if(sel.kind==="settings") fillUexStatus(false);
   d.onclick=async e=>{ const u=e.target.closest("[data-url]"); if(u){ api().open_url(u.dataset.url); return; }
+    const ft=e.target.closest("[data-fixtab]"); if(ft&&S.fix){ S.fix.tab=ft.dataset.fixtab; return renderDetail(); }
+    const fn=e.target.closest("[data-fixnot]"); if(fn&&S.fix){ const k=fn.dataset.fixnot; S.fix.not.has(k)?S.fix.not.delete(k):S.fix.not.add(k); S.fix.sent=null; return renderDetail(); }
     const dm=e.target.closest("[data-desc]"); if(dm){ S.descOpen=S.descOpen||new Set();
-      if(dm.dataset.desc==="more") S.descOpen.add(sel.name); else S.descOpen.delete(sel.name);
+      S.descShut=S.descShut||new Set();
+      if(dm.dataset.desc==="more"){ S.descOpen.add(sel.name); S.descShut.delete(sel.name); } else { S.descOpen.delete(sel.name); S.descShut.add(sel.name); if(S.descFit===sel.name) S.descFit=null; }
       const el=$("d-svc"); if(el) el.innerHTML=servicesHtml(S.svcCache[sel.name],sel.name); return; }
     if(e.target.closest("[data-stock]")) return toggleStock(sel.name);
     const sh=e.target.closest("[data-shop]"); if(sh) return toggleShop(sel.name,sh.dataset.shop);
@@ -548,6 +611,7 @@ function renderDetail(){
     if(a==="unguide"){ await api().set_guide(null); await poll(); renderDetail(); }
     if(a==="placehere"){ const r=await api().set_place_here(sel.name); if(!r.ok) return toast(r.error); await loadStatic(); await poll();
       select({kind:"loc",name:sel.name}); focusLoc(sel.name,true); toast(`${sel.name} is on the map now`); return; }
+    if(a==="fixsend"){ e.target.disabled=true; e.target.textContent="Sending…"; return fixSend(); }
     if(a==="fixpos"){ e.target.disabled=true; e.target.textContent="Sending…"; const n=sel.name, r=await api().report_position(n);
       if(!r.ok){ e.target.disabled=false; e.target.textContent="Send the right position"; return toast(r.error); }
       await loadStatic(); await poll(); select({kind:"loc",name:n}); focusLoc(n,true);
@@ -633,13 +697,14 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("pm-panel").classList.toggle("show",S.tab.startsWith("pm-")); if(S.tab.startsWith("pm-")) openPm(S.tab);
   $("og-panel").classList.toggle("show",S.tab==="orgs"); if(S.tab==="orgs") openOrg();
   $("ph-panel").classList.toggle("show",S.tab==="patchhub"); if(S.tab==="patchhub") openPatchHub();
+  $("mi-panel").classList.toggle("show",S.tab==="missions"); if(S.tab==="missions") openMissions();
   $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";

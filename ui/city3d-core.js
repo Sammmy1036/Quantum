@@ -805,8 +805,11 @@ function update(t){
   const day=sstep(-0.06,0.12,sinEl), night=1-day, low=1-sstep(0.05,0.35,sinEl); st.SUNLIT.value=sstep(-0.03,0.06,sinEl);
   // the map's lights blend to the city's as you come down (from orbit the planet keeps its own lighting)
   sun.intensity=SUN0*(1-r+r*day); sun.color.copy(SUNCOL0).lerp(new THREE.Color(1,0.94-0.3*low,0.86-0.5*low),r);
-  if(ambient) ambient.intensity=AMB0*(1-r)+(0.12+0.25*day)*r;
-  hemi.color.set(W.hemi[0]); hemi.groundColor.set(W.hemi[1]); hemi.intensity=(0.15+0.55*day)*r; hemi.position.set(...upG);
+  // C.fill: a floor under the soft light for places the sun hardly reaches (Levski, sunk in Delamar's rock),
+  // so the game's own layout can be seen; no lamps or glow are added, it only lifts the shadows
+  const FA=C.fill?.amb||0, FH=C.fill?.hemi||0;
+  if(ambient) ambient.intensity=AMB0*(1-r)+Math.max(0.12+0.25*day,FA)*r;
+  hemi.color.set(W.hemi[0]); hemi.groundColor.set(W.hemi[1]); hemi.intensity=Math.max(0.15+0.55*day,FH)*r; hemi.position.set(...upG);
   try{ M.onFrame?.({night, day, sinEl, now:performance.now(), r, g}); }catch(e){ reportErr(C.city,e); }   // window lights, beacons...
 
   // sky and haze: they thicken smoothly as you come down through the atmosphere

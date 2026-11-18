@@ -1,5 +1,5 @@
 {
- "%doc": "Stations' positions from the game's own system layout, for the ones whose position in Quantum's other data was off. Quantum uses these unless a /showlocation says otherwise.",
+ "%doc": "Stations' positions from the game's own system layout (tools/build_stations.py), for the ones whose position in Quantum's other data was off. Quantum uses these unless a /showlocation says otherwise.",
  "stations": {
   "Wikelo Emporium Kinga Station": {
    "system": "Stanton",
@@ -22,11 +22,11 @@
   "Wikelo Emporium Selo Station": {
    "system": "Stanton",
    "pos": [
-    -20156592660.255,
-    -1263139609.527,
-    36.381
+    -20156591640.625,
+    -1263139664.281,
+    0.0
    ],
-   "moved_km": 0.74
+   "moved_km": 0.93
   },
   "Pyro Gateway Station": {
    "system": "Stanton",

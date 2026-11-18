@@ -265,6 +265,24 @@ def _check_mixins(cls):
 _check_mixins(Api)
 
 
+def own_http_port(preferred):
+    """The local port Quantum's screens are served from. pywebview puts every app with private_mode=False on the
+    same port (42001), so two pywebview apps open at once (Quantum and the Cyberpunk Mod List Tool, say) show
+    whichever one started first. Quantum stays on 42001, where its saved settings (kept per address) already
+    are, but checks it's really free first: if another app has it, any free port does for this run."""
+    import socket
+    for port in (preferred, 0):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            try:
+                s.bind(("127.0.0.1", port))
+                return s.getsockname()[1]
+            except OSError:
+                continue
+    return None
+
+
 def main():
     sys.argv = _demo_args(sys.argv)
     if DEMO["auto"]:
@@ -310,7 +328,7 @@ def main():
     try:
         cache_dir.mkdir(exist_ok=True)
         clear_stale_ui_cache(cache_dir)
-        webview.start(func=started, private_mode=False, storage_path=str(cache_dir))
+        webview.start(func=started, private_mode=False, storage_path=str(cache_dir), http_port=own_http_port(42001))
     except TypeError:                                      # an older pywebview without these options
         webview.start(func=started)
 

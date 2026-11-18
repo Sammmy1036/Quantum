@@ -940,7 +940,7 @@ function renderWaypoints(force){
     return `<div class="wp" data-name="${esc(L.name)}"><button class="star ${L.pinned?"on":""}" title="${L.pinned?"Unpin from map":"Pin on map"}" aria-label="Pin">${L.pinned?"★":"☆"}</button>
       <div style="min-width:0">${nameHtml}<div class="m">${esc(where)}${from!=null?` · ${fmtDist(from)} away`:""}${L.notes?` · ${esc(L.notes)}`:""}</div></div>
       <div class="acts">${guide===L.name?`<button class="btn small" data-a="unguide">Stop</button>`:`<button class="btn small go" data-a="guide">Guide</button>`}
-        <button class="iconbtn" data-a="route" title="Add to route">+</button><button class="iconbtn" data-a="rename" title="Rename" style="color:var(--ink-2)">✎</button></div></div>`; }).join("")
+        <button class="iconbtn" data-a="route" title="Add to route">+</button><button class="iconbtn" data-a="share" title="Share with friends" style="color:var(--ink-2)">⇪</button><button class="iconbtn" data-a="rename" title="Rename" style="color:var(--ink-2)">✎</button></div></div>`; }).join("")
     : `<div class="empty"><strong>No waypoints yet</strong>Found something worth coming back to? Type /showlocation in game chat and save it here. The app can then guide you back to it.</div>`;
   const inp=$("wp-list").querySelector("input.rename"); if(inp){ inp.focus(); inp.select();
     const done=async commit=>{ const old=inp.dataset.old; S.editing=null; if(commit&&inp.value.trim()&&inp.value.trim()!==old){ const r=await api().rename_location(old,inp.value); if(!r.ok) toast(r.error); await poll(); } renderWaypoints(true); };
@@ -953,11 +953,12 @@ $("wp-list").onclick=async e=>{ const row=e.target.closest(".wp"); if(!row) retu
   if(a==="guide"){ await api().set_guide(n); await poll(); select({kind:"loc",name:n}); setFollow(true); followNow(); toast(`Guiding you to ${n}`); }
   if(a==="unguide"){ await api().set_guide(null); await poll(); }
   if(a==="route") addStops([n]);
-  if(a==="rename"){ S.editing=n; renderWaypoints(true); } };
+  if(a==="rename"){ S.editing=n; renderWaypoints(true); }
+  if(a==="share") wpShareFriends(e.target,n); };
 // Right-click a waypoint: a small menu with Delete (asks once), Rename and Add to route
 function wpMenu(e,n){ e.preventDefault(); document.querySelector(".wp-ctx")?.remove();
   const m=document.createElement("div"); m.className="wp-ctx"; m.setAttribute("role","menu");
-  m.innerHTML=`<div class="h">${esc(n)}</div><button data-m="route">Add to route</button><button data-m="rename">Rename</button><button data-m="delete" class="danger">Delete waypoint</button>`;
+  m.innerHTML=`<div class="h">${esc(n)}</div><button data-m="route">Add to route</button><button data-m="share">Share with friends</button><button data-m="rename">Rename</button><button data-m="delete" class="danger">Delete waypoint</button>`;
   document.body.appendChild(m); const r=m.getBoundingClientRect();
   m.style.left=Math.min(e.clientX,innerWidth-r.width-6)+"px"; m.style.top=Math.min(e.clientY,innerHeight-r.height-6)+"px";
   const close=()=>{ m.remove(); removeEventListener("mousedown",away,true); removeEventListener("keydown",esc_,true); };
@@ -966,6 +967,7 @@ function wpMenu(e,n){ e.preventDefault(); document.querySelector(".wp-ctx")?.rem
   m.onclick=async ev=>{ const b=ev.target.closest("button"); if(!b) return; const k=b.dataset.m;
     if(k==="route"){ close(); addStops([n]); }
     if(k==="rename"){ close(); S.editing=n; renderWaypoints(true); }
+    if(k==="share"){ close(); const row=document.querySelector(`.wp[data-name="${CSS.escape(n)}"]`); wpShareFriends(row||document.body,n); }
     if(k==="delete"){ if(b.dataset.arm!=="1"){ b.dataset.arm="1"; b.textContent="Sure? Click again to delete"; return; }
       close(); const r=await api().delete_location(n); if(r&&r.ok===false) return toast(r.error||"Couldn't delete it");
       if(S.selected?.kind==="loc"&&S.selected.name===n) select(null); await poll(); renderWaypoints(true); toast(`Deleted ${n}`); } }; }
@@ -1041,6 +1043,7 @@ function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot")
   if(tv.armistice===false) bits.push(`<span style="color:#ffb454">Outside the armistice zone</span>`);
   const ct=contactsNear(); if(ct.length) bits.push(contactsHtml(ct));
   if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join("<br>")}</div>`;
+  renderAcctStatus();
   const lg=S.live.log; $("log-dot").className="dot"+(lg.status==="watching"?" on":lg.status==="idle"?"":" warn");
   // Only worth a line when something's wrong: tracking contracts is the normal state.
   $("log-row").style.display=lg.status==="watching"||lg.status==="idle"?"none":"";
@@ -1049,6 +1052,20 @@ function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot")
   $("key-dot").className="dot"+(al.available&&parts.length?" on":""); $("key-text").innerHTML=al.available===false?"Hotkey: Windows only":parts.length?parts.join(" · "):"Hotkey off";
 
   const cal=S.live.calibration; if(cal&&cal.at!==S.calSeen){ if(S.calSeen!==undefined&&Math.abs(cal.correction)>0.05) toast(`Lined up ${cal.body} using your reading at ${cal.place} (${cal.correction>0?"+":""}${cal.correction.toFixed(1)}°)`); S.calSeen=cal.at; } }
+// A line under your position when something's stopping you: suspended or banned by the moderation team, UEX
+// suspending your datarunner access, or the Quantum server down for over a minute (a blip doesn't count).
+function renderAcctStatus(){ const box=$("acct-rows"); if(!box) return;
+  const lines=[], b=S.live.acct_block, sv=S.live.server, pr=S.drProf, now=S.live.now||Date.now()/1000;
+  const when=t=>new Date(t*1000).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const amber="#ffb454", red="#ff6b6b";
+  if(b) lines.push(b.until?[amber,`<b style="color:${amber}">Account suspended</b> until ${esc(when(b.until))}`,b.reason]
+    :[red,`<b style="color:${red}">Account banned</b> <span class="muted">until the moderation team lifts it</span>`,b.reason]);
+  if(pr?.banned||pr?.uex_banned) lines.push([amber,`<b style="color:${amber}">Datarunner access suspended</b>${pr.ban_until?` until ${esc(when(pr.ban_until))}`:""}`,
+    pr.ban_reason||(pr.uex_banned?"Suspended by UEX":"")]);
+  if(sv&&!sv.ok&&sv.down_since&&now-sv.down_since>=60&&sv.error!=="off"){ const m=Math.round((now-sv.down_since)/60);
+    lines.push([red,`<b style="color:${red}">Server is offline</b> <span class="muted">(${m<60?m+" min":(m/60).toFixed(1)+" h"}, reconnecting by itself)</span>`,""]); }
+  const html=lines.map(([c,h,why])=>`<div class="row" style="align-items:flex-start"><span class="dot" style="background:${c};margin-top:5px"></span><span>${h}${why?`<div class="muted" style="font-size:12px;margin-top:1px" title="${esc(why)}">Reason: ${esc(why.length>80?why.slice(0,78)+"…":why)}</div>`:""}</span></div>`).join("");
+  if(box.dataset.h!==html){ box.dataset.h=html; box.innerHTML=html; } }
 let toastT; function toast(msg,ms){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),ms||2600); }
 // A longer note that stays up long enough to read (price alerts)
 const toastLong=msg=>toast(msg,Math.min(12000,2600+String(msg||"").length*45));

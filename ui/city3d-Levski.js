@@ -15,13 +15,15 @@ const CITY="Levski";
 City3D.define({
   city:CITY, body:"Delamar", alsoAt:[], file:"city3d-Levski.js",
   alt0:0,
+  fill:{amb:0.55, hemi:0.9},               // Levski sits in Delamar's shadow most of the time: lift it so it can be seen
   extent:30000,
   edge:[12000,28000],                      // its ground: solid to 12 km, gone by 28 km (Delamar is a hole there)
   note:"The game's own layout round Levski; ground from Delamar's height map, fitted under it.",
   weather:{                                // airless: black sky, a faint dusty glow on the horizon by day
     sky:{day:0x2a2622, dusk:0x16120f, night:0x050506},
     zenith:{day:0x050506, dusk:0x030304, night:0x020203},
-    sunGlow:0xfff1dc, hemi:[0x8a8070,0x2a2420],
+    sunGlow:0xfff1dc, hemi:[0xc9bfae,0x5a5248],    // brighter fill: the rock round Levski keeps most of the sun off it
+
     haze:null,                             // no air: no haze
     precip:null,
   },

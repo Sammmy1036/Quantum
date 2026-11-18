@@ -220,9 +220,29 @@ class CatalogMixin:
                     "addon": bool(v.get("is_addon")), "concept": is_concept(v, wiki), "aka": vehicle_aka(v),
                     "store": store_url(v), "photo": self._vehicle_photo(v), "buy": sp["buy"], "rent": sp["rent"],
                     "cargo_modules": ship_modules.cargo_options(v)})
+            out = self._one_per_ship(out)
             out.sort(key=lambda v: (v["buy"][0]["price"] if v["buy"] else 9e12, v["full"]))
             return {"ok": True, "vehicles": out, "at": at}
         return self._uex_call(run)
+
+    @staticmethod
+    def _one_per_ship(rows):
+        """One row per ship on the Vehicles page. UEX sometimes lists a ship twice (a concept entry left behind
+        when the flyable one is added, or the same ship under two ids: the Sabre Raven EX showed up twice), and
+        a Patch Hub ship can slip past the name check. Keep the one with the most to show: in-game prices,
+        UEX's own row over ours, flyable over concept, a picture."""
+        def key(v):                                   # "Aegis Sabre Raven EX" and "Sabre Raven EX" are one ship
+            k = re.sub(r"[^a-z0-9]+", "", str(v.get("full") or v.get("name") or "").lower())
+            mk = re.sub(r"[^a-z0-9]+", "", (str(v.get("maker") or "").split() or [""])[0].lower())
+            return k[len(mk):] if mk and k.startswith(mk) and len(k) > len(mk) + 3 else k
+        score = lambda v: (bool(v["buy"] or v["rent"]), v["id"] < 990000, not v["concept"], bool(v.get("photo")), len(v["roles"]))
+        best = {}
+        for v in rows:
+            k = key(v)
+            if k not in best or score(v) > score(best[k]):
+                best[k] = v
+        keep = {id(v) for v in best.values()}
+        return [v for v in rows if id(v) in keep]
 
     CARGO_MIN = 40          # SCU of cargo grid that makes a ship a cargo hauler too (Cutlass Black 46, Carrack 456)
 
@@ -241,7 +261,14 @@ class CatalogMixin:
             cargo = w.get("cargo") if w else v.get("scu")
             if (cargo or 0) >= self.CARGO_MIN and "Cargo" not in out:
                 out.insert(0, "Cargo")
+        full = f"{v.get('name') or ''} {v.get('name_full') or ''}"
+        for rx, role in self.ROLE_ADD:
+            if re.search(rx, full, re.I) and role not in out:
+                out.append(role)
         return out
+
+    # Roles UEX leaves off ships that clearly have them: the 600i Touring and 890 Jump are luxury explorers too.
+    ROLE_ADD = [(r"\b600i\b", "Exploration"), (r"\b890\s*jump\b", "Exploration")]
 
     def wiki_image(self, ref):
         """The picture for an item page: one you (the server owner) put in its place, else the wiki's,

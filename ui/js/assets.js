@@ -11,7 +11,8 @@
   const tag=src=>new Promise(res=>{ const s=document.createElement("script"); s.src=src; s.async=true;
     s.onload=()=>res(true); s.onerror=()=>{ s.remove(); res(false); }; document.head.appendChild(s); });
   // Status pill while files download (the first visit to a city can be tens of MB): what it is and how far.
-  const nice=p=>{ const m=p.match(/^(\w+)\/(.+?)(\.near)?\.js$/); if(!m||m[2]==="index") return "map data";
+  const LISTS={cities:"3D cities list",terrain:"terrain list",planets:"planet surfaces list",citylights:"city lights list",stations:"stations list",outposts:"outposts list",onyx:"Onyx floor plans"};
+  const nice=p=>{ const m=p.match(/^(\w+)\/(.+?)(\.near)?\.js$/); if(!m) return p; if(m[2]==="index") return `${LISTS[m[1]]||m[1]+" list"} (${p})`;
     const n=decodeURIComponent(m[2]).replace(/([a-z])([A-Z])/g,"$1 $2");
     return {cities:`${n} 3D city${m[3]?" (close-up detail)":""}`, terrain:`${n} terrain`, planets:`${n} surface map`, citylights:`${n} city lights`, onyx:"Onyx Facility floor plans"}[m[1]]||n; };
   const mb=b=>(b/1048576).toFixed(b<10485760?1:0);
@@ -37,6 +38,7 @@
     pending++; if(window.pywebview?.api?.assets_progress) poll();
     try{ if(await tag(b+path)) return true;
       if(await tag(path)) return true;        // a copy in the ui folder (development)
+      try{ window.pywebview.api.js_error("map data",`Couldn't load ${path}: see quantum_errors.log for why (not in the server's manifest.json, or the download failed)`); }catch(e){}
       showPill(`Couldn't download <b>${nice(path)}</b>. Check your connection; Quantum will try again next time it's needed.`); holdUntil=Date.now()+7000; hidePill(7000);
       return false; }
     finally{ pending--; } };

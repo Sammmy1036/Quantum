@@ -79,7 +79,8 @@ function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
   for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",about:"",recruiting:true}; ogPane(); ogRender(); };
   for(const b of P.querySelectorAll("[data-ogfind]")) b.onclick=()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); };
   for(const b of P.querySelectorAll("[data-oginv]")) b.onclick=async()=>{ b.disabled=true; const yes=b.dataset.yes==="1"; const r=await ogCall("invite/respond",{id:+b.dataset.oginv,accept:yes});
-    if(!r.ok) return toast(r.error); toast(yes?"Welcome aboard!":"Invitation declined"); await ogLoadMine(); if(yes){ S.og.tab="overview"; ogOpen(r.org); } }; }
+    if(!r.ok) return toast(r.error); toast(yes?"Welcome aboard!":"Invitation declined"); await ogLoadMine(); if(yes){ S.og.tab="overview"; ogOpen(r.org); } };
+  if(typeof soSuspInto==="function") soSuspInto(P); }
 async function ogBrowse(){ const q=S.og.q; const r=await ogCall("browse"+(q.trim()?"?q="+encodeURIComponent(q.trim()):"")); if(S.og.q!==q) return; S.og.browse=r.ok?r.orgs:{error:r.error}; if(S.og.view==="browse") ogRender(); }
 
 // ---- main area

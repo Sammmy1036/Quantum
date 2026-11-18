@@ -163,6 +163,10 @@ class GearMixin:
             was = getattr(self, "_server_ok", None)
             self._server_ok, self._server_checked = bool(h.get("ok")), time.time()
             self._server_error = None if h.get("ok") else h.get("error")
+            if self._server_ok:
+                self._server_down_since = None
+            elif not getattr(self, "_server_down_since", None):
+                self._server_down_since = time.time()              # first failed check: when it went down
             if self._server_ok and was is False:
                 self._server_back_at = time.time()
                 self._sender._event("Quantum server is back online")
