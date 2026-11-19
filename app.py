@@ -7,31 +7,32 @@ Read-only data sources; nothing touches the game process:
   - locations.json                -> map database (run import_data.py once)
 """
 from qbase import *  # noqa: F401,F403  (imports, paths, constants, helpers: see qbase.py)
-import api_core
-import api_map
-import api_backup
-import api_gear
-import api_social
-import api_clock
-import api_trade
-import api_datarunner
-import api_account
-import api_updates
-import api_catalog
-import api_fleet
-import api_shopping
-import api_contracts
-import api_watch
-import api_friendmap
-import api_cargo
-import api_patchhub
-import api_wishlist
+from api import (
+    api_core,
+    api_map,
+    api_backup,
+    api_gear,
+    api_social,
+    api_clock,
+    api_trade,
+    api_datarunner,
+    api_account,
+    api_updates,
+    api_catalog,
+    api_fleet,
+    api_shopping,
+    api_contracts,
+    api_watch,
+    api_friendmap,
+    api_cargo,
+    api_patchhub,
+    api_wishlist)
 import netcache
 import gamefiles
 
 
-# The page's API. Its methods live in the api_*.py mixins by subject; this class keeps start-up (__init__).
-# One Api made of mixins, one per subject (api_*.py). No name may be defined in two of them (one would silently
+# The page's API. Its methods live in the api/api_*.py mixins by subject; this class keeps start-up (__init__).
+# One Api made of mixins, one per subject (api/api_*.py). No name may be defined in two of them (one would silently
 # win): _check_mixins below stops Quantum at start if that ever happens.
 class Api(api_contracts.ContractsMixin,
           api_wishlist.WishlistMixin,
