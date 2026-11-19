@@ -78,6 +78,20 @@ class PatchHubMixin:
         return {"ok": True, "hub": hub, "source": source, "seen": self._settings.get("patchhub_seen") or [],
                 "claimed": self._settings.get("patchhub_claimed") or [], "game": game, "building": building, "progress": progress}
 
+    def patchhub_concept(self, skip=None):
+        """{ok, ships}: every in-concept ship on the Ship Matrix, newest first, for the Patch Hub's "+ N more" when
+        the hub it has lists only the first few (a server still on the older patchhub.py cuts each list at 10).
+        skip: names already in another column (on the PTU, new this patch), left out the same way the hub does.
+        Kept for 30 minutes."""
+        got = getattr(self, "_ph_concept", None)
+        if not got or time.time() - got[0] > patchhub.TTL:
+            try:
+                got = self._ph_concept = (time.time(), patchhub.ship_matrix()["concept"])
+            except Exception as e:
+                return {"ok": False, "error": f"Couldn't read the Ship Matrix: {e}"}
+        sk = {str(n or "").lower() for n in (skip or [])}
+        return {"ok": True, "ships": [s for s in got[1] if s["name"].lower() not in sk]}
+
     def patchhub_claim(self, key, on=True):
         """Tick (or untick) a Twitch drop reward as claimed. Kept by its key ("campaign|reward name"), so the
         tick stays through restarts and when the campaign's list is fetched again; only the most recent 300 kept."""

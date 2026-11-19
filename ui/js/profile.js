@@ -350,7 +350,7 @@ function pfArrangeView(v){ const P=$("pf-panel"), lg=S.live?.log||{}, A=PF_ARR[v
       :key==="orgs"?ogLogo(x,1):key==="listings"?(x.photo?`<img src="${esc(x.photo)}" alt="" loading="lazy">`:"")
       :(()=>{ const p=x.slots?.core||x.slots?.helmet||x.slots?.primary||Object.values(x.slots||{})[0]; return p?`<span data-gpic="${esc(p.name)}"></span>`:""; })();
     return `<div class="pf-arr ${on?"":"off"}" draggable="true" data-pfdrag="${esc(key)}|${esc(id)}">
-      <span class="h" aria-hidden="true">⋮⋮</span><span class="th">${pic}</span>
+      <span class="h" aria-hidden="true">⋮⋮</span><span class="th${key==="orgs"?" og":""}">${pic}</span>
       <div class="w"><b>${x.main?"★ ":""}${esc(name)}</b><small>${esc(sub)}${o.off?"":hid?" · hidden":on?"":" · over the limit"}</small></div>
       <label class="row" style="gap:6px;font-size:12.5px;cursor:pointer"><input type="checkbox" data-pfarr="${key}|show|${esc(id)}" ${hid?"":"checked"}> Show</label>
       <span class="row" style="gap:4px"><button class="btn small ghost" data-pfarr="${key}|up|${esc(id)}" ${i?"":"disabled"} aria-label="Move ${esc(name)} up">↑</button><button class="btn small ghost" data-pfarr="${key}|down|${esc(id)}" ${i<o.all.length-1?"":"disabled"} aria-label="Move ${esc(name)} down">↓</button></span></div>`; };

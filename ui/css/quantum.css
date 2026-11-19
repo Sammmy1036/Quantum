@@ -1175,6 +1175,9 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-arr .h{color:var(--dim);letter-spacing:-2px;font-size:14px;text-align:center}
 .pf-arr .th{width:80px;height:45px;border-radius:6px;overflow:hidden;background:var(--panel-3);display:block}.pf-arr .th img{width:100%;height:100%;object-fit:cover;display:block}
 .pf-arr .th span{display:block;width:100%;height:100%}.pf-arr .th span img{width:100%;height:100%;object-fit:cover}
+.pf-arr .th .og-logo{width:100%;height:100%;border:0;border-radius:0;font-size:13px}.pf-arr .th .og-logo img{object-fit:contain}
+/* Org logos: just the uploaded (transparent) image, no tile or box behind it */
+.pf-arr .th.og,.pf-arr .th.og .og-logo{background:none;border-radius:0}
 .pf-arr .w b{display:block;font-size:13.5px}.pf-arr .w small{color:var(--dim);font-size:12px}
 .pf-arr.off .w,.pf-arr.off .th{opacity:.5}
 .pf-ov{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 32px;align-items:start;margin-top:18px}
@@ -1263,6 +1266,8 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .cart-btn.lab{width:auto;gap:7px;padding:0 14px;height:auto;min-height:34px;display:inline-flex;align-items:center;background:linear-gradient(135deg,#8fe3ff,#2f86ff 55%,#1747c9);color:#fff;border:0;font-weight:600}
 .vg{position:relative}.vg>.cart-btn{position:absolute;top:8px;right:8px;z-index:2;background:rgba(7,14,28,.82);backdrop-filter:blur(4px)}
 .vh .hd>.cart-btn{margin-left:8px;align-self:center}
+/* Components list: the cart sits under the price, lower right of the card */
+#cp-out .vh>.hd>.cart-btn{grid-column:2;justify-self:end;margin:4px 0 0}
 .sw-t td.act .cart-btn{width:26px;height:26px;vertical-align:middle;margin-right:4px}.sw-t td.act .cart-btn svg{width:15px;height:15px}
 .slot .acts .cart-btn{width:28px;height:28px}
 .cart-all svg,[data-grshopset] svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
@@ -1670,7 +1675,8 @@ button.ph-ver:hover{border-color:var(--route-2)}
 .ph-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-2);font:600 11.5px/1 var(--text);color:var(--ink-2);white-space:nowrap}
 .ph-chip b{color:var(--ink)}
 .ph-none{color:var(--ink-2);font-size:13px;padding:8px 0}
-.ph-more{color:var(--ink-2);font-size:12.5px}
+.ph-more{color:var(--route-2,#8cc4ff);font-size:12.5px;background:none;border:0;padding:4px 2px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+.ph-more:hover{color:#fff;text-decoration:underline}.ph-more svg{width:12px;height:12px}
 .ph-link{display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:6px 0;color:var(--route-2);font-weight:600;font-size:13px}
 .ph-link:hover{color:var(--ink);text-decoration:underline}
 /* new ships */
@@ -2090,3 +2096,8 @@ button.hd-logo[data-flmaker]{cursor:pointer}
 .set-view .note .note{background:none;border:0;padding:0}
 .set-view .set-box .afk-box{margin-top:12px;padding:12px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none}
 .set-view .set-box .align-list{border:0;background:none;margin:0}
+/* Vehicles: landing pad sizes as letters in a square */
+.cp-nav .ic svg.vh-pad text{fill:#9cc8ff;stroke:none;font-family:Orbitron,sans-serif;font-weight:700;letter-spacing:-.3px}
+/* Marketplace standing: your picture in the upper left of the Rating box */
+.pm-rhead{display:flex;align-items:center;gap:10px}.pm-rhead>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pm-rhead b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

@@ -1497,9 +1497,10 @@ class Hub:
         live_names_new = {s["name"].lower() for s in new_list}
         concept = [s for s in sm["concept"] if s["name"].lower() not in on_ptu and s["name"].lower() not in live_names_new]
         out["pipeline"] = {
-            "concept": {"n": len(concept), "ships": concept[:10]},
-            "ptu": {"n": len(on_ptu), "ships": sorted(on_ptu.values(), key=lambda s: s["name"])[:10]},
-            "new": {"n": len(new_list), "ships": new_list[:10]}}
+            # every ship, not just the first few: the hub's "+ N more" opens the rest
+            "concept": {"n": len(concept), "ships": concept},
+            "ptu": {"n": len(on_ptu), "ships": sorted(on_ptu.values(), key=lambda s: s["name"])},
+            "new": {"n": len(new_list), "ships": new_list}}
         self.debug["on_ptu"] = sorted(on_ptu)
 
     def _events(self, out, ctx, st):

@@ -184,13 +184,20 @@ function phEvents(h){ const L=h.events?.list||[], A=h.events?.announced||[], lin
   const nx=h.events?.next, head=now.length?`${now.length} on now${nx?` · next: ${esc(nx.name)} in ${esc(phIn(nx.starts))}`:""}`:nx?`Next: ${esc(nx.name)} in ${esc(phIn(nx.starts))}`:"";
   return `<section class="ph-card ph-events" id="ph-events" aria-labelledby="ph-events-h"><div class="ph-hd"><div><div class="ph-lbl">Events</div><h3 id="ph-events-h">Ongoing and Upcoming Events</h3>${head?`<div class="ph-sub">${head}</div>`:""}</div><div class="ph-hd-r">${phSrc(links.events)}</div></div>${body}${more}</section>`; }
 
+// "+ N more" under a list: opens the rest of it in place, and "Show fewer" folds it back. If the hub only has
+// some of them (an older saved copy), the rest is on the source page.
+const phOpen=k=>!!S.ph.more?.[k];
+function phMoreBtn(k,n,shown,src){ if(n<=shown&&!phOpen(k)) return "";
+  const loading=S.ph.fullPipe?.[k]&&!S.ph.fullPipe[k].length;
+  if(phOpen(k)) return `<button class="ph-more" data-phmore="${k}">Show fewer</button>${n>shown&&loading?` <span class="ph-sub">Loading the other ${n-shown}…</span>`:n>shown&&src?` <button class="ph-more" data-ext="${esc(src)}">${n-shown} more on the source ${PH_IC.ext}</button>`:""}`;
+  return `<button class="ph-more" data-phmore="${k}" aria-expanded="false">+ ${n-shown} more</button>`; }
 // ---- 1. new ships
 const phUniq=L=>{ const seen=new Set(); return (L||[]).filter(s=>{ const k=squash(s.name); return seen.has(k)?false:(seen.add(k),true); }); };
 function phShips(h){ const L=phUniq(h.ships?.list), sh=h.ships||{};
-  const body=L.length?`<div class="ph-ships">${L.slice(0,12).map(s=>`<div class="ph-ship"><button class="pic" data-phveh="${esc(s.name)}" data-phwiki="${esc(s.url||"")}" aria-label="Open the ${esc(s.name)}'s page" tabindex="-1">${phPic(s.name,s.image)}</button>
+  const body=L.length?`<div class="ph-ships">${(phOpen("ships")?L:L.slice(0,12)).map(s=>`<div class="ph-ship"><button class="pic" data-phveh="${esc(s.name)}" data-phwiki="${esc(s.url||"")}" aria-label="Open the ${esc(s.name)}'s page" tabindex="-1">${phPic(s.name,s.image)}</button>
       <div class="t">${phShipName(s)}<span>${esc([s.maker,s.role].filter(Boolean).join(" · "))}</span>
       <div class="chips">${s.size?`<span class="ph-chip">${esc(s.size)}</span>`:""}${s.vehicle&&!/vehicle/i.test(s.size||"")?`<span class="ph-chip">Ground vehicle</span>`:""}</div></div></div>`).join("")}</div>
-      ${L.length>12?`<div class="ph-more">+ ${L.length-12} more</div>`:""}`
+      ${L.length>12?phMoreBtn("ships",L.length,phOpen("ships")?L.length:12):""}`
     :phEmpty(sh.how==="none"?"Couldn't compare this version with the one before yet.":`No new ships or vehicles in ${esc(sh.release?`Alpha ${sh.release}`:sh.version||"this patch")}.`);
   const how=sh.compared_with?`<span class="ph-sub" title="Every ship in the game files of ${esc(sh.version||"")} that wasn't in ${esc(sh.compared_with)}, the release before. Renamed ships are left out.">added across ${esc(sh.release||"")}.x · since ${esc(sh.compared_with)}</span>`:"";
   return hubCard("ships","1","New in this release",`Ships &amp; vehicles new in Alpha ${esc(sh.version||sh.release||"")}`,body,"span2",how+phSrc(h.links?.ships)); }
@@ -228,10 +235,10 @@ function phStore(h){ const st=h.store||{}, N=st.new||[], SP=st.special||[], LT=s
 
 // ---- 5. up and coming: on the PTU now, in concept, new this patch
 function phPipe(h){ const P=h.pipeline||{};
-  const col=(k,name,cls,empty)=>{ const c0=P[k]||{n:0,ships:[]}, sh=phUniq(c0.ships), c={...c0,ships:sh,n:k==="new"?sh.length:c0.n};
+  const col=(k,name,cls,empty)=>{ const c0=P[k]||{n:0,ships:[]}, sh=phUniq(phOpen(k)&&S.ph.fullPipe?.[k]?.length>(c0.ships||[]).length?S.ph.fullPipe[k]:c0.ships), c={...c0,ships:sh,n:k==="new"?sh.length:c0.n};
     return `<div class="ph-col ${cls}"><div class="hd"><span>${name}</span><span class="ph-chip">${c.n||0}</span></div>
-      ${(c.ships||[]).slice(0,8).map(s=>`<div class="ph-pship">${phShipName(s)}<small>${esc(s.maker||"")}</small></div>`).join("")||`<div class="ph-none" style="padding:4px 2px">${empty}</div>`}
-      ${(c.n||0)>8?`<div class="ph-more">+ ${c.n-8} more</div>`:""}</div>`; };
+      ${(phOpen(k)?c.ships||[]:(c.ships||[]).slice(0,8)).map(s=>`<div class="ph-pship">${phShipName(s)}<small>${esc(s.maker||"")}</small></div>`).join("")||`<div class="ph-none" style="padding:4px 2px">${empty}</div>`}
+      ${(c.n||0)>8?phMoreBtn(k,c.n,phOpen(k)?(c.ships||[]).length:8,h.links?.pipeline):""}</div>`; };
   return hubCard("pipe","5","Up and coming","Ship pipeline",`<div class="ph-pipe">${col("concept","In concept","c1","None listed")}${col("new","New this patch","c4","None this patch")}</div>`,
     "span3",phSrc(h.links?.pipeline)); }
 
@@ -291,6 +298,15 @@ for(const id of ["ph-panel","pane-patchhub"]){ const el=$(id); if(!el) continue;
     if(t.dataset.phclaim!==undefined){ const k=t.dataset.phclaim, on=!(S.ph.claimed||[]).includes(k);
       S.ph.claimed=on?[...(S.ph.claimed||[]),k]:(S.ph.claimed||[]).filter(x=>x!==k); phRerender();     // ticked straight away
       api().patchhub_claim(k,on).then(r=>{ if(r?.ok) S.ph.claimed=r.claimed; else toast(r?.error||"Couldn't save that"); }).catch(()=>{});
+      return; }
+    if(t.dataset.phmore){ const k=t.dataset.phmore; S.ph.more={...(S.ph.more||{}),[k]:!phOpen(k)}; phRerender();
+      // The hub may list only the first few concept ships: fetch the whole Ship Matrix list the first time it's opened
+      const P=S.ph.data?.pipeline||{}, c=P[k];
+      if(k==="concept"&&phOpen(k)&&c&&(c.ships||[]).length<(c.n||0)&&!S.ph.fullPipe?.[k]){
+        S.ph.fullPipe={...(S.ph.fullPipe||{}),[k]:[]};
+        const skip=["ptu","new"].flatMap(x=>(P[x]?.ships||[]).map(s=>s.name));
+        api().patchhub_concept(skip).then(r=>{ if(r?.ok){ S.ph.fullPipe[k]=r.ships; phRerender(); } else { delete S.ph.fullPipe[k]; toast(r?.error||"Couldn't load the rest of the list"); } })
+          .catch(()=>{ delete S.ph.fullPipe[k]; }); }
       return; }
     if(t.dataset.phb){ S.ph.build=t.dataset.phb; return phRerender(); }
     if(t.dataset.phfull){ S.ph.full=!S.ph.full; renderPatchHub(); return $("ph-notes")?.scrollIntoView({block:"start",behavior:"smooth"}); }

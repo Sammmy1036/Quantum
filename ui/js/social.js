@@ -414,9 +414,12 @@ function pmMineHtml(){ const m=S.pm.mine; if(!m) return `<div class="so-empty">L
 function pmStandingHtml(m){ const rt=m.rating||{}, me=m.me||{};
   const badge=(ok,label,why)=>`<div class="pm-trust ${ok?"on":""}"><span>${ok?"✓":"·"}</span><div><b>${label}</b><small>${why}</small></div></div>`;
   const done=(m.trades||[]).filter(t=>t.status==="completed"&&t.actions.includes("rate")&&!t.my_rating).length;
+  // Your own picture and name at the top of the Rating box, as other players see it
+  const sm=S.so?.st?.me||{}, nm=me.name||sm.name||(typeof pfName==="function"?pfName():"")||"",
+    av=me.avatar||sm.avatar||(typeof pfPhoto==="function"?pfPhoto():null)||null;
   return `<div class="pm-top"><h2>Your standing</h2><span class="muted">What other players see on your listings and profile</span></div>
     <div class="pm-standing">
-      <div class="pm-box"><div class="k">Rating</div><div class="pm-big">${rt.stars!=null?`<b>${rt.stars}</b><span style="color:#f2c14e">★</span><span class="muted">from ${plural(rt.count,"rating")}</span>`:`<span class="muted">No ratings yet: finish a trade and ask them to rate you.</span>`}</div>
+      <div class="pm-box"><div class="pm-rhead">${soAv({name:nm,avatar:av},true)}<div><div class="k">Rating</div>${nm?`<b>${esc(nm)}</b>`:""}</div></div><div class="pm-big">${rt.stars!=null?`<b>${rt.stars}</b><span style="color:#f2c14e">★</span><span class="muted">from ${plural(rt.count,"rating")}</span>`:`<span class="muted">No ratings yet: finish a trade and ask them to rate you.</span>`}</div>
         <div class="pm-split"><div><span>As a seller</span><b>${rt.as_seller?`★ ${rt.as_seller.stars} <small class="muted">(${rt.as_seller.count})</small>`:"–"}</b></div><div><span>As a buyer</span><b>${rt.as_buyer?`★ ${rt.as_buyer.stars} <small class="muted">(${rt.as_buyer.count})</small>`:"–"}</b></div>
           <div><span>Sold</span><b>${rt.sold||0}</b></div><div><span>Bought</span><b>${rt.bought||0}</b></div></div>
         ${rt.tags?.length?`<div class="pm-tags" style="margin-top:10px">${rt.tags.map(([x,n])=>`<span class="chip">${esc(x)} <b>${n}</b></span>`).join("")}</div>`:""}</div>

@@ -415,8 +415,8 @@ function renderDetail(){
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
-      <div class="sub">Alignment</div>
-      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span>${inSys.length?`<b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}`:`Nothing to align in ${esc(S.system)}`}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>
+      ${inSys.length?`<div class="sub">Alignment</div>
+      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>`:""}
       <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
         ${(()=>{ if(S.communityStatus&&S.live?.server&&S.live.server.ok!==S.communityStatus.ok) S.communityStatus={...S.communityStatus,ok:!!S.live.server.ok,error:S.live.server.error};
