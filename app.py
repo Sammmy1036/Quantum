@@ -27,8 +27,8 @@ from api import (
     api_cargo,
     api_patchhub,
     api_wishlist)
-import netcache
-import gamefiles
+from sources import netcache
+from game import gamefiles
 
 
 # The page's API. Its methods live in the api/api_*.py mixins by subject; this class keeps start-up (__init__).

@@ -32,7 +32,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from nav_core import Body, Location
+from planner.nav_core import Body, Location
 
 SOURCE_URL = "https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/HEAD/starmap_positions.json"
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}

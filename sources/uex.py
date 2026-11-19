@@ -22,8 +22,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import netcache
-from services import _key
+from sources import netcache
+from sources.services import _key
 
 BASE = "https://api.uexcorp.uk/2.0/"
 TTL = {"terminals": 86400, "outposts": 86400, "categories": 86400, "items": 86400, "items_prices_all": 3600, "space_stations": 86400, "vehicles": 86400, "vehicles_purchases_prices_all": 3600,

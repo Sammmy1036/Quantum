@@ -20,8 +20,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import netcache
-import gamefiles
+from sources import netcache
+from game import gamefiles
 
 API = "https://api.star-citizen.wiki/api/missions"
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}

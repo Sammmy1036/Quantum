@@ -17,7 +17,7 @@ import json
 import time
 from pathlib import Path
 
-from nav_core import SYSTEMS, Location
+from planner.nav_core import SYSTEMS, Location
 
 # Gateway stations. name in Quantum -> (system, leads to, position or None, note).
 GATEWAYS = {

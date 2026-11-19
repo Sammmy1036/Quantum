@@ -115,7 +115,7 @@ class Tray:
     def is_visible(self):
         """Whether the window is really showing (F9 can show it too), as far as Windows says."""
         try:
-            import overlay
+            from game import overlay
             v = overlay.is_shown()
         except Exception:
             v = None

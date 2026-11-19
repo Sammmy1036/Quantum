@@ -121,7 +121,7 @@ class CityClock:
             self._loop()
         except Exception:
             try:
-                import watcher
+                from game import watcher
                 watcher.log_error("city clock overlay")
             except Exception:
                 pass
@@ -130,7 +130,7 @@ class CityClock:
     def _loop(self):
         import ctypes
         from ctypes import wintypes
-        import overlay
+        from game import overlay
 
         u32, g32 = ctypes.WinDLL("user32", use_last_error=True), ctypes.WinDLL("gdi32", use_last_error=True)
         k32 = ctypes.WinDLL("kernel32")

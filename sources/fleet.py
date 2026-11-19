@@ -13,8 +13,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import netcache
-import gamefiles
+from sources import netcache
+from game import gamefiles
 
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)"}
 PAGES_API = "https://starcitizen.tools/api.php"

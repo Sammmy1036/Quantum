@@ -9,8 +9,8 @@ https://api.star-citizen.wiki/api/vehicles/<uuid>. They're kept in uex_cache/wik
 The packing itself is cargo.py.
 """
 from qbase import *  # noqa: F401,F403
-import cargo
-import fleet as fleet_mod
+from planner import cargo
+from sources import fleet as fleet_mod
 
 WIKI_VEHICLE = "https://api.star-citizen.wiki/api/vehicles/"
 GRIDS_KEEP = 7 * 86400

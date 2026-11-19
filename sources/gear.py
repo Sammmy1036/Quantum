@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-import netcache
+from sources import netcache
 
 UA = {"User-Agent": "Quantum (Star Citizen route planner; github.com/Sammmy1036/Quantum)", "Accept": "application/json"}
 API = "https://api.star-citizen.wiki/api"

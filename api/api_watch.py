@@ -15,7 +15,7 @@ import secrets
 import threading
 import time
 
-import uex
+from sources import uex
 
 WATCH_EVERY = 300            # seconds between checks (UEX's price list itself is cached for 30 minutes)
 WATCH_MAX = 50               # watches you can keep
