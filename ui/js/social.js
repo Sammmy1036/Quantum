@@ -365,7 +365,6 @@ function pmFormHtml(){ const f=S.pm.form, svc=f.kind==="service", cats=(svc?S.pm
 const PM_ACT={accept:["Accept","primary"],decline:["Decline","ghost"],cancel:["Cancel trade","ghost"],done:["Mark as done","primary"],
   item_in:["Item received from seller","primary"],pay_in:["Payment received from buyer","primary"],release:["Hand over and complete","primary"],refund:["Cancel and return everything","danger"]};
 const PM_ARM=new Set(["decline","cancel","release","refund"]);
-// After the stars: quick tags and a short review (like OfferUp). Shown on their profile with who left it.
 function pmReviewForm(t,other){ const r=S.pm.rev?.[t.id]||{tags:[...(t.my_review?.tags||[])],note:t.my_review?.note||"",open:!(t.my_review?.note||t.my_review?.tags?.length)};
   (S.pm.rev=S.pm.rev||{})[t.id]=r;
   if(!r.open) return `<div class="pm-review-done"><span class="muted" style="font-size:12px">Your review${r.tags.length?`: ${r.tags.map(esc).join(" · ")}`:""}${r.note?` · “${esc(r.note)}”`:""}</span> <a data-pmrevedit="${t.id}" style="cursor:pointer;font-size:12px;text-decoration:underline">Change</a></div>`;
