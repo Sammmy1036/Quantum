@@ -18,8 +18,8 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
-import gateways
-from nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi, normalize, same_place
+from planner import gateways
+from planner.nav_core import Body, Location, NavDB, CATEGORY_MAP, dist, friendly_poi_name, is_test_poi, normalize, same_place
 
 HERE = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
 DB_PATH = HERE / "locations.json"
@@ -181,7 +181,7 @@ def main():
     # Descriptive system/planet info from the Star Citizen Wiki (CC BY-SA 4.0) for the info cards.
     if not offline:
         try:
-            import wiki
+            from sources import wiki
             blob = fetch(wiki.URL)
             json.loads(blob)                       # only save it if it's valid JSON
             (HERE / "wiki_systems.json").write_bytes(blob)
@@ -192,7 +192,7 @@ def main():
     # Citizen Wiki API, built from the game files for the current game version.
     if not offline:
         try:
-            import services
+            from sources import services
             print("Downloading location services from the Star Citizen Wiki API ...")
             recs = services.fetch_all()
             services.save(recs, HERE / "services.json")
