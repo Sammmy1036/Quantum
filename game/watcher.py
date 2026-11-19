@@ -8,10 +8,10 @@ from pathlib import Path
 
 import pyperclip
 
-from nav_core import parse_showlocation
+from planner.nav_core import parse_showlocation
 
 # Next to Quantum.exe (or app.py when run from source), so it's easy to find and send.
-ERROR_LOG = (Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent) \
+ERROR_LOG = (Path(sys.executable).parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent.parent) \
     / "quantum_errors.log"
 
 

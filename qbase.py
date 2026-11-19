@@ -19,37 +19,37 @@ import webbrowser
 
 import webview
 
-import backup
-import secure
+from planner import backup
+from desktop import secure
 from dataclasses import asdict
-import ccu
-import community
-import datarunner
-import fleet
-import gateways
-import gear
-import pledgestore
-import shopping
-import ship_modules
-import tray
-import services
-import uex
+from sources import ccu
+from sources import community
+from sources import datarunner
+from sources import fleet
+from planner import gateways
+from sources import gear
+from sources import pledgestore
+from planner import shopping
+from planner import ship_modules
+from desktop import tray
+from sources import services
+from sources import uex
 import updater
-import assets
-import wiki
+from desktop import assets
+from sources import wiki
 
-from gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
-import gamelog
-from nav_core import NO_ALIGN, Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
-import nav_core
-import missions_wiki
-import starmap_import
-import overlay
-import city_clock
+from game.gamelog import ContractTracker, contract_cargo, is_collection, is_tracked, need_item
+from game import gamelog
+from planner.nav_core import NO_ALIGN, Location, NavDB, SYSTEMS, _from_dict, can_align, classify, dist
+from planner import nav_core
+from sources import missions_wiki
+from game import starmap_import
+from game import overlay
+from game import city_clock
 import clientid
-from keysender import ShowLocationSender
-from watcher import ClipboardWatcher
-import watcher as watcher_mod
+from game.keysender import ShowLocationSender
+from game.watcher import ClipboardWatcher
+from game import watcher as watcher_mod
 
 FROZEN = getattr(sys, "frozen", False)
 
@@ -519,7 +519,7 @@ def clear_game_log(path=None):
     """Empty Game.log so Quantum starts reading from a clean slate. Never while the game is running
     (it's writing to it). Star Citizen keeps its own copies of old logs in the logbackups folder.
     Your contracts, learned places and calibrations are stored by Quantum and aren't affected."""
-    from gamelog import default_log_paths
+    from game.gamelog import default_log_paths
     path = path or next((p for p in default_log_paths() if os.path.isfile(p)), None)
     if not path or not os.path.isfile(path):
         return {"ok": False, "reason": "Game.log not found"}

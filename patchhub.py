@@ -1674,7 +1674,7 @@ class Hub:
 
     def _store(self, out, ctx, st):
         try:
-            import ccu                              # the RSI upgrade tool, as the Upgrades tab uses it (the app)
+            from sources import ccu                      # the RSI upgrade tool, as the Upgrades tab uses it (the app)
         except ImportError:
             from . import sccu as ccu               # the server's copy of ccu.py (the quantum package)
         ships = ccu.Rsi().ships()
