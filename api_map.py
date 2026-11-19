@@ -23,6 +23,7 @@ class MapMixin:
         with self._lock:
             self._refresh_learned_locals()
             bodies = sorted(self._db.bodies.values(), key=lambda b: -b.radius_m)
+            unreleased = self._unreleased_bodies()
             out_b = []
             for b in bodies:
                 # a moon's parent at least twice its size and close by (within 200 parent radii)
@@ -32,7 +33,9 @@ class MapMixin:
                 out_b.append({"name": b.name, "center": b.center, "radius": b.radius_m, "system": b.system,
                               "kind": b.kind, "period": b.rotation_period_h, "offset": b.rotation_offset_deg,
                               "epoch": b.epoch_utc, "om": b.om_radius_m, "calibrated": b.calibrated,
-                              "alignable": can_align(b), "align_note": NO_ALIGN.get(b.name),
+                              "alignable": can_align(b) and b.name not in unreleased,
+                              "align_note": NO_ALIGN.get(b.name) or (f"Not in the LIVE game yet: comes with {unreleased[b.name]}"
+                                                                    if b.name in unreleased else None),
                               "parent": parent.name if parent and b.kind != "star" else None})
             hidden_keys = self._hidden_keys()
             unverified = gateways.unverified(self._learned_places())     # "Check its position" jobs
@@ -1105,8 +1108,9 @@ class MapMixin:
         with self._lock:
             hist = self._cal_file().get("history", [])
             out = []
+            unreleased = self._unreleased_bodies()
             for b in sorted(self._db.bodies.values(), key=lambda b: (b.system, b.kind != "planet", b.name)):
-                if not can_align(b):              # stars, asteroids, planets you can't land on
+                if not can_align(b) or b.name in unreleased:     # stars, asteroids, unlandable, not on LIVE yet
                     continue
                 h = [e for e in hist if e["body"] == b.name]
                 checks = [e for e in h if e["kind"] == "check"]
@@ -1118,6 +1122,56 @@ class MapMixin:
                             "last": h[-1] if h else None})
             return {"bodies": out, "build": self._tracker.build, "version": self._game_version_label(self._tracker.build),
                     "file": str(CAL_PATH)}
+
+    @staticmethod
+    def _ver(v):
+        """(major, minor) of a game version like "5.0.200.12681" or "4.3.2 LIVE"; None when there's none."""
+        m = re.match(r"\s*(\d+)\.(\d+)", str(v or ""))
+        return (int(m.group(1)), int(m.group(2))) if m else None
+
+    def _unreleased_bodies(self):
+        """{body: "Alpha 5.0"} for planets and moons Quantum built from a test channel (PTU, EPTU...) that the
+        LIVE game doesn't have yet: kept off alignment until LIVE reaches that version (playing the PTU
+        doesn't count: it only shows once it's in LIVE)."""
+        builds = (getattr(self, "_game_bodies", None) or {}).get("builds") or {}
+        out = {}
+        live = None
+        for name, b in builds.items():
+            ch, need = str(b.get("channel") or "").upper(), self._ver(b.get("Version") or b.get("Branch", "").replace("sc-alpha-", ""))
+            if not ch or ch == "LIVE" or not need or name not in self._db.bodies:
+                continue
+            # No network and no waiting here (this runs while the map's data is put together): the Game.log's
+            # own header, the label kept for the last LIVE build, and UEX's version list as last cached
+            try:
+                if live is None:
+                    last = str(self._settings.get("last_build") or "")
+                    labels = self._settings.get("build_labels") or {}
+                    lab = labels.get(last) or ""
+                    live = (self._ver(lab) if "LIVE" in lab.upper() or not any(c in lab.upper() for c in ("PTU", "EPTU", "TECH", "HOTFIX")) else None) \
+                        or (self._logged_version() if self._game_env() == "LIVE" else None) or self._uex_live_version() or ()
+            except Exception:
+                live = live or ()
+            if live and live >= need:
+                continue
+            out[name] = f"Alpha {need[0]}.{need[1]}"
+        return out
+
+    def _logged_version(self):
+        """(major, minor) from the Game.log being read (its Branch line), without asking UEX."""
+        try:
+            with open(self._tracker.log_path or "", "r", encoding="utf-8", errors="replace") as fh:
+                head = fh.read(200_000)
+        except (OSError, TypeError):
+            return None
+        m = re.search(r"Branch:\s*sc-alpha-(\d+\.\d+)", head) or re.search(r"(?:File|Product)Version:\s*(\d+\.\d+)\.", head)
+        return self._ver(m.group(1)) if m else None
+
+    def _uex_live_version(self):
+        try:
+            rows, _ = self._uex.get("game_versions", offline=True)
+            return self._ver((rows[0] if rows else {}).get("live"))
+        except Exception:
+            return None
 
     def reset_calibration(self, name):
         """Go back to the community value for one body."""

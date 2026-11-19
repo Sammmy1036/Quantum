@@ -21,7 +21,7 @@
     <button class="rail-btn" data-group="trade" title="Commodities and trade routes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>Trade</button>
     <button class="rail-btn" data-group="data" title="Datarunner: report prices, jobs, your reports and the leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v6c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-6"/><path d="M5 11.5v6c0 1.4 3.1 2.5 7 2.5 1 0 1.9-.1 2.7-.2"/><path d="M17.5 15v6M15 18.5l2.5 2.5 2.5-2.5"/></svg>Data</button>
     <button class="rail-btn" data-group="ships" title="Your fleet, components, vehicles and ship upgrades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/></svg>Ships</button>
-    <button class="rail-btn" data-group="gear" title="Weapons, armor, clothing, gadgets, keys and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
+    <button class="rail-btn" data-group="gear" title="Weapons, attachments, armor, clothing, gadgets and your gear loadouts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>Gear</button>
     <button class="rail-btn" data-group="consumables" title="Food, drinks and medical items"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v4l-4 5v8h12v-8l-4-5V3"/><path d="M9 15h6"/></svg>Consumables</button>
     <button class="rail-btn" data-group="crafting" title="Crafting blueprints"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l8-8M14 4l6 6-3 3-6-6z"/></svg>Blueprints</button>
     <button class="rail-btn" data-group="exchange" title="Marketplace: buy and sell items and services with other players, for aUEC"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9l2-5h12l2 5M4 9h16v11H4zM9 13h6"/></svg>Market<b class="rail-n" id="rail-pm-n" hidden>0</b></button>
@@ -52,6 +52,7 @@
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="vehicles" aria-selected="false" hidden>Vehicles</button>
       <button class="tab" role="tab" data-group="ships" data-tab="ccu" aria-selected="false" title="Ship upgrades (CCUs): the cheapest way from the ship you have to the one you want">CCU</button>
       <button class="tab" role="tab" data-group="gear" data-tab="weapons" aria-selected="false" title="Personal (FPS) weapons, from the Star Citizen Wiki">Weapons</button>
+      <button class="tab" role="tab" data-group="gear" data-tab="attachments" aria-selected="false" title="Weapon attachments: optics, barrel and underbarrel attachments and magazines, from the Star Citizen Wiki">Attachments</button>
       <button class="tab" role="tab" data-group="gear" data-tab="armor" aria-selected="false" title="Armor sets and pieces, from the Star Citizen Wiki">Armor</button>
       <button class="tab" role="tab" data-group="gear" data-tab="clothing" aria-selected="false" title="Clothing: hats, shirts, jackets, pants, shoes… from the Star Citizen Wiki">Clothing</button>
       <button class="tab" role="tab" data-group="gear" data-tab="gadgets" aria-selected="false" title="Multi-tools and their attachments, tractor beams, rangefinders, mining gadgets… from the Star Citizen Wiki">Gadgets</button>
@@ -197,6 +198,7 @@
     </section>
 
     <section class="pane" id="pane-weapons"></section>
+    <section class="pane" id="pane-attachments"></section>
     <section class="pane" id="pane-armor"></section>
     <section class="pane" id="pane-blueprints"></section>
     <section class="pane" id="pane-gadgets"></section>

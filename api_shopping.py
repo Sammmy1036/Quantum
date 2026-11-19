@@ -128,7 +128,7 @@ class ShoppingMixin:
         return None
 
     def shop_add(self, entries):
-        """Add items: [{name, kind ("component" | "weapon" | "armor" | "gadget" | "clothing" | "consumable" | "utility"), uuid, uex_id, class_name, qty, source}].
+        """Add items: [{name, kind ("component" | "weapon" | "armor" | "gadget" | "clothing" | "consumable" | "utility" | "attachment"), uuid, uex_id, class_name, qty, source}].
         One already on the list gets its count raised instead."""
         sh = self._shop()
         n = 0

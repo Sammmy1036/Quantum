@@ -313,7 +313,11 @@ function budgetFrame(now){ const dt=now-(nearBudget.last||now); nearBudget.last=
   else if(B.ema<13&&B.tris<B.max&&now-B.at>4000&&now-B.down>10000){ B.tris=Math.min(B.max,B.tris*1.15); B.ver++; B.at=now; } }   // ~75 fps and up
 window.qShadowStale=()=>{ shadowKey=""; };       // something that casts shadows changed (a close-up swapped in)
 sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0006; sun.shadow.normalBias=1.5; sun.shadow.camera.near=100; sun.shadow.camera.far=70000;
-const opt={precip:true,haze:true};
+// Weather (snow, rain, dust) and haze start off: Settings > Map look can turn either on as the default.
+// The 3D city panel's switches change them for now; the Settings switches change them and save the default.
+const wxPref=k=>{ try{ return localStorage.getItem(`q-wx-${k}`)==="1"; }catch{ return false; } };
+const opt={precip:wxPref("precip"),haze:wxPref("haze")};
+window.qCityWeather=(k,on)=>{ if(!(k in opt)) return; opt[k]=!!on; const b=document.getElementById(`c3d-${k}`); if(b) b.checked=opt[k]; };
 const reduceMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Defaults a city can override in its define({...}).
@@ -906,7 +910,7 @@ const ui=(()=>{
     <div><div class="lbl">Local time</div><div class="clock"><span class="v" id="c3d-clock">–</span><span class="chip" id="c3d-mode">Live</span></div></div>
     <input type="range" id="c3d-t" min="0" max="24" step="0.05" aria-label="Preview another time of day">
     <div class="sunl" id="c3d-sun"></div>
-    <div class="row"><label id="c3d-precip-l"><input type="checkbox" id="c3d-precip" checked> <span>Snowfall</span></label><label id="c3d-haze-l"><input type="checkbox" id="c3d-haze" checked> Haze</label>
+    <div class="row"><label id="c3d-precip-l"><input type="checkbox" id="c3d-precip" ${opt.precip?"checked":""}> <span>Snowfall</span></label><label id="c3d-haze-l"><input type="checkbox" id="c3d-haze" ${opt.haze?"checked":""}> Haze</label>
       <button class="btn small" id="c3d-live" hidden>Back to live</button></div>
     <div class="views" id="c3d-views"></div>
     <div class="note" id="c3d-note"></div>`;
@@ -949,7 +953,7 @@ const ui=(()=>{
   function show(st){ cur=st; place(); if(!st) return;
     q("#c3d-name").textContent=st.C.city; mini.querySelector("#c3d-mini-name").textContent=st.C.city; q("#c3d-kind").textContent=st.C.world?"3D terrain":"3D city"; q("#c3d-note").textContent=st.C.note||"";
     const P=st.W.precip; q("#c3d-precip-l").hidden=!P; if(P) q("#c3d-precip-l span").textContent=P.label;
-    q("#c3d-haze-l").hidden=!st.W.haze;
+    q("#c3d-haze-l").hidden=!st.W.haze; q("#c3d-precip").checked=opt.precip; q("#c3d-haze").checked=opt.haze;
     const B=S.bodyMap[st.C.body]; slider.hidden=!(B?.period>0);                    // a body that doesn't turn: its time never changes
     views(st); tick(); }
   return {show,tick,views};

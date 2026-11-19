@@ -7,9 +7,9 @@
 // in game. Signed in to your Quantum account, the list is kept with the account too, so every PC has the same one.
 S.wl=S.wl||{items:null,kind:"all",sort:"added"};
 const WL_KIND={ship:"Ship",component:"Ship part",weapon:"Weapon",armor:"Armor",gadget:"Gadget",clothing:"Clothing",consumable:"Consumable",utility:"Key",other:"Other"};
-const WL_ART={ship:"vehicle",component:"component",weapon:"weapon",armor:"armor",gadget:"gadget",clothing:"clothing",consumable:"food",utility:"key"};
+const WL_ART={ship:"vehicle",component:"component",weapon:"weapon",armor:"armor",gadget:"gadget",clothing:"clothing",consumable:"food",utility:"key",attachment:"weapon"};
 const WL_FILTERS=[["all","Everything"],["ship","Ships"],["component","Ship parts"],["gear","Gear"]];
-const WL_GEAR=new Set(["weapon","armor","gadget","clothing","consumable","utility"]);
+const WL_GEAR=new Set(["weapon","armor","gadget","clothing","consumable","utility","attachment"]);
 const WISH_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.6C1.7 7.6 3.9 4.5 7.2 4.5c2 0 3.6 1.1 4.8 2.8 1.2-1.7 2.8-2.8 4.8-2.8 3.3 0 5.5 3.1 4.4 6.4-1.7 5-9.2 9.6-9.2 9.6z"/></svg>';
 // Is it on the list? (by uuid, a ship's id, else kind and name: the same rule as the app's)
 function wlFind(x){ const L=S.wl.items||[];

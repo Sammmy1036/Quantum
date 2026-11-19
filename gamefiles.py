@@ -142,7 +142,7 @@ def merge_contract(game, wiki):
 
 
 # ---------------------------------------------------------------- gear
-GEAR_TABS = {"weapons", "armor", "clothing", "consumables", "gadgets", "utility"}
+GEAR_TABS = {"weapons", "armor", "clothing", "consumables", "gadgets", "utility", "attachments"}
 CLASSIFICATION = {"FPS_Consumable": "FPS.Consumable", "Food": "FPS.Consumable.Food", "Drink": "FPS.Consumable.Drink",
                   "Bottle": "FPS.Consumable.Drink", "Gadget": "FPS.Weapon.Gadget", "Grenade": "FPS.Weapon.Grenade"}
 
@@ -176,6 +176,15 @@ class Gear(DataFile):
                 "effective_range": rng[0] if rng else None, "pellets_per_shot": st.get("pellets"),
                 "damages": [{"name": k} for k in (st.get("damage_breakdown") or {})]}
             d["ammunition"] = {"speed": st.get("projectile_speed")}
+        if g.get("ports"):                       # attachment slots (build_attachments.py), the wiki's port shape
+            d["ports"] = g["ports"]
+        if g.get("kind") == "attachments":
+            d["weapon_modifier"] = g.get("modifier") or {}
+            d["grade"] = g.get("grade")
+            if st.get("zoom"):
+                d["zoom"] = st["zoom"]
+            if st.get("capacity"):
+                d["capacity"] = st["capacity"]
         if g.get("kind") in ("armor", "clothing"):
             temp = _nums(info.get("Temp. Rating"))
             d["suit_armor"] = {"temp_resistance_min": temp[0] if len(temp) > 1 else None,

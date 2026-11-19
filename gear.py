@@ -8,6 +8,7 @@ record, which is fetched when you open it and cached for a week.
 """
 import json
 import re
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -38,6 +39,8 @@ KINDS = {
     # medical devices' magazines) and the Pancea MedGel Canister that refills med beds
     "consumables": [("items", {"filter[type]": "Food,Bottle,Drink"}), ("items", {"filter[classification]": "FPS.Consumable"}),
                     ("items", {"filter[name]": "Refill"}), ("items", {"filter[name]": "MedGel"})],
+    # Weapon attachments: optics, barrel and underbarrel attachments, magazines (multi-tool ones are gadgets)
+    "attachments": [("items", {"filter[type]": "WeaponAttachment"})],
     # The Keys tab (kept as "utility" inside): hacking chips, cryptokeys and keycards
     "utility": [("items", {"filter[sub_type]": "Hacking"}), ("items", {"filter[name]": "cryptokey"}),
                 ("items", {"filter[name]": "keycard"}), ("items", {"filter[name]": "key card"})],
@@ -198,6 +201,7 @@ def trim_weapon(d):
                     "range": _num(pw.get("effective_range") or pw.get("range")), "speed": _num(ammo.get("speed")),
                     "pellets": _num(pw.get("pellets_per_shot")) if (pw.get("pellets_per_shot") or 1) > 1 else None,
                     "mass": _num(d.get("mass"))}.items() if v},
+                "ports": weapon_ports(d) or None,          # attachment slots (see weapon_ports)
                 "damage_type": ", ".join(dict.fromkeys(t.title() for t in dtypes)) or None,
                 "modes": [m for m in dict.fromkeys(modes) if m]})
     return out
@@ -345,7 +349,136 @@ def trim_item(d, kind):
     return out
 
 
-TRIM = {"weapons": trim_weapon, "armor": trim_armor, "blueprints": trim_blueprint,
+# ---------------------------------------------------------------- weapon attachments
+# Optics, barrel attachments (compensators, suppressors, flash hiders, energy stabilizers), underbarrel
+# attachments (lasers, flashlights) and magazines: the wiki files them all as type WeaponAttachment, with the
+# sub type naming where they go. Multi-tool attachments (sub type Utility) stay in Gadgets.
+ATT_SLOTS = {"IronSight": ("optics", "Optic"), "Barrel": ("barrel", "Barrel"),
+             "BottomAttachment": ("underbarrel", "Underbarrel"), "Magazine": ("magazine", "Magazine")}
+ATT_SLOT_LABEL = {v[0]: v[1] for v in ATT_SLOTS.values()}
+ATT_PORT_NAME = [(r"optic|sight|scope", "optics"), (r"underbarrel|bottom|under_?barrel", "underbarrel"),
+                 (r"barrel|muzzle", "barrel"), (r"magazine|\bmag\b|ammo", "magazine")]
+ATT_TYPE_WORDS = [(r"telescop|sniper scope|\bx(8|10|12|16)\b", "Telescopic"), (r"holo", "Holographic"), (r"reflex|red ?dot", "Reflex"),
+                  (r"compensat", "Compensator"), (r"suppress|silenc", "Suppressor"), (r"flash ?hider", "Flash hider"),
+                  (r"stabili[sz]", "Energy stabilizer"), (r"laser", "Laser pointer"), (r"flash ?light|torch|\blight\b", "Flashlight"),
+                  (r"magazine|battery|\bcap\)", "Magazine")]
+# Weapon-modifier numbers worth naming: the rest get a name made from their own key
+ATT_MOD_NAMES = {"fire_rate_multiplier": "Fire rate", "damage_multiplier": "Damage", "projectile_speed_multiplier": "Projectile speed",
+                 "sound_radius_multiplier": "Noise", "heat_generation_multiplier": "Heat build-up", "ammo_cost_multiplier": "Ammo use",
+                 "charge_time_multiplier": "Charge time", "zoom_time_scale": "Aim-down-sights time",
+                 "recoil.decay_multiplier": "Recoil recovery", "recoil.fire_recoil_strength_multiplier": "Recoil",
+                 "recoil.angle_recoil_strength_multiplier": "Recoil kick", "recoil.randomness_multiplier": "Recoil wobble",
+                 "spread.max_multiplier": "Max spread", "spread.min_multiplier": "Min spread", "spread.attack_multiplier": "Spread per shot",
+                 "spread.decay_multiplier": "Spread recovery", "spread.first_attack_multiplier": "First-shot spread"}
+
+
+def _snake(k):
+    return re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", str(k)).lower()
+
+
+def _mods(wm, path=""):
+    """[(key, value)] of every number under the wiki's weapon_modifier block, keys snake_case with the
+    group in front ("recoil.decay_multiplier")."""
+    out = []
+    if isinstance(wm, dict):
+        for k, v in wm.items():
+            k = _snake(k)
+            grp = re.sub(r"_?modifier$", "", k)
+            if isinstance(v, dict):
+                out += _mods(v, f"{path}{grp}." if grp not in ("weapon_stats", "stats", "modifier", "") else path)
+            elif _num(v) is not None:
+                out.append((path + k, v))
+    return out
+
+
+def att_effects(wm):
+    """What an attachment changes, as [[label, "+15%"]]: only the multipliers that aren't 1."""
+    out, seen = [], set()
+    for k, v in _mods(wm):
+        if not (k.endswith("multiplier") or k.endswith("zoom_time_scale")) or abs(v - 1) < 1e-4:
+            continue
+        lab = ATT_MOD_NAMES.get(k) or ATT_MOD_NAMES.get(k.split(".")[-1])
+        if not lab:
+            parts = [p for p in re.split(r"[._]", k) if p not in ("multiplier", "scale")]
+            lab = " ".join(parts).capitalize()
+        if lab in seen:
+            continue
+        seen.add(lab)
+        out.append([lab, f"{(v - 1) * 100:+.0f}%"])
+    return out[:12]
+
+
+def _att_slot(sub, name=""):
+    if sub in ATT_SLOTS:
+        return ATT_SLOTS[sub][0]
+    for rx, slot in ATT_PORT_NAME:
+        if re.search(rx, str(name or ""), re.I):
+            return slot
+    return None
+
+
+def trim_attachment(d):
+    """One weapon attachment: where it goes, how big, what it is and what it changes."""
+    out = _common(d)
+    sub = d.get("sub_type") or ""
+    slot = _att_slot(sub, f"{d.get('classification') or ''} {d.get('position') or ''} {d.get('name') or ''}")
+    dd = _desc_data(d)
+    wm = d.get("weapon_modifier") if isinstance(d.get("weapon_modifier"), dict) else {}
+    aim = (wm.get("aim") or wm.get("aim_modifier") or {}) if isinstance(wm.get("aim") or wm.get("aim_modifier"), dict) else {}
+    iron = d.get("iron_sight") if isinstance(d.get("iron_sight"), dict) else {}
+    zoom = _num(aim.get("zoom_scale")) or _num(iron.get("zoom_scale")) or _num(d.get("zoom"))
+    if not zoom:
+        m = re.search(r"(\d+(?:\.\d+)?)\s*x", str(dd.get("magnification") or ""))
+        zoom = float(m.group(1)) if m else None
+    mag = d.get("magazine") if isinstance(d.get("magazine"), dict) else {}
+    cap = _num(mag.get("max_ammo_count") or mag.get("capacity") or mag.get("initial_ammo_count")) or _num(d.get("capacity"))
+    if not cap:
+        m = re.search(r"\d+", str(dd.get("capacity") or dd.get("magazine size") or ""))
+        cap = int(m.group(0)) if m else None
+    typ = dd.get("type")
+    if not typ or str(typ).lower() in ("weaponattachment", "weapon attachment"):
+        typ = next((lab for rx, lab in ATT_TYPE_WORDS if re.search(rx, f"{out['name']} {d.get('class_name') or ''}", re.I)), None)
+    out.update({"kind": ATT_SLOT_LABEL.get(slot, "Other"), "slot": slot, "sub": typ,
+                "type": d.get("type"), "classification": d.get("classification"),
+                "grade": d.get("grade"),
+                "effects": att_effects(wm) or d.get("effects") or [],
+                "stats": {k: v for k, v in {"zoom": zoom if zoom and zoom > 1.0001 else None, "mag": cap,
+                                            "mass": _num(d.get("mass")), "size": _num(d.get("size"))}.items() if v is not None},
+                "facts": [f for f in _facts(d) if f[0].lower() not in ("attachment point", "magnification", "capacity")]})
+    return out
+
+
+def weapon_ports(d):
+    """A weapon's attachment slots: [{slot, min, max, stock: {name, uuid} | None}], one per slot, from the
+    wiki's ports (or Quantum's game data, in the same shape)."""
+    out = {}
+    for p in d.get("ports") or []:
+        if not isinstance(p, dict):
+            continue
+        subs = [p.get("sub_type")]
+        for ct in p.get("compatible_types") or p.get("types") or []:
+            if isinstance(ct, dict):
+                subs += [s.get("name") if isinstance(s, dict) else s for s in (ct.get("sub_types") or [])] + [ct.get("sub_type")]
+            elif isinstance(ct, str):
+                subs.append(ct.split(".")[-1])
+        slot = next((ATT_SLOTS[s][0] for s in subs if s in ATT_SLOTS), None) or \
+            _att_slot(None, f"{p.get('name') or ''} {p.get('display_name') or ''}")
+        if not slot or slot in out:
+            continue
+        sz = p.get("sizes") if isinstance(p.get("sizes"), dict) else {}
+        mn = _num(sz.get("min")) if _num(sz.get("min")) is not None else _num(p.get("min_size"))
+        mx = _num(sz.get("max")) if _num(sz.get("max")) is not None else _num(p.get("max_size"))
+        if mn is None and mx is None and _num(p.get("size")) is not None:
+            mn = mx = _num(p.get("size"))
+        eq = p.get("equipped_item") if isinstance(p.get("equipped_item"), dict) else {}
+        su = eq.get("uuid") or p.get("equipped_item_uuid")
+        stock = {"name": (eq.get("name") or "").strip() or None, "uuid": su or None} if (eq.get("name") or su) else None
+        out[slot] = {"slot": slot, "min": mn, "max": mx, "stock": stock}
+    order = ["optics", "barrel", "underbarrel", "magazine"]
+    return [out[k] for k in order if k in out]
+
+
+TRIM = {"weapons": trim_weapon, "armor": trim_armor, "blueprints": trim_blueprint, "attachments": trim_attachment,
         **{k: (lambda d, k=k: trim_item(d, k)) for k in ITEM_KINDS}}
 
 
@@ -358,6 +491,13 @@ def _skip(kind, d):
         if re.fullmatch(r"(?i)\s*med\s*gel\s*", d.get("name") or ""):
             return True                          # the commodity a canister holds, not something you buy
         return not is_medgel(d)                  # the name queries also find other refills
+    if kind == "attachments":
+        # Multi-tool attachments (Utility) are gadgets; the rest are kept when anything about them names a slot
+        # (the sub type, else the classification like FPS.WeaponAttachment.BarrelAttachment, else the name)
+        cls = d.get("classification") or ""
+        if d.get("sub_type") == "Utility" or cls.endswith(".Utility") or not (d.get("type") == "WeaponAttachment" or "WeaponAttachment" in cls):
+            return True
+        return not _att_slot(d.get("sub_type"), f"{cls} {d.get('position') or ''} {d.get('name') or ''}")
     if kind == "utility":
         cls = d.get("classification") or ""
         return d.get("type") in ("WeaponRack", "Container", "Cargo") or cls.startswith(("Ship.", "Vehicle."))
@@ -434,15 +574,61 @@ class Gear:
                 missing = {k: v for k, v in g["stats"].items() if (t.get("stats") or {}).get(k) in (None, "", 0)}
                 if missing:
                     t = dict(t, stats={**(t.get("stats") or {}), **missing})
+            if g:                                    # attachment slots and what an attachment changes, when the wiki lacks them
+                for f in ("ports", "effects", "slot"):
+                    if g.get(f) and not t.get(f):
+                        t = dict(t, **{f: g[f]})
             items.append(t)
         return dict(res, items=items)
 
     def _file(self, name):
-        return self.dir / f"gear_v6_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v5: MedGel in Consumables, CureLife, fire modes
+        return self.dir / f"gear_v6_{re.sub(r'[^A-Za-z0-9_-]+', '_', name)}.json"   # v6: MedGel in Consumables, CureLife, fire modes
+
+    # Each list's own file name: weapons got their attachment slots (ports) and Attachments is new. Every other
+    # list keeps the file it had, so an update doesn't make Quantum download them all again.
+    FILE_OF = {"weapons": "weapons_ports", "attachments": "attachments_v2"}
 
     def items(self, kind, max_pages=60, fresh=False):
-        """Every entry of one kind, trimmed: {"items": [...], "at": when fetched, "stale": bool}."""
+        """Every entry of one kind, trimmed: {"items": [...], "at": when fetched, "stale": bool}.
+        One download per list at a time: other callers wait for it and get its result, rather than each
+        fetching every page from the wiki themselves (that froze startup when several asked at once)."""
+        locks = self.__dict__.setdefault("_locks", {})
+        lock = locks.setdefault(kind, threading.Lock())
+        with lock:
+            return self._items(kind, max_pages, fresh)
+
+    def _legacy(self, kind):
+        """Weapons from before they had attachment slots: shown while the new list downloads in the background."""
+        if kind != "weapons":
+            return None
         f = self._file(kind)
+        try:
+            return json.loads(f.read_text(encoding="utf-8")) if f.exists() else None
+        except Exception:
+            return None
+
+    def _refresh_later(self, kind):
+        busy = self.__dict__.setdefault("_bg", set())
+        if kind in busy:
+            return
+        busy.add(kind)
+
+        def run():
+            try:
+                self.items(kind, fresh=True)
+            except Exception:
+                pass
+            finally:
+                busy.discard(kind)
+        threading.Thread(target=run, daemon=True).start()
+
+    def _items(self, kind, max_pages=60, fresh=False):
+        f = self._file(self.FILE_OF.get(kind, kind))
+        if not f.exists() and not fresh:
+            leg = self._legacy(kind)
+            if leg and leg.get("items"):
+                self._refresh_later(kind)
+                return self._with_game(leg, kind) if hasattr(self, "_with_game") else leg
         old = None
         if f.exists():
             try:
@@ -453,6 +639,9 @@ class Gear:
                     return self._with_game(old, kind)
             except Exception:
                 old = None
+        if old is not None and old.get("items") and not fresh:
+            self._refresh_later(kind)                  # out of date: show the saved copy now, fetch the new one behind it
+            return self._with_game(old, kind)
         out, seen = [], set()
         try:
             for path, flt in KINDS[kind]:
@@ -540,6 +729,27 @@ class Gear:
                            "chance": _num(m.get("chance")), "web_url": m.get("web_url"),
                            "code": m.get("debug_name"), "ref": mission_ref(m.get("web_url"))}
                           for m in r.get("unlocking_missions") or [] if isinstance(m, dict)]
+        self.dir.mkdir(exist_ok=True)
+        f.write_text(json.dumps(out), encoding="utf-8")
+        return out
+
+    def weapon_ports(self, uuid):
+        """One weapon's attachment slots from its own wiki record (the lists don't always carry them):
+        [{slot, min, max, stock}]. Cached for a week; [] when the wiki has none."""
+        uuid = str(uuid or "").strip()
+        if not re.fullmatch(r"[0-9a-fA-F-]{32,36}", uuid):
+            return []
+        f = self._file(f"ports_{uuid}")
+        if f.exists() and time.time() - f.stat().st_mtime < 7 * DAY:
+            try:
+                return json.loads(f.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        d = _get(f"{API}/items/{urllib.parse.quote(uuid)}?include=ports").get("data") or {}
+        out = weapon_ports(d)
+        if not out and self.files:                  # the game files know the weapon's ports
+            g = self.files.items.get(uuid) or {}
+            out = weapon_ports({"ports": g.get("ports") or []})
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(out), encoding="utf-8")
         return out

@@ -105,6 +105,10 @@ function phShipPage(s){
         <div class="ph-sub">UEX doesn’t list this one, so in-game prices and where to buy it aren’t known yet. Details come from RSI and the Star Citizen Wiki.</div></div></section></div>`; }
 // called by the Vehicles page's "Back to Patch Hub" button (trade.js)
 function phBackFromVehicles(){ const f=S.vehFrom; S.vehFrom=null; S.vehDetail=null; S.vehGalKey=null;
+  if(f?.tab==="fleet"){                            // opened from My Fleet: Vehicles as it was, then the same ship
+    S.vehCat=f.cat; S.vehDetail=f.detail;
+    S.flSel=f.uid||S.flSel; document.querySelector('.tab[data-tab="fleet"]')?.click();
+    setTimeout(()=>{ $("fl-panel").scrollTop=f.top||0; },120); return; }
   if(f?.searched) $("vh-search").value="";
   document.querySelector('.tab[data-tab="patchhub"]')?.click();
   setTimeout(()=>{ if(f) $("ph-panel").scrollTop=f.top; },60); }

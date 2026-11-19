@@ -952,6 +952,10 @@ function setOrbitColor(v,save=true){ if(!/^#[0-9a-f]{6}$/i.test(v||"")) return; 
   if(save){ try{ localStorage.setItem("q-orbit-color",S.orbitColor); }catch{} }
   for(const b of document.querySelectorAll("[data-orbitc]")) b.classList.toggle("on",b.dataset.orbitc===S.orbitColor);
   mapBusy(); }
+// City weather defaults (off unless turned on here): snow/rain/dust, and haze/fog near the ground
+const WX_KEYS=[["precip","Weather (snow, rain, dust)"],["haze","Haze"]];
+function wxDefault(k){ try{ return localStorage.getItem(`q-wx-${k}`)==="1"; }catch{ return false; } }
+function setWxDefault(k,on){ try{ localStorage.setItem(`q-wx-${k}`,on?"1":"0"); }catch{} window.qCityWeather?.(k,on); mapBusy(); }
 function setMapFps(v){ S.fpsMax=+v; try{ localStorage.setItem("q-fps",String(S.fpsMax)); }catch{} mapBusy(); }
 function mapBusy(){ GOV.active=performance.now(); }
 for(const ev of ["pointerdown","pointermove","wheel","keydown","input"]) window.addEventListener(ev,mapBusy,{capture:true,passive:true});

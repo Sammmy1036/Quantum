@@ -76,7 +76,7 @@ def fingerprint(payload):
 # list and object capped. Anything else (or anything too big) is dropped, both before uploading and
 # after restoring, so a damaged or tampered settings file can't put anything odd into a backup.
 MAX_STR, MAX_LIST, MAX_KEYS, MAX_DEPTH = 2000, 500, 200, 6
-LIMITS = {"fleet": 200, "trade_runs": 500, "waypoints": 2000, "places": 500}
+LIMITS = {"fleet": 200, "trade_runs": 500, "waypoints": 2000, "places": 500, "gear_loadouts": 200}
 
 
 def _plain(v, depth=0):
@@ -88,7 +88,7 @@ def _plain(v, depth=0):
         return v[:MAX_STR]
     if depth >= MAX_DEPTH:
         return None
-    if isinstance(v, list):
+    if isinstance(v, (list, tuple)):          # tuples too: a waypoint's position is one in memory
         return [_plain(x, depth + 1) for x in v[:MAX_LIST]]
     if isinstance(v, dict):
         return {str(k)[:100]: _plain(x, depth + 1) for k, x in list(v.items())[:MAX_KEYS]}
@@ -99,9 +99,12 @@ def clean(payload):
     """Only the known sections, each the right shape and size."""
     p = payload if isinstance(payload, dict) else {}
     out = {"v": 2}
-    for key in ("fleet", "trade_runs", "waypoints"):
+    for key in ("fleet", "trade_runs", "waypoints", "gear_loadouts"):
         items = p.get(key) if isinstance(p.get(key), list) else []
         out[key] = [_plain(x) for x in items[:LIMITS[key]] if isinstance(x, dict)]
     places = p.get("places") if isinstance(p.get("places"), dict) else {}
+    prefs = p.get("profile_prefs")
+    if isinstance(prefs, dict) and prefs:
+        out["profile_prefs"] = _plain(prefs)
     out["places"] = {str(k)[:200]: _plain(v) for k, v in list(places.items())[:LIMITS["places"]] if isinstance(v, dict)}
     return out

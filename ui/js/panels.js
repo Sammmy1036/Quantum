@@ -164,6 +164,9 @@ async function settingsAction(a,e){
     if(a==="acctsignin"){ S.acctErr=""; S.acct=await api().account_sign_in(); renderDetail(); acctWatch(); return; }
     if(a==="acctlogin"){ const em=($("acct-email")?.value||"").trim(), pw=$("acct-pw")?.value||"";
       if(!em||!pw){ S.acctErr="Enter your email and password."; renderDetail(); (em?$("acct-pw"):$("acct-email"))?.focus(); return; }
+      // Pressing Enter leaves the focus in the password box, and the profile doesn't redraw under typing:
+      // let go of the box first so "Signing in…" shows the same as clicking the button
+      if(document.activeElement?.closest?.("input,textarea")) document.activeElement.blur();
       S.acctEmail=em; S.acctBusy=true; S.acctErr=""; renderDetail();
       const r=await api().account_sign_in_password(em,pw); S.acctBusy=false; S.acct=r;
       if(r.ok){ S.acctErr=""; S.acctUnconfirmed=false; S.og.mine=null; S.pm.mine=null; toast(`Signed in as ${r.email}`); await acctKeysArrived(r); }
@@ -388,6 +391,7 @@ function renderDetail(){
   if(sel?.kind!=="settings"){ S.bugSent=false; S.bugOpen=false; }      // Settings closed: back to "Report a bug" next time
   if(!sel){ d.classList.remove("show"); return; }
   const live=S.live, t=now();
+  d.classList.toggle("set-view",sel.kind==="settings");
   if(sel.kind==="settings"){ const a=S.live?.autoloc||{};
     const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"];
     const when=a.last_sent?new Date(a.last_sent*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"never";
@@ -397,7 +401,16 @@ function renderDetail(){
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
       <div class="set-ver"><div class="v"><b title="${S.qBuild?`Build ${esc(S.qBuild)}`:""}">Quantum ${esc(S.qVersion||"")}</b><span class="muted">${esc(S.updNote||"")}</span></div>
         <button class="btn small ghost upd-btn" data-a="updcheck" ${S.updChecking?"disabled":""}>${S.updChecking?`<span class="spin-sm"></span>Checking…`:"Check for updates"}</button></div>
-      <div class="sub" style="margin-top:6px">Game.log</div>
+      <div class="sub" style="margin-top:6px">Help</div>
+      <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
+        :!S.bugOpen?`<div class="row"><span>Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
+        :`<label class="k" for="s-bugmsg" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">What happened?</label>
+          <textarea class="field" id="s-bugmsg" rows="5" maxlength="5000" style="width:100%;resize:vertical" placeholder="What you did, what you expected, and what happened instead" oninput="S.bugMsg=this.value">${esc(S.bugMsg||"")}</textarea>
+          <label class="k" for="s-bugcontact" style="display:block;font-weight:600;font-size:12.5px;margin:10px 2px 5px">How can we reach you? <span class="muted" style="font-weight:400">(optional: Discord, email…)</span></label>
+          <input class="field" id="s-bugcontact" maxlength="200" style="width:100%" value="${esc(S.bugContact||"")}" oninput="S.bugContact=this.value" autocomplete="off">
+          <div class="muted" style="font-size:12px;margin-top:6px">Sent with your UEX name (if you've added your Secret Key), this Quantum version and your game version. Only the Quantum developer sees it.</div>
+          <div class="row" style="gap:6px;margin-top:8px"><button class="btn small primary" data-a="bugsend" ${S.bugBusy?"disabled":""}>${S.bugBusy?"Sending…":"Send bug report"}</button><button class="btn small ghost" data-a="bugcancel">Cancel</button></div>`}</div>
+      <div class="sub">Game.log</div>
       <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
@@ -423,13 +436,13 @@ function renderDetail(){
               <div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:wrap"><button class="btn small" data-a="commcancel">Keep them on</button><button class="btn small danger" data-a="commoff">Turn off community features</button></div></div>`
             :`<div class="row" style="gap:6px;margin-top:8px">${on?`<button class="btn small ghost" data-a="commask">Disable community features</button>`
               :`<button class="btn small primary" data-a="common">Enable community features</button>`}</div>`}`; })()}</div>
-      <div class="sub">Account, UEX keys and backup</div>
-      <div class="note row" style="margin:4px 0 12px;gap:8px"><span>Your Quantum account, UEX keys and backups are in your profile now: click your picture at the top left.</span><span class="spacer"></span><button class="btn small" data-a="openprofile">Open profile</button></div>
       <div class="sub">Map look</div>
       <div class="note" style="margin:4px 0 12px"><div class="row" style="gap:8px;flex-wrap:wrap"><span>Orbit line colour</span><span class="spacer"></span>
         <span class="orbit-sw">${ORBIT_PRESETS.map(([c,n])=>`<button type="button" data-orbitc="${c}" class="${c===S.orbitColor?"on":""}" title="${n}" style="background:${c}" onclick="setOrbitColor('${c}')"></button>`).join("")}</span>
         <input type="color" id="s-orbitc" value="${S.orbitColor}" title="Any colour" oninput="setOrbitColor(this.value,false)" onchange="setOrbitColor(this.value)">
-        ${S.orbitColor!==ORBIT_DEFAULT?`<button class="btn small ghost" type="button" onclick="setOrbitColor(ORBIT_DEFAULT);renderDetail()">Reset</button>`:""}</div></div>
+        ${S.orbitColor!==ORBIT_DEFAULT?`<button class="btn small ghost" type="button" onclick="setOrbitColor(ORBIT_DEFAULT);renderDetail()">Reset</button>`:""}</div>
+        ${WX_KEYS.map(([k,l])=>`<label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" ${wxDefault(k)?"checked":""} onchange="setWxDefault('${k}',this.checked)"> ${l} in 3D cities</label>`).join("")}
+        <div class="muted" style="font-size:12px;margin-top:4px">Off by default. Turn one on to have it showing every time you fly down to a city; the 3D city panel can still switch it for that visit.</div></div>
       <div class="sub">Placards</div>
       <div class="note" style="margin:4px 0 12px"><div style="margin-bottom:8px">Fuel prices look</div>
         <div class="fu-pick">${FUEL_STYLES.map(([k,n])=>`<button type="button" data-fuelstyle="${k}" class="${k===S.fuelStyle?"on":""}" aria-pressed="${k===S.fuelStyle}" onclick="setFuelStyle('${k}')">
@@ -452,17 +465,9 @@ function renderDetail(){
           <div class="cc-scr" id="cc-scr"><img id="cc-drag" alt="Location clock" draggable="false" hidden></div></div>
         <div class="row" style="gap:6px;margin-top:8px"><span class="spacer"></span><button class="btn small ghost" data-a="ccpreview" ${cc.available?"":"disabled"}>Preview in game</button></div>
         <div class="muted" style="font-size:12px;margin-top:6px">${cc.available?"The location clock overlay displays the name of the location and local time at the location when you land or spawn at certain locations.":"The location clock overlay only works on Windows."}</div></div>`; })()}
-      <div class="sub">Help</div>
-      <div class="note" style="margin:4px 0 12px">${S.bugSent?`<span style="color:#9fe0b4">Thanks! Your bug report was sent.</span> <a data-a="bugopen" style="cursor:pointer;text-decoration:underline">Send another</a>`
-        :!S.bugOpen?`<div class="row"><span>Something to report?</span><span class="spacer"></span><button class="btn small" data-a="bugopen">Send a report</button></div>`
-        :`<label class="k" for="s-bugmsg" style="display:block;font-weight:600;font-size:12.5px;margin:0 2px 5px">What happened?</label>
-          <textarea class="field" id="s-bugmsg" rows="5" maxlength="5000" style="width:100%;resize:vertical" placeholder="What you did, what you expected, and what happened instead" oninput="S.bugMsg=this.value">${esc(S.bugMsg||"")}</textarea>
-          <label class="k" for="s-bugcontact" style="display:block;font-weight:600;font-size:12.5px;margin:10px 2px 5px">How can we reach you? <span class="muted" style="font-weight:400">(optional: Discord, email…)</span></label>
-          <input class="field" id="s-bugcontact" maxlength="200" style="width:100%" value="${esc(S.bugContact||"")}" oninput="S.bugContact=this.value" autocomplete="off">
-          <div class="muted" style="font-size:12px;margin-top:6px">Sent with your UEX name (if you've added your Secret Key), this Quantum version and your game version. Only the Quantum developer sees it.</div>
-          <div class="row" style="gap:6px;margin-top:8px"><button class="btn small primary" data-a="bugsend" ${S.bugBusy?"disabled":""}>${S.bugBusy?"Sending…":"Send bug report"}</button><button class="btn small ghost" data-a="bugcancel">Cancel</button></div>`}</div>
       <div class="sub">Hotkeys</div>
-      ${a.available===false?`<div class="note">Hotkeys only work on Windows.</div>`:""}
+      <div class="note set-box" style="margin:4px 0 12px">
+      ${a.available===false?`<div class="muted" style="margin-bottom:8px">Hotkeys only work on Windows.</div>`:""}
       <div class="setgrid">
         <span class="k">Show / hide Quantum</span><select class="field" id="s-hotkey">${keyOpts(a.hotkey,a.loc_hotkey)}</select>
         <span class="k">Type /showlocation</span><select class="field" id="s-lochotkey">${keyOpts(a.loc_hotkey,a.hotkey)}</select>
@@ -472,9 +477,9 @@ function renderDetail(){
       </div>
       ${a.loc_hotkey&&a.chat_key?`<div class="muted" style="font-size:12px;margin-top:6px">Chat in game: <b>${a.chat_hidden?"hidden":"showing"}</b>. While it's hidden, ${esc(a.loc_hotkey)} won't type (your letters would trigger key bindings). Out of step? Press ${esc(a.loc_hotkey)} twice to send anyway.</div>`:""}
       <div class="muted" style="font-size:12px;margin-top:8px">The game still sees your hotkeys, so pick keys that aren't bound in game.</div>
-      ${afkHtml(a)}
-      <div class="sub" style="margin-top:12px">Log</div>
-      <div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div>`;
+      ${afkHtml(a)}</div>
+      <div class="sub">Log</div>
+      <div class="note set-box" style="margin:4px 0 12px"><div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div></div>`;
     const save=async()=>{
       await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value, $("s-chatkey").value);
       await poll(); renderStatus(); renderDetail(); toast("Saved"); };
@@ -703,7 +708,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
-  ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","armor","clothing","gadgets","gearlo"]},
+  ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","attachments","armor","clothing","gadgets","gearlo"]},
   consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
@@ -724,3 +729,55 @@ for(const t of document.querySelectorAll(".tab[data-ckind]")) t.addEventListener
   for(const id of ["cat","mk"]){ const sel=$(`gr-${id}-consumables`); if(sel) sel.value=""; }
   grCkFilters(); if(st.data){ grFillFilters("consumables"); grRender("consumables"); } });
 syncRail();
+
+// =================================================================== styled suggestions for every list box
+// Text boxes with a list of suggestions (Add a ship in My Fleet, the commodity search, places, org ships,
+// loadout kinds…) used the browser's own plain dropdown. They now show Quantum's suggestion box instead:
+// the same options, best matches first, with ↑/↓, Enter and Esc. Picking one fills the box and tells the page
+// as typing would (input and change), so each box's own handling is unchanged.
+const DL_MAX=8;
+const DL={inp:null,box:null,items:[],i:-1};
+function dlBox(){ if(DL.box) return DL.box; const b=document.createElement("div"); b.className="gr-sugg dl-sugg"; b.hidden=true;
+  b.addEventListener("mousedown",e=>e.preventDefault());                    // keep the text box's focus
+  b.addEventListener("click",e=>{ const o=e.target.closest("[data-dli]"); if(o) dlPick(+o.dataset.dli); });
+  document.body.appendChild(b); return DL.box=b; }
+function dlHide(){ if(DL.box) DL.box.hidden=true; DL.items=[]; DL.i=-1; }
+function dlOptions(inp){ const dl=document.getElementById(inp.dataset.dl||""); if(!dl) return [];
+  return [...dl.options].map(o=>({v:o.value,l:(o.label&&o.label!==o.value?o.label:o.textContent||"").trim()})).filter(o=>o.v); }
+function dlShow(inp){ const q=inp.value.trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean);
+  if(!words.length||document.activeElement!==inp) return dlHide();
+  const hits=[];
+  for(const o of dlOptions(inp)){ const v=o.v.toLowerCase(), t=`${v} ${o.l.toLowerCase()}`;
+    if(!words.every(w=>t.includes(w))) continue;
+    const sc=v.startsWith(q)?4:new RegExp(`(^|[^a-z0-9])${q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}`).test(v)?3:v.includes(q)?2:1;
+    hits.push({...o,sc}); }
+  hits.sort((a,b)=>b.sc-a.sc||a.v.length-b.v.length||a.v.localeCompare(b.v));
+  if(!hits.length||(hits.length===1&&hits[0].v.toLowerCase()===q)) return dlHide();   // nothing, or it's already picked
+  DL.inp=inp; DL.items=hits.slice(0,DL_MAX); DL.i=Math.min(DL.i,DL.items.length-1);
+  const b=dlBox(), r=inp.getBoundingClientRect(), more=hits.length-DL.items.length;
+  b.innerHTML=DL.items.map((o,k)=>`<button type="button" class="gr-sg ${k===DL.i?"on":""}" data-dli="${k}"><span class="nm">${esc(o.v)}</span>${o.l?`<small>${esc(o.l)}</small>`:""}</button>`).join("")
+    +(more>0?`<div class="gr-sg-h" style="text-transform:none;letter-spacing:0;font-weight:500">${more} more: keep typing</div>`:"");
+  b.style.left=`${Math.round(r.left)}px`; b.style.width=`${Math.max(240,Math.round(r.width))}px`;
+  const below=innerHeight-r.bottom;
+  b.hidden=false;
+  if(below<b.offsetHeight+12&&r.top>below){ b.style.top=""; b.style.bottom=`${Math.round(innerHeight-r.top+4)}px`; }
+  else { b.style.bottom=""; b.style.top=`${Math.round(r.bottom+4)}px`; } }
+function dlPick(k){ const o=DL.items[k], inp=DL.inp; if(!o||!inp) return; dlHide();
+  inp.value=o.v; inp.dispatchEvent(new Event("input",{bubbles:true})); inp.dispatchEvent(new Event("change",{bubbles:true}));
+  inp.focus(); try{ inp.setSelectionRange(o.v.length,o.v.length); }catch(_){} dlHide(); }
+// Take over any box with a list as soon as it's used: the browser's dropdown is turned off for it
+document.addEventListener("focusin",e=>{ const t=e.target; if(t?.tagName!=="INPUT") return;
+  if(t.hasAttribute("list")){ t.dataset.dl=t.getAttribute("list"); t.removeAttribute("list"); }
+  if(t.dataset.dl&&t.value.trim()) dlShow(t); });
+document.addEventListener("input",e=>{ const t=e.target; if(t?.dataset?.dl&&e.isTrusted){ DL.i=-1; dlShow(t); } });
+document.addEventListener("focusout",e=>{ if(e.target===DL.inp) setTimeout(()=>{ if(document.activeElement!==DL.inp) dlHide(); },120); });
+// Before the box's own keys (Enter adds the ship, runs the search…): ↑/↓ move, Enter on a highlighted one picks it
+document.addEventListener("keydown",e=>{ if(!DL.box||DL.box.hidden||e.target!==DL.inp) return;
+  if(e.key==="Escape"){ e.stopImmediatePropagation(); return dlHide(); }
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); e.stopImmediatePropagation();
+    DL.i=Math.max(-1,Math.min(DL.items.length-1,DL.i+(e.key==="ArrowDown"?1:-1)));
+    DL.box.querySelectorAll(".gr-sg").forEach((b,k)=>{ b.classList.toggle("on",k===DL.i); if(k===DL.i) b.scrollIntoView({block:"nearest"}); }); return; }
+  if(e.key==="Enter"&&DL.i>=0){ e.preventDefault(); e.stopImmediatePropagation(); dlPick(DL.i); } },true);
+// The box floats over the page: it closes when what's under it moves
+addEventListener("scroll",e=>{ if(DL.box&&!DL.box.hidden&&!DL.box.contains(e.target)) dlHide(); },true);
+addEventListener("resize",dlHide);

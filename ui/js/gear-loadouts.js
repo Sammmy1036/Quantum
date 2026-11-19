@@ -24,7 +24,21 @@ async function glData(kind){ const st=grState(kind); if(st.data) return st.data.
   await st.glP; return st.data?.items||[]; }
 const glFind=(kind,x)=>{ if(!x) return null; const L=grState(kind).data?.items||[]; return L.find(i=>x.uuid&&i.uuid===x.uuid)||L.find(i=>i.name===x.name)||null; };
 const glCur=()=>(S.gl.list||[]).find(x=>x.id===S.gl.sel)||null;
-const glItems=lo=>[...Object.entries(lo.slots||{}).map(([k,v])=>({...v,slot:k})),...(lo.consumables||[]).map(c=>({...c,slot:"cons"}))];
+const glItems=lo=>[...Object.entries(lo.slots||{}).flatMap(([k,v])=>[{...v,slot:k},...Object.entries(v.attachments||{}).map(([a,x])=>({...x,kind:"attachments",slot:`${k}.${a}`}))]),
+  ...(lo.consumables||[]).map(c=>({...c,slot:"cons"}))];
+// A loadout weapon's attachment slots (optics, barrel, underbarrel), with what's fitted: yours, else what it comes with
+const GL_ATT=["optics","barrel","underbarrel"];
+function glWeaponPorts(x){ const g=glFind("weapons",x); if(!g) return null; if(g.ports?.length) return g.ports;
+  const k=g.uuid||g.name; if(k in S.attPorts) return S.attPorts[k]||[];
+  weaponPorts(g).then(()=>{ if(S.tab==="gearlo"&&!S.gl.pick) glMain(); }); return null; }
+function glAttRows(k,x){ const ports=glWeaponPorts(x);
+  if(ports===null) return `<div class="gl-att muted">Looking up its attachment slots…</div>`;
+  const P=GL_ATT.map(s=>ports.find(p=>p.slot===s)).filter(Boolean);
+  if(!P.length) return `<div class="gl-att muted">${ports.length?"No optic, barrel or underbarrel slots":"The wiki doesn't list this weapon's attachment slots"}</div>`;
+  return `<div class="gl-att">${P.map(p=>{ const a=x.attachments?.[p.slot], g=a&&glFind("attachments",a);
+    return `<div class="gl-att-row"><small>${esc(ATT_LAB[p.slot])} <span class="muted">${esc(grSizeTxt(p))}</span></small>
+      <span class="nm">${a?`<a data-glview="attachments|${esc(a.uuid||a.name)}">${esc(a.name)}</a>${g&&grPrice(g)!=null?` <span class="muted">${money(grPrice(g))}</span>`:""}`:p.stock?.name?`<span class="muted">Stock: ${esc(p.stock.name)}</span>`:`<span class="empty-slot">Empty</span>`}</span>
+      <span class="acts"><button class="btn small ghost" data-glpick="att:${k}:${p.slot}">${a?"Change":"Customize"}</button>${a?`<button class="btn small ghost" data-glattclear="${k}|${p.slot}" title="Back to ${p.stock?.name?esc(p.stock.name):"empty"}" aria-label="Take ${esc(a.name)} off">✕</button>`:""}</span></div>`; }).join("")}</div>`; }
 async function glLoad(){ const r=await api().gear_loadouts(); S.gl.list=r?.loadouts||[]; return S.gl.list; }
 async function glSave(lo,quiet){ const r=await api().gear_loadout_save(lo); if(!r.ok){ toast(r.error); return null; }
   S.gl.list=r.loadouts; if(!quiet) renderGearLoadouts(); return r.loadout; }
@@ -54,7 +68,8 @@ function glMain(){ const P=$("gl-panel"), lo=glCur();
   const slotRow=([k,label,kind])=>{ const x=lo.slots?.[k], g=glFind(kind,x), G=GEAR[kind];
     return `<div class="mk-row gl-row"><div class="w"><small>${esc(label)}</small>${x?`<a data-glview="${esc(kind)}|${esc(x.uuid||x.name)}">${esc(x.name)}</a>`:`<span class="empty-slot">Empty</span>`}
         ${x?`<div class="m">${esc([g?.maker,G?.key?.(g||{}),g?grPrice(g)!=null?money(grPrice(g)):"Not in shops":""].filter(Boolean).join(" · "))}</div>`:""}</div>
-      <div class="p"></div><div class="acts"><button class="btn small" data-glpick="${k}">${x?"Change":"Choose"}</button>${x?`<button class="btn small ghost" data-glclear="${k}" aria-label="Take ${esc(x.name)} out">✕</button>`:""}</div></div>`; };
+      <div class="p"></div><div class="acts"><button class="btn small" data-glpick="${k}">${x?"Change":"Choose"}</button>${x?`<button class="btn small ghost" data-glclear="${k}" aria-label="Take ${esc(x.name)} out">✕</button>`:""}</div></div>
+      ${x&&kind==="weapons"&&k!=="melee"?glAttRows(k,x):""}`; };
   const cons=lo.consumables||[];
   P.innerHTML=`<button class="btn" data-gl="all" style="margin-bottom:14px">← All loadouts</button>
     <div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:18px"><div class="hd-main">
@@ -82,11 +97,14 @@ function glCard(lo){ const st=glStats(lo), pic=lo.slots?.core||lo.slots?.helmet|
   return `<div class="vg" data-glopen="${esc(lo.id)}"><div class="ph" ${pic?`data-gpic="${esc(pic.name)}"`:""}>${pic?"":"Empty loadout"}</div>
     <div class="tx"><b>${lo.main?"★ ":""}${esc(lo.name)}</b><span>${esc([lo.scenario,plural(st.n,"item")].filter(Boolean).join(" · "))}${st.priced?` · ${money(st.price)}`:""}</span></div></div>`; }
 async function glPicker(){ const P=$("gl-panel"), lo=glCur(), k=S.gl.pick; if(!lo){ S.gl.pick=null; return glMain(); }
-  const def=k==="cons"?["cons","Consumable","consumables",()=>true]:GL_SLOT[k], [,label,kind,fits]=def, G=GEAR[kind];
+  const att=k.startsWith("att:")?k.split(":"):null, wx=att&&lo.slots?.[att[1]];
+  if(att&&!wx){ S.gl.pick=null; return glMain(); }
+  const port=att?((glWeaponPorts(wx)||[]).find(p=>p.slot===att[2])||{slot:att[2]}):null;
+  const def=k==="cons"?["cons","Consumable","consumables",()=>true]:att?[k,ATT_LAB[att[2]],"attachments",i=>attFits(i,port)]:GL_SLOT[k], [,label,kind,fits]=def, G=GEAR[kind];
   const draw=()=>{ const L=grState(kind).data?.items;
     if(!L){ P.innerHTML=`<button class="btn" data-glback="1" style="margin-bottom:14px">← ${esc(lo.name)}</button>${qLoader(`Loading ${G.title.toLowerCase()} from the Star Citizen Wiki…`)}`; return; }
     const q=S.gl.q.trim().toLowerCase(), words=q.split(/\s+/).filter(Boolean);
-    const fit=L.filter(fits), base=S.gl.all||!fit.length?L:fit;
+    const fit=L.filter(fits), base=S.gl.all||!fit.length?(att?L.filter(i=>i.slot===att[2]):L):fit;
     const shown=base.filter(i=>!words.length||words.every(w=>`${i.name} ${i.maker} ${i.kind||""} ${i.slot||""}`.toLowerCase().includes(w))).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200);
     const box=$("gl-pick-grid");
     const grid=shown.length?`<div class="grid">${shown.map(i=>`<div class="vg" data-glchoose="${esc(i.uuid||i.name)}"><div class="ph ph-g" data-gpic="${esc(i.name)}">${i.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard(grArt(kind,i))}</div>
@@ -94,9 +112,10 @@ async function glPicker(){ const P=$("gl-panel"), lo=glCur(), k=S.gl.pick; if(!l
       :`<div class="empty">Nothing matches.</div>`;
     if(box){ box.innerHTML=grid; $("gl-pick-n").textContent=`${shown.length}${base.length>shown.length?` of ${base.length}`:""} shown`; fillGearPictures(box); return; }
     P.innerHTML=`<button class="btn" data-glback="1" style="margin-bottom:14px">← ${esc(lo.name)}</button>
-      <div class="gh"><b>Choose ${k==="cons"?"a consumable":`a ${esc(label.toLowerCase())}`}</b><span id="gl-pick-n">${shown.length} shown</span></div>
+      <div class="gh"><b>${att?`Customize ${esc(wx.name)}: ${esc(label.toLowerCase())} (${esc(grSizeTxt(port))})`:`Choose ${k==="cons"?"a consumable":`a ${esc(label.toLowerCase())}`}`}</b><span id="gl-pick-n">${shown.length} shown</span></div>
       <div class="row gl-pick" style="gap:8px;margin:0 2px 14px;flex-wrap:wrap"><input class="field" id="gl-q" placeholder="${esc(G.ph)}" value="${esc(S.gl.q)}" autocomplete="off" style="flex:1;min-width:220px">
-        ${fit.length&&fit.length<L.length?`<label class="row" style="gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="gl-all" ${S.gl.all?"checked":""}> Show every ${esc(G.noun)}, not just ${esc(label.toLowerCase())}s</label>`:""}</div>
+        ${att&&port.stock?.name?`<button class="btn small ghost" data-glattclear="${att[1]}|${att[2]}">Use the stock ${esc(port.stock.name)}</button>`:""}
+        ${fit.length&&fit.length<L.length?`<label class="row" style="gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="gl-all" ${S.gl.all?"checked":""}> Show every ${esc(G.noun)}, not just ${att?`ones that fit`:`${esc(label.toLowerCase())}s`}</label>`:""}</div>
       <div id="gl-pick-grid" class="gl-pick">${grid}</div>`;
     fillGearPictures(P); $("gl-q")?.focus(); };
   draw(); if(!grState(kind).data){ await glData(kind); if(S.gl.pick===k&&S.tab==="gearlo") draw(); } }
@@ -112,9 +131,14 @@ $("gl-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
   if(e.target.closest("[data-glback]")){ S.gl.pick=null; S.gl.q=""; return renderGearLoadouts(); }
   if(!lo) return;
   const pk=e.target.closest("[data-glpick]"); if(pk){ S.gl.pick=pk.dataset.glpick; S.gl.q=""; S.gl.all=false; $("gl-panel").scrollTop=0; return glPicker(); }
-  const ch=e.target.closest("[data-glchoose]"); if(ch){ const k=S.gl.pick, kind=k==="cons"?"consumables":GL_SLOT[k][2];
+  const ac=e.target.closest("[data-glattclear]"); if(ac){ const [wk,slot]=ac.dataset.glattclear.split("|"), w=lo.slots?.[wk]; if(!w) return;
+    if(w.attachments){ delete w.attachments[slot]; if(!Object.keys(w.attachments).length) delete w.attachments; }
+    S.gl.pick=null; S.gl.q=""; await glSave(lo); return toast(`${w.name}: ${ATT_LAB[slot].toLowerCase()} back to stock`); }
+  const ch=e.target.closest("[data-glchoose]"); if(ch){ const k=S.gl.pick, att=k.startsWith("att:")?k.split(":"):null, kind=k==="cons"?"consumables":att?"attachments":GL_SLOT[k][2];
     const i=(grState(kind).data?.items||[]).find(x=>(x.uuid||x.name)===ch.dataset.glchoose); if(!i) return;
     const it={name:i.name,uuid:i.uuid,class_name:i.class_name,kind};
+    if(att){ const w=lo.slots?.[att[1]]; if(!w) return; w.attachments={...(w.attachments||{}),[att[2]]:{name:i.name,uuid:i.uuid,class_name:i.class_name,kind}};
+      S.gl.pick=null; S.gl.q=""; await glSave(lo); return toast(`${i.name} fitted to ${w.name}`); }
     if(k==="cons"){ lo.consumables=lo.consumables||[]; const have=lo.consumables.find(c=>(c.uuid&&c.uuid===i.uuid)||c.name===i.name); if(have) have.qty=(have.qty||1)+1; else lo.consumables.push({...it,qty:1}); }
     else { lo.slots=lo.slots||{}; lo.slots[k]=it; }
     S.gl.pick=null; S.gl.q=""; await glSave(lo); toast(`${i.name} added to ${lo.name}`); return; }

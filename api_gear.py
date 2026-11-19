@@ -16,6 +16,7 @@ class GearMixin:
                 "utility2": "utility", "hat": "clothing", "torso": "clothing", "jacket": "clothing",
                 "pants": "clothing", "shoes": "clothing", "gloves": "clothing", "bag": "clothing"}
     GL_MAX = 60
+    GL_ATT_SLOTS = ("optics", "barrel", "underbarrel", "magazine")     # a weapon's own attachments, as in game
 
     def _gl_item(self, x, kind):
         if not isinstance(x, dict) or not str(x.get("name") or "").strip():
@@ -40,6 +41,13 @@ class GearMixin:
                 it = self._gl_item(v, self.GL_SLOTS[k])
                 if it:
                     it.pop("qty", None)
+                    att = v.get("attachments") if self.GL_SLOTS[k] == "weapons" and isinstance(v.get("attachments"), dict) else {}
+                    att = {a: self._gl_item(x, "attachments") for a, x in att.items() if a in self.GL_ATT_SLOTS}
+                    att = {a: x for a, x in att.items() if x}
+                    for x in att.values():
+                        x.pop("qty", None)
+                    if att:
+                        it["attachments"] = att
                     slots[k] = it
         cons = [c for c in (self._gl_item(x, "consumables") for x in (lo.get("consumables") or [])[:20]) if c]
         for c in cons:
@@ -676,10 +684,26 @@ class GearMixin:
             del v[10:]
         return out
 
-    GEAR_KINDS = ("weapons", "armor", "blueprints", "gadgets", "clothing", "consumables", "utility")
+    GEAR_KINDS = ("weapons", "armor", "blueprints", "gadgets", "clothing", "consumables", "utility", "attachments")
     # A shopping-list entry's kind -> the tab whose list knows its shops
     SHOP_GEAR = {"weapon": "weapons", "armor": "armor", "gadget": "gadgets", "clothing": "clothing",
-                 "consumable": "consumables", "utility": "utility"}
+                 "consumable": "consumables", "utility": "utility", "attachment": "attachments"}
+
+    def gear_weapon_ports(self, uuid):
+        """A weapon's attachment slots (optics, barrel, underbarrel, magazine) with the sizes each takes and
+        what comes fitted: {ok, ports: [{slot, min, max, stock}]}. From the weapon list when it has them, else
+        the weapon's own wiki record (then the game files)."""
+        uuid = str(uuid or "").strip()
+        try:
+            for w in (self._gear.items("weapons").get("items") or []):
+                if w.get("ports") and (w.get("uuid") == uuid or uuid in (w.get("alias_uuids") or [])):
+                    return {"ok": True, "ports": w["ports"]}
+        except Exception:
+            pass
+        try:
+            return {"ok": True, "ports": self._gear.weapon_ports(uuid)}
+        except Exception as e:
+            return {"ok": False, "ports": [], "error": f"Couldn't reach the Star Citizen Wiki ({e})"}
 
     def gear_list(self, kind, fresh=False):
         """Everything of one kind from the Star Citizen Wiki for the Weapons, Armor and Blueprints tabs, with

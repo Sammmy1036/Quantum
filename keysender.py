@@ -1,4 +1,4 @@
-"""Types /showlocation into Star Citizen for you: on a global hotkey (default F9) and/or on a timer.
+"""Types /showlocation into Star Citizen for you: on a global hotkey (default F10) and/or on a timer.
 
 Windows only, pure ctypes (no extra packages). Keystrokes are only sent when Star Citizen is the
 foreground window, and they're sent as keyboard scan codes because the game reads raw keyboard input.

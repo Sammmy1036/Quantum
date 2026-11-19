@@ -507,6 +507,45 @@ class CatalogMixin:
             return {"ok": True, "slot": None, "ships": []}
         return self._uex_call(lambda: self._fit_targets(slot))
 
+    def vehicle_fit_slots(self, vehicle_id):
+        """Any vehicle's slots, by kind, for the Components search ("cutlass black" lists every part that fits
+        it): {ok, name, slots: {slot type: {sizes: [...], count, label}}}. From its stock loadout on the wiki."""
+        return self._uex_call(lambda: self._vehicle_fit_slots(vehicle_id))
+
+    def _vehicle_fit_slots(self, vehicle_id):
+        rows = self._vehicle_rows()
+        v = rows.get(vehicle_id) or next((r for k, r in rows.items() if str(k) == str(vehicle_id)), None)
+        if not v:
+            return {"ok": False, "error": "Unknown vehicle"}
+        name = v.get("name") or v.get("name_full") or ""
+        cache = getattr(self, "_vfit_cache", None)
+        if cache is None:
+            cache = self._vfit_cache = {}
+        if str(vehicle_id) in cache:
+            return cache[str(vehicle_id)]
+        try:
+            data = self._wikiapi.vehicle([v.get("uuid"), name, v.get("slug"), name.lower().replace(" ", "-"),
+                                          v.get("name_full")])
+        except Exception:
+            data = None
+        if not data:
+            return {"ok": False, "name": v.get("name_full") or name,
+                    "error": "The Star Citizen Wiki has no loadout for this ship (or it can't be reached)"}
+        slots = {}
+        for s_ in fleet.Wiki.loadout(data)["slots"]:
+            t, z = s_.get("type"), s_.get("size")
+            if not t:
+                continue
+            e = slots.setdefault(t, {"sizes": [], "count": 0, "label": (fleet.SLOT_TYPES.get(t) or [t])[0]})
+            e["count"] += 1
+            if z is not None and z not in e["sizes"]:
+                e["sizes"].append(z)
+        for e in slots.values():
+            e["sizes"].sort()
+        out = {"ok": True, "id": v.get("id"), "name": v.get("name_full") or name, "slots": slots}
+        cache[str(vehicle_id)] = out
+        return out
+
     def _fit_targets(self, slot):
         rows = self._vehicle_rows()
         fl = list(self._fleet())

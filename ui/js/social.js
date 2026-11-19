@@ -454,12 +454,12 @@ function pmEscHtml(){ const e=S.pm.esc; if(!e) return `<div class="so-empty">Loa
 // ---- Items linked to Gear: a seller picks what they're selling from the Gear tabs, and its picture and stats
 // go on the listing (their title, price, description and meeting place stay their own). The link is sent as
 // item_ref {tab, uuid, name}; listings without one (older ones) are matched by the Gear name in their title.
-const PM_GEAR_TABS=["weapons","armor","gadgets","clothing","consumables","utility"];
+const PM_GEAR_TABS=["weapons","attachments","armor","gadgets","clothing","consumables","utility"];
 // The marketplace category a Gear tab's items go under
 const pmGearCat=(tab,i)=>tab==="consumables"?(i?.kind==="Medical"?"Medical":"Food and drink")
-  :({weapons:"Weapons",armor:"Armor",clothing:"Clothing",gadgets:"Gadgets and tools",utility:"Other"})[tab]||"Other";
+  :({weapons:"Weapons",attachments:"Weapons",armor:"Armor",clothing:"Clothing",gadgets:"Gadgets and tools",utility:"Other"})[tab]||"Other";
 // And back: the Gear tabs to look in for a listing of a category that has no link
-const PM_CAT_GEAR={Weapons:["weapons"],Armor:["armor"],Clothing:["clothing"],"Gadgets and tools":["gadgets"],Medical:["consumables"],"Food and drink":["consumables"]};
+const PM_CAT_GEAR={Weapons:["weapons","attachments"],Armor:["armor"],Clothing:["clothing"],"Gadgets and tools":["gadgets"],Medical:["consumables"],"Food and drink":["consumables"]};
 const pmGearImg=(i,name)=>i?.image?`<img src="${esc(i.image)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:PM_ICON;
 function pmGearSearch(q){ const words=q.toLowerCase().split(/\s+/).filter(Boolean), ql=q.trim().toLowerCase(); if(!words.length) return [];
   const out=[];

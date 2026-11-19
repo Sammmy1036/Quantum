@@ -193,14 +193,17 @@ class Api(api_contracts.ContractsMixin,
         self._tracker.start()
         self._watcher = ClipboardWatcher(self._on_position)
         self._watcher.start()
-        # Types /showlocation for you: F9 by default, optional timer (off by default). Windows only.
+        # F9 shows/hides Quantum and F10 types /showlocation, by default (until you change them in Settings). Windows only.
         self._sender = ShowLocationSender()
         self._sender.on_overlay = lambda: overlay.toggle(restore_cb=self._restore_window, show_cb=self._show_window,
                                                          after_show_cb=self._nudge_redraw)
         self._sender.on_focus_game = overlay.focus_game
         self._sender.app_in_front = overlay.is_front
-        a = {"hotkey": "F9", "loc_hotkey": "", "interval": 0, "open_chat": "enter", "on_arrival": False,
+        a = {"hotkey": "F9", "loc_hotkey": "F10", "interval": 0, "open_chat": "enter", "on_arrival": False,
              **self._settings.get("autoloc", {})}
+        if "loc_hotkey" not in (self._settings.get("autoloc") or {}) and "F10" in (
+                a.get("hotkey"), a.get("chat_key"), (self._settings.get("datarunner") or {}).get("shot_hotkey")):
+            a["loc_hotkey"] = ""                          # F10 is already used for something else here
         if a.get("action") == "showlocation" and not a.get("loc_hotkey"):
             a["loc_hotkey"], a["hotkey"] = a["hotkey"], "F9" if a["hotkey"] != "F9" else ""
         self._sender.configure(a["hotkey"], 0, a["open_chat"], None, True, a.get("loc_hotkey", ""), False,

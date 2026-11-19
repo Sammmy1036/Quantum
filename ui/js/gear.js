@@ -51,6 +51,14 @@ const GEAR={
       {label:"Range",value:i.stats?.range?`${Math.round(i.stats.range).toLocaleString()} m`:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
     rows:[["rpm","Fire rate",n=>`${Math.round(n)} rpm`],["mag","Magazine",n=>`${n} rounds`],["speed","Projectile speed",n=>`${Math.round(n).toLocaleString()} m/s`],
       ["pellets","Pellets per shot",n=>n],["mass","Mass",n=>`${nf(n)} kg`]]},
+  // Optics, barrel and underbarrel attachments and magazines: what slot, what size, and what each changes
+  attachments:{title:"Weapon attachments",noun:"attachment",ph:"Name, maker or kind, like “8x”, “suppressor” or “laser”",
+    cat:i=>i.kind||"Other",catLab:"Slot",sub:i=>i.sub||"",subLab:"Type",
+    key:i=>[i.size!=null?`S${i.size}`:"",i.stats?.zoom?`${nf(i.stats.zoom)}x zoom`:"",i.stats?.mag?`${i.stats.mag} rounds`:"",...(i.effects||[]).slice(0,2).map(([a,b])=>`${a} ${b}`)].filter(Boolean).join(" · "),
+    sorts:[["name","A–Z"],["zoom","Most zoom"],["size","Biggest"],["price","Price: low to high"]],
+    hero:i=>[{label:"Slot",value:i.kind||null},{label:"Size",value:i.size!=null?`S${i.size}`:null},
+      {label:i.stats?.zoom?"Zoom":"Capacity",value:i.stats?.zoom?`${nf(i.stats.zoom)}x`:i.stats?.mag?`${i.stats.mag} rounds`:null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
+    rows:[["mass","Mass",n=>`${nf(n)} kg`]]},
   armor:{title:"Armor",noun:"piece",ph:"Name or maker, like “ADP”, “Pembroke” or “helmet”",
     cat:i=>i.slot||"Other",catLab:"Piece",sub:i=>i.weight||"",subLab:"Weight",
     key:i=>[i.stats?.dr!=null?`${nf(i.stats.dr)}% damage reduction`:"",i.stats?.temp_min!=null?`${i.stats.temp_min}° to ${i.stats.temp_max}°C`:""].filter(Boolean).join(" · "),
@@ -94,8 +102,8 @@ const GEAR={
     hero:i=>[{label:"Kind",value:i.kind},{label:"Maker",value:i.maker||null},{label:"Price",value:i.buy?.[0]?money(i.buy[0].price):"Not in shops"}],
     rows:[["mass","Mass",n=>`${nf(n)} kg`]]}};
 // Tabs that list things you carry (not blueprints), and the kind a cart entry gets for each
-const GR_ITEM={gadgets:1,clothing:1,consumables:1,utility:1};
-const GR_CART={weapons:"weapon",armor:"armor",gadgets:"gadget",clothing:"clothing",consumables:"consumable",utility:"utility"};
+const GR_ITEM={gadgets:1,clothing:1,consumables:1,utility:1,attachments:1};
+const GR_CART={weapons:"weapon",attachments:"attachment",armor:"armor",gadgets:"gadget",clothing:"clothing",consumables:"consumable",utility:"utility"};
 S.gr=S.gr||{};
 const grState=k=>S.gr[k]=S.gr[k]||{data:null,loading:false,error:null,sel:null,view:"items"};   // armor starts on single pieces
 async function openGear(kind){ const st=grState(kind);
@@ -122,6 +130,7 @@ async function grLogos(kind){ const st=grState(kind); if(kind==="blueprints"||!s
 // The sidebar's controls are made once per tab, so typing in the search box keeps its focus
 function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.dataset.built="1"; const G=GEAR[kind];
   p.innerHTML=`<input class="search" id="gr-q-${kind}" placeholder="${esc(G.ph)}" autocomplete="off">
+    <div class="gr-sugg" id="gr-sugg-${kind}" hidden></div>
     ${kind==="armor"?`<div class="seg-mini gr-view" id="gr-view-armor"><button data-grview="items" class="on">Single pieces</button><button data-grview="sets">Sets</button></div>`:""}
     <div class="cp-filters">
       <label id="gr-catw-${kind}"${kind==="consumables"||(kind==="armor"&&grState(kind).view==="sets")?" hidden":""}><span>${esc(G.catLab)}</span><select class="field" id="gr-cat-${kind}"><option value="">Any</option></select></label>
@@ -136,7 +145,13 @@ function grSide(kind){ const p=$("pane-"+kind); if(p.dataset.built) return; p.da
     <div class="uex-credit" id="gr-credit-${kind}"></div>`;
   const re=()=>{ grState(kind).sel=null; grState(kind).mission=null; grRender(kind); };
   grCkFilters();
-  $(`gr-q-${kind}`).addEventListener("input",re);
+  const qi=$(`gr-q-${kind}`);
+  qi.addEventListener("input",()=>{ re(); grSuggSoon(kind); });
+  qi.addEventListener("focus",()=>grSuggSoon(kind));
+  qi.addEventListener("blur",()=>setTimeout(()=>{ const b=$(`gr-sugg-${kind}`); if(b&&document.activeElement!==qi) b.hidden=true; },180));
+  qi.addEventListener("keydown",e=>grSuggKey(kind,e));
+  $(`gr-sugg-${kind}`).addEventListener("mousedown",e=>e.preventDefault());       // keep the search box's focus
+  $(`gr-sugg-${kind}`).addEventListener("click",e=>{ const b=e.target.closest("[data-sgtab]"); if(b) grSuggGo(kind,b.dataset.sgtab,b.dataset.sgid||null); });
   for(const id of ["cat","sub","mk","av","sort"]){ const el=$(`gr-${id}-${kind}`); if(el) el.addEventListener("change",re); }
   $(`gr-reset-${kind}`).onclick=()=>{ for(const id of ["q","cat","sub","mk","av"]){ const el=$(`gr-${id}-${kind}`); if(el) el.value=""; } re(); };
   p.addEventListener("click",e=>{ const v=e.target.closest("[data-grview]"); if(v){ const st=grState(kind); st.view=v.dataset.grview; st.sel=null;
@@ -222,8 +237,10 @@ function grOpenItem(kind,id,set){ const st=grState(kind);
 // A gear page's extra rows (damage type, fire modes, armor resistances, effects…) as [label, value]: the Gear
 // page and a marketplace listing linked to the item show the same ones
 function grExtraPairs(kind,i){
-  if(kind==="weapons") return [i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.filter(m=>m&&!/placeholder/i.test(m)).length&&["Fire modes",i.modes.filter(m=>m&&!/placeholder/i.test(m)).join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean);
+  if(kind==="weapons") return [...(i.ports||[]).filter(p=>p.slot!=="magazine").map(p=>[`${ATT_LAB[p.slot]} slot`,`${grSizeTxt(p)}${p.stock?.name?` · comes with ${p.stock.name}`:""}`]),i.damage_type&&["Damage type",i.damage_type],i.cls&&["Ammo",i.cls],i.modes?.filter(m=>m&&!/placeholder/i.test(m)).length&&["Fire modes",i.modes.filter(m=>m&&!/placeholder/i.test(m)).join(", ")],i.size!=null&&["Size",i.size],i.rarity&&["Rarity",i.rarity]].filter(Boolean);
   if(kind==="armor") return [["Piece",i.slot],i.weight&&["Weight",i.weight],i.set&&["Set",i.set],...Object.entries(i.res||{}).map(([t,m])=>[`${t[0].toUpperCase()+t.slice(1)} damage taken`,`${Math.round(m*100)}%`])].filter(Boolean);
+  if(kind==="attachments") return [i.sub&&["Type",i.sub],i.grade&&["Grade",i.grade],...(i.effects||[]),...(i.facts||[]),
+      grFits(i).length&&["Fits",grFits(i).slice(0,8).map(w=>w.name).join(", ")+(grFits(i).length>8?` and ${grFits(i).length-8} more`:"")]].filter(Boolean);
   if(GR_ITEM[kind]) return [...(i.effects?.length?[["Effects",i.effects.join(", ")]]:[]),...(i.buffs?.length?[["Buffs",i.buffs.join(", ")]]:[]),
       ...(i.facts||[]).filter(([a])=>!/^(effects?|buffs?)$/i.test(a)),i.sub&&i.sub!==i.kind?["Type",i.sub]:null,
       i.paints?.length?["Also comes in",i.paints.map(p=>(p.name.match(/["“”]([^"“”]+)["“”]/)||[,p.name])[1]).join(", ")]:null,i.size!=null&&i.size!==0?["Size",i.size]:null].filter(Boolean);
@@ -267,6 +284,10 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
     <div id="grd-where"></div>
     <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>`;
   grObtain(i,kind);
+  // A weapon whose list entry has no attachment slots: ask its own record once, then show them
+  if(kind==="weapons"&&!i.ports&&!((i.uuid||i.name) in S.attPorts)) weaponPorts(i).then(p=>{ if(p.length){ i.ports=p; if(S.tab==="weapons"&&st.sel===(i.uuid||i.name)) grDetail(kind); } });
+  // An attachment: which weapons take it needs the weapon list (loaded quietly)
+  if(kind==="attachments"&&!grState("weapons").data) glData("weapons").then(()=>{ if(S.tab==="attachments"&&st.sel===(i.uuid||i.name)&&grFits(i).length) grDetail(kind); });
   if(!i.image){ const img=await api().gear_image(i.name); if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name,grArt(kind,i)); }
   else { const box=$("grd-img"); if(box) box.innerHTML=picShown(i.image,"component",i.name,grArt(kind,i)); } }
 // How to get gear no shop sells: where players have found it, the blueprint that makes it (and the missions
@@ -428,3 +449,97 @@ $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
     return addToCart(got.map(p=>({name:p.name,kind:"armor",uuid:p.uuid,class_name:p.class_name,source:s.name})),`${s.name} (${plural(got.length,"piece")})`); }
   const h=e.target.closest("[data-gi],[data-gset]"); if(h) grOpenItem(kind,h.dataset.gi||null,h.dataset.gset||null); });
 document.addEventListener("click",e=>{ const f=e.target.closest("[data-grfresh]"); if(f&&GEAR[S.tab]) grLoad(S.tab,true); });
+
+// =================================================================== weapon attachments
+// A weapon's attachment slots (optics, barrel, underbarrel, magazine) come with its wiki record: each takes
+// a range of sizes ("S1-2") and may come with a part fitted. An attachment fits a weapon when the weapon has
+// a slot of its kind that takes its size.
+const ATT_LAB={optics:"Optic",barrel:"Barrel",underbarrel:"Underbarrel",magazine:"Magazine"};
+const ATT_ORDER=["optics","barrel","underbarrel","magazine"];
+const grSizeTxt=p=>p.min==null&&p.max==null?"any size":p.min===p.max||p.max==null?`S${p.min??p.max}`:p.min==null?`S${p.max}`:`S${p.min}-${p.max}`;
+function attFits(a,port){ if(!a||!port||a.slot!==port.slot) return false; const z=a.size??a.stats?.size;
+  if(z==null) return true; return (port.min==null||z>=port.min)&&(port.max==null||z<=port.max); }
+// The weapons that take this attachment (only once the weapon list is in; never fetched just for this)
+function grFits(a){ const W=grState("weapons").data?.items; if(!W||!a?.slot) return [];
+  a._fits=a._fits&&a._fitsN===W.length?a._fits:W.filter(w=>(w.ports||[]).some(p=>attFits(a,p))); a._fitsN=W.length; return a._fits; }
+// Ports for a weapon: from the list, else asked for once (the wiki's own record, then the game files)
+S.attPorts=S.attPorts||{};
+async function weaponPorts(w){ if(!w) return []; if(w.ports?.length) return w.ports; const k=w.uuid||w.name;
+  if(k in S.attPorts) return S.attPorts[k]||[];
+  if(!w.uuid){ S.attPorts[k]=[]; return []; }
+  let r; try{ r=await api().gear_weapon_ports(w.uuid); }catch(_){ r=null; }
+  S.attPorts[k]=r?.ok?r.ports||[]:null; return S.attPorts[k]||[]; }
+
+// =================================================================== smart search across Gear and Consumables
+// Typing in any Gear or Consumables search looks in the other tabs too: when what you typed plainly belongs
+// somewhere else ("scope" → Attachments, "MedPen" → Medical, "helmet" → Armor), or nothing here matches but
+// another tab has it, Quantum moves you there with the search kept, and says so.
+const GR_SMART=[{tab:"weapons",lab:"Weapons"},{tab:"attachments",lab:"Attachments"},{tab:"armor",lab:"Armor"},{tab:"clothing",lab:"Clothing"},
+  {tab:"gadgets",lab:"Gadgets"},{tab:"consumables",ck:"Food",lab:"Food"},{tab:"consumables",ck:"Drink",lab:"Drink"},
+  {tab:"consumables",ck:"Medical",lab:"Medical"},{tab:"utility",lab:"Keys"}];
+// Words that say which tab is meant, whatever else matches the name
+const GR_HINTS=[[/\b(scopes?|optics?|sights?|holo(graphic)?|reflex|telescopic|red ?dot|suppress(or|er)s?|silencers?|compensators?|flash ?hiders?|stabili[sz]ers?|muzzle|underbarrel|laser pointers?|flashlights?|attachments?|\d+x)\b/i,"attachments"],
+  [/\b(medpens?|med ?gel|oxypens?|hemozal|adrenapen|demexatrine|resurgera|roxaphen|sterogen|detoxpen|corticopen|med ?guns?|paramed|cure ?life|medical|bandage)\b/i,"consumables:Medical"],
+  [/\b(drinks?|water|bottle|juice|soda|smoltz|coffee|beer|cola|tea)\b/i,"consumables:Drink"],
+  [/\b(food|burrito|sandwich|noodles?|ration|bar|pizza|burger|hot ?dog|soup|fruit|meal)\b/i,"consumables:Food"],
+  [/\b(helmets?|undersuits?|backpacks?|armou?r|core|legs|arms)\b/i,"armor"],
+  [/\b(shirts?|jackets?|coats?|pants|trousers|boots|shoes|hats?|gloves|hoodie|clothing)\b/i,"clothing"],
+  [/\b(multi.?tools?|tractor|cutters?|rangefinders?|gadgets?|extinguishers?|glow ?sticks?|mining gadget)\b/i,"gadgets"],
+  [/\b(crypto ?keys?|key ?cards?|hacking|chips?)\b/i,"utility"],
+  [/\b(rifles?|pistols?|snipers?|shotguns?|smgs?|lmgs?|launchers?|grenades?|knife|knives|railgun)\b/i,"weapons"]];
+const grSmartKey=e=>e.ck?`${e.tab}:${e.ck}`:e.tab;
+const grSmartCur=kind=>GR_SMART.find(e=>e.tab===kind&&(!e.ck||e.ck===(grState("consumables").ckind||"Food")));
+function grSmartHits(e,q){ const L=grState(e.tab).data?.items; if(!L) return null; const G=GEAR[e.tab], ql=q.toLowerCase();
+  let n=0, strong=0;
+  for(const i of L){ if(e.ck){ const c=G.cat(i); if(e.ck==="Food"?["Drink","Medical"].includes(c):c!==e.ck) continue; }
+    const t=`${i.name} ${i.maker||""} ${i.maker_code||""} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`.toLowerCase();
+    if(cpQueryHit(t,ql)){ n++; if(i.name.toLowerCase().includes(ql)) strong++; } }
+  return {n,strong}; }
+// As you type, a box under the search shows what matches in the other Gear and Consumables tabs (lists not
+// loaded yet are fetched quietly). Nothing moves until you click one: then that tab opens on that item, or
+// "All N in …" opens the tab with your search. ↑/↓ and Enter pick from the keyboard, Esc closes it.
+const GR_SUGG_MAX=8;
+let grSuggT=null;
+function grSuggSoon(kind){ clearTimeout(grSuggT); grSuggT=setTimeout(()=>grSugg(kind),180); }
+function grSuggFind(kind,q){ const cur=grSmartCur(kind), ql=q.toLowerCase(), words=ql.split(/\s+/).filter(Boolean);
+  const hint=GR_HINTS.filter(([rx])=>rx.test(q)).map(h=>h[1]), hits=[], counts=[];
+  for(const e of GR_SMART){ const key=grSmartKey(e); if(cur&&key===grSmartKey(cur)) continue;
+    const L=grState(e.tab).data?.items; if(!L) continue; const G=GEAR[e.tab]; let n=0;
+    for(const i of L){ if(e.ck){ const c=G.cat(i); if(e.ck==="Food"?["Drink","Medical"].includes(c):c!==e.ck) continue; }
+      const nm=i.name.toLowerCase(), t=`${nm} ${i.maker||""} ${i.maker_code||""} ${G.cat(i)} ${G.sub?G.sub(i):""} ${i.set||""}`.toLowerCase();
+      if(!cpQueryHit(t,ql)) continue; n++;
+      const sc=(nm.startsWith(ql)?6:nm.includes(ql)?4:words.every(w=>nm.includes(w))?3:1)+(hint.includes(key)?2:0)+(i.buy?.length?0.3:0);
+      hits.push({e,i,sc}); }
+    if(n) counts.push({e,n,hinted:hint.includes(key)}); }
+  hits.sort((a,b)=>b.sc-a.sc||a.i.name.length-b.i.name.length||a.i.name.localeCompare(b.i.name));
+  counts.sort((a,b)=>(b.hinted-a.hinted)||b.n-a.n);
+  return {hits:hits.slice(0,GR_SUGG_MAX),counts}; }
+function grSugg(kind){ const box=$(`gr-sugg-${kind}`), inp=$(`gr-q-${kind}`); if(!box||!inp) return;
+  const q=inp.value.trim(); if(q.length<2||document.activeElement!==inp){ box.hidden=true; box.innerHTML=""; S.grSg=null; return; }
+  const missing=GR_SMART.filter(e=>!grState(e.tab).data);
+  if(missing.length&&!S.grSgLoading){ S.grSgLoading=true;
+    Promise.all(missing.map(e=>glData(e.tab).catch(()=>[]))).then(()=>{ S.grSgLoading=false; if(S.tab===kind) grSugg(kind); }); }
+  const {hits,counts}=grSuggFind(kind,q);
+  S.grSg={kind,q,i:S.grSg?.kind===kind&&S.grSg.q===q?S.grSg.i:-1,n:hits.length};
+  if(!hits.length){ box.hidden=!S.grSgLoading; box.innerHTML=S.grSgLoading?`<div class="gr-sg-h">Looking in the other tabs…</div>`:""; return; }
+  box.hidden=false;
+  box.innerHTML=`<div class="gr-sg-h">In other tabs${S.grSgLoading?` <span class="spin-sm"></span>`:""}</div>
+    ${hits.map((h,k)=>`<button type="button" class="gr-sg ${k===S.grSg.i?"on":""}" data-sgtab="${esc(grSmartKey(h.e))}" data-sgid="${esc(h.i.uuid||h.i.name)}">
+      <span class="nm">${esc(h.i.name)}</span><span class="tb">${esc(h.e.lab)}</span>
+      <small>${esc([h.i.maker,GEAR[h.e.tab].cat(h.i),h.i.size!=null&&h.e.tab==="attachments"?`S${h.i.size}`:""].filter(Boolean).join(" · "))}${grPrice(h.i)!=null?` · ${money(grPrice(h.i))}`:""}</small></button>`).join("")}
+    <div class="gr-sg-all">${counts.slice(0,4).map(c=>`<button type="button" data-sgtab="${esc(grSmartKey(c.e))}">All ${c.n} in ${esc(c.e.lab)} →</button>`).join("")}</div>`; }
+function grSuggKey(kind,e){ const box=$(`gr-sugg-${kind}`), sg=S.grSg; if(!box||box.hidden||!sg||sg.kind!==kind) return;
+  if(e.key==="Escape"){ box.hidden=true; return; }
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); sg.i=Math.max(-1,Math.min(sg.n-1,sg.i+(e.key==="ArrowDown"?1:-1)));
+    box.querySelectorAll(".gr-sg").forEach((b,k)=>b.classList.toggle("on",k===sg.i)); return; }
+  if(e.key==="Enter"&&sg.i>=0){ e.preventDefault(); const b=box.querySelectorAll(".gr-sg")[sg.i]; if(b) grSuggGo(kind,b.dataset.sgtab,b.dataset.sgid); } }
+function grSuggGo(kind,key,id){ const e=GR_SMART.find(x=>grSmartKey(x)===key); if(!e) return;
+  const q=($(`gr-q-${kind}`)?.value||"").trim(), box=$(`gr-sugg-${kind}`); if(box) box.hidden=true; S.grSg=null;
+  const btn=document.querySelector(e.ck?`.tab[data-tab="${e.tab}"][data-ckind="${e.ck}"]`:`.tab[data-tab="${e.tab}"]`); if(!btn||btn.hidden) return;
+  btn.click();
+  const gs=grState(e.tab), nb=$(`gr-q-${e.tab}`);
+  if(e.tab==="armor"&&gs.view!=="items"){ gs.view="items"; for(const b of document.querySelectorAll("#pane-armor [data-grview]")) b.classList.toggle("on",b.dataset.grview==="items"); }
+  for(const f of ["cat","sub","mk","av"]){ const el=$(`gr-${f}-${e.tab}`); if(el) el.value=""; }    // your search, none of that tab's old filters
+  if(nb) nb.value=q;
+  gs.sel=null; gs.mission=null;
+  if(gs.data){ grRender(e.tab); if(id) grOpenItem(e.tab,id,null); } }

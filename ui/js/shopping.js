@@ -64,7 +64,7 @@ function shEmptyHtml(){
     <div class="mk-h" style="margin:26px 2px 10px">Start shopping</div>
     <div class="she-go">${SH_START.map(([tab,t,d,k])=>`<button type="button" class="she-tile" data-shgo="${tab}">${ic(k)}<span><b>${esc(t)}</b><small>${esc(d)}</small></span></button>`).join("")}</div></div>`; }
 // Over the map: everything in the cart as one table, grouped by stop (or by kind of item, or what it's for)
-const SH_GEAR_KINDS=new Set(["weapon","armor","gadget","clothing","consumable","utility"]);
+const SH_GEAR_KINDS=new Set(["weapon","armor","gadget","clothing","consumable","utility","attachment"]);
 function shRenderPlan(r){ const p=r.plan, g=$("sh-panel");
   if(!r.items.length){ g.innerHTML=shEmptyHtml(); return; }
   const byid=Object.fromEntries(r.items.map(x=>[x.id,x])), cur=r.step, done=cur==null&&p?.steps?.length;

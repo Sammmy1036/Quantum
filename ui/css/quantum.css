@@ -276,6 +276,11 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .lo-chip:hover{border-color:#7fe7ff}.lo-chip.on{background:rgba(127,231,255,.12);border-color:#7fe7ff;color:#fff}
 .lo-chip small{font-size:10.5px;background:var(--panel-3);border-radius:999px;padding:0 6px;color:var(--ink-2)}.lo-chip.add{border-style:dashed}
 .lo-star{color:#ffd166}.lo-acts{display:inline-flex;gap:4px;align-items:center;margin-left:auto}.lo-prim{font-size:12px;color:#ffd166;margin-right:4px}
+/* My Fleet: loadout chips, paint and module under the ship's picture */
+.fl-side{min-width:0;display:flex;flex-direction:column;gap:2px}
+.fl-side .mkp-img{margin-bottom:6px}
+.fl-side .lo-bar{margin-top:4px}.fl-side .lo-acts{margin-left:0;width:100%;flex-wrap:wrap}
+.fl-side .lv-row .lv-sel{flex:1;max-width:none}
 .lo-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0 6px;padding:8px;border-radius:9px;background:var(--panel-2);border:1px solid var(--line)}
 .lo-form input{flex:1;min-width:160px;padding:4px 8px}.lo-form.warn{border-color:rgba(255,107,107,.5);font-size:12.5px}.lo-form.warn span{flex:1}
 .best-tag{font:600 10px var(--text);background:#57e39b;color:#04160c;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
@@ -2042,3 +2047,46 @@ button.ph-ver:hover{border-color:var(--route-2)}
 .mi-head .mi-logo .brand-ic{width:100%;height:100%;-webkit-mask-position:right top;mask-position:right top}
 .mi-head .mi-logo.x3{width:clamp(192px,21vw,288px);height:clamp(130px,13vw,180px)}
 .mi-head .mi-logo.x3 .brand-ic{-webkit-mask-position:right center;mask-position:right center}
+
+/* Gear loadouts: a weapon's own attachments under it */
+.gl-att{margin:-2px 0 8px 14px;padding:4px 0 4px 10px;border-left:2px solid var(--line-2);font-size:12.5px}
+.gl-att.muted{color:var(--dim)}
+.gl-att-row{display:grid;grid-template-columns:minmax(110px,auto) minmax(0,1fr) auto;gap:8px;align-items:center;padding:3px 0}
+.gl-att-row small{font:700 10.5px var(--text);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.gl-att-row .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-att-row .acts{display:inline-flex;gap:4px}
+
+/* Gear and Consumables search: matches in the other tabs, under the search box */
+.gr-sugg{margin:-2px 0 10px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel-2);padding:4px;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.gr-sg-h{font:700 10.5px var(--text);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:5px 8px 3px;display:flex;align-items:center;gap:6px}
+.gr-sg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 8px;width:100%;text-align:left;background:none;border:0;border-radius:7px;padding:6px 8px;color:var(--ink);cursor:pointer;font:500 13px var(--text)}
+.gr-sg:hover,.gr-sg.on{background:rgba(127,231,255,.12)}
+.gr-sg .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.gr-sg .tb{font:700 10px var(--text);letter-spacing:.05em;text-transform:uppercase;color:#7fe7ff;border:1px solid rgba(127,231,255,.4);border-radius:999px;padding:1px 7px;align-self:center}
+.gr-sg small{grid-column:1/-1;color:var(--ink-2);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gr-sg-all{display:flex;flex-wrap:wrap;gap:4px;padding:6px 4px 3px;border-top:1px solid var(--line);margin-top:3px}
+.gr-sg-all button{background:none;border:1px solid var(--line-2);border-radius:999px;color:var(--ink-2);font:600 11.5px var(--text);padding:3px 9px;cursor:pointer}
+.gr-sg-all button:hover{border-color:#7fe7ff;color:#fff}
+/* Suggestions for any text box with a list (My Fleet's Add, commodities, places…): floats under the box */
+.dl-sugg{position:fixed;z-index:9000;margin:0;max-height:min(360px,60vh);overflow-y:auto}
+.dl-sugg .gr-sg{grid-template-columns:minmax(0,1fr)}
+
+/* My Fleet: the ship's name and maker logo open Vehicles; loadout chips rename in place */
+.fl-vlink{color:inherit;cursor:pointer;text-decoration:none}
+.fl-vlink:hover{color:#7fe7ff}
+button.hd-logo[data-flmaker]{cursor:pointer}
+.lo-chip.lo-rn{cursor:text;width:auto;min-width:90px;max-width:200px;outline:none;border-color:#7fe7ff;background:rgba(127,231,255,.12);color:#fff}
+
+/* Components: parts that fit a ship you searched for */
+.cp-ship-chips{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 8px}
+.cp-ship-chips button{background:var(--panel-2);border:1px solid var(--line-2);border-radius:999px;color:var(--ink-2);font:600 11.5px var(--text);padding:3px 9px;cursor:pointer}
+.cp-ship-chips button:hover{border-color:#7fe7ff;color:#fff}
+.cp-ship-g{font:700 11px var(--text);color:var(--ink);margin:8px 2px 2px;display:flex;gap:6px;align-items:baseline}
+.cp-ship-g span{font-weight:500;color:var(--ink-2)}
+.cp-ship-h{display:flex;gap:8px;align-items:baseline;margin:14px 2px 8px}.cp-ship-h .muted{text-transform:none;letter-spacing:0;font-weight:500}
+
+/* Settings: every section's box has the same dark glassy look as the version / updates box */
+.set-view .note{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink-2)}
+.set-view .note .note{background:none;border:0;padding:0}
+.set-view .set-box .afk-box{margin-top:12px;padding:12px 0 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none}
+.set-view .set-box .align-list{border:0;background:none;margin:0}

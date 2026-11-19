@@ -11,8 +11,8 @@ the server keeps the newer change of each entry. A removed entry stays as a mark
 doesn't bring it back."""
 from qbase import *  # noqa: F401,F403
 
-WISH_KINDS = ("ship", "component", "weapon", "armor", "gadget", "clothing", "consumable", "utility", "other")
-WISH_CART_KINDS = ("ship", "component", "weapon", "armor", "gadget", "clothing", "consumable", "utility")
+WISH_KINDS = ("ship", "component", "weapon", "armor", "gadget", "clothing", "consumable", "utility", "attachment", "other")
+WISH_CART_KINDS = ("ship", "component", "weapon", "armor", "gadget", "clothing", "consumable", "utility", "attachment")
 WISH_TOMBSTONE = 60 * 86400
 
 
