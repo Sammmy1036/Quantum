@@ -132,6 +132,9 @@ class CatalogMixin:
                             fuel.setdefault(pl, set()).add(kind)
             except uex.UexError:
                 pass
+            # A city's spaceport is the same place: its tiles open the city's shops (Teasa Spaceport -> Lorville)
+            out = with_spaceports(out, lambda a, b: a | b)
+            fuel = with_spaceports(fuel, lambda a, b: a | b)
             return {"ok": True, "places": {p: sorted(g) for p, g in out.items()},
                     "groups": [list(x) for x in self.SHOP_GROUPS], "fuel": {p: sorted(k) for p, k in fuel.items()}}
         return self._uex_call(run)
@@ -143,8 +146,9 @@ class CatalogMixin:
             rows, at = self._shop_rows()
             cats = {c_["id"]: c_ for c_ in self._uex.get("categories")[0]}
             shops = {}
+            group = place_group(place)                 # a spaceport's shops are its city's
             for p, t, r, g in rows:
-                if p != place:
+                if p not in group:
                     continue
                 s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
                                                 "terminal": t.get("name"), "items": []})
@@ -158,7 +162,7 @@ class CatalogMixin:
             except uex.UexError:
                 rent = []
             for p, t, r, v in rent:
-                if p != place:
+                if p not in group:
                     continue
                 s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
                                                 "terminal": t.get("name"), "items": []})

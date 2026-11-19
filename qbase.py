@@ -349,6 +349,31 @@ def spaceport_city(name):
     return sp[0] if sp else None
 
 
+def place_group(name):
+    """The names one landing zone goes by for its terminals and shops: a city and its spaceport are the same
+    place ('Teasa Spaceport' -> {'Teasa Spaceport', 'Lorville'}); anything else is just itself."""
+    city = spaceport_city(name) or name
+    ports = {sp for sp, v in SPACEPORTS.items() if v[0] == city}
+    return {name, city} | ports if ports else {name}
+
+
+def with_spaceports(by_place, merge):
+    """Give each spaceport what its city has (and the city what's filed under its spaceport), in a
+    {place: value} map; merge(a, b) combines two values."""
+    out = dict(by_place)
+    for sp, v in SPACEPORTS.items():
+        group = place_group(sp)
+        vals = [by_place[n] for n in group if n in by_place]
+        if not vals:
+            continue
+        m = vals[0]
+        for x in vals[1:]:
+            m = merge(m, x)
+        for n in group:
+            out[n] = m
+    return out
+
+
 def ensure_spaceports(db):
     """Put every city's spaceport on the map (a city place, with its city's services), adding any the
     map data lacks (Teasa Spaceport at Lorville). Returns True if the map changed."""

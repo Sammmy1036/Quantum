@@ -702,6 +702,24 @@ const modPicker=(M,cur,attr)=>`<span class="lo-lab">Module</span><div class="seg
   `<button ${attr}="${esc(m.id)}" class="${m.id===cur?"on":""}" title="${esc(`${m.full||m.name}${m.concept?" (concept, not in the game yet)":""}${m.notes?`: ${m.notes}`:""}`)}">${esc(m.name)}${m.concept?`<small class="mod-c">concept</small>`:""}</button>`).join("")}</div>`;
 const modTiers=m=>m?.medical_tiers?Object.entries(m.medical_tiers).sort((a,b)=>a[0]-b[0]).map(([t,n])=>`${n} × T${t}`).join(", "):"";
 const modBeds=m=>m?.medical_beds?`${m.medical_beds}${modTiers(m)?` (${modTiers(m)})`:""}`:null;
+// A vehicle's specs (description, then crew, cargo, size, flight, quantum, defence, weapons, insurance): its
+// page in Vehicles, and My Fleet for vehicles with no parts to change (the ATLS, rovers), so theirs isn't empty
+const vehCrew=d=>d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
+function vehSpecHtml(d,mod){
+  const n=x=>x==null||x===""?null:Math.round(x).toLocaleString();
+  const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
+  const crew=vehCrew(d);
+  return `${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
+    <div class="vd-grid vd-flat">
+      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
+      ${sec("Cargo & storage",[["Cargo grid",d.scu?`${Number(d.scu).toLocaleString()} SCU`:null],["Refinery",d.refinery?`${d.refinery} refining reactors`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
+      ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
+      ${sec("Flight",[["SCM",d.scm&&`${d.scm} m/s`],["Boost",d.boost&&`${d.boost} m/s`],["Max",d.max&&`${d.max} m/s`],["Pitch / yaw / roll",d.pitch&&`${d.pitch} / ${d.yaw} / ${d.roll} °/s`],["Hydrogen fuel",d.h_fuel&&`${d.h_fuel} SCU`]])}
+      ${sec("Quantum",[["Speed",d.qt_speed&&`${fmtBig(d.qt_speed)}/s`],["Range",d.qt_range&&fmtBig(d.qt_range)],["Spool",d.qt_spool&&`${d.qt_spool} s`],["Quantum fuel",d.q_fuel&&`${d.q_fuel} SCU`]])}
+      ${sec("Defence",[["Shield HP",n(d.shield)],["Shield type",d.shield_face],["Hull HP",n(d.hull)],["Armor HP",n(d.armor)],["Countermeasures",d.countermeasures],["IR / EM",d.ir&&`${fmtBig(d.ir)} / ${fmtBig(d.em)}`],["Cross-section",n(d.cs)]])}
+      ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
+      ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
+    </div>`; }
 // A vehicle's own page: picture, roles, crew and beds, cargo, size, flight, quantum, defences, weapons.
 async function renderVehicleDetail(id){
   const g=$("vh-gallery"), v=S.veh.find(x=>String(x.id)===String(id)); if(!v) return;
@@ -711,9 +729,7 @@ async function renderVehicleDetail(id){
   const M=d0.modules, mod=M?(M.modules.find(x=>x.id===(S.vdMod?.[id]||M.current))||M.modules[0]):null;
   const d=mod?{...d0,scu:mod.scu??d0.scu,medical_beds:mod.medical_beds||null,medical_tier:mod.medical_tier||null,refinery:mod.refinery||null}:d0;
   const scu=mod?d.scu:v.scu;
-  const n=x=>x==null||x===""?null:Math.round(x).toLocaleString(), dash=x=>x??"–";
-  const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
-  const crew=d.crew_max&&d.crew_max!==d.crew_min?`${d.crew_min}–${d.crew_max}`:d.crew_min;
+  const crew=vehCrew(d);
   const cat=vehCat(), isAll=cat.id==="all";
   g.innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn("vehicles")}${S.vehFrom?`<button class="btn primary" data-act="vhfrom">← Back to Patch Hub</button>`:""}<button class="btn" data-act="vhback">← ${esc(cat.name)}</button>${isAll?"":`<button class="btn ghost" data-act="vhall">All vehicles</button>`}</div>
     <div class="mkp-head"><div class="mkp-img">${picShown(v.photo,"vehicle",v.full)}</div>
@@ -731,17 +747,7 @@ async function renderVehicleDetail(id){
         <td class="num">${m.refinery?`${m.refinery} reactors`:"–"}</td>
         <td>${m.concept?`<span style="color:#f2c14e">Concept</span>`:"In game"}</td></tr>`).join("")}</tbody></table>
       <div class="muted" style="font-size:11.5px;margin-top:8px">Click a module to see the ship with it. Modules are swapped at a port; in My Fleet each loadout can have its own.</div></div>`:""}
-    ${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
-    <div class="vd-grid vd-flat">
-      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
-      ${sec("Cargo & storage",[["Cargo grid",d.scu?`${Number(d.scu).toLocaleString()} SCU`:null],["Refinery",d.refinery?`${d.refinery} refining reactors`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
-      ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
-      ${sec("Flight",[["SCM",d.scm&&`${d.scm} m/s`],["Boost",d.boost&&`${d.boost} m/s`],["Max",d.max&&`${d.max} m/s`],["Pitch / yaw / roll",d.pitch&&`${d.pitch} / ${d.yaw} / ${d.roll} °/s`],["Hydrogen fuel",d.h_fuel&&`${d.h_fuel} SCU`]])}
-      ${sec("Quantum",[["Speed",d.qt_speed&&`${fmtBig(d.qt_speed)}/s`],["Range",d.qt_range&&fmtBig(d.qt_range)],["Spool",d.qt_spool&&`${d.qt_spool} s`],["Quantum fuel",d.q_fuel&&`${d.q_fuel} SCU`]])}
-      ${sec("Defence",[["Shield HP",n(d.shield)],["Shield type",d.shield_face],["Hull HP",n(d.hull)],["Armor HP",n(d.armor)],["Countermeasures",d.countermeasures],["IR / EM",d.ir&&`${fmtBig(d.ir)} / ${fmtBig(d.em)}`],["Cross-section",n(d.cs)]])}
-      ${sec("Weapons",[["Pilot DPS",n(d.dps)],["Missiles",d.missiles],["Missile damage",n(d.missile_dmg)],["Turrets",d.turrets||null]])}
-      ${sec("Insurance",[["Claim",d.claim&&`${d.claim} min`],["Expedite",d.expedite&&`${d.expedite} min`]])}
-    </div>
+    ${vehSpecHtml(d,mod)}
     <div id="vd-extra"></div>
     <div class="vd-grid vd-shop vd-flat"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">Rent</div>${vehSpots(v.rent,"rent")}</div></div>
     <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>`;
@@ -1180,6 +1186,16 @@ async function renderShip(uid){
   const stats=statBlock([...heroKeys.map(k=>statOf(SHIP_STATS.find(x=>x[0]===k))),cargo],
     SHIP_STATS.filter(([k])=>!heroKeys.includes(k)).map(statOf));
   const changed=r.slots.filter(sl=>sl.fitted).length;
+  // Nothing to change out (the ATLS, rovers and other ground vehicles): the page shows the vehicle's own
+  // specs instead, as its page in Vehicles has them (without the buy and rent prices)
+  const bare=!r.slots.length; let vv=null, vd=null;
+  if(bare){ vv=(S.veh||[]).find(x=>String(x.id)===String(ship?.vehicle_id))||(S.veh||[]).find(x=>x.full===r.ship.full);
+    if(vv){ S.vdCache=S.vdCache||{}; try{ vd=S.vdCache[vv.id]||(S.vdCache[vv.id]=await api().vehicle_detail(vv.id)); }catch(_){ vd=null; }
+      if(S.flSel!==uid) return; if(vd?.ok===false) vd=null; } }
+  const bareStats=vd?statBlock([{label:"Crew size",value:vehCrew(vd)||null},{label:"SCU capacity",value:r.ship.scu||vd.scu?`${Number(r.ship.scu||vd.scu).toLocaleString()} SCU`:"None"},
+      {label:"Landing pad",value:vd.pad||vv.pad||null},{label:"Size class",value:vd.size_class||null}],
+    [{label:"Beds",value:vd.beds||null},{label:"Medical beds",value:vd.medical_beds||null},
+     ...SHIP_STATS.filter(([k])=>st[k]!=null&&st[k]!==""&&st[k]!==0).map(statOf)]):"";
   const groups={}; for(const sl of r.slots) (groups[sl.label]=groups[sl.label]||[]).push(sl);
   const card=sl=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
       maker=sl.fitted?sl.fitted_maker:sl.stock?.maker, val=k&&stats[k], stockVal=k&&sl.stock?.stats?.[k], open=S.flSlot===sl.port;
@@ -1191,13 +1207,15 @@ async function renderShip(uid){
         <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
   $("fl-panel").innerHTML=`<div class="mkp-head"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:picMissing("vehicle",r.ship.full||"")}</div>
-      <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
+      <div class="hd-main"><div class="hd-title"><div><h2>${r.ship.main?"★ ":""}${esc(r.ship.full)}</h2><div class="sub">${bare&&vv?esc([vv.maker,vd?.career].filter(Boolean).join(" · ")):changed?`${changed} component${changed===1?"":"s"} changed from stock in this loadout · stats include your changes`:"Stock parts in this loadout"}</div></div>${titleLogo(r.ship.maker||ship?.maker,false)}</div>
+        ${bare&&vv?.roles?.length?`<div class="tags vd-tags">${vv.roles.map(x=>`<span>${esc(x)}</span>`).join("")}</div>`:""}
         ${loadoutBar(r.loadouts)}
         <div id="fl-livery" class="lv-row">${liveryHtml(uid)}</div>
         ${r.modules?(()=>{ const m=r.modules.modules.find(x=>x.id===r.modules.current)||{};
           return `<div class="lv-row">${modPicker(r.modules,r.modules.current,"data-flmod")}<span class="muted" style="font-size:12px">${m.concept?`<span style="color:#f2c14e">Concept · not in game yet.</span> `:""}${esc(m.notes||"")}</span></div>`; })():""}
         ${changed?`<div class="row" style="gap:8px;margin:2px 0 8px"><button class="btn small ghost cart-all" data-flshop="1" title="Put every part you've swapped into this loadout in your cart">${CART_SVG}Add this loadout's ${plural(changed,"swapped part")} to cart</button></div>`:""}
-        ${stats}
+        ${bare&&vd?bareStats:stats}
+        ${bare&&vv?`<div class="row" style="gap:8px;margin-top:12px"><button class="btn ghost" data-vhopen="${esc(String(vv.id))}" title="Open the ${esc(vv.full)} in Vehicles: prices and where to buy or rent it">Vehicle page</button>${vv.store?`<button class="btn ghost" data-ext="${esc(vv.store)}">RSI page</button>`:""}</div>`:""}
         ${r.power?.pips_gen?`<div class="pwr-row">
           <div class="seg-mini" title="What's powered: Combat = weapons and shields on, quantum drive off. Travel = quantum drive on, weapons and shields off."><button data-pmode="scm" class="${r.power.mode!=="nav"?"on":""}">Combat · SCM</button><button data-pmode="nav" class="${r.power.mode==="nav"?"on":""}">Travel · NAV</button></div>
           <button class="btn small ghost" data-ptoggle="1">${S.flPowerOpen?"Hide power ▴":"Power ▾"}</button>
@@ -1206,7 +1224,8 @@ async function renderShip(uid){
     <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
       const ms=list[0].type==="Missile"&&r.missiles, msTxt=ms?` · ${Object.entries(ms.by_size).sort((a,b)=>b[0]-a[0]).map(([z,n])=>`${n} × S${z}`).join(", ")}${ms.loaded<ms.slots?` · ${ms.slots-ms.loaded} empty`:""}`:"";
       return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}${esc(msTxt)}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
-    <div class="uex-credit">EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.</div>`;
+    ${bare&&vd?`<div class="fl-spec">${vehSpecHtml(vd,null)}</div><div class="muted" style="font-size:12px;margin:4px 2px 10px">This vehicle has no components to change out.</div>`:""}
+    <div class="uex-credit">${bare&&vd?`${vd.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki)":"The Star Citizen Wiki has no record for this vehicle"}; roles from UEX.`:`EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.`}</div>`;
   if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size);
     // Just opened with Change: bring the slot and its options/comparison into view instead of leaving them below the fold
     if(S.flScroll&&b){ S.flScroll=false; S.flScrollUntil=Date.now()+4000; flScrollToSlot(); } }

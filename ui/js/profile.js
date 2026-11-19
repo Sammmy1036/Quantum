@@ -680,6 +680,24 @@ function rsNeedItems(q){ const needs=rsNeeds(q); if(!needs.length) return [];
   if(out.length) out[out.length-1].tail=true;
   return out; }
 const RS_MAX=250;
+// ---- Coordinates typed into the search: the game's /showlocation numbers ("x:… y:… z:…", or three numbers)
+// or a planet or moon with latitude and longitude ("Daymar 12.5, -40.2"). Looked up by the app (what's there,
+// what's nearest) and shown as the first result; picking it puts it on the map as one of your waypoints.
+const rsCoordish=q=>(q.match(/-?\d[\d,]*(?:\.\d+)?(?:e[-+]?\d+)?/gi)||[]).length>=2&&!/^\s*(om|cave|p\d)[\s-]/i.test(q);
+RS.coord=RS.coord||{q:"",r:null};
+function rsCoordItem(q){
+  if(!rsCoordish(q)) return null;
+  if(RS.coord.q!==q){ RS.coord={q,r:null}; const sys=S.system;
+    api().coords_find(q,sys).then(r=>{ if(RS.coord.q!==q) return; RS.coord.r=r||{ok:false}; if(rsMode()==="search") rsRender(); }).catch(()=>{}); return null; }
+  const r=RS.coord.r; if(!r?.ok) return null;
+  const n=r.nearest?.[0], near=n?`${n.dist<1000?"At":fmtDist(n.dist)+" from"} ${n.name}`:"";
+  const where=r.body?`${r.lat!=null?`${r.lat.toFixed(2)}°, ${r.lon.toFixed(2)}° on `:"On "}${r.body}${r.alt!=null&&Math.abs(r.alt)>200?` · ${fmtDist(r.alt)} up`:""}`:`In space · ${r.system}`;
+  return {kind:"coords",name:r.label,q,res:r,type:"poi",sc:-2,head:"Coordinates",sub:[where,near,r.system!==S.system&&r.body?r.system:""].filter(Boolean).join(" · ")}; }
+async function rsSaveCoords(it,add){
+  const r=await api().coords_save(it.q,S.system,it.name); if(!r?.ok){ toast(r?.error||"Couldn't place those coordinates"); return null; }
+  await poll(); if(r.system&&r.system!==S.system) setSystem(r.system,false);
+  if(add) await addStops([r.name]); else toast(`Put ${r.name} on the map${r.body?" on "+r.body:""} (your waypoints)`);
+  select({kind:"loc",name:r.name}); focusLoc(r.name,true); return r; }
 function rsRender(){
   const mode=rsMode(), list=$("rs-list"), route=S.live?.route||[], q=$("rsearch").value.trim();
   $("rs-panel").hidden=false; $("route-body").hidden=mode==="search";
@@ -689,7 +707,8 @@ function rsRender(){
     if(!rb.hidden) rb.textContent=`Your route · ${route.length} stop${route.length>1?"s":""} · Plan / Optimize ›`; }
   let all=mode==="search"?rsCandidates(q):rsBrowse();
   if(mode==="search"){ const needs=rsNeedItems(q); if(needs.length){ const seen=new Set(needs.map(x=>x.name)), rest=all.filter(x=>!seen.has(x.name));
-    if(rest.length) rest[0].head="Names matching your search"; all=[...needs,...rest]; } }
+    if(rest.length) rest[0].head="Names matching your search"; all=[...needs,...rest]; }
+    const ci=rsCoordItem(q); if(ci){ if(all.length&&!all[0].head) all[0].head="Names matching your search"; all=[ci,...all]; } }
   RS.items=all.slice(0,RS_MAX); RS.more=all.length-RS.items.length; RS.on=Math.min(RS.on,Math.max(0,RS.items.length-1));
   const hl=n=>{ if(!q) return esc(n); const i=n.toLowerCase().indexOf(q.toLowerCase()); return i<0?esc(n):esc(n.slice(0,i))+"<mark>"+esc(n.slice(i,i+q.length))+"</mark>"+esc(n.slice(i+q.length)); };
   const kb=mode==="search";                       // the keyboard pick is shown while typing
@@ -707,6 +726,7 @@ function rsClose(){ $("rsearch").value=""; RS.on=0; RS.type=null;
   for(const x of $("filters").children) x.setAttribute("aria-pressed",String(!x.dataset.t)); rsRender(); $("rsearch").blur(); }
 async function rsPick(i,act,{fromKeys=false}={}){
   const it=RS.items[i]; if(!it) return;
+  if(it.kind==="coords"){ const r=await rsSaveCoords(it,act==="add"); if(r) rsClose(); return; }
   if(it.kind==="body"){ focusBody(it.name); select({kind:"body",name:it.name}); }
   else if(act==="add"){ await addStops([it.name]);
     // From the keyboard: add, show it and go back to the route. A click on + keeps the list, to add more.

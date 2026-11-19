@@ -694,6 +694,99 @@ class MapMixin:
             self._db_changed()
             return {"ok": True, "name": loc.name, "body": loc.body}
 
+    # ---- coordinates typed into the map's search
+    # Either the game's own /showlocation numbers ("x:-18930539540 y:-2610158765 z:0", "-18930539540, -2610158765, 0":
+    # meters from the system's star, the same frame Quantum reads from the clipboard), or a spot on a planet or moon
+    # by latitude and longitude ("Daymar 12.5, -40.2", "Hurston lat 10 lon -20"), at ground level.
+    _COORD_NUM = r"(-?\d[\d,]*(?:\.\d+)?(?:[eE][-+]?\d+)?|-?\.\d+)"
+
+    def _parse_coords(self, text, system=None):
+        text = str(text or "").strip()
+        if not text:
+            return None
+        xyz = nav_core.parse_showlocation(text) or gamelog.text_coords(text)
+        if not xyz:
+            nums = re.findall(self._COORD_NUM, text)
+            rest = re.sub(self._COORD_NUM, " ", text)
+            # three bare numbers and nothing else ("1.2e10 -3.4e9 50267"); big enough to be in space
+            if len(nums) == 3 and not re.search(r"[a-z]", rest, re.I):
+                try:
+                    v = [float(n.replace(",", "")) for n in nums]
+                except ValueError:
+                    v = None
+                if v and math.sqrt(sum(a * a for a in v)) > 1e6:
+                    xyz = v
+        if xyz:
+            pos = tuple(float(a) for a in xyz)
+            sys_ = self._db.guess_system(pos, system if system in SYSTEMS else None)
+            return {"pos": pos, "system": sys_, "how": "xyz"}
+        # A planet or moon's name, then latitude and longitude
+        m = re.match(r"^\s*(.+?)\s*[:,]?\s*(?:lat(?:itude)?\s*[:=]?\s*)?" + self._COORD_NUM
+                     + r"\s*°?\s*[NS]?\s*[,;/ ]\s*(?:lon(?:g|gitude)?\s*[:=]?\s*)?" + self._COORD_NUM + r"\s*°?\s*[EW]?\s*$",
+                     text, re.I)
+        if not m:
+            return None
+        key = re.sub(r"[^a-z0-9]", "", m.group(1).lower())
+        b = next((b for b in self._db.bodies.values() if b.kind != "star" and b.radius_m > 0
+                  and re.sub(r"[^a-z0-9]", "", b.name.lower()) == key
+                  and (not system or b.system == system)), None) or \
+            next((b for b in self._db.bodies.values() if b.kind != "star" and b.radius_m > 0
+                  and re.sub(r"[^a-z0-9]", "", b.name.lower()) == key), None)
+        if not b:
+            return None
+        try:
+            lat, lon = float(m.group(2).replace(",", "")), float(m.group(3).replace(",", ""))
+        except ValueError:
+            return None
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            return None
+        la, lo, r = math.radians(lat), math.radians(lon), b.radius_m
+        local = (-r * math.cos(la) * math.sin(lo), r * math.cos(la) * math.cos(lo), r * math.sin(la))
+        return {"pos": b.to_global(local, time.time()), "system": b.system, "how": "latlon", "body": b.name,
+                "lat": lat, "lon": lon}
+
+    def coords_find(self, text, system=None):
+        """What typed coordinates point at: {ok, system, body, lat, lon, alt, nearest: [{name, dist}], label}
+        or {ok: False} when the text isn't coordinates."""
+        with self._lock:
+            c = self._parse_coords(text, system)
+            if not c:
+                return {"ok": False}
+            t = time.time()
+            pos, sys_ = c["pos"], c["system"]
+            b = self._db.bodies.get(c.get("body")) if c.get("body") else self._db.body_near(pos, sys_)
+            out = {"ok": True, "system": sys_, "body": b.name if b else None, "how": c["how"]}
+            if b:
+                lat, lon, alt = b.lat_lon_alt(b.to_local(pos, t))
+                out.update(lat=round(lat, 4), lon=round(lon, 4), alt=round(alt))
+            near = []
+            for n, L in self._db.locations.items():
+                if L.system != sys_ or L.source not in ("db", "user") or L.category in ("om",):
+                    continue
+                try:
+                    d = dist(self._db.global_pos(L, t), pos)
+                except Exception:
+                    continue
+                near.append((d, n))
+            near.sort()
+            out["nearest"] = [{"name": n, "dist": d} for d, n in near[:3]]
+            where = b.name if b else f"space ({sys_})"
+            out["label"] = f"Coordinates near {near[0][1]}" if near and near[0][0] < 50_000 else f"Coordinates on {where}" if b else f"Coordinates in {sys_}"
+            return out
+
+    def coords_save(self, text, system=None, name=None):
+        """Put typed coordinates on the map as one of your waypoints (so the map shows it, and it can go in
+        your route): {ok, name, body}."""
+        with self._lock:
+            c = self._parse_coords(text, system)
+            if not c:
+                return {"ok": False, "error": "Those don't look like coordinates"}
+            name = (name or "").strip() or "Coordinates"
+            loc = self._db.capture(name, c["pos"], time.time(), c["system"], "unknown",
+                                   f"From coordinates you typed: {str(text).strip()[:120]}", True)
+            self._db_changed()
+            return {"ok": True, "name": loc.name, "body": loc.body, "system": c["system"]}
+
     # ---- station positions shared between Quantum users
     def _learned_places(self):
         """Positions for places the map is missing: your own /showlocation readings (places.json) win;
@@ -806,12 +899,13 @@ class MapMixin:
                 return {"ok": False, "error": "Quantum's mission data isn't on this PC yet and the Star Citizen Wiki couldn't be reached. Try again in a minute"}
         emp = {}
         for m in rows:
-            title = self._mission_vars(m.get("title"), m) if m.get("title") else None
+            title = self._mission_title(m.get("title"), m) if m.get("title") else None
             if not title:
                 continue
-            name = str(m.get("giver") or m.get("faction") or "Unknown employer").strip()
+            name, note = self._mission_giver(m)
             e = emp.setdefault(name.lower(), {"name": name, "factions": {}, "types": {}, "lawful": 0, "unlawful": 0,
-                                              "reward": [None, None], "missions": [], "seen": set()})
+                                              "reward": [None, None], "missions": [], "seen": set(), "note": None})
+            e["note"] = e["note"] or note
             k = (title.lower(), m.get("type"), m.get("reward_max"))
             if k in e["seen"]:                        # the same contract per system or per tier: once is enough
                 continue
@@ -825,7 +919,7 @@ class MapMixin:
                 if isinstance(v, (int, float)) and v > 0:
                     e["reward"][0] = v if e["reward"][0] is None else min(e["reward"][0], v)
                     e["reward"][1] = v if e["reward"][1] is None else max(e["reward"][1], v)
-            e["missions"].append(dict(m, title=title))
+            e["missions"].append(dict(m, title=title, raw_title=m.get("title")))
         out = []
         for e in emp.values():
             e.pop("seen")
@@ -837,6 +931,67 @@ class MapMixin:
             out.append(e)
         out.sort(key=lambda e: (-e["count"], e["name"].lower()))
         return {"ok": True, "source": source, "at": getattr(c, "at", None) if source == "game" else None, "employers": out}
+
+    # The game fills some contract givers in only when the contract is offered: "~mission(Contractor|BountyFrom)"
+    # is whoever posted the bounty, "~mission(Contractor)" the local contractor. Those are listed under the
+    # faction the contract gives reputation with (what the game files do say), else under a plain description.
+    RE_GIVER_VAR = re.compile(r"~mission\(([^)]*)\)|\[([A-Za-z][A-Za-z0-9_ |]{1,40})\]")
+
+    def _mission_giver(self, m):
+        """A contract's employer for the Missions list -> (name, note or None)."""
+        raw = str(m.get("giver") or "").strip()
+        fac = str(m.get("faction") or "").strip()
+        if raw and not self.RE_GIVER_VAR.search(raw):
+            return raw, None
+        if not raw:
+            return (fac or "Unknown employer"), None
+        vars_ = " ".join((a or b or "") for a, b in self.RE_GIVER_VAR.findall(raw)).lower()
+        bounty = "bounty" in vars_ or str(m.get("type") or "").lower().startswith("bount")
+        rest = self.RE_GIVER_VAR.sub("", raw).strip(" -|:,")         # any words around the gap ("Bounty: ~mission(...)")
+        if fac and not self.RE_GIVER_VAR.search(fac):
+            name = f"{fac} bounties" if bounty and "bount" not in fac.lower() else fac
+            note = ("Bounties posted on behalf of " if bounty else "Contracts given on behalf of ") + fac \
+                + ". The game names the contractor when you're offered the contract."
+            return name, note
+        if rest:
+            return rest, "The game names the contractor when you're offered the contract."
+        return ("Bounty issuers" if bounty else "Local contractors"), \
+            ("Whoever posted the bounty" if bounty else "The contractor") + " is named by the game when you're offered the contract."
+
+    RE_RANK_VAR = re.compile(r"rank|reputation|standing|tier", re.I)
+
+    def _mission_title(self, text, m=None):
+        """A contract's title for the Missions list: the gaps the game fills in are left out or filled with
+        what's known ("~mission(ReputationRank) Rank - Direct ~mission(Cargo) Cargo Haul" -> "Member Rank -
+        Direct Cargo Haul"), instead of spelled out ("the reputation rank named in the contract Rank…"). The
+        briefing keeps the spelled-out version."""
+        if not text or not self.RE_MISSION_VAR.search(text):
+            return text
+        m = m or {}
+        rank = m.get("rank") if isinstance(m.get("rank"), str) and m.get("rank").strip() else None
+
+        def sub(mm):
+            k = (mm.group(1) or mm.group(2) or "")
+            if self.RE_RANK_VAR.search(k):
+                return rank or ""
+            kk = re.sub(r"[^a-z]", "", k.lower())
+            if re.search(r"target|bounty|criminal|person|npc|boss", kk) and not re.search(r"loc|place|ship|from", kk):
+                return "a wanted target"
+            if re.search(r"ship|vehicle", kk):
+                return "a target ship"
+            if re.search(r"location|destination|place|site|outpost|planet|moon|system|area|poi|loc", kk):
+                filled = self._mission_vars(mm.group(0), m)            # a place only when there's just one
+                return "" if "named in the contract" in filled or filled.startswith("one of") else filled
+            return ""
+        out = self.RE_MISSION_VAR.sub(sub, text)
+        out = re.sub(r"\s+", " ", out)
+        out = re.sub(r"\s+([,.:;!?])", r"\1", out)
+        out = re.sub(r"(^|\s)(-|–|:|\|)\s*(?=\s*(-|–|:|\||$))", " ", out)       # a dash left with nothing beside it
+        out = re.sub(r"^\s*(Rank)\s*[-–:]\s*", "", out) if not rank else out     # "Rank - Direct…" with no rank to name
+        out = out.strip(" -–:|,")
+        out = re.sub(r"\s+(?:to|at|from|in|on|for|the|of|near|with|a|an)$", "", out, flags=re.I)   # "Deliver to" a gap
+        out = re.sub(r"\s{2,}", " ", out)
+        return out if len(re.sub(r"[^A-Za-z]", "", out)) >= 4 else self._mission_vars(text, m)
 
     def faction_info(self, name):
         """The wiki's page on a faction: overview, description and reputation ranks."""

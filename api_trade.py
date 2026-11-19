@@ -27,8 +27,13 @@ class TradeMixin:
             rows, _ = self._uex.get("fuel_prices_all")
         except uex.UexError:
             return None
-        return [{"what": r["commodity_name"], "price": r["price_buy"]} for r in rows
-                if places.get(r["id_terminal"]) == place and r.get("price_buy")] or None
+        group = place_group(place)                  # a spaceport's fuel is its city's (and the other way round)
+        seen, out = set(), []
+        for r in rows:
+            if places.get(r["id_terminal"]) in group and r.get("price_buy") and r.get("commodity_name") not in seen:
+                seen.add(r.get("commodity_name"))
+                out.append({"what": r["commodity_name"], "price": r["price_buy"]})
+        return out or None
 
     def set_uex_token(self, token, _from_account=False):
         token = (token or "").strip()
@@ -153,6 +158,9 @@ class TradeMixin:
             places = self._uex.place_map(self._db.locations)
             have = {places.get(tid) for tid, t in terms.items() if t.get("type") == "commodity" and uex.is_live(t)}
             have.discard(None)
+            for sp in SPACEPORTS:                  # a city's spaceport has its city's terminals (and back)
+                if place_group(sp) & have:
+                    have |= place_group(sp)
             return {"ok": True, "places": sorted(have)}
         return self._uex_call(run)
 
@@ -163,8 +171,9 @@ class TradeMixin:
         def run():
             terms = self._uex.terminals()
             places = self._uex.place_map(self._db.locations)
+            group = place_group(place)              # a spaceport's terminals are its city's
             tids = {tid for tid, t in terms.items()
-                    if t.get("type") == "commodity" and uex.is_live(t) and places.get(tid) == place}
+                    if t.get("type") == "commodity" and uex.is_live(t) and places.get(tid) in group}
             if not tids:
                 return {"ok": True, "place": place, "terminals": [], "at": None}
             rows, at = self._uex.get("commodities_prices_all")
