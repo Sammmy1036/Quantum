@@ -44,6 +44,14 @@ Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases
 | **Patch Hub** | Dedicated section for ongoing and upcoming events in Star Citizen, along with patch notes, new ships, gear, twitch drops, with links to official RSI information where the data was obtained. |
 | **Profile** | Your fleet, loadouts, orgs, listings, ratings and datarunner stats, with control over what others see. Click a name on the leaderboard to open their profile. |
 
+  <table>
+  <tr>
+    <td><a href="images/Vehicles.png"><img src="images/Vehicles.png" width="300"></a></td>
+    <td><a href="images/Vehicles2.png"><img src="images/Vehicles2.png" width="300"></a></td>
+    <td><a href="images/Gear.png"><img src="images/Gear.png" width="300"></a></td>
+  </tr>
+</table>
+
 ## Getting set up
 
 1. **Create a free Quantum account** at [quantumsc.org](https://quantumsc.org/account/signup) and confirm your email. You choose your **username** at sign-up. It's your one name everywhere in Quantum and it's permanent. Then sign in from the app by clicking the picture at the top of the left bar.
