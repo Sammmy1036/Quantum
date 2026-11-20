@@ -172,7 +172,50 @@ class SocialMixin:
         loadouts you chose (already in order), how to show your orgs and listings, and who may see it."""
         if not isinstance(data, dict):
             return {"ok": False, "error": "Nothing to publish"}
+        # each ship shown gets its loadouts (what's fitted in every slot), so people can look at them from your card
+        for x in data.get("ships") or []:
+            if isinstance(x, dict) and x.get("uid"):
+                try:
+                    x["loadouts"] = self._profile_loadouts(x.pop("uid"))
+                except Exception:
+                    x.pop("uid", None)
         return self._social_result(self._social_call("profile", data, timeout=20), refresh=False)
+
+    PROFILE_LOADOUTS, PROFILE_PARTS = 5, 60
+
+    def _profile_loadouts(self, uid):
+        """One ship's loadouts for your profile, kept small: name, paint, module, and each slot's part (the one
+        fitted, else the stock one) with whether you swapped it, plus a few of the ship's numbers."""
+        f = next((x for x in self._settings.get("fleet") or [] if x.get("uid") == uid), None)
+        if not f:
+            return []
+        f = json.loads(json.dumps(f, default=str))                 # a copy: My Fleet isn't touched
+        self._loadouts(f)
+        out = []
+        for lo in f["loadouts"][:self.PROFILE_LOADOUTS]:
+            c = json.loads(json.dumps(f, default=str))
+            c["active_loadout"] = lo["id"]
+            try:
+                r = self.fleet_loadout(uid, _ship=c)
+            except Exception:
+                r = {}
+            parts = []
+            for sl in (r.get("slots") or []) if r.get("ok") else []:
+                stock = (sl.get("stock") or {}).get("name") if isinstance(sl.get("stock"), dict) else None
+                name = sl.get("fitted") or stock
+                if not name:
+                    continue
+                parts.append({"slot": sl.get("label") or sl.get("type") or "", "type": sl.get("type") or "", "size": sl.get("size"),
+                              "name": name, "swapped": bool(sl.get("fitted") and (sl.get("fitted") or "").lower() != (stock or "").lower())})
+            if not parts:                                           # no wiki loadout: at least the parts swapped in
+                parts = [{"slot": p.split("/")[-1], "type": "", "size": None, "name": (x.get("name") if isinstance(x, dict) else x), "swapped": True}
+                         for p, x in (lo.get("loadout") or {}).items() if (x.get("name") if isinstance(x, dict) else x)]
+            st = r.get("stats") or {}
+            keep = ("dps", "missile_dmg", "shield", "shield_regen", "hull", "scm", "max", "qt_speed", "qt_range", "em", "ir")   # (SHIP_STATS in trade.js)
+            out.append({"name": lo.get("name") or "Loadout", "primary": lo.get("id") == f.get("primary_loadout"),
+                        "livery": (lo.get("livery") or {}).get("name"), "parts": parts[:self.PROFILE_PARTS],
+                        "stats": {k: st[k] for k in keep if isinstance(st.get(k), (int, float)) and not isinstance(st.get(k), bool)}})
+        return out
 
     def social_messages(self, member_id, before=None):
         q = f"messages?with={urllib.parse.quote(str(member_id or ''))}" + (f"&before={int(before)}" if before else "")

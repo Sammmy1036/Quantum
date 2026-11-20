@@ -9,6 +9,8 @@ except Exception:
     VERSION = "0"
 
 _value = [None]
+_ready = threading.Event()          # set once the build id has been worked out (or failed)
+WAIT = 60                           # longest a request waits for it, in seconds
 
 
 def build_for(exe, base):
@@ -42,6 +44,8 @@ def _compute():
         _value[0] = f"{VERSION}; {kind}; {digest}"
     except Exception:
         _value[0] = ""
+    finally:
+        _ready.set()
 
 
 def start():
@@ -49,11 +53,14 @@ def start():
 
 
 def header():
+    # Hashing the whole Quantum.exe takes a few seconds, and the app talks to the server as soon as it starts.
+    # Without waiting, those first calls went out with no build id and showed up as "Older version" on the server.
+    _ready.wait(WAIT)
     return _value[0] or ""
 
 
 def build_id():
-    v = header()
+    v = _value[0] or ""                 # for Settings: doesn't wait, shows nothing until it's ready
     return v.rsplit(";", 1)[-1].strip() if v else ""
 
 

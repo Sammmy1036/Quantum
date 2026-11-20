@@ -22,7 +22,7 @@ async function poll(){
   if(live.static_version!==S.staticVersion){ await loadStatic(); if(S.tab==="datarunner"&&S.dr?.view==="jobs") renderDrJobs(); }
   if(live.photos_version!==S.photosVersion){ const first=S.photosVersion===undefined; S.photosVersion=live.photos_version; if(!first) refreshPictures(); }
   if(live.trade_ver!==S.tradeVer){ const first=S.tradeVer===undefined; S.tradeVer=live.trade_ver;
-    if(!first){ toast("Trade run in transit: you set your route to its sell point"); if($("tr-mine-out")) renderRuns(); } }
+    if(typeof runsSync==="function") runsSync(first); }                 // (says what the log moved along, trade.js)
   const here=live.player?.system||live.where?.system;
   // You changed system (went through a jump point): the map goes with you, even if you'd been looking at
   // another system (a cross-system contract's drop-off, a route preview). Following picks up from there.
@@ -45,9 +45,10 @@ async function poll(){
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
   fmSync(live);                                                         // Friend Map: its count, and the list while open
   // A price alert went off (api_watch.py): a note, and the watchlist and the tab's count catch up
-  if(live.watch){ const wn=live.watch.note; if(wn&&wn.n!==S.wlNoteN){ if(S.wlNoteN!==undefined) toastLong(wn.text); S.wlNoteN=wn.n; qForget("watch"); if(S.tab==="market") renderWatch(); else wlLoad().then(syncWatchCount).catch(()=>{}); }
-    else if(S.wlNoteN===undefined) S.wlNoteN=wn?.n??null;
-    if(live.watch.n&&!S.wl) wlLoad().then(syncWatchCount).catch(()=>{}); }
+  if(live.watch){ const wn=live.watch.note; if(wn&&wn.n!==S.paNoteN){ if(S.paNoteN!==undefined) toastLong(wn.text); S.paNoteN=wn.n; qForget("watch");
+      paLoad(true).then(()=>{ syncWatchCount(); if(S.tab==="alerts") renderAlerts(); }).catch(()=>{}); }
+    else if(S.paNoteN===undefined) S.paNoteN=wn?.n??null;
+    if(live.watch.n&&!S.pa) paLoad().then(syncWatchCount).catch(()=>{}); }
   // The shopping list changed in the background (a purchase in game ticked an item off)
   if(live.shopping) setCartCount(live.shopping.count);
   if(live.shopping&&live.shopping.ver!==S.shVer){ const first=S.shVer===undefined; S.shVer=live.shopping.ver;

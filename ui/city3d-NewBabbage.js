@@ -293,9 +293,13 @@ City3D.define({
         if(!window.QCITYNEAR?.[CITY]) await window.qLoadAsset("cities/NewBabbage.near.js");
         const NM=window.QCITYNEAR?.[CITY]?.meshes; if(!NM) return;
         let c=0;
+        // each starts with every copy far (the far mesh holds them all, the close-up none): recorded as its
+        // pick, so the first look at the city only rewrites the models that get a close-up. Without it, that
+        // first pass re-sent all ~550 models' placements to the graphics card at once (a 250 ms freeze on the way down).
         for(const [ks,m] of Object.entries(NM)){ const e=LOD[+ks]; if(!e||!e.n) continue;
           try{ const near=new THREE.InstancedMesh(makeGeo(m,boxOf(m)),e.mat,e.n); near.count=0;
-            near.castShadow=true; near.receiveShadow=true; near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near; }catch(err){ console.warn("near",m.name,err); }
+            near.castShadow=true; near.receiveShadow=true; near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near;
+            e.pick=new Uint8Array(e.n); }catch(err){ console.warn("near",m.name,err); }
           if(++c%12===0) await new Promise(r=>setTimeout(r,0)); }
         delete window.QCITYNEAR[CITY]; lodDirty=true; })(); }
     // without it: the districts, dense blocks on a street grid along the city's axis, tallest at each one's middle

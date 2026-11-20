@@ -246,6 +246,61 @@ class TradeMixin:
     def _runs(self):
         return self._settings.setdefault("trade_runs", [])
 
+    # ---- a run on your route: a "buy" task at its buy place and a "sell" task at its sell place, which the
+    # planner keeps in that order (_precedence). The buy stop goes once it's purchased, the sell stop once it's
+    # sold; arriving at either keeps it in the route until you've done that (like a contract's stops).
+    TRADE = "trade:"
+
+    def _trade_task_wanted(self, task):
+        rid, _, what = task[len(self.TRADE):].partition("|")
+        r = next((x for x in self._runs() if x["id"] == rid), None)
+        if not r or not r.get("routed"):
+            return False
+        st = r.get("stage") or "planned"
+        return st == "planned" if what == "buy" else st != "sold"
+
+    def _trade_route_sync(self, r=None):
+        """Add the buy / sell stops a routed run still needs (at the end of the route), and take away the
+        ones it no longer does (all runs' when r is None)."""
+        with self._lock:
+            before = list(self._route)
+            self._route = [t for t in self._route if not t["task"].startswith(self.TRADE) or self._trade_task_wanted(t["task"])]
+            if r is not None and r.get("routed"):
+                have = {t["task"] for t in self._route}
+                for what, place in (("buy", r.get("from_place")), ("sell", r.get("to_place"))):
+                    tid = f"{self.TRADE}{r['id']}|{what}"
+                    if tid not in have and place in self._db.locations and self._trade_task_wanted(tid):
+                        # a buy stop back on (stepped back to Planned) goes before its own sell stop
+                        sell = next((i for i, t in enumerate(self._route) if t["task"] == f"{self.TRADE}{r['id']}|sell"), None)
+                        if what == "buy" and sell is not None:
+                            self._route.insert(sell, {"place": place, "task": tid})
+                        else:
+                            self._route.append({"place": place, "task": tid})
+            if self._route != before:
+                self._ensure_gates(self._player_sys)
+                self._save_settings()
+
+    def trade_run_start(self, run):
+        """Start a found route as a run: it's saved (Planned Routes) and its buy and sell stops go on your route."""
+        r = self.trade_run_save(run)
+        if not r.get("ok"):
+            return r
+        return self.trade_run_route(r["id"])
+
+    def trade_run_route(self, rid):
+        """Put a run's stops on your route (Planned Routes' "Add to route", and Start run)."""
+        r = next((x for x in self._runs() if x["id"] == rid), None)
+        if not r:
+            return {"ok": False, "error": "Run not found"}
+        if not (r.get("from_place") in self._db.locations and r.get("to_place") in self._db.locations):
+            return {"ok": False, "error": "Its buy or sell place isn't on the map, so it can't go on the route"}
+        r["routed"] = True
+        self._trade_route_sync(r)
+        self._save_settings()
+        self._trade_changed = getattr(self, "_trade_changed", 0) + 1
+        n = sum(1 for x in self._runs() if x.get("routed") and x.get("stage") != "sold")
+        return {"ok": True, "id": rid, "runs": n}
+
     def trade_runs(self):
         return {"ok": True, "runs": sorted(self._runs(), key=lambda r: -r.get("created", 0))}
 
@@ -267,7 +322,10 @@ class TradeMixin:
                 tn = "1SC" + "".join(secrets.choice("0123456789") for _ in range(15))
                 if tn not in used:
                     break
-            run.update({"id": f"t{int(time.time() * 1000)}", "created": time.time(), "stage": "planned",
+            rid, ids = f"t{int(time.time() * 1000)}", {r["id"] for r in runs}
+            while rid in ids:                                # two in the same millisecond
+                rid = f"t{int(rid[1:]) + 1}"
+            run.update({"id": rid, "created": time.time(), "stage": "planned",
                         "times": {"planned": time.time()}, "tracking_no": tn})
             runs.append(run)
         self._save_settings()
@@ -287,7 +345,9 @@ class TradeMixin:
             r["buy_price" if stage == "bought" else "sell_price"] = float(price)
         if fee not in (None, "") and stage in ("bought", "sold"):
             r["load_fee" if stage == "bought" else "unload_fee"] = float(fee)
+        r.pop("heading", None)
         self._save_settings()
+        self._trade_route_sync(r)                        # bought: its buy stop goes; sold: its sell stop too
         return {"ok": True}
 
     def _auto_trade_transit(self):
@@ -304,6 +364,17 @@ class TradeMixin:
         names.discard("")
         changed = False
         for r in self._runs():
+            # on your way to buy: a planned run's buy place set as the destination in game
+            if (r.get("stage") or "planned") == "planned":
+                buy = {comp(r.get("from_place")), comp(r.get("from_terminal"))} - {""}
+                hit = any(n == t or (len(n) > 5 and (n in t or t in n)) for n in names for t in buy)
+                if hit != (r.get("heading") == "buy"):
+                    if hit:
+                        r["heading"], r["heading_at"] = "buy", sel
+                    else:
+                        r.pop("heading", None)
+                    changed = True
+                continue
             if r.get("stage") not in ("bought", "loading") or (r.get("times") or {}).get("bought", 0) > sel + 5:
                 continue
             targets = {comp(r.get("to_place")), comp(r.get("to_terminal"))} - {""}
@@ -315,9 +386,11 @@ class TradeMixin:
         if changed:
             self._save_settings()
             self._trade_changed = getattr(self, "_trade_changed", 0) + 1
+            self._trade_route_sync()                     # in transit: its buy stop (if any) is done
 
     def trade_run_delete(self, rid):
         self._settings["trade_runs"] = [x for x in self._runs() if x["id"] != rid]
+        self._trade_route_sync()
         self._save_settings()
         return {"ok": True}
 

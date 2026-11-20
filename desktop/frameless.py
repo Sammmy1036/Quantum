@@ -5,6 +5,8 @@ with minimise / maximise / close. This file does the window side of it, on Windo
     the bar moves the window smoothly and its edges resize it, like any window
   - maximising fills the screen's work area, not the whole screen: a window without a frame would
     otherwise cover the taskbar
+  - letting go of the bar at the top of the screen maximises it, at the left or right edge it takes that half
+    (Windows' Snap, which it only does for windows with a frame)
   - the minimise / maximise styles stay set, so clicking Quantum on the taskbar still minimises it
 
 Everything that touches the window runs on its own UI thread (the page's calls come in on other threads).
@@ -90,11 +92,33 @@ def drag(edge="caption"):
 
     def go(form):
         _u32.ReleaseCapture()                        # the page had the mouse: give it to Windows
-        _u32.SendMessageW(_hwnd(form), 0x00A1, HIT[edge], 0)    # WM_NCLBUTTONDOWN
+        _u32.SendMessageW(_hwnd(form), 0x00A1, HIT[edge], 0)    # WM_NCLBUTTONDOWN: returns once the button is let go
+        if edge == "caption":
+            try:
+                _snap(form)
+            except Exception:
+                pass
     try:
         return _on_ui(go)
     except Exception:
         return False
+
+
+def _snap(form):
+    """Windows' Snap, which a window without a frame doesn't get: let go of the bar with the mouse at the top of a
+    screen and the window is maximised, at its left or right edge and it takes that half of the screen."""
+    from System.Windows.Forms import Cursor, Screen, FormWindowState
+    from System.Drawing import Rectangle
+    pt = Cursor.Position
+    sc = Screen.FromPoint(pt)
+    b, wa = sc.Bounds, sc.WorkingArea
+    if pt.Y <= b.Top + 1:
+        _fit_maximised(form)
+        form.WindowState = FormWindowState.Maximized
+    elif pt.X <= b.Left + 1 or pt.X >= b.Right - 2:
+        half = wa.Width // 2
+        form.WindowState = FormWindowState.Normal
+        form.Bounds = Rectangle(wa.X if pt.X <= b.Left + 1 else wa.X + wa.Width - half, wa.Y, half, wa.Height)
 
 
 def is_maximised():

@@ -10,7 +10,7 @@
 </head>
 <body>
 <header class="tbar" id="tbar" hidden>
-  <div class="tb-t"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qgt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs><path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qgt)" stroke-width="8.5" stroke-linecap="round"/><path d="M33 45l18.5 13.5H40.5z" fill="url(#qgt)"/><path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg>QUANTUM<i class="tb-live" id="tb-live" hidden>● IN GAME</i></div>
+  <div class="tb-t"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="qgt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fe3ff"/><stop offset=".55" stop-color="#2f86ff"/><stop offset="1" stop-color="#1747c9"/></linearGradient></defs><path d="M46.5 49.5A24 24 0 1 1 55.2 34" fill="none" stroke="url(#qgt)" stroke-width="8.5" stroke-linecap="round"/><path d="M33 45l18.5 13.5H40.5z" fill="url(#qgt)"/><path d="M6 51C24 45 42 34 62 17c-11 15-27 29-45 36z" fill="#eaf5ff"/></svg><span class="tb-wm" aria-label="Quantum">QU<svg class="lam" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L44.5 0 H55.5 L100 100 H89.5 L50 12 L10.5 100 Z" fill="currentColor"/></svg>NTUM</span><i class="tb-live" id="tb-live" hidden>● IN GAME</i></div>
   <div class="tb-sys" id="tb-sys" hidden></div>
   <div class="tb-wc"><button id="tb-min" title="Minimise" aria-label="Minimise"><svg viewBox="0 0 12 12"><path d="M2 6.5h8"/></svg></button><button id="tb-max" title="Maximise" aria-label="Maximise"><svg viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1"/></svg></button><button id="tb-close" class="x" title="Close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button></div>
 </header>
@@ -50,7 +50,7 @@
       <button class="tab" role="tab" data-group="navigate" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
       <button class="tab" role="tab" data-group="navigate" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab" role="tab" data-group="missions" data-tab="missions" aria-selected="false" title="Employers and factions: who hands out contracts and what they offer">Missions <span class="count" id="c-missions"></span></button>
-      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="market" aria-selected="false" hidden>Commodities <span class="count hot" id="c-watch" hidden></span></button>
+      <button class="tab uex-tab" role="tab" data-group="trade" data-tab="market" aria-selected="false" hidden>Commodities</button>
       <button class="tab uex-tab" role="tab" data-group="trade" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
       <button class="tab uex-tab" role="tab" data-group="data" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
       <button class="tab uex-tab" role="tab" data-group="ships" data-tab="fleet" aria-selected="false" hidden>My Fleet</button>
@@ -74,6 +74,7 @@
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-services" aria-selected="false" title="Services other players offer: protection, hauling, mining…">Services</button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-mine" aria-selected="false" title="Your listings, requests and trades">Listings <span class="count" id="c-pm-mine" hidden>0</span></button>
       <button class="tab" role="tab" data-group="exchange" data-tab="pm-standing" aria-selected="false" title="Your trader rating, reviews and trust">Standing</button>
+      <button class="tab uex-tab" role="tab" data-group="exchange" data-tab="alerts" aria-selected="false" hidden title="Commodity price alerts: told when a terminal sells cheap enough or pays enough">Price alerts <span class="count hot" id="c-watch" hidden></span></button>
       <button class="tab" role="tab" data-group="org" data-tab="orgs" aria-selected="false">Orgs</button>
       <button class="tab" role="tab" data-group="social" data-tab="friends" aria-selected="false" title="Your friends, friend requests and messages">Friends <span class="count" id="c-friends" hidden>0</span></button>
       <button class="tab" role="tab" data-group="social" data-tab="friendmap" aria-selected="false" title="Friends and org mates who share their location, on the map">Friend Map <span class="count" id="c-fmap" hidden>0</span></button>
@@ -220,6 +221,7 @@
     <section class="pane" id="pane-pm-services"></section>
     <section class="pane" id="pane-pm-mine"></section>
     <section class="pane" id="pane-pm-standing"></section>
+    <section class="pane" id="pane-alerts"></section>
     <section class="pane" id="pane-patchhub"></section>
     <section class="pane" id="pane-missions">
       <input class="search" id="mi-q" placeholder="Employer, faction or contract" autocomplete="off">
@@ -264,6 +266,7 @@
     <div id="wi-panel" class="pic-panel" aria-label="Wish list"></div>
     <div id="so-panel" class="pic-panel"></div>
     <div id="pm-panel" class="pic-panel"></div>
+    <div id="pa-panel" class="pic-panel"></div>
     <div id="og-panel" class="pic-panel"></div>
     <div id="ph-panel" class="pic-panel" aria-label="Patch Hub"></div>
     <div id="mi-panel" class="pic-panel" aria-label="Missions"></div>

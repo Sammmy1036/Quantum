@@ -4,7 +4,8 @@
 // piece where the game places it, coloured from the game's materials, its windows and lit signs glowing,
 // and a point of light at each of the game's own light fixtures. They're downloaded (from the Quantum
 // server, like the cities) as you get close, and take over from the map's stand-in model once the station
-// is big enough on screen to show its shape. A station without a file keeps its stand-in.
+// is big enough on screen to show its shape. A station without a file keeps its stand-in. Models already on
+// this PC load first, without the stand-in showing (see "already on this PC" below).
 //
 // The map calls Stations3D.show(o, v, d, t, f) for each station every frame (o: the map's station object,
 // v: its position relative to the floating origin, d: the camera's distance, t: the time, f: the focal
@@ -149,10 +150,50 @@ async function build(name){
     if(dots.length){ const g=new THREE.BufferGeometry(); g.setAttribute("position",new THREE.Float32BufferAttribute(dots,3));
       const mat=new THREE.PointsMaterial({color:GUIDE_C,size:7,sizeAttenuation:false,map:dotTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
       const pts=new THREE.Points(g,mat); pts.frustumCulled=false; group.add(pts); } }
-  group.visible=false; scene.add(group);
-  delete window.QSTATION[name];                      // the geometry is on the GPU now
+  scene.add(group);
+  // its shaders compiled now, in the background where the browser can, not on the frame it first shows (a hitch
+  // as you arrived); the station models share a handful of materials, so after the first one this is quick
+  try{ if(typeof renderer!=="undefined"&&renderer.compileAsync){ group.visible=true; const p=renderer.compileAsync(group,camera,scene); group.visible=false;
+    await Promise.race([p,new Promise(r=>setTimeout(r,4000))]); } }catch(_){}
+  group.visible=false;
+  delete window.QSTATION[name];                      // the geometry goes to the GPU when it's first drawn
   return {group, meta:T, span:Math.max(50,...hi.map((v,a)=>v-lo[a]))}; }
 
+// ---- Station models already on this PC (downloaded before): they load from there in a moment, so they're
+// fetched straight away (even while the camera glides, or from far off), built ahead of time for the
+// system you're in, and the stand-in isn't drawn while one is being built: the real station shows first.
+let local=null;                                  // Set of file names ("PortTressler") on this PC, once known
+const localReady=(async()=>{ try{ await new Promise(r=>{ if(window.pywebview?.api?.assets_cached) r(); else window.addEventListener("pywebviewready",r,{once:true}); setTimeout(r,15000); });
+  const r=await window.pywebview?.api?.assets_cached?.("stations");
+  local=new Set((r?.files||[]).map(f=>decodeURIComponent(f.replace(/^stations\//,"").replace(/\.js$/,"")))); }catch(_){ local=new Set(); } })();
+const isLocal=ent=>!!local&&(ent.dir||"stations")==="stations"&&local.has(ent.file);
+// Load and build one station's model (once; a failed download is tried again a minute later, up to 4 times)
+function load(name,ent){ let e=R[name];
+  if(e?.state==="failed"&&Date.now()>=e.again&&e.tries<4) e.state="idle";
+  if(e&&e.state!=="idle") return e;
+  e=R[name]=Object.assign(e||{tries:0},{state:"loading"}); e.tries++;
+  const dir=ent.dir||"stations", file=ent.file;
+  const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; note(name,`${dir}/${file}.js didn't load (try ${e.tries} of 4): not in manifest.json, or the download failed - see the asset lines in this log`); };
+  addScript(`${dir}/${encodeURIComponent(file)}.js`).then(ok=>{
+      if(ok===false) return failed();
+      if(local&&dir==="stations") local.add(file);                      // on this PC now
+      // (built under the name its file registered: the index's, which can differ from the map's)
+      return build(window.QSTATION?.[ent.station]?ent.station:name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`${dir}/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
+    .catch(failed);
+  return e; }
+// Ahead of time: the stations of the system you're in whose model is on this PC, one at a time, while the
+// camera isn't gliding and you aren't down in a 3D city (building takes a few ms a frame).
+async function prefetch(){
+  await Promise.all([getIndex(),localReady]);
+  for(;;){ await new Promise(r=>setTimeout(r,1500));
+    if(typeof S==="undefined"||!S.locs?.length||!S.system) continue;
+    if(S.anim||(typeof city3dDown==="function"&&city3dDown())) continue;
+    const todo=S.locs.filter(L=>L.system===S.system&&L.pos&&(L.type==="station"||L.type==="jump"||L.to)).map(L=>[L,entry(L)])
+      .filter(([L,ent])=>ent&&isLocal(ent)&&(!R[L.name]||R[L.name].state==="idle"));
+    if(!todo.length) continue;
+    const [L,ent]=todo[0], e=load(L.name,ent);
+    while(e.state==="loading") await new Promise(r=>setTimeout(r,100)); } }
+prefetch();
 const Rm=new THREE.Matrix4(), Rz=new THREE.Matrix4(), Off=new THREE.Vector3();
 function show(o,v,d,t,f){
   const name=o.L.name;
@@ -161,24 +202,17 @@ function show(o,v,d,t,f){
   if(!ent){ if(typeof S!=="undefined"&&S.selected?.name===name&&d<LOAD_KM*1000)
       note(name,`no 3D model listed for it in stations/index.js${OUTPOSTS?" or outposts/index.js":""} (${Math.floor(index.size/3)} stations listed; is the server's index.js the latest, and Quantum restarted since?)`);
     return false; }
-  const file=ent.file;
   let e=R[name];
-  // a download that didn't come through (a dropped connection) is tried again a minute later, up to 4 times
-  if(e?.state==="failed"&&Date.now()>=e.again&&e.tries<4){ e.state="idle"; }
-  if(!e||e.state==="idle"){ const picked=typeof S!=="undefined"&&(S.selected?.name===name||S.focus?.name===name);
-    if(d>LOAD_KM*1000&&!picked) return false;
-    // not while the camera glides past on its way somewhere else, nor from down in a 3D city (a station
-    // overhead is a dot from there): it's fetched once the camera settles nearby instead
-    if(!picked&&((typeof S!=="undefined"&&S.anim)||(typeof city3dDown==="function"&&city3dDown()))) return false;
-    e=R[name]=Object.assign(e||{tries:0},{state:"loading"}); e.tries++;
-    const dir=ent.dir||"stations";
-    const failed=()=>{ e.state="failed"; e.again=Date.now()+60000; note(name,`${dir}/${file}.js didn't load (try ${e.tries} of 4): not in manifest.json, or the download failed - see the asset lines in this log`); };
-    addScript(`${dir}/${encodeURIComponent(file)}.js`).then(ok=>{
-        if(ok===false) return failed();
-        // (built under the name its file registered: the index's, which can differ from the map's)
-        return build(window.QSTATION?.[ent.station]?ent.station:name).then(b=>{ if(b) Object.assign(e,b,{state:"ready"}); else { e.state="none"; note(name,`${dir}/${file}.js loaded but has no models to draw (it may not have registered under this name)`); } }); })
-      .catch(failed);
-    return false; }
+  const here=isLocal(ent);                                    // its model is on this PC
+  if(!e||e.state==="idle"||e.state==="failed"){ const picked=typeof S!=="undefined"&&(S.selected?.name===name||S.focus?.name===name);
+    // A model still to download: only when it's close (or picked), not while the camera glides past on its way
+    // somewhere else, nor from down in a 3D city (a station overhead is a dot from there). One on this PC: now.
+    if(!here){ if(d>LOAD_KM*1000&&!picked) return false;
+      if(!picked&&((typeof S!=="undefined"&&S.anim)||(typeof city3dDown==="function"&&city3dDown()))) return false; }
+    e=load(name,ent); }
+  // being built from this PC's copy (well under a second): nothing rather than the stand-in, so the stand-in
+  // doesn't show first and then swap for the real station
+  if(e.state==="loading") return here&&d<LOAD_KM*1000;
   if(e.state!=="ready") return false;
   const k=o.ground?1:Math.max(1,MIN_PX*d/(e.span*f));              // scaled up when it would be smaller than MIN_PX (not on the ground)
   // the game's turn for the station, in its planet's frame (which turns with the planet) or the system's

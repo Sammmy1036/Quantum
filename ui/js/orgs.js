@@ -61,7 +61,47 @@ async function ogLoadMine(){ const r=await ogCall("mine"); S.og.mine=r.ok?r:{err
 async function ogOpen(id,quiet){ S.og.cur=id; S.og.view="org"; if(!quiet||S.og.data?.org?.id!==id){ S.og.data=null; S.og.ev=null; S.og.evForm=null; S.og.rankEdit=null; S.og.form=null; } ogPane(); ogRender();
   const r=await ogCall(`org?id=${id}`); if(S.og.cur!==id) return; S.og.data=r.ok?r:{error:r.error}; if(!r.ok&&r.error) toast(r.error);
   if(r.ok&&!r.member) S.og.tab="overview"; ogRender(); }
-function ogApply(r){ if(r.ok&&r.org){ S.og.data=r; ogRender(); ogLoadMine(); } else if(!r.ok) toast(r.error); return r; }
+function ogApply(r){ if(r.ok&&r.org){ S.og.data=r; ogRender(); S.og.allEvAt=0; ogLoadMine(); } else if(!r.ok) toast(r.error); return r; }
+
+// ---- The sidebar's mini calendar: every event of every org you're in, on one month (not tied to the org open
+// on the right). A dot per org on each day with events; pick a day for its events (today's, or the next few
+// coming up, until you do); click one to open its org's calendar at it.
+const OG_DOT=["#7fe7ff","#f2c14e","#ff7ab6","#57e39b","#c99bff","#ffb454","#4b8dff","#ff8a7a"];
+async function ogMiniLoad(force){ const orgs=S.og.mine?.orgs||[]; if(!orgs.length) return;
+  if(!force&&S.og.allEv&&Date.now()-(S.og.allEvAt||0)<120000) return;
+  if(S.og.allEvBusy) return; S.og.allEvBusy=true; S.og.allEvAt=Date.now();
+  try{ const got=await Promise.all(orgs.map(o=>ogCall(`org?id=${o.id}`).then(r=>({o,r})).catch(()=>({o,r:null}))));
+    const list=[]; got.forEach(({o,r},i)=>{ for(const e of r?.ok?r.events||[]:[]) list.push({...e,org:{id:o.id,name:o.name,tag:o.tag,dot:OG_DOT[i%OG_DOT.length]}}); });
+    S.og.allEv=list.sort((a,b)=>a.starts-b.starts); }
+  finally{ S.og.allEvBusy=false; }
+  const M=$("og-mini"); if(M){ M.innerHTML=ogMiniHtml(); ogMiniWire(); } }
+function ogMiniHtml(){ const now=new Date(), key=x=>x.toDateString();
+  const m0=S.og.miniMonth||(S.og.miniMonth=new Date(now.getFullYear(),now.getMonth(),1));
+  const first=new Date(m0.getFullYear(),m0.getMonth(),1), start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
+  const days=[...Array(42)].map((_,i)=>{ const x=new Date(start); x.setDate(start.getDate()+i); return x; });
+  const evs=S.og.allEv||[], byDay={}; for(const e of evs){ const k=key(new Date(e.starts*1000)); (byDay[k]=byDay[k]||[]).push(e); }
+  const sel=S.og.miniDay, nowS=Date.now()/1000;
+  const list=sel?(byDay[sel]||[]):evs.filter(e=>e.starts+(e.minutes||60)*60>nowS).slice(0,3);
+  const t=e=>new Date(e.starts*1000), when=e=>sel?t(e).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):t(e).toLocaleDateString([], {weekday:"short",day:"numeric",month:"short"})+" "+t(e).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+  const orgsN=new Set(evs.map(e=>e.org.id)).size;
+  return `<div class="og-mini-h"><b>${m0.toLocaleDateString([], {month:"long",year:"numeric"})}</b><span class="spacer"></span>
+      <button class="iconbtn" data-ogmm="-1" aria-label="Previous month">‹</button><button class="iconbtn" data-ogmm="0" title="This month">•</button><button class="iconbtn" data-ogmm="1" aria-label="Next month">›</button></div>
+    <div class="og-mini-cal">${["M","T","W","T","F","S","S"].map(x=>`<i>${x}</i>`).join("")}${days.map(x=>{ const k=key(x), es=byDay[k]||[], dots=[...new Map(es.map(e=>[e.org.id,e.org.dot])).values()].slice(0,3);
+        return `<button class="d ${x.getMonth()!==m0.getMonth()?"out":""} ${k===key(now)?"today":""} ${k===sel?"sel":""} ${es.length?"has":""}" data-ogmd="${esc(k)}" title="${es.length?es.map(e=>`${esc(e.title)} · ${esc(e.org.tag||e.org.name)}`).join("&#10;"):""}">${x.getDate()}<span class="dots">${dots.map(c=>`<s style="background:${c}"></s>`).join("")}</span></button>`; }).join("")}</div>
+    <div class="og-mini-l"><div class="og-mini-k">${sel?new Date(sel).toLocaleDateString([], {weekday:"long",day:"numeric",month:"long"}):"Coming up"}${orgsN>1&&!sel?` <span class="muted">· all your orgs</span>`:""}</div>
+      ${S.og.allEv==null?`<div class="muted" style="font-size:12px">Loading…</div>`:list.length?list.map(e=>`<div class="og-mini-e" data-ogmev="${e.id}" data-ogmorg="${e.org.id}" data-ogmat="${e.starts}" title="Open it in ${esc(e.org.name)}'s calendar">
+          <s style="background:${e.org.dot}"></s><span class="tm">${esc(when(e))}</span><span class="ti">${esc(e.title)}</span><span class="tg">${esc(e.org.tag||"")}</span></div>`).join("")
+        :`<div class="muted" style="font-size:12px">${sel?"Nothing that day.":"Nothing planned in your orgs."}</div>`}</div>`; }
+function ogMiniWire(){ const M=$("og-mini"); if(!M) return;
+  M.onclick=async e=>{ const mm=e.target.closest("[data-ogmm]"), d=e.target.closest("[data-ogmd]"), ev=e.target.closest("[data-ogmev]");
+    if(mm){ const k=+mm.dataset.ogmm, m=S.og.miniMonth, n=new Date(); S.og.miniMonth=k?new Date(m.getFullYear(),m.getMonth()+k,1):new Date(n.getFullYear(),n.getMonth(),1); if(!k) S.og.miniDay=null; }
+    else if(d){ S.og.miniDay=S.og.miniDay===d.dataset.ogmd?null:d.dataset.ogmd; }
+    else if(ev){ const id=+ev.dataset.ogmev, org=+ev.dataset.ogmorg, at=new Date(+ev.dataset.ogmat*1000);
+      S.og.tab="calendar"; S.og.month=new Date(at.getFullYear(),at.getMonth(),1);
+      await ogOpen(org); if(S.og.cur!==org) return; S.og.ev=id; ogRender();
+      setTimeout(()=>document.getElementById("og-ev-"+id)?.scrollIntoView({behavior:"smooth",block:"center"}),60); return; }
+    else return;
+    M.innerHTML=ogMiniHtml(); ogMiniWire(); }; }
 
 // ---- sidebar
 function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
@@ -75,6 +115,7 @@ function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
     ${m?orgs.length?orgs.map(o=>`<div class="so-row click ${S.og.view==="org"&&S.og.cur===o.id?"on":""}" data-ogopen="${o.id}">${ogLogo(o,1)}<div class="who"><b>${esc(o.name)}${o.verified?` <span style="color:#9fe0b4" title="Verified with RSI">✓</span>`:""}</b><small>[${esc(o.tag)}] · ${esc(o.my_rank||"")}</small></div></div>`).join("")
       :`<div class="so-empty">You're not in an org yet. Create one, or find one to join.</div>`:`<div class="so-empty">Loading…</div>`}
     ${req.length?`<div class="so-h">Waiting to join</div>${req.map(r=>`<div class="so-row click" data-ogopen="${r.org.id}">${ogLogo(r.org,1)}<div class="who"><b>${esc(r.org.name)}</b><small>Request sent ${soAgo(r.at)}</small></div></div>`).join("")}`:""}`;
+  if(orgs.length){ P.insertAdjacentHTML("beforeend",`<div class="og-mini" id="og-mini">${ogMiniHtml()}</div>`); ogMiniWire(); ogMiniLoad(); }
   for(const b of P.querySelectorAll("[data-ogopen]")) b.onclick=()=>{ S.og.tab="overview"; ogOpen(+b.dataset.ogopen); };
   for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",about:"",recruiting:true}; ogPane(); ogRender(); };
   for(const b of P.querySelectorAll("[data-ogfind]")) b.onclick=()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); };
@@ -129,7 +170,8 @@ function ogOrgHtml(){ const d=S.og.data; if(!d) return `<div class="og-body"><di
   if(d.error) return `<div class="og-body"><div class="note">${esc(d.error)}</div></div>`;
   const o=d.org, perms=new Set(d.perms||[]), now=Date.now()/1000;
   const up=(d.events||[]).filter(e=>e.starts+(e.minutes||60)*60>now), online=(d.members||[]).filter(m=>m.online).length;
-  const hero=`${o.banner?`<div class="og-banner" style="background-image:url('${esc(o.banner)}')"></div>`:""}<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
+  const upb=typeof upBackBtn==="function"?upBackBtn("orgs",true):"";
+  const hero=`${upb?`<div class="row" style="margin:0 0 12px">${upb}</div>`:""}${o.banner?`<div class="og-banner" style="background-image:url('${esc(o.banner)}')"></div>`:""}<div class="og-hero">${ogLogo(o)}<div style="min-width:0"><h2>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span>${ogVer(o)}</h2>${o.slogan?`<div class="og-slogan">${esc(o.slogan)}</div>`:""}
     <div class="og-stats"><span><b>${o.members}</b> member${o.members===1?"":"s"}</span>${d.member?`<span><b>${online}</b> online</span><span>Your rank: ${ogRankIcon((d.ranks||[]).find(r=>r.id===d.my_rank),16)} <b>${esc(o.my_rank||"")}</b>${perms.has("owner")?" · Owner":""}</span>${up[0]?`<span>Next: <b>${esc(up[0].title)}</b> ${ogTime(up[0].starts)}</span>`:""}`:`<span>${o.recruiting?"Recruiting":"Invite only"}</span>`}</div></div>
     ${o.verified&&o.rsi_url?`<div class="og-rsi"><button class="btn og-rsi-btn" data-ogurl="${esc(o.rsi_url)}" title="View ${esc(o.tag)} on RSI" aria-label="View ${esc(o.tag)} on RSI">${RSI_ICON}</button>${!d.member&&o.recruiting?`<span class="muted">Apply on RSI too, so you show in their roster in game</span>`:""}</div>`:""}</div>`;
   if(!d.member) return hero+`<div class="og-body"><div class="og-grid2"><div><div class="pm-sec" style="margin-top:0">About</div>${ogAboutHtml(o)}

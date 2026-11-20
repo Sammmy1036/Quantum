@@ -28,7 +28,10 @@ function soApply(r){ if(!r) return; const was=JSON.stringify([S.so.signed,S.so.s
     if(n.request) toast(`${n.name} sent you a friend request`);
     else if(!(S.tab==="friends"&&S.so.open===n.from)) toast(`${n.name}: ${n.body}`); }
   if(S.tab==="friends"&&JSON.stringify([S.so.signed,S.so.st])!==was){ renderSocialLists(); if(!S.so.open||!S.so.conv) renderSocialPanel(); else soHead(); } }
-async function openSocial(){ renderSocialPane(); renderSocialPanel(); soApply(await api().social_get(true));
+// Opening Social starts with no conversation open: one opens when you click a friend (or Message on someone's
+// card, which asks for it: S.so.want). Before, the last one reopened with its message box taking the cursor.
+async function openSocial(){ if(S.so.want){ S.so.open=S.so.want; S.so.focus=true; } else if(S.so.open){ S.so.open=null; S.so.conv=null; S.so.ask=null; }
+  S.so.want=null; renderSocialPane(); renderSocialPanel(); soApply(await api().social_get(true));
   renderSocialPane(); if(S.so.open) soLoadConv(true); }
 // Checks for new messages and requests every 4 s, whichever section is open (cheap: Python already has them)
 if(!S.soWatch) S.soWatch=setInterval(soTick,4000);
@@ -51,7 +54,12 @@ function renderSocialPane(){ const P=$("pane-friends"); if(!P) return;
 function renderSocialLists(){ const L=$("so-lists"), M=$("so-me"); if(!L||!M) return; const st=S.so.st;
   if(!st||st.status!=="ok"){ L.innerHTML=`<div class="so-empty">${S.so.err?esc(S.so.err):"Loading…"}</div>`; return; }
   const me=st.me||{};
-  M.innerHTML=`${soAvDot({name:me.name,avatar:(typeof pfPhoto==="function"?pfPhoto():null),online:S.so.my!=="invisible",status:S.so.my})}<span class="nm">${esc(me.name||"You")}${me.username_auto?`<small class="so-tag" title="Your username: people find you by it"><span>Your username</span><a style="cursor:pointer;text-decoration:underline" data-souname="1">Choose</a></small>`:""}</span>
+  // Your picture and name are drawn again with every check (every 4 s when something changed); the status
+  // menu is made once and kept, so an open menu isn't closed under you by the next check
+  const meHead=`${soAvDot({name:me.name,avatar:(typeof pfPhoto==="function"?pfPhoto():null),online:S.so.my!=="invisible",status:S.so.my})}<span class="nm">${esc(me.name||"You")}${me.username_auto?`<small class="so-tag" title="Your username: people find you by it"><span>Your username</span><a style="cursor:pointer;text-decoration:underline" data-souname="1">Choose</a></small>`:""}</span>`;
+  const pres=$("so-pres"), hd=$("so-me-h");
+  if(pres&&hd&&M.contains(pres)){ hd.innerHTML=meHead; if(document.activeElement!==pres) pres.value=S.so.my||"online"; }
+  else M.innerHTML=`<span id="so-me-h" style="display:contents">${meHead}</span>
     <select class="field" id="so-pres" title="What your friends see">${Object.entries(SO_PRES).map(([k,v])=>`<option value="${k}" ${S.so.my===k?"selected":""}>${v}</option>`).join("")}</select>`;
   // Your username: offered once to people who got one made for them, and any time from "Change"
   const un=$("so-uname"), showUn=me.username_auto&&(S.so.unameEdit||!S.so.unameDismissed);
@@ -110,8 +118,9 @@ function soWire(root){
     if(S.so.showBlocked){ const r=await api().social_blocked(); S.so.blocked=r.ok?r.people:[]; renderSocialLists(); } }; }
 
 // ---- the conversation
-function soOpen(id){ if(S.tab!=="friends"){ S.so.open=id; return document.querySelector('.tab[data-tab="friends"]').click(); }
+function soOpen(id){ if(S.tab!=="friends"){ S.so.want=id; S.so.conv=null; S.so.ask=null; return document.querySelector('.tab[data-tab="friends"]').click(); }
   if(S.so.open!==id){ S.so.open=id; S.so.conv=null; S.so.ask=null; }
+  S.so.focus=true;                                  // you opened it: the message box takes the cursor (once)
   renderSocialLists(); renderSocialPanel(); soLoadConv(true); }
 async function soLoadConv(scroll){ const id=S.so.open; if(!id) return; const r=await api().social_messages(id); if(S.so.open!==id) return;
   if(!r.ok){ if(!S.so.conv){ S.so.conv={error:r.error}; renderSocialPanel(); } return; }
@@ -136,7 +145,7 @@ function renderSocialPanel(){ const P=$("so-panel"); if(!P) return;
   const T=$("so-text"); if(T){ T.value=S.so.draft[id]||""; const fit=()=>{ T.style.height="auto"; T.style.height=Math.min(140,T.scrollHeight)+"px"; }; fit();
     T.oninput=()=>{ S.so.draft[id]=T.value; fit(); };
     T.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); soSend(); } };
-    $("so-send").onclick=soSend; $("so-wpbtn").onclick=e=>wpSharePick(e.currentTarget,id); setTimeout(()=>T.focus(),30); } }
+    $("so-send").onclick=soSend; $("so-wpbtn").onclick=e=>wpSharePick(e.currentTarget,id); if(S.so.focus){ S.so.focus=false; setTimeout(()=>T.focus(),30); } } }
 function soHead(){ const H=$("so-head"); if(!H) return; const id=S.so.open, w=soFriend(id)||S.so.conv?.with; if(!w) return;
   const k=JSON.stringify([w,S.so.ask,S.so.conv?.friends]); if(H.dataset.k===k) return; H.dataset.k=k;
   const isF=!!soFriend(id);

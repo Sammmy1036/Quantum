@@ -536,7 +536,7 @@ function buildStations(){
   window.Stations3D?.ready?.().then(()=>{ if(gen!==stationGen) return; const have=new Set(stationObjs.map(o=>o.L.name));
     for(const L of S.locs||[]) if(L.pos&&L.system===S.system&&!have.has(L.name)&&window.Stations3D.has(L)) stationObjs.push({L,group:null,ground:true}); }); }
 function updateStations(t){ const f=H/2/Math.tan(camera.fov*Math.PI/360), on=S.layers?.station!==false, v=new THREE.Vector3();
-  for(const o of stationObjs){ const g=on?globalPos(o.L,t):null; if(!g){ if(o.group) o.group.visible=false; window.Stations3D?.hide(o); continue; }
+  for(const o of stationObjs){ const g=on&&!(S.layers.wikelo===false&&isWikelo(o.L))?globalPos(o.L,t):null; if(!g){ if(o.group) o.group.visible=false; window.Stations3D?.hide(o); continue; }
     v.set(g[0]-O[0],g[1]-O[1],g[2]-O[2]); const d=camera.position.distanceTo(v);
     if(d>(o.ground?2e6:1.6e7)){ if(o.group) o.group.visible=false; window.Stations3D?.hide(o); continue; }       // whole-system view: just the marker
     // The game's own model (stations3d.js), once it's downloaded, takes the stand-in's place
@@ -655,7 +655,10 @@ const STATION_VIEW=45000, STATION_MIN=10;     // open a station 45 km out; the w
 const isStation=L=>!!L&&L.type==="station"&&!(L.kind==="surface"&&!isOrbital(L));
 function stationFocus(){ const f=S.focus; return f&&f.kind==="loc"&&isStation(S.locMap[f.name])?S.locMap[f.name]:null; }  // looking down, slightly from the south: north is up
 function focusLoc(name,close=false){ const L=S.locMap[name]; if(!L) return; if(S.follow) setFollow(false); if(L.system!==S.system) setSystem(L.system,false); if(!L.pos) return;
-  if(L.kind==="surface"&&!isOrbital(L)){ const b=S.bodyMap[L.body]; flyTo({kind:"loc",name}, close?Math.max(15000,b.radius*0.06):b.radius*1.4, TOPDOWN); }
+  // close: 6% of the planet's radius (about 60 km on microTech or Hurston), at most 60 km: on a gas giant 6% was
+  // ~450 km (Crusader), so Orison was a speck. A 3D city can ask for its own distance (closeDist: Orison's 35 km).
+  if(L.kind==="surface"&&!isOrbital(L)){ const b=S.bodyMap[L.body], own=close&&typeof city3dFor==="function"?city3dFor(name)?.closeDist?.(name):null;
+    flyTo({kind:"loc",name}, close?(own||Math.min(60000,Math.max(15000,b.radius*0.06))):b.radius*1.4, TOPDOWN); }
   else flyTo({kind:"loc",name}, isStation(L)?STATION_VIEW:(close?60000:4e6)); }
 // Follow: when your position changes (a /showlocation, a landing, a jump, a stop ticked off), the view
 // moves with you: you and your next stop if there's a route, otherwise just you. Dragging or zooming the
@@ -716,6 +719,8 @@ function drawMarkLabels(t){
       ctx.save(); ctx.globalAlpha=.55; ctx.strokeStyle=m.color; ctx.lineWidth=1; ctx.beginPath();
       ctx.moveTo(q[0]+(toLeft?-6:6),q[1]+6); ctx.lineTo(ex,y-4); ctx.stroke(); ctx.restore(); }
     label(text,x,y,{color:m.color,font,force:true}); } }
+// A place's name, just drawn by label(), can be clicked like its icon (the box label() just took)
+function namePick(name,depth,kind="loc"){ const b=labelBoxes[labelBoxes.length-1]; if(b) S.picks.push({kind,name,box:b,x:(b[0]+b[2])/2,y:(b[1]+b[3])/2,r:0,depth}); }
 function label(text,x,y,{color="#c3cee0",font="500 12px 'Inter',Segoe UI,sans-serif",force=false,align="left"}={}){
   ctx.font=font; const w=ctx.measureText(text).width, h=14, lx=align==="center"?x-w/2:x;
   if(!force && !labelFree(lx-2,y-h+3,w+4,h+2)) return false; if(force) labelBoxes.push([lx-2,y-h+3,lx+w+2,y+5]);
@@ -837,7 +842,7 @@ function drawOverlay(t){
     if(pr<3){ const gi=b.kind==="moon"?"moon":b.kind==="planet"?"planet":b.kind==="asteroid"?"asteroid":null;   // the game's marks when tiny
       if(!(gi&&drawGameIcon(ctx,gi,q[0],q[1],b.kind==="planet"?15:12,"#8fa9d0"))){
         ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); } }
-    S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),pr,depth:q[2]});
+    S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,12),pr,depth:q[2]});
     bodyLabels.push([b,q,pr]); }
   // ---- locations
   const drawn=[];
@@ -845,7 +850,7 @@ function drawOverlay(t){
   for(const L of S.locs){ if(L.system!==S.system||!L.pos) continue;
     const special = stopIdx[L.name] || L.name===selName || L.name===guide?.name || S.preview?.includes(L.name) || S.mapMarks?.some(m=>m.name===L.name);
     const isWp = L.source==="user" || L.source==="mission";
-    if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]) continue;
+    if(!special){ if(isWp){ if(!S.show.waypoints || (L.source==="user"&&!L.pinned)) continue; } else if(!S.layers[L.type]||(S.layers.wikelo===false&&isWikelo(L))) continue;
       if(L.mergedInto && S.layers[S.locMap[L.mergedInto]?.type]) continue; }   // shown as its station
     // Orbital markers float well clear of the planet, so they show from further out than ground places.
     let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:L.type==="om"?14:70) && !special) continue; }
@@ -856,7 +861,7 @@ function drawOverlay(t){
   for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; const col=TYPES[L.type]?.color||"#aab", gi=locIcon(L);
     // the game's own symbol where there is one (stations, outposts, mining, spaceports, Wikelo), else the drawn shape
     if(!(gi&&drawGameIcon(ctx,gi,q[0],q[1],gi==="spaceport"||gi==="wikelo"||L.type==="city"?19:16,col))) glyph(L.type,q[0],q[1],L.type==="city"?4.5:3.6,col);
-    S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:9,depth:q[2]}); }
+    S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:11,depth:q[2]}); }
   // ---- mission markers
   const marks=missionMarks(t);
   for(const m of marks){ const q=proj(m.g); if(!q||!visible(m.g,m.body)) continue; if(!drawGameIcon(ctx,"objective",q[0],q[1]-14,17,"#ff5fa8")) diamond(q[0],q[1],"#ff5fa8");   // the game's objective mark
@@ -905,15 +910,15 @@ function drawOverlay(t){
   if(S.preview) for(const n of S.preview){ const nd=nodeOf(n,t), q=nd&&proj(nd.g); if(!q) continue;
     ctx.beginPath(); ctx.arc(q[0],q[1],9,0,Math.PI*2); ctx.strokeStyle="#57e39b"; ctx.lineWidth=2; ctx.stroke();
     label(`${S.previewLabels?.[n]||""} · ${n}`,q[0]+14,q[1]+18,{color:"#8ff0bd",font:"600 12.5px 'Inter',sans-serif",force:true}); }
-  for(const d of drawn){ if(!d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; label(d.L.name,d.q[0]+14,d.q[1]-8,{color:d.L.source==="mission"?"#ffb3d6":"#c9ffb3",font:"600 12px 'Inter',sans-serif"}); }
+  for(const d of drawn){ if(!d.isWp||stopIdx[d.L.name]||d.L.name===selName) continue; if(label(d.L.name,d.q[0]+14,d.q[1]-8,{color:d.L.source==="mission"?"#ffb3d6":"#c9ffb3",font:"600 12px 'Inter',sans-serif"})) namePick(d.L.name,d.q[2]); }
   bodyLabels.sort((a,b)=>b[0].radius-a[0].radius);
   for(const [b,q,pr] of bodyLabels){ if(b.kind==="moon"&&pr<1.2&&S.cam.dist>2e10) continue;
     if(city3dDown()) continue;               // down in a 3D city: other worlds' names don't float over the ground
-    label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"}); }
+    if(label(b.name,q[0],q[1]-Math.max(pr,4)-8,{color:b.kind==="star"?"#ffd98a":"#9fb8dd",font:"600 13px 'Exo 2',Bahnschrift,sans-serif",align:"center",force:b.kind!=="moon"})) namePick(b.name,q[2],"body"); }
   for(const d of drawn){ if(d.isWp||stopIdx[d.L.name]||d.L.name===selName||d.L.name===S.youAt) continue;
     if(d.L.type==="om"){ if(d.bodyPx>=40) label(d.L.name.replace(/\s*\(.*\)$/,""),d.q[0]+8,d.q[1]+4,{color:TYPES.om.color}); continue; }
     if(d.L.kind==="surface"&&d.bodyPx<220&&d.L.type!=="city"&&!(d.L.type==="station"&&S.bodyMap[d.L.body]?.kind==="asteroid")) continue;
-    label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined}); }
+    if(label(d.L.name,d.q[0]+8,d.q[1]+4,{color:d.L.type==="city"?"#ffffff":"#b7c3d8",font:d.L.type==="city"?"600 12.5px 'Inter',sans-serif":undefined})) namePick(d.L.name,d.q[2]); }
   // ---- off-screen pointers for the guide target and next stop
   if(gnode) edgeArrow(gnode.g,"#7fe7ff",`${guide.name}${guide.ground!=null?" · "+fmtDist(guide.ground):guide.distance!=null?" · "+fmtDist(guide.distance):""}`);
   // camera readout
@@ -1049,7 +1054,8 @@ function stopAnim(){ if(!S.anim) return;
   if(sb&&S.bodyMap[sb]){ S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(S.bodyMap[sb],S.cam.target,viewT())}; return; }  // stay on the globe
   const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
   S.anim=null; S.focus={kind:"point",pos:[...S.cam.target]}; setLock(null); S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
-ov.addEventListener("pointerdown",e=>{ stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
+let downHit=null;
+ov.addEventListener("pointerdown",e=>{ { const r=ov.getBoundingClientRect(); downHit=pick(e.clientX-r.left,e.clientY-r.top); } stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
   try{ ov.setPointerCapture(e.pointerId); }catch(_){} $("help").style.display="none"; });
 const endDrag=()=>{ drag=null; ov.classList.remove("dragging"); };
 window.addEventListener("pointerup",endDrag); window.addEventListener("pointercancel",endDrag);
@@ -1141,7 +1147,7 @@ function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) re
     if(back){ select({kind:"loc",name:back.name}); if(back.pos) focusLoc(back.name,false); } else select(null);
     toast(`Jumped to ${to}`); }
   else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
-ov.addEventListener("click",e=>{ if(moved) return; const r=ov.getBoundingClientRect(); const hit=pick(e.clientX-r.left,e.clientY-r.top);
+ov.addEventListener("click",e=>{ if(moved) return; const r=ov.getBoundingClientRect(); const hit=downHit||pick(e.clientX-r.left,e.clientY-r.top); downHit=null;
   if(e.detail===3 && hit?.kind==="loc" && jumpTarget(S.locMap[hit.name])) return jumpThrough(hit.name);
   if(!hit) return select(null); if(hit.kind==="friend") return fmPickFriend(hit.id); if(hit.kind==="mission"){ const L=hit.mission.o.location; select(L?{kind:"loc",name:L}:{kind:"mission",m:hit.mission}); return; }
   select({kind:hit.kind,name:hit.name}); });
@@ -1151,12 +1157,13 @@ ov.addEventListener("dblclick",e=>{ const r=ov.getBoundingClientRect(); const hi
   else if(hit.kind==="mission"){ const m=hit.mission; if(m.o.marker){ if(!m.o.marker.body) flyTo({kind:"point",pos:m.o.marker.pos},60000);
       else flyTo({kind:"local",body:m.o.marker.body,pos:m.o.marker.pos}, Math.max(15000,S.bodyMap[m.o.marker.body].radius*0.06), TOPDOWN); } }
   else focusLoc(hit.name,true); });
-function pick(x,y){ let best=null,bs=1e9; for(const p of S.picks){ const d=Math.hypot(p.x-x,p.y-y); if(d>p.r) continue;
+function pick(x,y){ let best=null,bs=1e9; for(const p of S.picks){
+  const d=p.box?(x>=p.box[0]&&x<=p.box[2]&&y>=p.box[1]-2&&y<=p.box[3]+2?4:Infinity):Math.hypot(p.x-x,p.y-y); if(d>(p.box?4:p.r)) continue;
   const score=(p.kind==="body"?d+30:d); if(score<bs){ bs=score; best=p; } }
   // Zoomed out, a planet's moons sit a few pixels from it and a click on the planet kept landing on one. While
   // the moon is only a dot and sits close to its planet on screen, the click goes to the planet: to reach a
   // moon, zoom in (or search for it).
-  if(best?.kind==="body"){ const b=S.bodyMap[best.name], par=b?.kind==="moon"&&b.parent?S.picks.find(p=>p.kind==="body"&&p.name===b.parent):null;
+  if(best?.kind==="body"&&!best.box){ const b=S.bodyMap[best.name], par=b?.kind==="moon"&&b.parent?S.picks.find(p=>p.kind==="body"&&p.name===b.parent):null;
     if(par&&(best.pr??0)<6&&Math.hypot(par.x-best.x,par.y-best.y)<Math.max(36,par.r*2.5)&&Math.hypot(par.x-x,par.y-y)<Math.max(36,par.r*2.5)) best=par; }
   return best; }
 const tip=$("tooltip");

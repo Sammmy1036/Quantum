@@ -458,6 +458,11 @@ async function drPriceJobClick(e){ const a=e.target.closest("[data-pj]"); if(!a)
 // most approved reports, then star rating.
 function drAv(x,cls){ const ini=esc((x.username||"?")[0].toUpperCase()), pic=x.avatar||x.avatar_url;
   return `<div class="${cls}">${pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'${ini}'}))">`:`<span>${ini}</span>`}</div>`; }
+// What clicking someone on the leaderboard opens: you, your own Profile page; anyone else with a Quantum
+// account, their profile card. -> attributes for the element
+const drWho=(x,you)=>you?` data-myprof="1" title="Open your profile"`:x.profile?` data-upid="${esc(x.profile)}" title="View ${esc(x.username)}'s profile"`:"";
+document.addEventListener("click",e=>{ const n=e.target.closest?.("[data-myprof]"); if(!n) return; e.stopPropagation(); e.preventDefault();
+  if(typeof openProfileView==="function") openProfileView("overview"); },true);
 const drRankBadge=name=>`<span class="rank-badge r${Math.max(0,DR_RANKS.findIndex(r=>r[1]===name))}">${esc(name)}</span>`;
 async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
   if(!P.querySelector(".dr-top10")) P.innerHTML=`${drViews()}${qLoader("Loading the top datarunners…")}`;
@@ -468,13 +473,13 @@ async function renderDrTop(force){ const d=S.dr, P=$("dr-panel");
   const since=ts=>ts?new Date(ts*1000).toLocaleDateString([], {month:"short",year:"numeric"}):null;
   const one=top[0];
   const hero=one?`<div class="top-hero ${you(one)?"you":""}">
-      <div class="crown">#1</div>${drAv(one,"av")}
-      <div class="who"><div class="lbl">Top datarunner</div><h2>${one.profile?`<span class="up-name" data-upid="${esc(one.profile)}" title="View profile">${esc(one.username)}</span>`:esc(one.username)}${you(one)?` <span class="you-tag">You</span>`:""}</h2>
+      <div class="crown">#1</div><div class="av-link"${drWho(one,you(one))}>${drAv(one,"av")}</div>
+      <div class="who"><div class="lbl">Top datarunner</div><h2>${one.profile||you(one)?`<span class="up-name"${drWho(one,you(one))}>${esc(one.username)}</span>`:esc(one.username)}${you(one)?` <span class="you-tag">You</span>`:""}</h2>
         <div class="rk">${drRankBadge(one.rank)} ${drStarBar(one.rated?one.stars:0,20)} <b>${one.rated?one.stars.toFixed(1):"–"}</b>${since(one.since)?`<span class="muted">Datarunner since ${since(one.since)}</span>`:""}</div></div>
       <div class="big">${[[one.approved,"Approved reports"],[one.prices,"Prices approved"],[one.terminals,"Terminals"],[one.stations,"Stations mapped"],[one.week,"This week"]]
         .map(([n,l])=>`<div><b>${(n||0).toLocaleString()}</b><span>${l}</span></div>`).join("")}</div></div>`:"";
-  const row=x=>`<div class="top-row ${you(x)?"you":""} p${x.place}${x.profile?" has-prof":""}"${x.profile?` data-upid="${esc(x.profile)}" title="View ${esc(x.username)}'s profile"`:""}><div class="pl">${x.place}</div>${drAv(x,"av")}
-      <div class="nm"><b${x.profile?` class="up-name" data-upid="${esc(x.profile)}" title="View ${esc(x.username)}'s profile"`:` title="${esc(x.username)} hasn't linked a Quantum account, so there's no profile to open"`}>${esc(x.username)}</b>${you(x)?` <span class="you-tag">You</span>`:""}<div>${drRankBadge(x.rank)}</div></div>
+  const row=x=>`<div class="top-row ${you(x)?"you":""} p${x.place}${x.profile||you(x)?" has-prof":""}"${drWho(x,you(x))}><div class="pl">${x.place}</div>${drAv(x,"av")}
+      <div class="nm"><b${x.profile||you(x)?` class="up-name"${drWho(x,you(x))}`:` title="${esc(x.username)} hasn't linked a Quantum account, so there's no profile to open"`}>${esc(x.username)}</b>${you(x)?` <span class="you-tag">You</span>`:""}<div>${drRankBadge(x.rank)}</div></div>
       <div class="st">${drStarBar(x.rated?x.stars:0,14)} <b>${x.rated?x.stars.toFixed(1):"–"}</b></div>
       <div class="n"><b>${x.approved.toLocaleString()}</b><span>approved</span></div><div class="n"><b>${x.sent.toLocaleString()}</b><span>sent</span></div>
       <div class="n"><b>${x.prices}</b><span>prices</span></div><div class="n"><b>${x.terminals}</b><span>terminals</span></div>

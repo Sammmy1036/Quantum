@@ -553,7 +553,9 @@ class AccountMixin:
 
     def profile_prefs_set(self, prefs):
         out = {"sees": prefs.get("sees") if isinstance(prefs, dict) and prefs.get("sees") in ("everyone", "friends", "nobody") else "everyone",
-               "stats_off": bool(isinstance(prefs, dict) and prefs.get("stats_off"))}
+               "stats_off": bool(isinstance(prefs, dict) and prefs.get("stats_off")),
+               # who your profile card shows as online, away or in Star Citizen to (friends always see it in Social)
+               "online": prefs.get("online") if isinstance(prefs, dict) and prefs.get("online") in ("everyone", "friends") else "everyone"}
         for k in ("ships", "gearlo", "orgs", "listings"):
             v = (prefs or {}).get(k) if isinstance(prefs, dict) else None
             if not isinstance(v, dict):

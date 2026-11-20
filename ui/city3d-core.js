@@ -451,9 +451,13 @@ function gameLayout(ctx,{lightClass,lift=0,roofs=null,nearFile=null,landmarks={}
   const loadNear=async()=>{ if(!nearFile) return; const city=LAY.city;
     if(!window.QCITYNEAR?.[city]) await loadScript(nearFile);
     const NM=window.QCITYNEAR?.[city]?.meshes; if(!NM) return; let c=0;
+    // each starts with every copy far (the far mesh holds them all, the close-up none): recorded as its
+    // pick, so the first look at the city only rewrites the models that get a close-up. Without it, that
+    // first pass re-sent all ~550 models' placements to the graphics card at once (a 250 ms freeze on the way down).
     for(const [ks,m] of Object.entries(NM)){ const e=LOD[+ks]; if(!e||!e.n) continue;
       try{ const near=new THREE.InstancedMesh(makeGeo(m,boxOf(m)),e.mat,e.n); near.count=0; near.castShadow=true; near.receiveShadow=true;
-        near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near; }catch(err){ console.warn("near",m.name,err); }
+        near.frustumCulled=false; near.userData.closeUp=true; inner.add(near); e.near=near;
+        e.pick=new Uint8Array(e.n); }catch(err){ console.warn("near",m.name,err); }
       if(++c%12===0) await ctx.tick(); }
     delete window.QCITYNEAR[city]; dirty=true; };
   // The ground the city stands on: the lowest base of the pieces in each 150 m cell, filled out from the
@@ -982,29 +986,37 @@ function prepare(name){
     if(B&&L?.pos&&B.kind!=="asteroid"&&terrainIndex?.includes(B.name)){ const w=worldFor(B.name);
       if(!w.built&&!w.building){ const r=Math.hypot(...L.pos); w.want=L.pos.map(v=>v/r*B.radius); w.build(); }
       await until(()=>w.built||!w.building); }
-    await warm(); return st; })());
+    await warm(st); return st; })());
 }
 // Compile every city's shaders for how they'll be drawn (sky light, haze, sun shadows on and off) and
 // upload their geometry, by drawing them once now. The screen is covered (the demo's title card) while
 // this runs; the next frame draws over it.
-async function warm(){
+// Only the city being got ready (st): warming every city redrew all of them at once (New Babbage's 64M
+// triangles again when Area 18 was got ready, while the map was on screen in the demo).
+async function warm(only=null){
+  const mine=st=>!only||st===only||(st.C.world&&st.C.body===only.C.body);     // (and its planet's terrain)
   // the shaders first, compiled in the background where the browser can (compileAsync), then one quick draw
   // of each lighting setup to send the geometry to the graphics card
-  const setUp=()=>{ const undo=[], fog0=scene.fog, hadHemi=!!hemi.parent, sh=sun.castShadow, sv=[dome.visible,precip.visible];
-    for(const st of cities) if(st.root){ undo.push([st.root,st.root.visible]); st.root.visible=true; }
-    const culled=[]; for(const st of cities) if(st.root) st.root.traverse(o=>{ if((o.isMesh||o.isPoints)&&o.frustumCulled){ o.frustumCulled=false; culled.push(o); } });
-    scene.fog=fog; if(!hadHemi) scene.add(hemi); dome.visible=true; precip.visible=true;
+  // fogOn: with the haze or without it. They're different shaders, and haze is off unless you turn it on, so
+  // warming up only the hazy ones left the clear ones to compile mid-flight: a freeze on the way down to the
+  // first city of a session (New Babbage in the demo), but not the next ones, which use the same shaders.
+  const setUp=(fogOn=true)=>{ const undo=[], fog0=scene.fog, hadHemi=!!hemi.parent, sh=sun.castShadow, sv=[dome.visible,precip.visible];
+    for(const st of cities) if(st.root&&mine(st)){ undo.push([st.root,st.root.visible]); st.root.visible=true; }
+    const culled=[]; for(const st of cities) if(st.root&&mine(st)) st.root.traverse(o=>{ if((o.isMesh||o.isPoints)&&o.frustumCulled){ o.frustumCulled=false; culled.push(o); } });
+    scene.fog=fogOn?fog:null; if(!hadHemi) scene.add(hemi); dome.visible=true; precip.visible=true;
     return ()=>{ scene.fog=fog0; if(!hadHemi) scene.remove(hemi); sun.castShadow=sh; [dome.visible,precip.visible]=sv;
       for(const [r,v] of undo) r.visible=v; for(const o of culled) o.frustumCulled=true; }; };
   try{
     // shaders handed to the driver, then waited for without blocking (where the browser compiles them in the
     // background: KHR_parallel_shader_compile, which Chrome and Edge's WebView have), up to 8 s
     const mats=new Set();
-    for(const s of [false,true]){ const undo=setUp(); try{ sun.castShadow=s; const got=renderer.compile(scene,camera); if(got) for(const m of got) mats.add(m); } finally{ undo(); } }
+    // (the way it will be drawn goes last: the wait below checks each material's most recent shader)
+    for(const fz of [!opt.haze,!!opt.haze]) for(const s of [false,true]){ const undo=setUp(fz); try{ sun.castShadow=s; const got=renderer.compile(scene,camera); if(got) for(const m of got) mats.add(m); } finally{ undo(); } }
     const ready=m=>{ try{ const pr=renderer.properties.get(m)?.currentProgram; return !pr||typeof pr.isReady!=="function"||pr.isReady(); }catch(_){ return true; } };
     const t0=performance.now(); while(performance.now()-t0<8000&&[...mats].some(m=>!ready(m))) await new Promise(r=>setTimeout(r,50));
     // then one draw of each lighting setup, to send the geometry to the graphics card
-    for(const s of [false,true]){ const undo=setUp(); try{ sun.castShadow=s; if(s) renderer.shadowMap.needsUpdate=true; renderer.render(scene,camera); } finally{ undo(); } await tick(); }
+    // (drawn the way it will be: with the haze only if it's on)
+    for(const s of [false,true]){ const undo=setUp(!!opt.haze); try{ sun.castShadow=s; if(s) renderer.shadowMap.needsUpdate=true; renderer.render(scene,camera); } finally{ undo(); } await tick(); }
   }catch(e){ console.warn("3D city warm-up",e); }
 }
 
@@ -1017,6 +1029,7 @@ window.City3D={define, get cities(){ return cities.map(c=>c.C.city); }, prepare,
 const forPlace=name=>cities.find(st=>!st.C.world&&st.C.places.includes(name));
 window.registerCity3D({name:"3D cities", update,
   has:name=>!!forPlace(name), titleFor:name=>forPlace(name)?.C.city, open:name=>forPlace(name)?.open(name),
+  closeDist:name=>forPlace(name)?.C.focusDist||null,         // how far out "go to" a place stops (a city's focusDist)
   get active(){ return panel; },
   get inCity(){ return !!(panel&&owner&&!owner.C.world); },
   // A city that floats high above its planet's surface (Orison, ~79 km up): the height of its floor, for the

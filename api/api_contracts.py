@@ -193,6 +193,13 @@ class ContractsMixin:
             watcher_mod.log_error("asset server")
             return ""
 
+    def assets_cached(self, folder):
+        """Which files of a map-data folder are already on this PC (stations load those first, see stations3d.js)."""
+        try:
+            return {"ok": True, "files": self._assets.cached(folder)}
+        except Exception as e:
+            return {"ok": False, "files": [], "error": str(e)}
+
     def assets_progress(self):
         return self._assets.progress()
 

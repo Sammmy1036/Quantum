@@ -188,6 +188,18 @@ class AssetCache:
             self.last_ok = time.time()
             return dest
 
+    def cached(self, folder):
+        """The files of one folder (stations/, cities/...) already on this PC, as the map names them
+        ("stations/PortTressler.js"). Whether each is the latest is checked as usual when it's loaded."""
+        folder = str(folder or "").strip("/")
+        if not folder or "/" in folder or folder.startswith("."):
+            return []
+        d = self.dir / folder
+        try:
+            return sorted(f"{folder}/{p.name}" for p in d.iterdir() if p.is_file() and p.suffix == ".js" and p.name != "index.js")
+        except OSError:
+            return []
+
     def status(self):
         """For Settings › Map data: can the server be reached, what its manifest lists, what's on this PC, and
         the last thing that went wrong. Asks the server for its manifest again."""

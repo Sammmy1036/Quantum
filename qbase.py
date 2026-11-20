@@ -111,12 +111,9 @@ FLYING_ADDONS = ("command module", "skylark")
 EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake Command Module", "slug": "command-module",
                    "company_name": "Drake Interplanetary", "scu": 0, "crew": "1,2", "pad_type": "S", "is_spaceship": 1,
                    "is_addon": 1, "is_concept": 0, "url_store": None, "url_photo": None, "quantum_extra": True},
-                  # The new Constellation generation, in game since 4.x (the older ones are the Mk IV now). Until
-                  # UEX lists them; then UEX's own entries take over. Centaurus: 240 SCU, crew 4, size 5 (Sam, in game).
-                  {"id": 990010, "name": "Constellation Mk V Andromeda", "name_full": "RSI Constellation Mk V Andromeda",
-                   "slug": "constellation-mk-v-andromeda", "company_name": "Roberts Space Industries", "scu": 0,
-                   "crew": "", "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "url_store": None,
-                   "url_photo": None, "quantum_extra": True, "wiki_page": "Constellation Mk V Andromeda"},
+                  # The new Constellation generation (the older ones are the Mk IV now): the Centaurus, flight ready in
+                  # 4.10.2. Until UEX lists it; then UEX's own entry takes over. 240 SCU, crew 4, size 5 (Sam, in game).
+                  # (No Mk V Andromeda: it's only a name from a leaked list, unconfirmed by RSI. Id 990010 was it: not reused.)
                   {"id": 990011, "name": "Constellation Mk V Centaurus", "name_full": "RSI Constellation Mk V Centaurus",
                    "slug": "constellation-mk-v-centaurus", "company_name": "Roberts Space Industries", "scu": 240,
                    "crew": "4", "size": 5, "pad_type": "", "is_spaceship": 1, "is_addon": 0, "is_concept": 0,
@@ -133,13 +130,13 @@ EXTRA_VEHICLES = [{"id": 990001, "name": "Command Module", "name_full": "Drake C
                    "is_spaceship": 1, "is_addon": 0, "is_concept": 0, "is_military": 1, "url_store": None,
                    "url_photo": None, "quantum_extra": True, "wiki_page": "Skylark"}]
 # Ships UEX still flags as concepts (or as add-ons, for a snub) that are flying in game.
-IN_GAME = ({"constellation", "mk", "v", "andromeda"}, {"constellation", "mk", "v", "centaurus"}, {"skylark"},
+IN_GAME = ({"constellation", "mk", "v", "centaurus"}, {"skylark"},
            {"galaxy"})                                   # RSI Galaxy: flight ready in 4.10.3 (IAE 2956)
 
 
 def is_concept(v, wiki=None):
     """A ship that isn't in the game yet (UEX's flag, unless we know it's flying). Word order doesn't
-    matter ("Constellation Andromeda Mk V" is the same ship). wiki: the wiki's vehicle summary; a ship it
+    matter ("Constellation Centaurus Mk V" is the same ship). wiki: the wiki's vehicle summary; a ship it
     lists as flight ready counts as in the game, so a new release stops showing as a concept by itself,
     without waiting for UEX or a Quantum update."""
     if not v.get("is_concept"):

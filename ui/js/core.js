@@ -10,6 +10,9 @@ const TYPES = {
   poi:{label:"Other",one:"Point of interest",color:"#a9b6cc",def:false}, om:{label:"Orbital markers",one:"Orbital marker",color:"#9db3dc",def:false},
   lpoint:{label:"Lagrange points",one:"Lagrange point",color:"#7684a0",def:true},
 };
+// Wikelo's emporiums are stations (their cards, 3D models and routes work as stations do), with a Layers
+// switch of their own under Stations so they can be hidden without hiding every station
+const isWikelo=L=>!!L&&/wikelo/i.test(L.name||"");
 const PADS = ["unknown","none","vehicle","small","medium","large","xl","hangar"];
 const BODY_HSL = { Hurston:[32,38,46], ArcCorp:[14,52,48], microTech:[200,30,72], Crusader:[205,32,62], Arial:[20,45,45],
   Aberdeen:[45,40,48], Magda:[195,12,58], Ita:[40,18,52], Cellin:[48,12,55], Daymar:[30,40,52], Yela:[200,20,78], Calliope:[210,15,70],
@@ -23,7 +26,7 @@ const ICY = new Set(["microTech","Yela","Clio","Euterpe","Calliope","Lyria","Ter
 const S = {
   bodies:[], bodyMap:{}, locs:[], locMap:{}, systems:["Stanton","Pyro","Nyx"], staticVersion:0, live:null,
   system:"Stanton", routeKey:"", contractsVersion:-1, wpKey:"",
-  layers:Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])),
+  layers:{...Object.fromEntries(Object.entries(TYPES).map(([k,v])=>[k,v.def])), wikelo:true},   // wikelo: see isWikelo
   show:{missions:true, waypoints:true, orbits:true, grid:(()=>{ try{ return localStorage.getItem("q-grid")==="1"; }catch{ return false; } })(), rings:(()=>{ try{ return localStorage.getItem("q-rings")!=="0"; }catch{ return true; } })(), sky:(()=>{ try{ return localStorage.getItem("q-sky")!=="0"; }catch{ return true; } })()},
   cam:{target:[0,0,0], dist:1e11, yaw:-1.2, pitch:0.9, lock:null}, focus:{kind:"system"}, anim:null,
   selected:null, picks:[], search:"", typeFilter:null, tab:"route", editing:null, autoSystem:true,

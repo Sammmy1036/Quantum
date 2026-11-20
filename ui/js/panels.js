@@ -24,7 +24,8 @@ function buildLayers(){
     l.querySelector("input").onchange=e=>on(e.target.checked); el.appendChild(l); };
   mk("Contract objectives",S.show.missions,"mission",v=>S.show.missions=v);
   mk("My waypoints (pinned)",S.show.waypoints,"wp",v=>S.show.waypoints=v);
-  for(const [k,v] of Object.entries(TYPES)) mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
+  for(const [k,v] of Object.entries(TYPES)){ mk(v.label,S.layers[k],k,val=>S.layers[k]=val);
+    if(k==="station") mk("Wikelo emporiums",S.layers.wikelo!==false,"wikelo",val=>S.layers.wikelo=val); }
   el.appendChild(document.createElement("hr"));
   mk("Orbits",S.show.orbits,"",v=>S.show.orbits=v); mk("Lat/lon grid",S.show.grid,"",v=>{ S.show.grid=v; try{ localStorage.setItem("q-grid",v?"1":"0"); }catch{} });
   mk("Distance rings",S.show.rings,"",v=>{ S.show.rings=v; try{ localStorage.setItem("q-rings",v?"1":"0"); }catch{} });
@@ -57,7 +58,7 @@ const SVC_SOLID={
 // The game's own marker for a service, when it has one. Pads and hangars come in sizes (the number is part of
 // the icon); without a size, or for an XL pad (the game has none), the drawn icon and its size badge stay.
 function svcGameKey(name,size){ const n=name.toLowerCase(), z={S:"s",M:"m",L:"l",XL:"xl"}[String(size||"").toUpperCase()];
-  if(/landing pad/.test(n)) return z&&z!=="xl"?"pad_"+z:null;
+  if(/landing pad/.test(n)) return z?"pad_"+z:null;            // (XL: the game's own extra-large pad marker too)
   if(/hangar/.test(n)) return z?"hangar_"+z:null;
   if(/garage/.test(n)) return "garage";
   if(/freight elevator/.test(n)) return "freight_elevator";
@@ -702,7 +703,9 @@ function renderHud(){
     ${gate?`<div class="hint">Quantum to the gateway, then fly into the jump point to reach ${esc(gate.to||"the next system")}.</div>`:""}
     ${n.other_system?`<div class="hint">It's in ${esc(n.system)}. Jump there first.</div>`:n.distance!=null?`<div class="nums"><div><div class="v">${fmtDist(n.distance)}</div><div class="k">straight line</div></div>
       ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(padLabel(n.pad))}</div><div class="k">pad</div></div>`:""}</div>`
-      :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}</div>`; }
+      :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}
+    ${(live.stop_roles?.[0]||[]).some(r=>r.kind==="buy"||r.kind==="sell")?`<div style="margin-top:6px">${roleTags((live.stop_roles[0]||[]).filter(r=>r.kind==="buy"||r.kind==="sell"))}</div>`:""}</div>`; }
+  if(typeof runsHudHtml==="function") html+=runsHudHtml();         // your trade runs (trade.js)
   // Offer to line the planet up when your reading clearly matches a place the map has elsewhere.
   const cs=live.calib_suggest;
   if(cs && S.calDismissed!==cs.reading_t){ const top=cs.places[0];
@@ -722,6 +725,7 @@ function renderHud(){
       <div class="ovlist">${route.map((n,i)=>`<div class="i"><span class="n">${i+1}</span><span>${roleTxt(n,i)}${esc(n)}</span></div>`).join("")}</div></div>`+html; }
   $("hud").innerHTML=html; const st=$("hud-stop"); if(st) st.onclick=async()=>{ await api().set_guide(null); await poll(); };
   const oc=$("hud-ov-close"); if(oc) oc.onclick=()=>{ S.overview=null; renderHud(); };
+  if(typeof runsHudWire==="function") runsHudWire($("hud"));
   const cx=$("cal-x"); if(cx) cx.onclick=()=>{ S.calDismissed=cs.reading_t; renderHud(); };
   for(const b of $("hud").querySelectorAll("[data-cal]")) b.onclick=async()=>{ const r=await api().calibrate_at(b.dataset.cal);
     if(!r.ok) return toast(r.error); await poll(); toast(`${cs.body} lined up at ${b.dataset.cal} (${r.correction>0?"+":""}${r.correction.toFixed(1)}°)`); };
@@ -747,6 +751,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("so-panel").classList.toggle("show",S.tab==="friends"); if(S.tab==="friends") openSocial();
   if(S.tab==="friendmap") openFriendMap();                     // no panel over the map: the map is the Friend Map
   $("pm-panel").classList.toggle("show",S.tab.startsWith("pm-")); if(S.tab.startsWith("pm-")) openPm(S.tab);
+  $("pa-panel").classList.toggle("show",S.tab==="alerts"); if(S.tab==="alerts") openAlerts();
   $("og-panel").classList.toggle("show",S.tab==="orgs"); if(S.tab==="orgs") openOrg();
   $("ph-panel").classList.toggle("show",S.tab==="patchhub"); if(S.tab==="patchhub") openPatchHub();
   $("mi-panel").classList.toggle("show",S.tab==="missions"); if(S.tab==="missions") openMissions();
@@ -756,7 +761,7 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","attachments","armor","clothing","gadgets","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing","alerts"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";

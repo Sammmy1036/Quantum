@@ -233,7 +233,8 @@ async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.c
   img.ondragstart=e=>e.preventDefault(); }
 // ---- Profile privacy: who can open your profile, and whether it shows your datarunner stats
 function pfPrivacyView(){ const P=$("pf-panel"), saved=S.pfPrefs||{}, dr=S.pfPrivDraft||{}, sees=dr.sees||saved.sees||"everyone";
-  const statsOff=dr.stats_off??!!saved.stats_off, dirty=(dr.sees&&dr.sees!==(saved.sees||"everyone"))||(dr.stats_off!=null&&dr.stats_off!==!!saved.stats_off);
+  const statsOff=dr.stats_off??!!saved.stats_off, online=dr.online||saved.online||"everyone";
+  const dirty=(dr.sees&&dr.sees!==(saved.sees||"everyone"))||(dr.stats_off!=null&&dr.stats_off!==!!saved.stats_off)||(dr.online&&dr.online!==(saved.online||"everyone"));
   const opt=(v,t,d)=>`<label class="pf-priv ${sees===v?"on":""}"><input type="radio" name="pf-sees" value="${v}" ${sees===v?"checked":""}><span><b>${t}</b><small>${d}</small></span></label>`;
   P.innerHTML=`<div class="mkp-head" style="grid-template-columns:1fr;margin-bottom:8px"><div class="hd-main"><div class="hd-title"><div><h2>Profile privacy</h2>
     <div class="sub">People open your profile by clicking your name in Social, the marketplace and orgs.</div></div></div></div></div>
@@ -242,12 +243,15 @@ function pfPrivacyView(){ const P=$("pf-panel"), saved=S.pfPrefs||{}, dr=S.pfPri
         ${opt("friends","Friends only","Others see your name and picture, and that your profile is for friends.")}
         ${opt("nobody","Only me","Others see your name and picture only.")}</div></div>
       <div class="vd-sec"><div class="mk-h">What it shows</div>
+        <div class="vd-row"><span>When you're online, away or in Star Citizen<small class="muted" style="display:block;font-size:12px">Friends always see it in Social. To hide it from everyone, set your status to Invisible there.</small></span>
+          <select class="field" id="pf-online" style="width:auto"><option value="everyone" ${online==="everyone"?"selected":""}>Everyone who can see your profile</option><option value="friends" ${online==="friends"?"selected":""}>Friends only</option></select></div>
         <div class="vd-row"><span>Your datarunner rank, rating and approved reports</span><label class="row" style="gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="pf-stats" ${statsOff?"":"checked"}> ${statsOff?"Hidden":"Shown"}</label></div>
         ${Object.entries(PF_ARR).map(([v,A])=>{ const off=!!saved[A.key]?.off; return `<div class="vd-row"><span>${A.sec}</span><a data-pfv="${v}" style="cursor:pointer;color:var(--route-2);font-size:13px">${off?"Hidden":"Shown"} · Arrange</a></div>`; }).join("")}</div>
       <div class="row" style="gap:8px;margin:4px 2px;align-items:center;flex-wrap:wrap"><button class="btn primary" id="pf-privsave" ${dirty?"":"disabled"}>Save Settings</button>
         ${dirty?`<button class="btn ghost" id="pf-privx">Discard changes</button><span style="font-size:12.5px;color:#ffd38a">Unsaved changes</span>`:`<span class="muted" style="font-size:12.5px">${S.pfPubAt?`Saved · profile updated ${fmtAgo(S.pfPubAt)}`:"No changes"}</span>`}
         <span class="spacer"></span><a data-pfv="preview" style="cursor:pointer;color:var(--route-2);font-size:13px">See your profile as others do</a></div></div>`;
   for(const r of P.querySelectorAll('input[name="pf-sees"]')) r.onchange=()=>{ S.pfPrivDraft={...(S.pfPrivDraft||{}),sees:r.value}; renderProfile(true); };
+  $("pf-online").onchange=e=>{ S.pfPrivDraft={...(S.pfPrivDraft||{}),online:e.target.value}; renderProfile(true); };
   $("pf-stats").onchange=e=>{ S.pfPrivDraft={...(S.pfPrivDraft||{}),stats_off:!e.target.checked}; renderProfile(true); };
   if($("pf-privx")) $("pf-privx").onclick=()=>{ S.pfPrivDraft=null; renderProfile(true); };
   $("pf-privsave").onclick=async()=>{ const r=await api().profile_prefs_set({...(S.pfPrefs||{}),...(S.pfPrivDraft||{})}).catch(()=>null); if(!r?.ok) return toast("Couldn't save. Try again");
@@ -259,8 +263,9 @@ async function pfPublish(force){ if(!S.acct?.signed_in||!S.pfPrefs||!S.live?.log
   if(lg.uex_token&&!S.pfFleet) return;                       // not loaded yet: don't publish an empty fleet
   if(!S.gl.list) return;
   const sh=pfOrdered(S.pfFleet||[],x=>x.uid,"ships",true), gl=pfOrdered((S.gl.list||[]).slice().sort((a,b)=>(b.main?1:0)-(a.main?1:0)),x=>x.id,"gearlo",true);
-  const body={sees:pr.sees||"everyone", stats_off:!!pr.stats_off, prefs:{orgs:pr.orgs||{}, listings:pr.listings||{}},
-    ships:!lg.uex_token||sh.off?null:sh.shown.map(x=>({name:x.full||x.name||"", maker:x.maker||"", scu:x.scu||null, photo:x.photo||null, main:!!x.main})),
+  const body={sees:pr.sees||"everyone", stats_off:!!pr.stats_off, online:pr.online||"everyone", prefs:{orgs:pr.orgs||{}, listings:pr.listings||{}},
+    ships:!lg.uex_token||sh.off?null:sh.shown.map(x=>({name:x.full||x.name||"", maker:x.maker||"", scu:x.scu||null, photo:x.photo||null, main:!!x.main,
+      uid:x.uid, lo:x.loadouts||0, sw:x.total_swaps||0})),     // uid: the app adds that ship's loadouts (lo, sw: so a change in them republishes)
     gear:gl.off?null:gl.shown.map(lo=>({name:lo.name, scenario:lo.scenario||"", main:!!lo.main, items:glItems(lo).filter(i=>i.name).map(i=>({slot:i.slot, name:i.name, qty:i.qty||1}))}))};
   const key=JSON.stringify(body); let last=null; try{ last=localStorage.getItem("q-pub"); }catch(_){}
   if(!force&&last===key&&S.pfPubAt) return;
@@ -271,6 +276,14 @@ async function upOpen(who){ if(!who) return; S.up={who,loading:true}; upRender()
   const r=await api().social_profile(who).catch(()=>null); if(S.up?.who!==who) return;
   S.up=r?.ok?{who,d:r}:{who,err:r?.error||"Couldn't load this profile."}; upRender(); }
 function upClose(){ S.up=null; $("up-view")?.remove(); }
+// Opened something from someone's card (a listing, an org, a ship)? That page gets a way back to the card.
+// Forgotten when you go somewhere yourself (a tab or the rail), like the wish list's.
+function upGo(tab){ const p=S.up?.d?.person; S.upFrom=p?{who:S.up.who,name:p.name,tab,ship:S.up.ship??null,lo:S.up.lo||0}:null; }
+function upBackBtn(tab,small){ const f=S.upFrom; return f&&f.tab===tab?`<button class="btn ${small?"small ":""}primary" data-upback="1">← Back to ${esc(f.name)}'s profile</button>`:""; }
+document.addEventListener("click",e=>{ const b=e.target.closest?.("[data-upback]"); if(!b||!S.upFrom) return; e.stopPropagation(); e.preventDefault();
+  const f=S.upFrom; S.upFrom=null; b.remove();
+  upOpen(f.who).then(()=>{ if(f.ship!=null&&S.up?.who===f.who&&S.up.d){ S.up.ship=f.ship; S.up.lo=f.lo; upRender(); } }); },true);   // back on the ship you were looking at
+document.addEventListener("click",e=>{ if(e.isTrusted&&S.upFrom&&e.target.closest?.("#tabs .tab,#rail [data-group]")) S.upFrom=null; },true);
 function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
   if(!V){ V=document.createElement("div"); V.id="up-view"; V.className="up-back"; document.body.appendChild(V);
     V.onclick=e=>{ if(e.target===V) upClose(); }; }
@@ -295,7 +308,8 @@ function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
     // Trade reviews: what buyers and sellers said after trading with them (marketplace ratings)
     if(rt&&(rt.count||d.reviews?.length)) body+=sec("Trade reviews",pmReviewsHtml(rt,d.reviews),rt.count?`${rt.count} rating${rt.count===1?"":"s"}`:"");
     const vphoto=x=>x.photo||(S.veh||[]).find(v=>(v.full||v.name)===x.name)?.photo;
-    if(d.ships) body+=sec("Fleet",d.ships.length?`<div class="grid" style="margin-top:8px">${d.ships.map(x=>{ const ph=vphoto(x); return `<div class="vg"><div class="ph ph-g">${ph?`<img src="${esc(ph)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div><div class="tx"><b>${x.main?"★ ":""}${esc(x.name)}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "))}</span></div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No ships to show.</div>`,d.ships.length||"");
+    if(d.ships&&u.ship!=null&&d.ships[u.ship]) body+=sec("Fleet",upShipHtml(d.ships[u.ship],u.lo||0,vphoto),`<a data-upship="" style="cursor:pointer">← All ships</a>`);
+    else if(d.ships) body+=sec("Fleet",d.ships.length?`<div class="grid" style="margin-top:8px">${d.ships.map((x,i)=>{ const ph=vphoto(x); return `<div class="vg" data-upship="${i}" style="cursor:pointer" title="${x.loadouts?.length?"See its loadouts":"See this ship"}"><div class="ph ph-g">${ph?`<img src="${esc(ph)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div><div class="tx"><b>${x.main?"★ ":""}${esc(x.name)}</b><span>${esc([x.maker,x.scu?`${x.scu} SCU`:"",x.loadouts?.length>1?`${x.loadouts.length} loadouts`:""].filter(Boolean).join(" · "))}</span></div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No ships to show.</div>`,d.ships.length||"");
     if(d.gear) body+=sec("Gear loadouts",d.gear.length?`<div class="grid" style="margin-top:8px">${d.gear.map(lo=>{ const pic=["core","helmet","primary","jacket"].map(k=>lo.items.find(i=>i.slot===k)).find(Boolean)||lo.items[0];
         return `<div class="vg up-lo"><div class="ph" ${pic?`data-gpic="${esc(pic.name)}"`:""}>${pic?"":"Empty loadout"}</div><div class="tx"><b>${lo.main?"★ ":""}${esc(lo.name)}</b><span>${esc([lo.scenario,plural(lo.items.length,"item")].filter(Boolean).join(" · "))}</span>
           ${lo.items.length?`<div class="up-items">${lo.items.slice(0,12).map(i=>`<span>${esc(i.name)}${i.qty>1?` ×${i.qty}`:""}</span>`).join("")}</div>`:""}</div></div>`; }).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">No loadouts to show.</div>`,d.gear.length||"");
@@ -307,14 +321,36 @@ function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
       <div class="up-acts">${acts}</div></div></div>
     <div class="vd-flat pf-ov up-body">${body}</div></div>`;
   fillGearPictures(V); upWire(V); }
+// One of their ships, opened on their card: its loadouts (a chip each), the ship's numbers with that loadout,
+// and what's in every slot, swapped parts marked. "Open in Vehicles" has a way back to the card.
+const vehOf=name=>(S.veh||[]).find(v=>(v.full||v.name)===name)||null;
+function upShipHtml(x,li,vphoto){ const L=x.loadouts||[], lo=L[Math.min(li,L.length-1)], ph=vphoto(x), v=vehOf(x.name);
+  const canVeh=v?.id!=null&&!document.querySelector('.tab[data-tab="vehicles"]')?.hidden;
+  const head=`<div class="up-ship"><div class="ph">${ph?`<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div>
+    <div class="who"><h3>${x.main?"★ ":""}${esc(x.name)}</h3><div class="muted">${esc([x.maker,x.scu?`${x.scu} SCU`:""].filter(Boolean).join(" · "))}</div>
+      ${canVeh?`<button class="btn small" data-upveh="${esc(v.id)}" style="margin-top:8px">Open in Vehicles</button>`:""}</div></div>`;
+  if(!lo) return head+`<div class="muted" style="font-size:13px;padding:8px 0">No loadouts shared for this ship. They show here once its owner's Quantum publishes them.</div>`;
+  const chips=L.length>1?`<div class="lo-bar" style="margin:10px 0 4px">${L.map((l,i)=>`<button class="lo-chip ${l===lo?"on":""}" data-uplo="${i}">${l.primary?"★ ":""}${esc(l.name)}</button>`).join("")}</div>`:"";
+  const SS=typeof SHIP_STATS!=="undefined"?SHIP_STATS:[], stats=SS.filter(([k])=>lo.stats?.[k]!=null).map(([k,l,f])=>`<div><span>${esc(l)}</span><b>${esc(f(lo.stats[k]))}</b></div>`).join("");
+  const groups={}; for(const p of lo.parts||[]){ (groups[p.type||p.slot||"Other"]=groups[p.type||p.slot||"Other"]||[]).push(p); }
+  const swaps=(lo.parts||[]).filter(p=>p.swapped).length;
+  const rows=Object.entries(groups).map(([g,P])=>`<div class="pf-subh">${esc(g.replace(/([a-z])([A-Z])/g,"$1 $2"))} <span class="muted">${P.length}</span></div>
+    ${P.map(p=>`<div class="vd-row up-part"><span>${esc(p.slot||g)}${p.size?` <span class="muted">S${p.size}</span>`:""}</span><b class="${p.swapped?"up-sw":""}">${esc(p.name)}${p.swapped?` <span class="pm-badge ok" title="Swapped in by them">Upgraded</span>`:""}</b></div>`).join("")}`).join("");
+  return head+chips+`${lo.livery?`<div class="muted" style="font-size:12.5px;margin:4px 0">Paint: ${esc(lo.livery)}</div>`:""}
+    ${stats?`<div class="up-stats" style="margin:10px 0">${stats}</div>`:""}
+    <div class="muted" style="font-size:12.5px;margin:6px 0 2px">${swaps?`${swaps} part${swaps===1?"":"s"} upgraded from stock`:"All stock parts"}</div>${rows}`; }
 function upWire(V){ const on=(sel,fn)=>{ for(const el of V.querySelectorAll(sel)) el.onclick=e=>{ e.stopPropagation(); fn(el); }; };
   on("[data-upx]",upClose);
+  on("[data-upship]",el=>{ if(!S.up) return; S.up.ship=el.dataset.upship===""?null:+el.dataset.upship; S.up.lo=0; upRender();
+    V.querySelector(".up-ship")?.scrollIntoView({block:"nearest"}); });
+  on("[data-uplo]",el=>{ if(!S.up) return; S.up.lo=+el.dataset.uplo; upRender(); });
+  on("[data-upveh]",el=>{ upGo("vehicles"); upClose(); S.vehDetail=String(el.dataset.upveh); S.vehGalKey=null; document.querySelector('.tab[data-tab="vehicles"]')?.click(); });
   const who=()=>S.up?.d?.person?.id;
   on("[data-upadd]",async el=>{ el.disabled=true; const r=await api().social_request(who()); toast(r.ok?(r.relation==="friends"?"You're friends now":"Friend request sent"):r.error); upOpen(who()); });
   on("[data-upacc]",async el=>{ el.disabled=true; const r=await api().social_respond(who(),true); toast(r.ok?"You're friends now":r.error); upOpen(who()); });
   on("[data-upmsg]",()=>{ const id=who(); upClose(); soOpen(id); });
-  on("[data-upog]",el=>{ upClose(); S.og.view="org"; S.og.tab="overview"; S.og.cur=+el.dataset.upog; const t=document.querySelector('.tab[data-tab="orgs"]'); if(S.tab==="orgs") ogOpen(S.og.cur); else t?.click(); });
-  on("[data-uplist]",el=>{ upClose(); document.querySelector(`.tab[data-tab="${el.dataset.upkind}"]`)?.click(); pmOpen(+el.dataset.uplist); }); }
+  on("[data-upog]",el=>{ upGo("orgs"); upClose(); S.og.view="org"; S.og.tab="overview"; S.og.cur=+el.dataset.upog; const t=document.querySelector('.tab[data-tab="orgs"]'); if(S.tab==="orgs") ogOpen(S.og.cur); else t?.click(); });
+  on("[data-uplist]",el=>{ upGo("pm-items"); upClose(); document.querySelector(`.tab[data-tab="${el.dataset.upkind}"]`)?.click(); pmOpen(+el.dataset.uplist); }); }
 document.addEventListener("click",e=>{ const n=e.target.closest?.("[data-upid]"); if(!n||!n.dataset.upid) return; e.stopPropagation(); e.preventDefault(); upOpen(n.dataset.upid); },true);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&S.up) upClose(); });
 // The four profile sections you can arrange: what they list, and what they're called
@@ -469,6 +505,7 @@ async function addStops(names,repeat=true){ const had=new Set(S.live?.route||[])
   else toast(added.length===1?`Added ${added[0]} to route${had.has(added[0])?" again":""}`:`Added ${added.length} stops to route`); renderDetail(); }
 function roleTags(roles){ return (roles||[]).map(r=>r.kind==="gate"?`<span class="role gate">Gateway${r.to?" · jump to "+esc(r.to):""}</span>`
   :r.kind==="gate-in"?`<span class="role gate">Gateway${r.from?" · arrive from "+esc(r.from):""}</span>`
+  :r.kind==="buy"||r.kind==="sell"?`<span class="role ${r.kind}" title="Trade run: ${r.kind==="buy"?"buy":"sell"} ${esc(r.cargo||"")}${r.scu?` (${r.scu} SCU)`:""}">${r.kind==="buy"?"Buy":"Sell"}${r.cargo?" · "+esc(r.cargo):""}</span>`
   :`<span class="role ${r.kind}">${r.kind==="pickup"?"Pickup":r.kind==="dropoff"?"Drop-off":"Objective"}${r.cargo?" · "+esc(r.cargo):""}</span>`).join(""); }
 const isGateStop=roles=>(roles||[]).some(r=>r.kind==="gate"||r.kind==="gate-in");
 // A stop with no quantum marker of its own (an Onyx Facility, a cave, a derelict): how to get there anyway.

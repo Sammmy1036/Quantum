@@ -317,7 +317,11 @@ class MapMixin:
         now resolves to a different place (e.g. after a marker was put on the right planet)."""
         keep, changed = [], False
         for t in self._route:
-            if t["task"] != "visit" and t["task"] not in self.GATES:
+            if t["task"].startswith(self.TRADE):          # a trade run's buy or sell stop (api_trade.py)
+                if not self._trade_task_wanted(t["task"]):
+                    changed = True
+                    continue
+            elif t["task"] != "visit" and t["task"] not in self.GATES:
                 cid, _, oid = t["task"].partition("|")
                 c = self._tracker.get(cid)
                 o = next((o for o in c.objectives if o.id == oid), None) if c else None
@@ -368,6 +372,14 @@ class MapMixin:
                 if t["task"] == self.GATE_IN:
                     r.append({"kind": "gate-in", "from": gateways.leads_to(t["place"])})
                     continue
+                if t["task"].startswith(self.TRADE):
+                    rid, _, what = t["task"][len(self.TRADE):].partition("|")
+                    run = next((x for x in self._runs() if x["id"] == rid), None)
+                    if run:
+                        r.append({"kind": what, "cargo": run.get("commodity") or "", "run": rid,
+                                  "scu": run.get("units")})
+                        pos[t["task"]] = i
+                    continue
                 cid, _, oid = t["task"].partition("|")
                 c = by_id.get(cid)
                 o = next((o for o in c["objectives"] if o["id"] == oid), None) if c else None
@@ -381,6 +393,10 @@ class MapMixin:
             drops = [pos[f"{c['id']}|{o['id']}"] for o in c["objectives"] if o["kind"] == "dropoff" and f"{c['id']}|{o['id']}" in pos]
             if picks and drops and min(drops) < max(picks):
                 warning = f"{c.get('subtitle') or c['name']} is delivered before it's picked up. Plan the route to fix the order."
+        for r in self._runs():
+            a, b = pos.get(f"{self.TRADE}{r['id']}|buy"), pos.get(f"{self.TRADE}{r['id']}|sell")
+            if a is not None and b is not None and b < a:
+                warning = f"{r.get('commodity') or 'A trade run'} is sold before it's bought. Plan the route to fix the order."
         return roles, warning
 
     # ------------------------------------------------------------ contract helpers
@@ -513,6 +529,10 @@ class MapMixin:
             picks = [f"{c['id']}|{o['id']}" for o in c["objectives"] if o["kind"] == "pickup" and o["status"] == "active"]
             drops = [f"{c['id']}|{o['id']}" for o in c["objectives"] if o["kind"] == "dropoff" and o["status"] == "active"]
             pairs += [(a, b) for a in picks if a in ids for b in drops if b in ids]
+        for r in self._runs():                           # trade runs: buy before you sell
+            a, b = f"{self.TRADE}{r['id']}|buy", f"{self.TRADE}{r['id']}|sell"
+            if a in ids and b in ids:
+                pairs.append((a, b))
         return pairs
 
     def _optimize_tasks(self):

@@ -30,7 +30,7 @@ async function tradeClick(e){
 // ---- Commodities: where to buy and sell one commodity
 async function openMarket(){
   if(!S.live?.log?.uex_token){ $("mk-out").innerHTML=needToken; $("mk-watch").innerHTML=""; return; }
-  renderWatch();
+  paLoad().then(syncWatchCount).catch(()=>{});
   if(!S.mk){ const r=await api().uex_commodities(); if(!r.ok){ $("mk-out").innerHTML=`<div class="empty">${esc(r.error)}</div>`; return; }
     S.mk=r.items; S.mkByName=Object.fromEntries(r.items.map(c=>[c.name.toLowerCase(),c]));
     $("mk-dl").innerHTML=r.items.map(c=>`<option value="${esc(c.name)}">${esc(c.kind||"")}${c.illegal?" · illegal":""}</option>`).join(""); }
@@ -225,61 +225,100 @@ function mkSourceMap(){ const d=S.mkData, r=d&&S.mkSrc?.[d.c.name]; if(!r?.sourc
   renderMarket(); }
 function syncMarketPanel(){ const on=S.tab==="market";
   $("mk-panel").classList.toggle("show",on&&!S.mkMap&&!!S.mk); $("map-back").classList.toggle("show",on&&!!S.mkMap); }
-// ---- Price alerts: watch a commodity's price at every terminal and get told when one gets low or high enough.
-// The app checks every few minutes (api_watch.py); alerts show here, as a note, and as a Windows notification.
-const WL_AGES=[[24,"1 day"],[72,"3 days"],[168,"7 days"],[0,"Any age"]];
-function wlLoad(force){ return qFetch("watch",()=>api().watch_list(),{ttl:30000,force}).then(x=>{ if(x?.ok) S.wl=x; return x; }); }
-function wlRule(w){ const what=w.side==="buy"?"Buy price":"Sell price", m=[];
+// ---- Price alerts (Market › Price alerts): watch a commodity's price at every terminal and get told when one
+// gets low or high enough. The app checks every few minutes (api_watch.py); alerts show here, as a note, and as a
+// Windows notification. Its own names (S.pa, pa…): it used to share S.wl and wlLoad with the wish list, whose
+// wlLoad (wishlist.js loads later) replaced this one, so the alerts box showed your wish list (ships and all) and
+// its buttons acted on wish list entries: names that went nowhere, Resume and Check now doing nothing.
+const PA_AGES=[[24,"1 day"],[72,"3 days"],[168,"7 days"],[0,"Any age"]];
+function paLoad(force){ return qFetch("watch",()=>api().watch_list(),{ttl:30000,force}).then(x=>{ if(x?.ok) S.pa=x; return x; }); }
+function paRule(w){ const what=w.side==="buy"?"Buy price":"Sell price", m=[];
   if(w.low) m.push(`≤ ${money(w.low)}`); if(w.high) m.push(`≥ ${money(w.high)}`);
-  return `${what} ${m.join(" or ")}${w.system?` · ${esc(w.system)}`:""}`; }
-async function renderWatch(force){ const box=$("mk-watch"); if(!box) return;
-  await wlLoad(force).catch(()=>{}); const d=S.wl, f=S.wlForm;
-  const items=d?.items||[]; if(!items.length&&!f){ box.innerHTML=""; return syncWatchCount(); }
-  const hits=items.reduce((a,w)=>a+(w.on?w.hits.length:0),0), open=S.wlOpen!==false||!!f;
-  const row=w=>{ const b=w.best, h=w.on?w.hits:[];
-    return `<div class="wl-row ${w.on?"":"off"} ${h.length?"hit":""}" data-wlid="${esc(w.id)}">
-      <div><b data-wl="open">${esc(w.name)}</b></div>
-      <div class="wl-acts"><button class="btn small ghost" data-wl="edit" title="Change the marks">Edit</button><button class="btn small ghost" data-wl="toggle" title="${w.on?"Pause this alert":"Turn this alert back on"}">${w.on?"Pause":"Resume"}</button><button class="btn small ghost" data-wl="del" title="Remove this alert">✕</button></div>
-      <div class="m">${wlRule(w)}<br>${!w.on?"Paused":h.length?`<span class="now">At your mark now at ${plural(h.length,"terminal")}</span>`:b?`Best now ${money(b.price)} at ${esc(b.where)}${b.updated?` · ${agoTs(b.updated)}`:""}`:d?.checked?"No terminal has a recent price for it":"Not checked yet"}</div>
-      ${h.length?`<ul class="wl-hits">${h.slice(0,4).map(x=>`<li><span>${x.place?`<a data-open="${esc(x.place)}" style="cursor:pointer">${esc(x.where)}</a>`:esc(x.where)}</span><span class="muted">${esc(x.system||"")}${x.updated?` · ${agoTs(x.updated)}`:""}</span><span>${money(x.price)}</span></li>`).join("")}${h.length>4?`<li class="muted">and ${h.length-4} more</li>`:""}</ul>`:""}</div>`; };
-  box.innerHTML=`<div class="wl-box"><div class="wl-h" data-wl="fold"><span>${open?"▾":"▸"} Price alerts</span><span class="n ${hits?"hot":""}">${items.length?`${items.length} watched${hits?` · ${hits} at your mark`:""}`:""}</span><span class="sp"></span>
-      ${items.length?`<button class="btn small ghost" data-wl="check" title="Check every alert against the latest prices now" ${S.wlBusy?"disabled":""}>${S.wlBusy?"Checking…":"Check now"}</button>`:""}</div>
-    ${open?`${items.map(row).join("")}${f?wlFormHtml(f):""}
-      ${d?.error?`<div class="muted" style="font-size:12px;margin-top:6px;color:#ffb454">${esc(d.error)}</div>`:d?.checked?`<div class="muted" style="font-size:11.5px;margin-top:6px">Checked ${agoTs(d.checked)}. Checked again every ${Math.round((d.every||300)/60)} minutes while Quantum is open.</div>`:""}`:""}</div>`;
-  syncWatchCount(); }
-function syncWatchCount(){ const el=$("c-watch"); if(!el) return; const n=(S.wl?.items||[]).reduce((a,w)=>a+(w.on?w.hits.length:0),0);
+  return `${what} ${m.join(" or ")}${w.system?` · ${esc(w.system)}`:" · any system"}`; }
+const paHitCount=()=>(S.pa?.items||[]).reduce((a,w)=>a+(w.on?w.hits.length:0),0);
+// how far today's best price is from your mark: "12% above your mark"
+function paGap(w){ const b=w.best?.price; if(!b) return "";
+  const g=[]; if(w.low) g.push(b<=w.low?0:(b-w.low)/w.low); if(w.high) g.push(b>=w.high?0:(w.high-b)/w.high); if(!g.length) return "";
+  const d=Math.min(...g); if(d<=0) return `<span class="pa-gap at">at your mark</span>`;
+  const pct=d<0.01?"<1":Math.round(d*100); const above=w.low&&(!w.high||(b-w.low)/w.low<=(w.high-b)/w.high);
+  return `<span class="pa-gap">${pct}% ${above?"above":"below"} your mark</span>`; }
+function paCard(w){ const b=w.best, h=w.on?w.hits:[], f=S.paForm, st=!w.on?["Paused","off"]:h.length?["At your mark","hit"]:["Watching",""];
+  return `<div class="pa-card ${st[1]}" data-paid="${esc(w.id)}">
+    <div class="pa-top"><a class="pa-name" data-pa="open" title="Open ${esc(w.name)} in Commodities">${esc(w.name)}</a><span class="pa-chip ${st[1]}">${st[0]}</span><span class="spacer"></span>
+      <button class="btn small ghost" data-pa="edit" title="Change the marks">Edit</button><button class="btn small ghost" data-pa="toggle" title="${w.on?"Stop alerting for now":"Start alerting again"}">${w.on?"Pause":"Resume"}</button><button class="btn small ghost" data-pa="del" title="Remove this alert" aria-label="Remove">✕</button></div>
+    <div class="pa-rule">${paRule(w)} · prices from ${w.max_age_h?`the last ${(PA_AGES.find(a=>a[0]===w.max_age_h)||[,""])[1]}`:"any time"}</div>
+    <div class="pa-now">${!w.on?"Paused: not checked until you resume it"
+      :b?`${w.side==="buy"?"Cheapest now":"Best now"} <b>${money(b.price)}</b> at ${b.place?`<a data-open="${esc(b.place)}" style="cursor:pointer">${esc(b.where)}</a>`:esc(b.where)}${b.updated?` <span class="muted">· ${agoTs(b.updated)}</span>`:""} ${paGap(w)}`
+      :S.pa?.checked?"No terminal has a recent price for it":"Not checked yet"}</div>
+    ${h.length?`<div class="pa-hits"><div class="pa-sub">At your mark now · ${plural(h.length,"terminal")}</div>${h.slice(0,6).map(x=>`<div class="pa-hit"><span>${x.place?`<a data-open="${esc(x.place)}" style="cursor:pointer">${esc(x.where)}</a>`:esc(x.where)}</span><span class="muted">${esc(x.system||"")}${x.updated?` · ${agoTs(x.updated)}`:""}</span><b>${money(x.price)}</b>${x.place?(S.live?.route?.includes(x.place)?`<button class="iconbtn added" data-add="${esc(x.place)}" title="In your route">✓</button>`:`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`):"<span></span>"}</div>`).join("")}${h.length>6?`<div class="muted" style="font-size:12px">and ${h.length-6} more</div>`:""}</div>`:""}
+    ${f&&f.id===w.id?paFormHtml(f):""}</div>`; }
+// The page: a new alert's form first (when you're making one), then every alert; the edit form opens inside its card
+async function renderAlerts(force){ const P=$("pa-panel"); syncWatchCount(); renderAlertsPane(); if(!P||S.tab!=="alerts") return;
+  if(!S.live?.log?.uex_token){ P.innerHTML=`<div class="pa-wrap">${needToken}</div>`; return; }
+  await paLoad(force).catch(()=>{}); const d=S.pa, f=S.paForm, items=d?.items||[];
+  P.innerHTML=`<div class="pa-wrap"><div class="pm-top"><h2>Price alerts</h2><span class="muted">${items.length?`${items.length} watched${paHitCount()?` · <span style="color:#57e39b">${paHitCount()} at your mark</span>`:""}`:""}</span></div>
+    ${f&&!f.id?`<div class="pa-card new">${paFormHtml(f)}</div>`:""}
+    ${items.length?`<div class="pa-grid">${items.map(paCard).join("")}</div>`
+      :!f?`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 003.4 0"/></svg><h2>No price alerts yet</h2><div>Pick a commodity on the left, or press Watch price on any commodity in Trade › Commodities. You're told when any terminal gets low or high enough.</div></div>`:""}
+    ${d?.error?`<div class="muted" style="font-size:12px;margin-top:10px;color:#ffb454">${esc(d.error)}</div>`:""}</div>`;
+  if(S.paScroll){ const id=S.paScroll; S.paScroll=null; P.querySelector(id==="new"?".pa-card.new":`[data-paid="${CSS.escape(id)}"] .wl-form`)?.scrollIntoView({block:"nearest",behavior:"smooth"}); } }
+// The left side: start an alert by commodity, and when it was last checked
+function renderAlertsPane(){ const P=$("pane-alerts"); if(!P) return; const d=S.pa;
+  if(!P.dataset.built){ P.dataset.built="1";
+    P.innerHTML=`<div class="fm-k" style="margin-bottom:6px">Watch a commodity</div>
+      <input class="search" id="pa-q" list="mk-dl" placeholder="Commodity, like “Laranite”" autocomplete="off">
+      <div class="muted" style="font-size:12px;margin:8px 2px 14px;line-height:1.5">You're told when any terminal sells it for less than your mark, or pays more than it. One alert per terminal: it alerts again only after the price has gone back past your mark.</div>
+      <div id="pa-status"></div>`;
+    const q=$("pa-q"), go=()=>{ const c=S.mkByName?.[q.value.trim().toLowerCase()]; if(c){ q.value=""; paNewFor(c); } };
+    q.addEventListener("change",go); q.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); }); }
+  const st=$("pa-status"); if(!st) return;
+  st.innerHTML=(d?.items||[]).length?`<div class="row" style="gap:8px;align-items:center"><button class="btn small" data-pa="check" ${S.paBusy?"disabled":""}>${S.paBusy?"Checking…":"Check now"}</button>
+      <span class="muted" style="font-size:12px">${d?.checked?`Checked ${agoTs(d.checked)}`:"Not checked yet"} · every ${Math.round((d?.every||300)/60)} min while Quantum is open</span></div>`:""; }
+function syncWatchCount(){ const n=paHitCount(); for(const id of ["c-watch"]){ const el=$(id); if(!el) continue;
   el.hidden=!n; el.textContent=n||""; el.title=n?`${plural(n,"terminal")} at a price alert's mark`:""; }
-function wlFormHtml(f){ const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?"selected":""}>${t}</option>`;
+  const box=$("mk-watch"); if(box){ const k=(S.pa?.items||[]).length;          // in Commodities: just a pointer to the page
+    box.innerHTML=k?`<a data-act="paopen" class="pa-link">🔔 ${plural(k,"price alert")}${n?` · <b style="color:#57e39b">${n} at your mark</b>`:""} <span class="muted">· Market › Price alerts</span></a>`:""; } }
+function paFormHtml(f){ const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?"selected":""}>${t}</option>`;
   return `<div class="wl-form" id="wl-form">
-    <div class="full"><b>${f.id?"Change":"New"} alert: ${esc(f.name)}</b></div>
+    <div class="full"><b>${f.id?"Change alert":"New alert"}: ${esc(f.name)}</b></div>
     <span class="k">Watch</span><select class="field" id="wl-side">${opt("buy","What terminals sell it for (buy price)",f.side)}${opt("sell","What terminals pay for it (sell price)",f.side)}</select>
     <span class="k">Low mark</span><input class="field" id="wl-low" inputmode="numeric" placeholder="Alert at or below (aUEC per SCU)" value="${f.low??""}">
     <span class="k">High mark</span><input class="field" id="wl-high" inputmode="numeric" placeholder="Alert at or above (aUEC per SCU)" value="${f.high??""}">
     <span class="k">System</span><select class="field" id="wl-sys">${opt("","Any system",f.system)}${["Stanton","Pyro","Nyx"].map(x=>opt(x,x,f.system)).join("")}</select>
-    <span class="k">Prices from</span><select class="field" id="wl-age">${WL_AGES.map(([v,t])=>opt(v,v?`Reported in the last ${t}`:"Any age",f.max_age_h??72)).join("")}</select>
-    <div class="hint">${f.hint||""}One alert per terminal when it reaches a mark; it alerts again only after the price has gone back past it.</div>
-    <div class="full row" style="gap:6px"><button class="btn small primary" data-wl="save">${f.id?"Save":"Add alert"}</button><button class="btn small ghost" data-wl="cancel">Cancel</button></div></div>`; }
-// A new alert for the commodity you're looking at, with marks a little better than today's best prices
-function wlNew(c,r){ const buy=r?.buy?.[0]?.price, sell=r?.sell?.[0]?.price, side=buy?"buy":"sell";
+    <span class="k">Prices from</span><select class="field" id="wl-age">${PA_AGES.map(([v,t])=>opt(v,v?`Reported in the last ${t}`:"Any age",f.max_age_h??72)).join("")}</select>
+    ${f.hint?`<div class="hint">${f.hint}</div>`:""}
+    <div class="full row" style="gap:6px"><button class="btn small primary" data-pa="save">${f.id?"Save":"Add alert"}</button><button class="btn small ghost" data-pa="cancel">Cancel</button></div></div>`; }
+// A new alert, with marks a little better than today's best prices
+function paNew(c,r){ const buy=r?.buy?.[0]?.price, sell=r?.sell?.[0]?.price, side=buy?"buy":"sell";
   const round=n=>n>=1000?Math.round(n/10)*10:Math.round(n*100)/100;
-  S.wlForm={id_commodity:c.id,name:c.name,side,low:side==="buy"&&buy?round(buy*0.95):"",high:side==="sell"&&sell?round(sell*1.05):"",system:$("mk-sys").value||"",max_age_h:72,
-    hint:`Today: cheapest to buy ${buy?money(buy):"–"}, best sell ${sell?money(sell):"–"}. `};
-  S.wlOpen=true; renderWatch(); $("mk-watch").scrollIntoView({block:"nearest",behavior:"smooth"}); }
-function wlFormRead(){ const f=S.wlForm; if(!f) return null;
+  S.paForm={id_commodity:c.id,name:c.name,side,low:side==="buy"&&buy?round(buy*0.95):"",high:side==="sell"&&sell?round(sell*1.05):"",system:$("mk-sys")?.value||"",max_age_h:72,
+    hint:buy||sell?`Today: cheapest to buy ${buy?money(buy):"–"}, best sell ${sell?money(sell):"–"}.`:""};
+  S.paScroll="new"; if(S.tab!=="alerts") document.querySelector('.tab[data-tab="alerts"]')?.click(); else renderAlerts(); }
+async function paNewFor(c){ let r=null; try{ r=await api().uex_market(c.id); }catch(_){} paNew(c,r?.ok===false?null:r); }
+function paFormRead(){ const f=S.paForm; if(!f) return null;
   return {...f,side:$("wl-side").value,low:$("wl-low").value.replace(/[^\d.]/g,""),high:$("wl-high").value.replace(/[^\d.]/g,""),system:$("wl-sys").value,max_age_h:+$("wl-age").value}; }
-$("mk-watch").addEventListener("change",e=>{ if(e.target.id==="wl-side"&&S.wlForm){ const f=wlFormRead(); S.wlForm={...f,low:f.high,high:f.low}; renderWatch(); } });
-$("mk-watch").onclick=async e=>{ if(await tradeClick(e)) return; const a=e.target.closest("[data-wl]")?.dataset.wl; if(!a) return;
-  const id=e.target.closest("[data-wlid]")?.dataset.wlid, w=(S.wl?.items||[]).find(x=>x.id===id);
-  if(a==="fold"&&!e.target.closest("button")){ S.wlOpen=!(S.wlOpen!==false); return renderWatch(); }
-  if(a==="check"){ S.wlBusy=true; renderWatch(); try{ const x=await api().watch_check_now(); if(x?.ok){ S.wl=x; qForget("watch"); } }catch(_){} S.wlBusy=false; return renderWatch(true); }
-  if(a==="cancel"){ S.wlForm=null; return renderWatch(); }
-  if(a==="save"){ const r=await api().watch_save(wlFormRead()); if(r?.ok===false) return toast(r.error);
-    toast(S.wlForm?.id?"Price alert saved":`Watching ${S.wlForm?.name}: you'll be told when a terminal reaches your mark`); S.wlForm=null; qForget("watch"); S.wl=r; return renderWatch(); }
+async function openAlerts(){ renderAlertsPane();
+  if(!S.mk&&S.live?.log?.uex_token){ const r=await api().uex_commodities().catch(()=>null); if(r?.ok){ S.mk=r.items; S.mkByName=Object.fromEntries(r.items.map(c=>[c.name.toLowerCase(),c]));
+    $("mk-dl").innerHTML=r.items.map(c=>`<option value="${esc(c.name)}">${esc(c.kind||"")}${c.illegal?" · illegal":""}</option>`).join(""); } }
+  renderAlerts(); }
+async function paClick(e){ if(await tradeClick(e)) return; const a=e.target.closest("[data-pa]")?.dataset.pa; if(!a) return;
+  const id=e.target.closest("[data-paid]")?.dataset.paid, w=(S.pa?.items||[]).find(x=>x.id===id);
+  if(a==="check"){ S.paBusy=true; renderAlertsPane(); try{ const x=await api().watch_check_now(); if(x?.ok){ S.pa=x; qForget("watch"); } }catch(_){} S.paBusy=false;
+    toast(paHitCount()?`${plural(paHitCount(),"terminal")} at your marks`:"Checked: nothing at your marks right now"); return renderAlerts(true); }
+  if(a==="cancel"){ S.paForm=null; return renderAlerts(); }
+  if(a==="save"){ const v=paFormRead(), r=await api().watch_save(v); if(r?.ok===false) return toast(r.error);
+    toast(v.id?"Price alert saved":`Watching ${v.name}: you'll be told when a terminal reaches your mark`); S.paForm=null; qForget("watch"); S.pa=r; return renderAlerts(); }
   if(!w) return;
-  if(a==="open"){ const c=S.mk?.find(x=>x.id===w.id_commodity); if(c){ S.mkSel=c; $("mk-search").value=c.name; renderMarket(); } return; }
-  if(a==="edit"){ S.wlForm={...w,hint:""}; return renderWatch(); }
-  if(a==="toggle"){ S.wl=await api().watch_toggle(w.id,!w.on); qForget("watch"); return renderWatch(); }
-  if(a==="del"){ S.wl=await api().watch_delete(w.id); qForget("watch"); if(S.wlForm?.id===w.id) S.wlForm=null; toast(`Price alert for ${w.name} removed`); return renderWatch(); } };
+  if(a==="open"){ const c=S.mk?.find(x=>String(x.id)===String(w.id_commodity));
+    if(c){ S.mkSel=c; S.mkData=null; $("mk-search").value=c.name; document.querySelector('.tab[data-tab="market"]')?.click(); } else toast("Couldn't find it in Commodities"); return; }
+  if(a==="edit"){ S.paForm=S.paForm?.id===w.id?null:{...w,hint:""}; S.paScroll=w.id; return renderAlerts(); }
+  if(a==="toggle"){ S.pa=await api().watch_toggle(w.id,!w.on); qForget("watch"); toast(w.on?`${w.name} alert paused`:`${w.name} alert back on`); return renderAlerts(); }
+  if(a==="del"){ S.pa=await api().watch_delete(w.id); qForget("watch"); if(S.paForm?.id===w.id) S.paForm=null; toast(`Price alert for ${w.name} removed`); return renderAlerts(); } }
+for(const id of ["pa-panel","pane-alerts"]){ const el=$(id); if(!el) continue; el.addEventListener("click",paClick);
+  el.addEventListener("change",e=>{ if(e.target.id==="wl-side"&&S.paForm){ const f=paFormRead(); S.paForm={...f,low:f.high,high:f.low}; renderAlerts(); } }); }
+$("mk-watch").onclick=e=>{ if(e.target.closest("[data-act=paopen]")) document.querySelector('.tab[data-tab="alerts"]')?.click(); };
+// counts on the tabs from the start (and after alerts go off: main.js)
+setTimeout(()=>{ if(S.live?.log?.uex_token) paLoad().then(syncWatchCount).catch(()=>{}); },4000);
 // Does anywhere that buys or sells it have a place on the map (in the system picked)? No: no "See on map".
 const mkOnMap=(r,sys)=>[...(r?.buy||[]),...(r?.sell||[])].some(x=>x.place&&S.locMap?.[x.place]&&(!sys||x.system===sys));
 function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnMap(d.r,$("mk-sys").value)) return;
@@ -295,7 +334,7 @@ function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnM
   } else S.mapMarks=null;
   renderMarket(); }
 $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
-  if(e.target.closest("[data-act=mkwatch]")&&S.mkData) return wlNew(S.mkData.c,S.mkData.r);
+  if(e.target.closest("[data-act=mkwatch]")&&S.mkData) return paNew(S.mkData.c,S.mkData.r);
   if(e.target.closest("[data-act=mksrcmap]")) return mkSourceMap();
   if(e.target.closest("[data-act=mksrcall]")){ S.mkSrcAll=!S.mkSrcAll; return S.mkData&&mkSources(S.mkData.c); }
   const ss=e.target.closest("[data-act=mksrcsort]"); if(ss){ S.mkSrcSort=ss.dataset.v; return S.mkData&&mkSources(S.mkData.c); }
@@ -411,7 +450,7 @@ async function runTrade(){
         Sell at ${end(x.to_place,x.to)} <span class="muted">${esc(x.to_where)} · ${money(x.sell)}/SCU</span></div>
       ${x.per_hour!=null?`<div class="facts" style="margin-top:2px"><span title="Rough time for the run: quantum travel${x.start_dist?" from where you are":""}, landing or docking, loading and unloading">~${Math.round(x.minutes)} min</span><span style="color:var(--ok)">≈ ${shortMoney(x.per_hour)}/h</span>${x.updated?(()=>{ const h=(Date.now()/1000-x.updated)/3600; return `<span style="color:${h<3?"#57e39b":h<12?"var(--ink-2)":"#ffb454"}" title="${x.updated_from&&x.updated_to?`Buy price ${agoTs(x.updated_from)}, sell price ${agoTs(x.updated_to)}`:"When these prices were reported"}">Prices ${agoTs(x.updated)}</span>`; })():""}${x.trust<0.8?`<span style="color:#ffb454" title="These prices are most of a day old or have few reports: check before you buy">Prices may be stale</span>`:""}${x.then?`<span title="The best run that starts where this one sells, so you don't fly back empty">Then: ${esc(x.then.commodity)} to ${esc(x.then.to)} +${shortMoney(x.then.profit)}</span>`:""}</div>`:""}
       <div class="facts"><span>Cost ${shortMoney(x.cost)}</span><span>+${money(x.sell-x.buy)}/SCU</span>${x.roi!=null?`<span>ROI ${Math.round(x.roi)}%</span>`:""}${x.dist?`<span>${fmtDist(x.dist)}</span>`:""}${x.cross_system?`<span style="color:#ffb454">Crosses systems</span>`:""}${x.autoload_from||x.autoload_to?`<span style="color:var(--ok)" title="The terminal loads and unloads your ship for you">Auto-load ${x.autoload_from&&x.autoload_to?"both ends":x.autoload_from?"at buy":"at sell"}</span>`:""}${x.boxes_from?`<span>Boxes up to ${esc(x.boxes_from.split(",").slice(-1)[0])} SCU</span>`:""}</div>
-      <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button><button class="btn small primary" data-run="${i}">Add to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
+      <div class="row" style="margin-top:8px;gap:6px">${x.from_place&&x.to_place?`<button class="btn small" data-prev="${i}">Preview</button>${runGoing(x)?`<button class="btn small" data-run="${i}" title="It's on your route and the map card">✓ Started</button>`:`<button class="btn small primary" data-run="${i}" title="Saves it to Planned Routes and puts its buy and sell stops on your route">Start run</button>`}`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
         <span class="spacer"></span>${x.url?`<button class="btn small ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div></div>`).join("")+uexCredit(r.at)+`<div id="tr-shared"></div>`;
   S.trRoutes=r.routes; S.trAt=r.at; S.trTotal=r.total; renderSharedRoutes(); }
 $("tr-go").onclick=runTrade;
@@ -511,10 +550,57 @@ $("tr-out").onclick=async e=>{ if(e.target.closest("[data-act=trsmall]")){ S.trS
   if(!e.target.closest("button,a")){ const c=e.target.closest("[data-tri]"); if(c){ openRunDetail(+c.dataset.tri); return; } }
   const pv=e.target.closest("[data-prev]"); if(pv){ openRunDetail(+pv.dataset.prev); return; }
   const b=e.target.closest("[data-run]"); if(!b) return; const x=S.trRoutes[+b.dataset.run];
-  await api().add_stops([x.from_place,x.to_place]); setPreview(null); redrawTradeButtons(); await poll();
-  toast(`Run added: buy ${x.commodity} at ${x.from_place}, sell at ${x.to_place}`); };
+  setPreview(null); await startRun(x); };
 function redrawTradeButtons(){ document.querySelectorAll("#tr-out [data-prev]").forEach(b=>{ const on=+b.dataset.prev===S.previewIdx;
-  b.textContent=on?"Previewing":"Preview"; b.classList.toggle("primary",on); b.closest(".tr-card").classList.toggle("hl",on); }); }
+  b.textContent=on?"Previewing":"Preview"; b.classList.toggle("primary",on); b.closest(".tr-card").classList.toggle("hl",on); });
+  document.querySelectorAll("#tr-out [data-run]").forEach(b=>{ const x=S.trRoutes?.[+b.dataset.run]; if(!x) return; const go=runGoing(x);
+    b.textContent=go?"✓ Started":"Start run"; b.classList.toggle("primary",!go); }); }
+
+// ---- Your runs on the map's home card (beside the next stop): each open run on your route, how far along it
+// is, and the one thing to do next. Quantum watches the log: setting the buy place as your destination in game
+// shows you're on your way; landing there makes "Mark purchased" the obvious next step (it doesn't tick it for
+// you: landing somewhere doesn't mean you bought anything). Several runs: drag stops in the route, or Plan best
+// order (shortest trip that still buys each cargo before selling it).
+async function runsSync(quiet){ let r; try{ r=await api().trade_runs(); }catch(_){ return; } if(!r?.ok) return;
+  const before=new Map((S.runs||[]).map(x=>[x.id,x]));
+  S.runs=r.runs||[];
+  if(!quiet) for(const x of S.runs){ const o=before.get(x.id); if(!o) continue;
+    if(x.heading==="buy"&&o.heading!=="buy") toast(`On your way to buy ${x.commodity} at ${x.from_place}: you set it as your destination in game`);
+    else if(x.stage==="transit"&&o.stage!=="transit"&&x.transit_how==="route") toast(`${x.commodity} is in transit: you set your route to ${x.to_place} in game`); }
+  if($("tr-mine-out")) renderRuns(); redrawTradeButtons(); if(typeof renderHud==="function"&&S.live) renderHud(); }
+const RUN_BAR=["planned","bought","loading","transit","unloading"];
+function runAt(x){ const lv=S.live||{}, tv=lv.travel, here=n=>!!n&&((tv?.state==="landed"&&tv.place===n)||(lv.arrived?.place===n)||(lv.at_place?.name===n));
+  return {buy:here(x.from_place), sell:here(x.to_place)}; }
+function runHint(x){ const at=runAt(x), st=x.stage||"planned";
+  if(st==="planned") return at.buy?[`You're at ${x.from_place}: buy ${x.units?x.units.toLocaleString()+" SCU of ":""}${x.commodity}`,true]
+    :x.heading==="buy"?[`On your way to ${x.from_place} to buy`,false]:[`Next: buy at ${x.from_place}`,false];
+  if(st==="bought"||st==="loading") return [at.buy&&st==="bought"?"Load it, then head out":`Next: fly to ${x.to_place} to sell`,false];
+  if(st==="transit") return at.sell?[`You're at ${x.to_place}: off load and sell`,true]:[`On the way to ${x.to_place}`,false];
+  if(st==="unloading") return [`Selling at ${x.to_place}`,true];
+  return ["",false]; }
+function runsHudHtml(){ const open=(S.runs||[]).filter(x=>x.routed&&x.stage!=="sold"); if(!open.length) return "";
+  const many=open.length>1, shown=open.slice(0,3);
+  const row=x=>{ const st=x.stage||"planned", k=RUN_BAR.indexOf(st), nx=RUN_NEXT[st], [hint,now]=runHint(x);
+    const profit=x.plan_buy!=null&&x.plan_sell!=null&&x.units?(x.plan_sell-x.plan_buy)*x.units:null;
+    return `<div class="tr-hud-run"><div class="row" style="gap:6px;align-items:baseline"><b>${esc(x.commodity)}</b>${x.units?`<span class="muted">${x.units.toLocaleString()} SCU</span>`:""}
+        <span class="spacer"></span>${profit!=null?`<span style="color:var(--ok);font-size:12.5px">+${shortMoney(profit)}</span>`:""}</div>
+      <div class="tr-hud-leg"><span class="${k<=0?"on":"done"}">Buy</span> ${esc(x.from_place)} <span class="muted">→</span> <span class="${k>=3?"on":""}">Sell</span> ${esc(x.to_place)}</div>
+      <div class="tr-hud-bar">${RUN_BAR.map((_,i)=>`<i class="${i<k?"done":i===k?"cur":""}"></i>`).join("")}</div>
+      <div class="row" style="gap:6px;align-items:center"><span class="tr-hud-hint ${now?"now":""}">${esc(hint)}</span><span class="spacer"></span>
+        ${nx?`<button class="btn small ${now?"go":""}" data-hudrun="${esc(x.id)}" data-stage="${nx[0]}">${esc(nx[1])}</button>`:""}</div></div>`; };
+  return `<div class="card trade-runs"><div class="lbl">Trade run${many?`s · ${open.length}`:""}<span class="spacer"></span>
+      ${many?`<button class="btn small" id="hud-runs-plan" title="Shortest trip that still buys each cargo before selling it (contract stops too)">Plan best order</button>`:""}
+      <a id="hud-runs-all" style="cursor:pointer;font-size:12px;margin-left:8px">Details</a></div>
+    ${shown.map(row).join("")}${open.length>3?`<div class="hint" style="margin-top:6px">+${open.length-3} more in Trade › Planned Routes</div>`:""}
+    ${many?`<div class="hint" style="margin-top:6px">Drag stops in the route list to change the order yourself.</div>`:""}</div>`; }
+function runsHudWire(H){
+  for(const b of H.querySelectorAll("[data-hudrun]")) b.onclick=async()=>{ b.disabled=true; const x=(S.runs||[]).find(r=>r.id===b.dataset.hudrun);
+    const r=await api().trade_run_stage(b.dataset.hudrun,b.dataset.stage); if(r&&r.ok===false) toast(r.error);
+    await runsSync(true); await poll();
+    if(x&&b.dataset.stage==="sold") toast(`${x.commodity} sold. Prices and fees can be filled in under Planned Routes`); };
+  const pl=$("hud-runs-plan"); if(pl) pl.onclick=async()=>{ pl.disabled=true; const r=await api().optimize_route(); await poll();
+    toast(!r?.ok?(r?.error||"Couldn't plan it"):r.saved>1000?`Route reordered: ${fmtDist(r.saved)} shorter, buying each cargo before you sell it`:"That's already the best order"); };
+  const all=$("hud-runs-all"); if(all) all.onclick=()=>{ document.querySelector('.tab[data-tab="trade"]')?.click(); if(typeof showTradeView==="function") showTradeView("mine"); }; }
 
 // ---- Vehicles: every ship and ground vehicle, where to buy or rent it and for how much
 async function openVehicles(){
@@ -1136,6 +1222,9 @@ async function afterRestore(){
   else if(S.tab==="components"&&S.cpDetail) renderComponents(); }
 async function renderFleet(){
   const fl=await api().fleet_list(); S.fleet=fl.ships;
+  // your profile's fleet is the same list: a ship added, removed, moved or made primary shows there (and on the
+  // profile others see, republished when it changed) straight away, not after a restart
+  if(fl.ok!==false&&Array.isArray(fl.ships)){ S.pfFleet=fl.ships; if(typeof pfPublish==="function") pfPublish().catch?.(()=>{}); }
   if(!S.flSel||!fl.ships.some(x=>x.uid===S.flSel)) S.flSel=fl.main||fl.ships[0]?.uid||null;
   $("fl-out").innerHTML=fl.ships.length?`<div class="muted" style="font-size:12px;margin:10px 2px 8px">${fl.ships.length} ship${fl.ships.length===1?"":"s"} · ★ marks your primary ship (used for fitting components, determining trade routes, etc.)${fl.ships.length>1?" · Drag a ship to change the order":""}</div>`
     +fl.ships.map(x=>`<div class="vh ${x.uid===S.flSel?"hl":""}" ${fl.ships.length>1?`draggable="true" data-fldrag="${x.uid}" title="Drag to move ${esc(x.full)} in your fleet"`:""}><div class="hd" data-fl="${x.uid}">${brandTile(x.maker)}<div class="fl-name"><div class="nm">${x.main?"★ ":""}${esc(x.full)}</div>
@@ -1457,7 +1546,7 @@ $("fl-out").onclick=async e=>{
   fo.addEventListener("drop",async e=>{ const c=e.target.closest?.("[data-fldrag]"), from=S.flDrag; if(!c||!from) return; e.preventDefault(); clear(); S.flDrag=null;
     const to=c.dataset.fldrag; if(to===from) return;
     const r=await api().fleet_move(from,to,spot(e,c)); if(r&&r.ok===false) toast(r.error);
-    S.pfFleet=null; renderFleet(); }); }
+    renderFleet(); }); }
 $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
   const lo=e.target.closest("[data-lo]"); if(lo) return loadoutAct(lo);
@@ -1522,7 +1611,7 @@ async function openRunDetail(i){
         <div class="trd-pic" id="trd-img"></div>
         <div class="mkp-stats">${sumCell("Profit",`+${money(x.profit)}`)}${sumCell("Cost",money(x.cost))}${sumCell("Revenue",money(x.units*x.sell))}
           ${sumCell("Per SCU",`+${money(x.sell-x.buy)}`)}${sumCell("ROI",x.roi!=null?`${Math.round(x.roi)}%`:null)}${sumCell("Distance",x.dist?fmtDist(x.dist):null)}</div>
-        <div class="row" style="gap:6px;flex-wrap:wrap">${x.from_place&&x.to_place?`<button class="btn primary" data-act="trstart">Plan this route</button><button class="btn" data-act="tradd">Add stops to route</button>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
+        <div class="row" style="gap:6px;flex-wrap:wrap">${x.from_place&&x.to_place?`${runGoing(x)?`<button class="btn" data-act="trstart" title="It's on your route and the map card">✓ Run started</button>`:`<button class="btn primary" data-act="trstart" title="Saves it to Planned Routes and puts its buy and sell stops on your route">Start run</button>`}<a class="muted" data-act="tradd" style="cursor:pointer;font-size:12.5px;align-self:center;text-decoration:underline" title="Its two stops on your route, without tracking it as a run">Only add the stops</a>`:`<span class="muted" style="font-size:12px">${esc(!x.from_place?x.from:x.to)} isn't on the map yet</span>`}
           ${x.url?`<button class="btn ghost" data-ext="${esc(x.url)}">UEX</button>`:""}</div>
         <div class="trd-facts">${facts.map(f=>`<span>${f}</span>`).join("")}</div></div>
       <div class="trd-map" id="trd-map"><span class="lbl">Route preview</span><button class="pv-next in-win" id="trd-next" type="button" data-pvnext="1"></button></div>
@@ -1544,13 +1633,20 @@ function fitTradePanel(){ const p=$("tr-panel"); if(!p||!p.classList.contains("s
   for(let k=0;k<3;k++){ const h=w.getBoundingClientRect().height; if(!h) break;   // height changes with width, so settle in a few steps
     z=Math.max(0.55,Math.min(1.3,z*avail/h)); w.style.zoom=z; } }
 addEventListener("resize",()=>{ clearTimeout(S.trFitT); S.trFitT=setTimeout(fitTradePanel,80); });
+// A found route as a run to save, and whether you already have that run going
+const runOf=x=>({commodity:x.commodity,units:x.units,from_place:x.from_place,to_place:x.to_place,from_terminal:x.from,to_terminal:x.to,plan_buy:x.buy,plan_sell:x.sell,url:x.url,boxes_from:x.boxes_from||null});
+const runGoing=x=>(S.runs||[]).some(r=>r.stage!=="sold"&&r.commodity===x.commodity&&r.from_place===x.from_place&&r.to_place===x.to_place);
+// Start run: saved to Planned Routes and its buy and sell stops put on your route (the planner keeps buying
+// before selling). It then shows on the map's home card; "Plan best order" there sorts several runs out.
+async function startRun(x){ if(runGoing(x)) return toast(`You already have this ${x.commodity} run going. It's on your route`);
+  const r=await api().trade_run_start(runOf(x)); if(!r.ok) return toast(r.error);
+  await runsSync(true); await poll(); redrawTradeButtons();
+  toast(r.runs>1?`${x.commodity} run started. You have ${r.runs} runs on your route: Plan best order on the map card sorts them out`
+    :`${x.commodity} run started: buy at ${x.from_place}, sell at ${x.to_place}. Follow it on the map card`); }
 $("tr-panel").onclick=async e=>{ if(await tradeClick(e)) return; const x=S.trRoutes?.[S.trOpen];
   if(e.target.closest("[data-act=trclose]")){ closeRunDetail(); setPreview(null); return; }
-  if(e.target.closest("[data-act=tradd]")&&x){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); }
-  if(e.target.closest("[data-act=trstart]")&&x){
-    const r=await api().trade_run_save({commodity:x.commodity,units:x.units,from_place:x.from_place,to_place:x.to_place,from_terminal:x.from,to_terminal:x.to,plan_buy:x.buy,plan_sell:x.sell,url:x.url,boxes_from:x.boxes_from||null});
-    if(!r.ok) return toast(r.error); await api().add_stops([x.from_place,x.to_place]); await poll();
-    toast(`Route planned: ${x.commodity}. Track it under Planned Routes`); showTradeView("mine"); } };
+  if(e.target.closest("[data-act=tradd]")&&x){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route (not tracked as a run)`); }
+  if(e.target.closest("[data-act=trstart]")&&x){ await startRun(x); if(runGoing(x)) openRunDetail(S.trOpen); } };
 // ---- My runs
 // A run's steps ("bought" is the saved key for Purchased, so older runs still work; app.TRADE_STAGES)
 const STAGES=[["planned","Planned"],["bought","Pur\u00adchased"],   // soft hyphen: "Pur-chased" only when the column is too narrow
@@ -1651,7 +1747,8 @@ $("tr-mine-out").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-rundel]")){ await api().trade_run_delete(x.id); toast("Route deleted"); return renderRuns(); }
   if(e.target.closest("[data-runcargo]")) return openCargo(x.id);
   if(e.target.closest("[data-runprev]")) return previewPlaces(x.from_place,x.to_place,x.commodity);
-  if(e.target.closest("[data-runroute]")){ await api().add_stops([x.from_place,x.to_place]); await poll(); return toast(`Added ${x.from_place} and ${x.to_place} to the route`); } };
+  if(e.target.closest("[data-runroute]")){ const r=await api().trade_run_route(x.id); if(!r.ok) return toast(r.error); await runsSync(true); await poll();
+    return toast(`${x.commodity}: buy at ${x.from_place}, sell at ${x.to_place} are on your route`); } };
 
 
 // ---- Updates: a newer release on GitHub is offered here; Quantum downloads it, checks its signature
