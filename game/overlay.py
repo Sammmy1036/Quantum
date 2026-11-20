@@ -1,5 +1,9 @@
 """F9 overlay: bring Quantum over the game, or tuck it away and hand focus back to Star Citizen.
 
+Quantum is only pinned on top when it shares a screen with the game. On another screen it's shown as an
+ordinary window, and whenever another program (a browser, Discord...) takes the focus, Quantum un-pins so
+that program comes in front of it. Clicking back into Quantum pins it again (start_watch() does this).
+
 Windows only, pure ctypes. The game must run in Borderless or Windowed mode; nothing can draw over a
 true exclusive-fullscreen game. A process that receives a registered hotkey is allowed to take the
 foreground, which is why this works from inside the game.
@@ -127,6 +131,36 @@ if AVAILABLE:
             user32.SetForegroundWindow(hwnd)
         return user32.GetForegroundWindow() == hwnd
 
+    SWP_NOACTIVATE = 0x0010
+    user32.MonitorFromWindow.argtypes = (wintypes.HWND, wintypes.DWORD)
+    user32.MonitorFromWindow.restype = wintypes.HANDLE
+    _state = {"overlay": False}       # True while F9 has Quantum up as the overlay over the game
+
+    def _same_screen(hwnd, game):
+        """Are Quantum and the game on the same monitor? (A window across two counts where most of it is.)"""
+        return user32.MonitorFromWindow(hwnd, 2) == user32.MonitorFromWindow(game, 2)   # MONITOR_DEFAULTTONEAREST
+
+    def _pinned(hwnd):
+        return bool(user32.GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST)
+
+    def _pin(hwnd):
+        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
+
+    def _unpin(hwnd, below=None):
+        """Take Quantum off always-on-top. With below=, it goes just under that window (the app that took
+        the focus), so the app ends up in front: HWND_NOTOPMOST alone would put Quantum over it again."""
+        if below:
+            user32.SetWindowPos(hwnd, below, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
+        if _pinned(hwnd):                     # no below, or that window is pinned on top itself
+            user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
+
+    def _hide(hwnd, game):
+        _state["overlay"] = False
+        _unpin(hwnd)
+        if game:
+            _force_foreground(game)
+        return "hidden"
+
     def toggle(title=WINDOW_TITLE, restore_cb=None, after_show_cb=None, show_cb=None):
         """Show Quantum pinned on top of the game, or send it back behind the game.
 
@@ -137,15 +171,16 @@ if AVAILABLE:
         hwnd = user32.FindWindowW(None, title)
         if not hwnd:
             return "window not found"
+        game = _find_game()
+        # On another screen than the game, Quantum isn't covering anything: F9 just swaps the focus.
+        if game and not user32.IsIconic(hwnd) and user32.IsWindowVisible(hwnd) and not _same_screen(hwnd, game):
+            if user32.GetForegroundWindow() == hwnd:
+                return _hide(hwnd, game)
         # Up = pinned AND actually in front. Pinned alone isn't enough: the game can end up drawn over a
         # pinned Quantum (it took the foreground back on its own, or after a click into it), and then the
         # first F9 only "hid" a window that was already out of sight, so it took a second press to show it.
-        if _is_overlay_up(hwnd) and _in_front(hwnd) and not _game_covers(hwnd):
-            user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
-            game = _find_game()
-            if game:
-                _force_foreground(game)
-            return "hidden"
+        elif _is_overlay_up(hwnd) and _in_front(hwnd) and not _game_covers(hwnd):
+            return _hide(hwnd, game)
         if user32.IsIconic(hwnd):
             if restore_cb:
                 restore_cb()                      # the app's own restore keeps WebView2 drawing
@@ -156,7 +191,14 @@ if AVAILABLE:
                 show_cb()                         # hidden in the tray: un-hide through the app as well
             else:
                 user32.ShowWindow(hwnd, SW_SHOW)
-        user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
+        # Decide now, with the window back where it sits (a minimised one has no real screen to ask about)
+        other_screen = bool(game) and not _same_screen(hwnd, game)
+        if other_screen:
+            _state["overlay"] = False
+            _unpin(hwnd)
+        else:
+            _state["overlay"] = True
+            user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW)
         focused = _force_foreground(hwnd)
         if after_show_cb:
             try:
@@ -164,13 +206,14 @@ if AVAILABLE:
             except Exception:
                 pass
         if focused:
-            return "shown"
+            return "shown on the other screen" if other_screen else "shown"
         return ("shown on top, but Windows kept the game focused: click Quantum to use it. If it doesn't "
                 "appear at all, set the game to Borderless, or restart Quantum as administrator")
     def focus_game(title=WINDOW_TITLE):
         """Un-pin Quantum and give Star Citizen the focus, so keystrokes reach the game.
         Returns True if the game ended up focused."""
         me = user32.FindWindowW(None, title)
+        _state["overlay"] = False
         if me and _is_overlay_up(me):
             user32.SetWindowPos(me, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
         game = _find_game()
@@ -290,6 +333,73 @@ if AVAILABLE:
             return False
         return a.left <= b.left and a.top <= b.top and a.right >= b.right and a.bottom >= b.bottom
 
+    EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_MOVESIZEEND, WINEVENT_OUTOFCONTEXT = 0x0003, 0x000B, 0x0000
+    WinEventProc = ctypes.WINFUNCTYPE(None, wintypes.HANDLE, wintypes.DWORD, wintypes.HWND, wintypes.LONG,
+                                      wintypes.LONG, wintypes.DWORD, wintypes.DWORD)
+    user32.SetWinEventHook.argtypes = (wintypes.DWORD, wintypes.DWORD, wintypes.HMODULE, WinEventProc,
+                                       wintypes.DWORD, wintypes.DWORD, wintypes.DWORD)
+    user32.SetWinEventHook.restype = wintypes.HANDLE
+    user32.GetMessageW.argtypes = (ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT)
+    _watching = {"on": False}
+
+    def _on_window_event(event, hwnd, title, my_pid):
+        q = user32.FindWindowW(None, title)
+        if not q or not hwnd:
+            return
+        root = user32.GetAncestor(hwnd, 2) or hwnd                  # GA_ROOT
+        if event == EVENT_SYSTEM_FOREGROUND:
+            if _window_pid(root) == my_pid:
+                # Back in Quantum after another app had it: pin it again if it's up as the overlay
+                if root == q and _state["overlay"] and not _pinned(q):
+                    game = _find_game()
+                    if not game or _same_screen(q, game):
+                        _pin(q)
+                return
+            game = _find_game()
+            if game and root == game:
+                return          # the game covers Quantum anyway, as before; F9 brings it back
+            if _pinned(q):
+                _unpin(q, below=root)       # another app took the focus: let it come over Quantum
+        elif event == EVENT_SYSTEM_MOVESIZEEND and root == q:
+            game = _find_game()
+            if game and not _same_screen(q, game):
+                _state["overlay"] = False   # dragged off the game's screen: no need to sit on top
+                _unpin(q)
+            elif _state["overlay"] and user32.GetForegroundWindow() == q and not _pinned(q):
+                _pin(q)                     # dragged back over the game while up as the overlay
+
+    def start_watch(title=WINDOW_TITLE):
+        """Watch which window has the focus (and when Quantum is dragged to another screen), so a pinned
+        Quantum steps aside for other programs. Runs on its own thread; call once after the window opens."""
+        if _watching["on"]:
+            return
+        _watching["on"] = True
+        import threading
+
+        def loop():
+            my_pid = os.getpid()
+
+            def cb(_hook, event, hwnd, id_object, _child, _thread, _time):
+                if id_object != 0:              # OBJID_WINDOW only: not carets, menus and the like
+                    return
+                try:
+                    _on_window_event(event, hwnd, title, my_pid)
+                except Exception:
+                    pass
+            proc = WinEventProc(cb)             # kept referenced here for as long as the hooks live
+            hooks = [user32.SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, None, proc,
+                                            0, 0, WINEVENT_OUTOFCONTEXT),
+                     user32.SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, None, proc,
+                                            my_pid, 0, WINEVENT_OUTOFCONTEXT)]
+            if not any(hooks):
+                _watching["on"] = False
+                return
+            msg = wintypes.MSG()                # the hooks are delivered through this thread's messages
+            while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
+                user32.TranslateMessage(ctypes.byref(msg))
+                user32.DispatchMessageW(ctypes.byref(msg))
+        threading.Thread(target=loop, name="overlay-watch", daemon=True).start()
+
     def set_app_id(app_id="microTech.Quantum"):
         """Group Quantum under its own taskbar icon (not Python's). Call before the window opens."""
         try:
@@ -323,6 +433,9 @@ if AVAILABLE:
 else:
     def focus_game(title=WINDOW_TITLE):
         return False
+
+    def start_watch(title=WINDOW_TITLE):
+        pass
 
     def cloak(hwnd, on):
         return False

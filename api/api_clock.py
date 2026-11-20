@@ -179,6 +179,50 @@ class ClockMixin:
         self._save_settings()
         return {"ok": True}
 
+    # The order of the sections in the left-hand rail, as the user dragged them (group names, top to bottom).
+    # Empty: the default order.
+    def rail_order(self):
+        o = self._settings.get("rail_order")
+        return {"ok": True, "order": o if isinstance(o, list) else []}
+
+    def rail_order_set(self, order):
+        order = [g[:30] for g in order if isinstance(g, str)][:40] if isinstance(order, list) else []
+        if order:
+            self._settings["rail_order"] = order
+        else:
+            self._settings.pop("rail_order", None)
+        self._save_settings()
+        return {"ok": True, "order": order}
+
+    # Quantum's own title bar (Settings > Window). "quantum": the page draws the bar, "windows": the normal
+    # Windows frame. Chosen when the window opens, so a change takes effect at the next start.
+    def window_style(self):
+        from desktop import frameless
+        style = "windows" if self._settings.get("window_style") == "windows" or not frameless.AVAILABLE else "quantum"
+        return {"ok": True, "style": style, "active": bool(getattr(self, "_frameless", False)),
+                "max": frameless.is_maximised(), "available": frameless.AVAILABLE}
+
+    def set_window_style(self, style):
+        self._settings["window_style"] = "windows" if style == "windows" else "quantum"
+        self._save_settings()
+        return self.window_style()
+
+    def win_minimize(self):
+        from desktop import frameless
+        return frameless.minimise()
+
+    def win_toggle_max(self):
+        from desktop import frameless
+        return {"max": frameless.toggle_maximise()}
+
+    def win_close(self):
+        from desktop import frameless
+        return frameless.close()
+
+    def win_drag(self, edge="caption"):
+        from desktop import frameless
+        return frameless.drag(edge)
+
     def test_autoloc(self, delay=5):
         self._sender.send_after(delay)
         return {"ok": True}
