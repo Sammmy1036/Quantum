@@ -12,19 +12,51 @@ html,body{margin:0;height:100%;background:var(--ground);color:var(--ink);font:14
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--you);outline-offset:2px}
-.app{display:grid;grid-template-columns:92px clamp(340px,24vw,500px) minmax(0,1fr);height:100vh}   /* the rail, then the sidebar (grows with wide windows) */
+.app{display:grid;grid-template-columns:92px clamp(340px,24vw,500px) minmax(0,1fr);height:100vh}
+/* ---------- Quantum's own title bar (Settings > Window; the Windows frame is off then) ---------- */
+body.tb-on .app{height:calc(100vh - 36px)}
+.tbar{height:36px;position:relative;z-index:10000;display:flex;align-items:center;user-select:none;
+  background:linear-gradient(90deg,#050b18,#07142b 50%,#050b18)}
+.tbar[hidden]{display:none}
+.tbar:after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,#2f86ff 25%,#6fd0ff 50%,#2f86ff 75%,transparent);box-shadow:0 0 10px #2f86ff}
+.tb-t{padding-left:14px;display:flex;align-items:center;gap:10px;font:700 11px Orbitron,var(--display);letter-spacing:.3em;color:#8cc4ff}
+.tb-t svg{width:17px;height:17px}
+.tb-live{font:600 10px Orbitron,var(--display);font-style:normal;letter-spacing:.1em;color:var(--ok);border:1px solid #1f5c38;padding:2px 6px;border-radius:2px}
+.tb-live[hidden]{display:none}
+.tb-sys{position:absolute;left:var(--tb-mid,50%);transform:translateX(-50%);display:flex;gap:2px;border:1px solid var(--line-2);padding:2px;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.tb-sys[hidden]{display:none}
+.tb-sys button{border:0;background:none;cursor:pointer;font:700 10.5px Orbitron,var(--display);letter-spacing:.16em;padding:4px 14px;color:var(--dim)}
+.tb-sys button:hover{color:var(--ink)}.tb-sys button[aria-pressed=true]{background:#123064;color:#cfe2ff}
+.tb-wc{margin-left:auto;display:flex;gap:6px;padding-right:10px}
+.tb-wc button{--edge:#2a4472;--fill:#050b18;position:relative;width:30px;height:22px;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;
+  background:var(--edge);color:#8cc4ff;border:0;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+.tb-wc button:before{content:"";position:absolute;inset:1px;background:var(--fill);clip-path:polygon(5.6px 0,100% 0,100% calc(100% - 5.6px),calc(100% - 5.6px) 100%,0 100%,0 5.6px)}
+.tb-wc button svg{position:relative}
+.tb-wc svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round}
+.tb-wc button:hover{--edge:#2f86ff;--fill:#0d2550;color:#cfe2ff}.tb-wc .x:hover{--edge:#ff6b6b;--fill:#3a0d12;color:#ff9b9b}
+.tb-edges i{position:fixed;z-index:10001}.tb-edges[hidden]{display:none}
+.tb-edges [data-e=top]{top:0;left:8px;right:8px;height:4px;cursor:ns-resize}.tb-edges [data-e=bottom]{bottom:0;left:8px;right:8px;height:5px;cursor:ns-resize}
+.tb-edges [data-e=left]{left:0;top:8px;bottom:8px;width:5px;cursor:ew-resize}.tb-edges [data-e=right]{right:0;top:8px;bottom:8px;width:5px;cursor:ew-resize}
+.tb-edges [data-e=topleft]{left:0;top:0;width:8px;height:8px;cursor:nwse-resize}.tb-edges [data-e=bottomright]{right:0;bottom:0;width:10px;height:10px;cursor:nwse-resize}
+.tb-edges [data-e=topright]{right:0;top:0;width:8px;height:8px;cursor:nesw-resize}.tb-edges [data-e=bottomleft]{left:0;bottom:0;width:10px;height:10px;cursor:nesw-resize}   /* the rail, then the sidebar (grows with wide windows) */
 /* ---------- rail: your profile, then one button per section; Cart and Settings at the foot ---------- */
-.rail{background:#040912;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 0 12px;min-height:0;overflow-y:auto;overflow-x:hidden}
+.rail{--rk:1;--rk2:1;background:#040912;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:calc(4px*var(--rk));padding:calc(14px*var(--rk)) 0 calc(12px*var(--rk));min-height:0;overflow-y:auto;overflow-x:hidden}
 .rail::-webkit-scrollbar{width:0}
-.rail-btn{width:84px;padding:9px 2px 8px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--dim);font:600 10.5px/1.1 var(--text);position:relative;flex:none;white-space:nowrap}
-.rail-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail-btn{width:84px;padding:calc(9px*var(--rk)) 2px calc(8px*var(--rk));border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:calc(4px*var(--rk));background:none;border:0;color:var(--dim);font:600 10.5px/1.1 var(--text);position:relative;flex:none;white-space:nowrap}
+.rail-btn svg{width:calc(22px*var(--rk2));height:calc(22px*var(--rk2));fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .rail-btn:hover{color:var(--ink);background:var(--panel-2)}
 .rail-btn[aria-current=page]{color:var(--ink);background:var(--panel-3);box-shadow:inset 3px 0 0 var(--route)}
 .rail-btn[aria-current=page] svg{stroke:var(--route-2)}
-.rail-gap{flex:1;min-height:12px}
+.rail-btn svg.ofc{width:calc(23px*var(--rk2));height:calc(22px*var(--rk2))}.rail-btn[aria-current=page] svg.ofc{color:var(--route-2)}
+.rail-gap{flex:1;min-height:calc(12px*var(--rk))}
+.rail-btn.rail-drag{z-index:2;color:var(--ink);background:var(--panel-3);box-shadow:0 6px 18px rgba(0,0,0,.55),inset 0 0 0 1px var(--route);cursor:grabbing}
+.rail.rail-sorting{cursor:grabbing;user-select:none}
+.rail.rail-sorting .rail-btn:not(.rail-drag){transition:background .12s}
 .rail-n{position:absolute;top:3px;right:8px;background:var(--route);color:#fff;font:700 10px/1 var(--text);border-radius:999px;padding:3px 6px}
 .rail-n[hidden]{display:none}
-.rail-me{width:46px;height:46px;flex:none;border-radius:50%;padding:0;border:2px solid var(--line-2);background:#14223a;margin-bottom:12px;position:relative;color:#cfe2ff;font:700 17px var(--text)}
+.rail-me{width:calc(46px*var(--rk2));height:calc(46px*var(--rk2));flex:none;border-radius:50%;padding:0;border:2px solid var(--line-2);background:#14223a;margin-bottom:calc(12px*var(--rk));position:relative;color:#cfe2ff;font:700 17px var(--text)}
 .rail-me .av{position:absolute;inset:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .rail-me img{width:100%;height:100%;object-fit:cover}
 .rail-me svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
@@ -49,7 +81,7 @@ button{cursor:pointer}
    screen instead of three short rows huddled in the corner. Each row spreads across the full width. */
 /* The section's own tabs: pills under its title. Only the open section's show; a section with one tab has none. */
 .sec-head{padding:14px clamp(14px,4cqi,24px) 0}
-.sec-head h2{margin:0;font:600 clamp(20px,5.2cqi,26px)/1.2 var(--display);letter-spacing:.01em}
+.sec-head h2{margin:0;font:700 clamp(17px,4.4cqi,22px)/1.25 Orbitron,var(--display);letter-spacing:.04em}
 .tabs{display:flex;flex-wrap:wrap;gap:6px;padding:10px clamp(14px,4cqi,24px) 14px;border-bottom:1px solid var(--line)}
 .tabs.solo{padding:0;border-bottom:0;height:12px}.tabs.solo .tab{display:none}
 .tab{background:var(--panel-2);border:1px solid var(--line-2);border-radius:9px;padding:6px 12px;color:var(--ink-2);font:500 clamp(12.5px,3cqi,14px) var(--text);flex:0 0 auto;display:flex;gap:6px;align-items:center}
@@ -420,9 +452,20 @@ details.finished summary{cursor:pointer;color:var(--ink-2);margin:14px 2px 8px}
 .lt-chip{margin-left:8px;padding:1px 8px;border-radius:10px;border:1px solid rgba(127,231,255,.35);color:#cfe9ff;font-size:12px;white-space:nowrap}
 .ty.om,.ty.lpoint{border:1.5px solid var(--dim);border-radius:50%}
 .ty.jump{border:2px solid #c9a7ff;border-radius:50%;box-shadow:inset 0 0 0 2px var(--panel)}
-.ty.poi{background:var(--ink-2);border-radius:50%;transform:scale(.6)}
-.ty.wp{background:var(--wp);clip-path:polygon(0 0,100% 30%,0 60%)}
-.ty.mission{background:var(--mission);transform:rotate(45deg) scale(.75)}
+/* the game's own symbols for these kinds (gameicons.js sets the --gi-* shapes) */
+.ty.city,.ty.station,.ty.outpost,.ty.field,.ty.cave,.ty.comm,.ty.wreck,.ty.jump,.ty.om,.ty.poi,.ty.wp,.ty.mission,.ty.spaceport{width:14px;height:14px;border:0;border-radius:0;transform:none;box-shadow:none;
+  -webkit-mask:var(--gi) center/contain no-repeat;mask:var(--gi) center/contain no-repeat}
+.ty.station{--gi:var(--gi-station);background:var(--station)}.ty.outpost{--gi:var(--gi-outpost);background:#7fd18b}
+.ty.field{--gi:var(--gi-field);background:#8fb3d9}.ty.city{--gi:var(--gi-city);background:#eef3fb}
+.ty.cave{--gi:var(--gi-cave);background:#c9a27a}.ty.comm{--gi:var(--gi-comm);background:#7fc6d9}
+.ty.jump{--gi:var(--gi-jump);background:#c9a7ff}.ty.om{--gi:var(--gi-om);background:#9db3dc}.ty.poi{--gi:var(--gi-poi);background:#a9b6cc}.ty.wreck{--gi:var(--gi-wreck);background:#b98cf0}.ty.spaceport{--gi:var(--gi-spaceport);background:#eef3fb}
+.ty.wikelo{width:15px;height:15px;border:0;border-radius:0;transform:none;-webkit-mask:none;mask:none;background:var(--gi-wikelo) center/contain no-repeat}
+i.gi-mask{display:inline-block;width:1em;height:1em;background:currentColor;-webkit-mask:var(--gi) center/contain no-repeat;mask:var(--gi) center/contain no-repeat}
+.svc-tile .gi{width:28px;height:28px;color:#dbeaff;flex:none}
+svg.gi-color{stroke:none!important}
+.mk-gi{width:15px;height:15px;vertical-align:-3px;margin-right:5px;color:var(--route-2)}
+.ty.wp{--gi:var(--gi-wp);background:var(--wp)}
+.ty.mission{--gi:var(--gi-mission);background:var(--mission)}
 
 .status{border-top:1px solid var(--line);padding:11px 16px;font-size:12.5px;color:var(--ink-2);display:grid;gap:5px}
 .status b{color:var(--ink);font-weight:600}
@@ -487,10 +530,20 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .approach .a{display:grid;grid-template-columns:18px 1fr;gap:6px;color:var(--ink-2)}
 .approach .a b{color:var(--ink)}
 .approach .a .i{color:var(--you);font:700 12px var(--display)}
-.topright{top:16px;right:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.topright{top:16px;right:16px;display:flex;flex-direction:column;gap:12px;align-items:flex-end}
 .seg{display:flex;background:rgba(13,21,40,.93);border:1px solid var(--line-2);border-radius:8px;padding:3px}
 .seg button{background:none;border:0;padding:5px 12px;border-radius:6px;color:var(--ink-2);font:600 13px var(--display)}
 .seg button[aria-pressed=true]{background:var(--panel-3);color:var(--ink)}
+/* the map's system switcher, in the title bar's microTech HUD style */
+#sysSeg{position:relative;gap:2px;padding:3px;border:0;border-radius:0;background:#2a4472;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+#sysSeg:before{content:"";position:absolute;inset:1px;background:linear-gradient(90deg,#050b18,#07142b 50%,#050b18);
+  clip-path:polygon(7.6px 0,100% 0,100% calc(100% - 7.6px),calc(100% - 7.6px) 100%,0 100%,0 7.6px)}
+#sysSeg button{position:relative;border-radius:0;cursor:pointer;font:700 10.5px Orbitron,var(--display);letter-spacing:.16em;text-transform:uppercase;padding:6px 14px;color:var(--dim)}
+/* the end buttons share the switcher's cut corners, so the highlight stays inside them */
+#sysSeg button:first-child{clip-path:polygon(6.8px 0,100% 0,100% 100%,0 100%,0 6.8px)}
+#sysSeg button:last-child{clip-path:polygon(0 0,100% 0,100% calc(100% - 6.8px),calc(100% - 6.8px) 100%,0 100%)}
+#sysSeg button:hover{color:var(--ink)}#sysSeg button[aria-pressed=true]{background:#123064;color:#cfe2ff}
 .seg button .here{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--you);margin-left:6px;vertical-align:2px}
 .layers{padding:8px 10px;display:grid;gap:1px;font-size:13px;max-height:calc(100vh - 200px);overflow:auto}
 .layers label{display:flex;gap:8px;align-items:center;cursor:pointer;padding:2px;color:var(--ink-2)}
@@ -844,6 +897,8 @@ canvas.layer{position:absolute;inset:0;width:100%;height:100%;display:block}
 .svc-tile .sz{position:absolute;top:3px;right:6px;font:700 10px var(--display);color:#fff}
 .svc .desc{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.45}
 .svc .none{font-size:12.5px;color:var(--dim)}
+.svc-loading{display:flex;align-items:center;gap:8px;padding:6px 0}
+.svc-spin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(111,190,255,.25);border-top-color:var(--route-2);animation:spin .8s linear infinite;flex:none}
 .wikibox{border-top:1px solid var(--line-2);margin-top:10px;padding-top:8px;font-size:13px}
 /* ---------- trade runs: every action on one row ---------- */
 .run-acts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 3px;margin-top:6px}   /* wraps in a narrow sidebar instead of running off the edge */
@@ -2101,3 +2156,29 @@ button.hd-logo[data-flmaker]{cursor:pointer}
 /* Marketplace standing: your picture in the upper left of the Rating box */
 .pm-rhead{display:flex;align-items:center;gap:10px}.pm-rhead>div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .pm-rhead b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Page titles in Orbitron, like the title bar and the city clock (a touch smaller: Orbitron runs wide) */
+.pic-panel .gh b,#vh-gallery .gh b{font-family:Orbitron,var(--display);font-weight:700;font-size:15.5px;letter-spacing:.04em}
+.stk-top h2,.mkp-head h2,.sht-top h2,.mi-head h2{font-family:Orbitron,var(--display);font-weight:700;font-size:21px;letter-spacing:.03em}
+.up-head h2,.ph-head h2{font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.03em}.ph-head h2{font-size:26px}.up-head h2{font-size:23px}
+.pm-top h2,.dr-top h2{font-family:Orbitron,var(--display);font-weight:700;font-size:17.5px;letter-spacing:.03em}
+
+/* Settings > Window: the two title bars, previewed */
+.win-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wp-opt{background:none;border:1px solid var(--line-2);border-radius:10px;padding:8px;cursor:pointer;color:var(--ink-2);display:grid;gap:7px;text-align:center}
+.wp-opt:hover{border-color:rgba(140,196,255,.55)}.wp-opt.on{border-color:var(--route);box-shadow:0 0 0 1px var(--route);color:var(--ink)}
+.wp-opt[disabled]{opacity:.5;cursor:default}
+.wp-l{font:600 12px var(--display)}.wp-opt.on .wp-l:before{content:"✓ ";color:var(--route-2)}
+.wp-prev{border-radius:6px;overflow:hidden;border:1px solid #0d1830;background:#03060c}
+.wp-bar{height:15px;display:flex;align-items:center;gap:4px;padding:0 5px;font-size:7px;line-height:1}
+.wp-bar b{font-weight:600}.wp-sp{flex:1}
+.wp-q{background:linear-gradient(90deg,#050b18,#07142b 50%,#050b18);box-shadow:inset 0 -1px 0 #2f86ff}
+.wp-q b{font:700 6.5px Orbitron,var(--display);letter-spacing:.25em;color:#8cc4ff}
+.wp-q .wp-logo{width:7px;height:7px;border-radius:50%;border:1.5px solid #2f86ff}
+.wp-q i{width:10px;height:7px;border:1px solid #2a4472;clip-path:polygon(2px 0,100% 0,100% calc(100% - 2px),calc(100% - 2px) 100%,0 100%,0 2px)}
+.wp-w{background:#1f1f1f;color:#e8e8e8;font-family:"Segoe UI",system-ui,sans-serif}.wp-w b{font-weight:400;font-size:7px}
+.wp-w .wp-ico{width:7px;height:7px;border-radius:50%;background:#4b8dff}
+.wp-w i{font-style:normal;font-size:7px;width:13px;text-align:center;color:#d0d0d0}
+.wp-body{height:44px;display:flex}.wp-rail{width:12%;background:#040912;border-right:1px solid #16243d}.wp-side{width:30%;background:#070e1c;border-right:1px solid #16243d}
+.wp-map{flex:1;background:radial-gradient(circle at 60% 55%,rgba(255,210,140,.45) 0 2px,transparent 3px),radial-gradient(ellipse at 60% 55%,transparent 14px,rgba(200,220,255,.18) 15px,transparent 16px),#03060c}
+.wp-note{margin-top:8px;font-size:12px;color:#ffd38a}

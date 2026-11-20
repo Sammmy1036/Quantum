@@ -834,7 +834,9 @@ function drawOverlay(t){
   const bodyLabels=[];
   for(const o of sysObjs){ const b=o.b, q=proj(b.center); if(!q) continue; const pr=o.pr;
     if(city3dDown()&&!visible(b.center,null)) continue;   // below the city's horizon
-    if(pr<3){ ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); }
+    if(pr<3){ const gi=b.kind==="moon"?"moon":b.kind==="planet"?"planet":b.kind==="asteroid"?"asteroid":null;   // the game's marks when tiny
+      if(!(gi&&drawGameIcon(ctx,gi,q[0],q[1],b.kind==="planet"?15:12,"#8fa9d0"))){
+        ctx.fillStyle=b.kind==="star"?"#ffd98a":"#8fa9d0"; ctx.beginPath(); ctx.arc(q[0],q[1],b.kind==="planet"?3.2:b.kind==="star"?4:2.2,0,7); ctx.fill(); } }
     S.picks.push({kind:"body",name:b.name,x:q[0],y:q[1],r:Math.max(pr,8),pr,depth:q[2]});
     bodyLabels.push([b,q,pr]); }
   // ---- locations
@@ -851,13 +853,17 @@ function drawOverlay(t){
     if(city3dDown() && !special && L.kind==="space" && q[2]>5e5) continue;   // in the 3D city, far stations don't fill its sky
     if(!visible(g, L.kind==="surface"?L.body:null)) continue;
     drawn.push({L,q,bodyPx,isWp}); }
-  for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; glyph(L.type,q[0],q[1],L.type==="city"?4.5:3.6,TYPES[L.type]?.color||"#aab"); S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:9,depth:q[2]}); }
+  for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; const col=TYPES[L.type]?.color||"#aab", gi=locIcon(L);
+    // the game's own symbol where there is one (stations, outposts, mining, spaceports, Wikelo), else the drawn shape
+    if(!(gi&&drawGameIcon(ctx,gi,q[0],q[1],gi==="spaceport"||gi==="wikelo"||L.type==="city"?19:16,col))) glyph(L.type,q[0],q[1],L.type==="city"?4.5:3.6,col);
+    S.picks.push({kind:"loc",name:L.name,x:q[0],y:q[1],r:9,depth:q[2]}); }
   // ---- mission markers
   const marks=missionMarks(t);
-  for(const m of marks){ const q=proj(m.g); if(!q||!visible(m.g,m.body)) continue; diamond(q[0],q[1],"#ff5fa8");
+  for(const m of marks){ const q=proj(m.g); if(!q||!visible(m.g,m.body)) continue; if(!drawGameIcon(ctx,"objective",q[0],q[1]-14,17,"#ff5fa8")) diamond(q[0],q[1],"#ff5fa8");   // the game's objective mark
     S.picks.push({kind:"mission",name:m.o.location||m.o.label,x:q[0],y:q[1]-15,r:10,mission:m,depth:q[2]}); labelBoxes.push([q[0]-8,q[1]-25,q[0]+8,q[1]]); }
   // ---- waypoints (flags)
-  for(const d of drawn){ if(!d.isWp) continue; const {L,q}=d; flag(q[0],q[1],L.source==="mission"?"#ff5fa8":"#9dff7a",L.name===guide?.name);
+  for(const d of drawn){ if(!d.isWp) continue; const {L,q}=d; const wc=L.source==="mission"?"#ff5fa8":"#9dff7a", wz=L.name===guide?.name?24:19;   // the game's destination pin, its tip on the spot
+    if(!drawGameIcon(ctx,L.source==="mission"?"objective":"nav_destination",q[0],q[1]-wz/2,wz,wc)) flag(q[0],q[1],wc,L.name===guide?.name);
     S.picks.push({kind:"loc",name:L.name,x:q[0]+4,y:q[1]-12,r:12,depth:q[2]}); labelBoxes.push([q[0]-2,q[1]-20,q[0]+14,q[1]]); }
   // ---- route waypoint numbers
   const seen=new Set();
@@ -1069,12 +1075,18 @@ window.addEventListener("pointermove",e=>{
 // scroll from a station in orbit straight down into a city below. Over empty space, and zooming out,
 // it zooms on the view's centre as before.
 const _ray=new THREE.Raycaster();
+// The height the wheel aims at on a body: its surface, or the floor of a 3D city floating above it (Orison,
+// ~79 km over Crusader) while you're down in that city. Aiming at the surface there put the view's centre
+// 79 km under the platforms on every notch, then the city lifted it back up, so the camera leapt about.
+function groundR(b){ for(const c of CITIES3D){ let a=null; try{ a=c.groundAlt?.(b.name); }catch(_){}
+    if(Number.isFinite(a)) return b.radius+a; }
+  return b.radius; }
 function groundUnderMouse(e){ const r=ov.getBoundingClientRect();
   _ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1, -((e.clientY-r.top)/r.height*2-1)), camera);
   const o=_ray.ray.origin, dv=_ray.ray.direction; let best=null;
   for(const b of S.bodies){ if(b.system!==S.system||b.kind==="star") continue;
     const c=[b.center[0]-O[0],b.center[1]-O[1],b.center[2]-O[2]], oc=[o.x-c[0],o.y-c[1],o.z-c[2]];
-    const bq=oc[0]*dv.x+oc[1]*dv.y+oc[2]*dv.z, cq=oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-b.radius*b.radius, disc=bq*bq-cq;
+    const R=groundR(b), bq=oc[0]*dv.x+oc[1]*dv.y+oc[2]*dv.z, cq=oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-R*R, disc=bq*bq-cq;
     if(disc<0) continue; const tt=-bq-Math.sqrt(disc); if(tt<=0) continue;
     if(!best||tt<best.t) best={b,t:tt,g:[O[0]+o.x+dv.x*tt, O[1]+o.y+dv.y*tt, O[2]+o.z+dv.z*tt]}; }
   return best; }
@@ -1094,7 +1106,7 @@ ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1
     S.cam.dist=Math.min(4e12,Math.max(STATION_MIN,S.cam.dist*k)); return; }
   stopAnim();
   const hit=k<1?groundUnderMouse(e):null;
-  if(hit){ const t=now()+(S.timeShift||0), B=hit.b;
+  if(hit){ const t=now()+(S.timeShift||0), B=hit.b, RG=groundR(B);
     // The mouse ray used the camera as last drawn; the planet has turned a little since. Carry the spot
     // and the view's centre forward with it, so the aim is exact even when frames are slow.
     const t0=S.camT??t, da=bodyAngle(B,t)-bodyAngle(B,t0), ca=Math.cos(da), sa=Math.sin(da);
@@ -1106,13 +1118,13 @@ ov.addEventListener("wheel",e=>{ e.preventDefault(); const k=e.deltaY<0?1/1.25:1
     // the mouse (all the way from 0.4 radii up), so you can still scroll down into a city. Heading for a
     // spot near the planet's edge from far away is what swung the camera round the planet with every
     // notch, so the planet looked like it was turning.
-    const P=[0,1,2].map(i=>T[i]+d[i]*S.cam.dist), alt=d3(P,B.center)-B.radius;
+    const P=[0,1,2].map(i=>T[i]+d[i]*S.cam.dist), alt=d3(P,B.center)-RG;
     const w=Math.max(0,Math.min(1,(1.6*B.radius-alt)/(1.2*B.radius)));
     const A=[0,1,2].map(i=>T[i]+(hit.g[i]-T[i])*w);                 // the point the zoom closes in on
     const P2=[0,1,2].map(i=>A[i]+(P[i]-A[i])*k);                    // where the camera goes
     // The view's centre goes where the line of sight meets the ground, so the camera then belongs to that
     // ground (a point in the planet's core made it jump as soon as you dragged or scrolled again).
-    const oc=[0,1,2].map(i=>P2[i]-B.center[i]), bq=oc[0]*d[0]+oc[1]*d[1]+oc[2]*d[2], disc=bq*bq-(oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-B.radius*B.radius);
+    const oc=[0,1,2].map(i=>P2[i]-B.center[i]), bq=oc[0]*d[0]+oc[1]*d[1]+oc[2]*d[2], disc=bq*bq-(oc[0]*oc[0]+oc[1]*oc[1]+oc[2]*oc[2]-RG*RG);
     let T2, dist;
     if(disc>=0&&bq-Math.sqrt(disc)>20){ dist=bq-Math.sqrt(disc); T2=[0,1,2].map(i=>P2[i]-d[i]*dist); }
     else { T2=[0,1,2].map(i=>A[i]+(T[i]-A[i])*k); dist=Math.max(20,d3(P2,T2)); }

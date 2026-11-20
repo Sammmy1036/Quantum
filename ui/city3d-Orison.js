@@ -16,6 +16,8 @@ City3D.define({
   alt0:0,
   extent:60000,
   ground:[150000,82000],                   // its sky and haze blend in by 82 km: the platforms float ~79 km up
+  reveal:[380000,125000],                  // fully shown below 125 km (the default counts from Crusader's surface, so
+                                           // the city was never quite all there and its camera rules barely held)
   panelAlt:180000,
   note:"The game's own platforms, floating ~79 km above Crusader's clouds.",
   weather:{                                // Crusader: a clear blue sky over cream and pink clouds, pink at dusk

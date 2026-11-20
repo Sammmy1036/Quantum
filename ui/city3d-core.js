@@ -856,7 +856,13 @@ function update(t){
   if(M.hgt&&r>0.9&&S.focus?.kind==="local"&&S.focus.body===C.body&&!S.anim){
     const lt=st.inner.worldToLocal(new THREE.Vector3(0,0,0)), [tx,ty,tz]=st.frame.toFlat(lt.x,lt.y,lt.z), E=C.extent*0.8;
     if(Math.abs(tx)<E&&Math.abs(tz)<E){ const gt=M.hgt(tx,tz)+2;
-      if(ty<gt-5){ const q=S.focus.pos, ql=Math.hypot(q[0],q[1],q[2]); if(ql>1){ const k=(ql+(gt-ty))/ql; S.focus={...S.focus,pos:[q[0]*k,q[1]*k,q[2]*k]}; } } } }
+      if(ty<gt-5){ const q=S.focus.pos;
+        // Slide it up the line of sight to that height, so the picture stays put. (Lifting it straight up
+        // carried the camera up with it: at Orison, kilometres at a time, so the view jumped about.)
+        const lc=st.inner.worldToLocal(camera.position.clone()), cy=st.frame.toFlat(lc.x,lc.y,lc.z)[1];
+        if(cy>gt+5){ const s=(gt-ty)/(cy-ty), cl=toLocal(B,[O[0]+camera.position.x,O[1]+camera.position.y,O[2]+camera.position.z],t);
+          S.focus={...S.focus,pos:[0,1,2].map(i=>q[i]+(cl[i]-q[i])*s)}; S.cam.dist=Math.max(20,S.cam.dist*(1-s)); }
+        else { const ql=Math.hypot(q[0],q[1],q[2]); if(ql>1){ const k=(ql+(gt-ty))/ql; S.focus={...S.focus,pos:[q[0]*k,q[1]*k,q[2]*k]}; } } } } }
   // keep the camera above the ground
   if(M.hgt&&r>0.9){ const lp=st.inner.worldToLocal(camera.position.clone()), [fx,fy,fz]=st.frame.toFlat(lp.x,lp.y,lp.z), gh=M.hgt(fx,fz)+12;
     if(fy<gh){ camera.position.addScaledVector(new THREE.Vector3(...upG),gh-fy); camera.lookAt(0,0,0); camera.updateMatrixWorld();

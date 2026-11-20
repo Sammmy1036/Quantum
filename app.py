@@ -313,9 +313,12 @@ def main():
     if not api._db.bodies:
         print("Tip: run `python import_data.py` (or Quantum.exe --import) once to load Stanton, Pyro and Nyx.")
     print("Quantum by microTech - the verse, in your reach.")
+    from desktop import frameless
+    # Quantum's own title bar unless the user picked the normal Windows one (Settings > Window)
+    api._frameless = frameless.AVAILABLE and api._settings.get("window_style") != "windows"
     window = webview.create_window("Quantum", str(RES / "ui" / "index.html"), js_api=api,
                                    width=1600, height=960, min_size=(1150, 720),
-                                   background_color="#05080f")
+                                   background_color="#05080f", frameless=api._frameless, easy_drag=False)
     window.events.closed += api.shutdown
     icon = RES / "assets" / "quantum.ico"
     tray_icon = tray.Tray(window, icon, on_show=lambda: (api._nudge_redraw(), overlay.bring_to_front()))
@@ -325,6 +328,9 @@ def main():
 
     def started():
         overlay.set_window_icon(icon)
+        if api._frameless:
+            frameless.setup()            # taskbar minimise, and maximise keeping to the screen's work area
+        overlay.start_watch()            # pinned Quantum steps aside when another app takes the focus
         tray_icon.start()
     # Keep the page's browser cache between launches (pywebview's default private mode throws it away), so
     # pictures and logos downloaded once show at once next time instead of loading again every start.

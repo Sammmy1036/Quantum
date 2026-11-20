@@ -8,11 +8,16 @@ function renderOffmap(){ const L=S.locs.filter(x=>x.system===S.system&&!x.pos).s
   el.innerHTML=L.length?`<div class="t">Not on the map yet (${L.length})</div>${L.slice(0,8).map(x=>`<a class="${x.type==="jump"?"gw":""}" data-om="${esc(x.name)}">${x.type==="jump"?"◎ ":""}${esc(x.name)}${x.to?` <span class="muted">→ ${esc(x.to)}</span>`:""}</a>`).join("")}${L.length>8?`<div class="muted">+${L.length-8} more in search</div>`:""}`:""; }
 $("offmap").onclick=e=>{ const a=e.target.closest("[data-om]"); if(a) select({kind:"loc",name:a.dataset.om}); };
 function setSystem(sys,fit=true){ if(!S.systems.includes(sys)) return; const changed=sys!==S.system; S.system=sys; renderSysSeg(); renderOffmap(); if(changed&&S.preview) setTimeout(journeyChip);
-  if(changed){ setLock(null); S.anim=null; buildSystem(); setSky(sys); } if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
+  if(changed){ setLock(null); S.anim=null; buildSystem(); setSky(sys);
+    // Start the new system from well outside it, then glide in. The view's centre jumps to the new star, and
+    // keeping the old zoom (a few metres over a moon) put the camera inside the star: a white flash.
+    S.focus={kind:"system"}; S.cam.target=systemCenter(); S.cam.dist=Math.max(S.cam.dist,systemExtent()*3.5); }
+  if(fit){ S.cam.target=systemCenter(); fitSystem(); } renderResults(); renderWaypoints(true); }
 function renderSysSeg(){ const here=S.live?.game_off?null:(S.live?.player?.system||S.live?.where?.system);
   $("sysSeg").innerHTML=S.systems.map(s=>{ const w=wikiSystem(s); const tip=w?`${w.affiliation} · ${w.star_type||""}`:"";
-    return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}</button>`; }).join(""); }
+    return `<button data-s="${s}" aria-pressed="${s===S.system}" title="${esc(tip)}">${s}</button>`; }).join("");  const tb=$("tb-sys"); if(tb) tb.innerHTML=S.systems.map(s=>`<button data-s="${s}" aria-pressed="${s===S.system}">${s.toUpperCase()}</button>`).join(""); }
 $("sysSeg").onclick=e=>{ const b=e.target.closest("button"); if(b){ S.autoSystem=false; setSystem(b.dataset.s); } };
+$("tb-sys").onclick=e=>{ const b=e.target.closest("button"); if(b){ S.autoSystem=false; setSystem(b.dataset.s); } };   // the same, in the title bar
 function buildLayers(){
   const el=$("layer-list"); el.innerHTML="";
   const mk=(lbl,checked,cls,on)=>{ const l=document.createElement("label"); l.innerHTML=`<input type="checkbox" ${checked?"checked":""}><span class="ty ${cls}"></span>${esc(lbl)}`;
@@ -49,6 +54,23 @@ const SVC_SOLID={
   pistol:['0 0 50 50','M50 9.5v-.9l-1.7-1.1h-2.2c0 .2-.2.4-.4.4h-2.5c-.2 0-.4-.2-.4-.4H31.1l.1.5h-8.5l-.6-.5H4.5L1.7 9.1c-.3.2-.5.4-.7.7l-.7 1.5V14l.7.8v1.1l5 2.3s1.2 2.5-.8 6-3.4 4.6-5 12.5c0 0-.8 3 1 3.7 0 0-.1.5.3.8l-.3.9s0 .3 1.5.4 7.8 0 7.8 0 2.7-.1 2.7-2.1l.5-2.2s-.7-.5-.2-2.5c.5-2 1.4-4.8 1.4-4.8s.2-1.2 1.3-1.7.4-1.1.4-1.1-.4-1.5.6-3.6l.4-.8s2.1-1.5 4.2.1h6.6l4.4-4.8 2.3-.7h11.4l.3-.4h.2l.5-.5h.7s.8-.1.8-1.1l-.1-2.3h.2l.5-1.3-.2-.2V12l-.2-.3s.5-.6.5-1.4l.3-.8zm-22.3 6.4 2.5 2.1-.2 2.4-1.8 2.1h-3.6l.1-.4-.1-.4s-2.5-1.1-1.9-5.8h5z'],
   utility:['0 0 50 50','M24.8 16.2c-1.2.4-2.3 1-3.2 1.9-.8.8-1.4 1.7-1.8 2.7s-.5 2-.5 3.1c.1 1.2-.3 2.3-1.1 3.1L1 44.3c-.6.6-1 1.4-1 2.4 0 .9.3 1.7 1 2.3.6.6 1.4 1 2.4 1 .9 0 1.7-.3 2.3-1l16.6-16.6c1.2-1.2 2.3-1.6 3.4-1.5 1.2.2 2.4.1 3.5-.2 1.2-.4 2.2-1 3.1-1.9 1-1 1.6-2.1 2-3.5.3-1.3.3-2.6 0-3.9 0-.2-.1-.3-.2-.3-.1-.1-.3 0-.5.1L30.8 24c-.5.5-1.1.7-1.8.7s-1.3-.2-1.8-.7L26 23c-.5-.5-.7-1.1-.7-1.8s.2-1.3.7-1.8l2.7-2.7c.4-.4.3-.6-.3-.7-1.3-.2-2.5-.2-3.6.2m-4.5 12.3c.2-.2.5-.3.8-.3s.6.1.8.3c.2.2.3.5.3.8s-.1.6-.3.8L4.7 47.2c-.2.2-.5.3-.8.3s-.6-.1-.8-.3-.3-.5-.3-.8.1-.6.3-.8l17.2-17.1M45.4 9.2c0-.2-.1-.4-.2-.6l-3.8-3.8c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2l-3 3c-2.1-1.4-4.4-2.3-6.9-2.8V.8c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2h-5.4c-.2 0-.4.1-.5.2-.2.1-.2.3-.2.5v4.3c-2.5.6-4.7 1.5-6.8 2.9l-3.1-3.1c-.1-.1-.3-.2-.5-.2s-.4.1-.6.2L8.7 8.7c-.1.1-.2.3-.2.5s.1.4.2.6l3.1 3.1C10.4 15 9.5 17.2 9 19.6H4.6c-.2 0-.4.1-.5.2-.1.2-.2.4-.2.6v5.4c0 .2.1.4.2.6.1.1.3.2.5.2h4.5c.3 1.5.8 3 1.4 4.3l3.9-3.9c-.7-2.3-.8-4.6-.2-7s1.7-4.5 3.5-6.2c2.6-2.6 5.7-3.8 9.3-3.8s6.7 1.3 9.3 3.8c2.6 2.6 3.9 5.7 3.9 9.3s-1.3 6.7-3.9 9.3c-1.8 1.8-3.9 2.9-6.3 3.5s-4.7.5-7-.3l-3.9 3.9c1.4.7 2.9 1.2 4.4 1.5v4.4c0 .2.1.4.2.6.2.1.3.2.5.2h5.4c.2 0 .4-.1.6-.2.1-.2.2-.3.2-.6V41c2.5-.5 4.8-1.4 6.8-2.8l3.1 3c.2.2.3.2.6.2s.4-.1.5-.2l3.8-3.8c.2-.2.2-.3.2-.6s-.1-.4-.2-.6l-3-3c1.4-2.1 2.4-4.3 2.9-6.9h4.2c.2 0 .4-.1.6-.2.2-.2.2-.3.2-.6v-5.4c0-.2-.1-.4-.2-.5-.2-.2-.3-.2-.6-.2H45c-.5-2.4-1.4-4.7-2.9-6.9l3-3c.2.1.3 0 .3-.3z'],
   turret:['0 0 16 16','M9.617 14.31h2.195v.44H2.891v-.66l2.994-.634-.715-2.234-2.059.523c-.658-.385-1.015-.607-1.674-.992L1 9.046 7.646 7.31l.22.882 6.647-1.737.331 1.267-6.646 1.737.22.882-1.784.523.826 2.62 1.868.248.3.58zM8.464 4.281l.22.882-5.299 1.379c-.658-.386-1.015-.607-1.674-.993l-.44-1.71 6.645-1.734.221.855 6.532-1.71L15 2.518 8.464 4.224z']};
+// The game's own marker for a service, when it has one. Pads and hangars come in sizes (the number is part of
+// the icon); without a size, or for an XL pad (the game has none), the drawn icon and its size badge stay.
+function svcGameKey(name,size){ const n=name.toLowerCase(), z={S:"s",M:"m",L:"l",XL:"xl"}[String(size||"").toUpperCase()];
+  if(/landing pad/.test(n)) return z&&z!=="xl"?"pad_"+z:null;
+  if(/hangar/.test(n)) return z?"hangar_"+z:null;
+  if(/garage/.test(n)) return "garage";
+  if(/freight elevator/.test(n)) return "freight_elevator";
+  if(/refiner/.test(n)) return "refinery";
+  if(/vehicle servic|ship servic|repair|refuel|restock/.test(n)) return "vehicle_servicing";
+  if(/rent|rental/.test(n)&&/vehicle|ship|rent a|rental/.test(n)) return "rent_vehicle";
+  if(/(ship|vehicle) weapon/.test(n)) return "shop_vehicle_items";          // ship guns, missiles and their mounts
+  if(/(ship|vehicle) (component|item|part)s?/.test(n)) return "player_vehicle";
+  if(/weapon|gun ?shop|firearm|ammo/.test(n)) return "shop_weapons";
+  if(/armou?r/.test(n)) return "shop_armor";
+  if(/cloth|apparel|fashion|outfit/.test(n)) return "shop_clothes";
+  if(/food|restaurant|\bbar\b|caf[eé]|diner|noodle|burrito|pizza/.test(n)) return "shop_food_court";
+  return null; }
 function svcIcon(name){ const n=name.toLowerCase();
   if(/ship component|ship items?\b(?! and)/.test(n)) return `<svg viewBox="0 0 24 24" aria-hidden="true">${SVC_ICONS.component}</svg>`;
   const s=n.includes("weapon")&&(n.includes("ship")||n.includes("vehicle"))?"turret":n.includes("weapon")?"pistol":n.includes("vehicle services")?"utility":null;
@@ -83,7 +105,14 @@ function fuelHtml(fuel,style=S.fuelStyle){
       <span class="fu-digits">${[...r.price.padStart(5," ")].map(c=>c===","?`<i class="c">,</i>`:`<i>${c===" "?"":c}</i>`).join("")}</span>${unit}</div>`).join("")}<div class="fu-src">PRICES FROM UEX</div></div>`;
   return `<div class="fu fu-7 pal-${pal}"><div class="fu-head"><b>REFUEL</b><span>PRICES · UEX</span></div>${rows.map(r=>`<div class="fu-row fu-${r.k}"><span class="fu-i">${FUEL_ICON[r.k]}</span><b class="fu-n">${r.name}</b><span class="fu-pp"><b>${r.price}</b>${unit}</span></div>`).join("")}</div>`; }
 const commodityTile=on=>`<div class="svc-tile click ${on?"on":""}" data-stock="1" title="What the commodity terminals here buy and sell, with prices and how recent they are">${SVC_COMMODITY}<div class="bar"></div><div class="l">Commodities</div></div>`;
+// Still being fetched for this place: its services (wiki/UEX), which places have commodity terminals, or which
+// have shops. The card waits for all of them and then shows every tile at once (before, Commodities showed up
+// alone first and the rest popped in after it).
+function servicesLoading(place){ const L=place&&S.locMap[place]; if(!L) return false;
+  return S.tradePlaces===null||S.shopPlaces===null||!!(L.amen&&!(place in S.svcCache)); }
+const SVC_LOADING=`<div class="svc"><div class="none svc-loading"><span class="svc-spin"></span>Loading services offered…</div></div>`;
 function servicesHtml(r,place){
+  if(servicesLoading(place)) return SVC_LOADING;
   const trade=place&&S.tradePlaces?.has(place), on=trade&&S.stock?.place===place&&S.stock.kind!=="shop";
   // no services (yet, or none listed for the place): a place with a commodity terminal still gets its Commodities
   // tile, so that's where it always is; the card has no Commodities button of its own
@@ -94,7 +123,8 @@ function servicesHtml(r,place){
     const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)?[)]?$/i); const label=m?m[1]:a;
     if(m&&/^landing/i.test(m[1])){ const pz=padSize(place); if(pz) m[2]=pz; }
     const g=place&&shopGroupFor(a,place), gon=g&&S.stock?.kind==="shop"&&S.stock.place===place&&S.stock.group===g;
-    return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?.[2]?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
+    const gk=svcGameKey(a,m?.[2]), sized=!!gk&&/^(pad|hangar)_/.test(gk);   // the game's pad / hangar icons carry their size
+    return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?.[2]&&!sized?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
     +(trade?commodityTile(on):"");
   // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
   // opened is kept, so the card can redraw every tick without folding it back up
@@ -126,7 +156,8 @@ async function fillPlacePic(sel){ const key=placePicKey(sel); if(!key||key in S.
   if(S.descFit===sel.name&&d.scrollHeight>d.clientHeight+1){ S.descFit=null; const el=$("d-svc"); if(el) el.innerHTML=servicesHtml(S.svcCache[sel.name],sel.name); }   // the picture took the room
   const show=()=>img.classList.add("in"); img.complete?show():(img.onload=show); img.onerror=()=>img.closest(".dpic")?.remove(); }
 async function fillServices(name){
-  if(!(name in S.svcCache)) S.svcCache[name]=await api().get_services(name);
+  if(!(name in S.svcCache)){ let r=null; try{ r=await api().get_services(name); }catch(_){}     // failed: no services, not "loading" forever
+    S.svcCache[name]=r; }
   const el=$("d-svc"); if(el&&S.selected?.name===name){ el.innerHTML=servicesHtml(S.svcCache[name],name); fitDesc(name); } }
 // Show the whole description when the card still fits the map without scrolling; keep "More" when it wouldn't.
 // (Less still folds it, and it then stays folded for that place.)
@@ -225,8 +256,8 @@ async function settingsAction(a,e){
 async function loadTradePlaces(){ if(S.tradePlaces!==undefined||!S.live?.log?.uex_token||Date.now()-(S.tradePlacesTry||0)<60000) return;
   S.tradePlaces=null; S.tradePlacesTry=Date.now();
   let r; try{ r=await api().uex_trade_places(); }catch(e){ r=null; }
-  if(!r?.ok){ S.tradePlaces=undefined; return; }          // tried again next time a card opens
-  S.tradePlaces=new Set(r.places); if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc"&&S.tradePlaces.has(S.selected.name)) renderDetail(); }
+  if(!r?.ok){ S.tradePlaces=undefined; if(S.selected?.kind==="loc") renderDetail(); return; }   // tried again next time a card opens
+  S.tradePlaces=new Set(r.places); if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc") renderDetail(); }   // (any card: it may be showing "Loading services")
 async function toggleStock(place){ if(S.stock?.place===place&&S.stock.kind!=="shop"){ closeStock(); return renderDetail(); }
   S.stock={kind:"commodity",place,data:null,side:S.stockSide||"all",q:"",sort:S.stockSort||"name"}; renderDetail(); stockRender();
   const [r]=await Promise.all([api().uex_place_stock(place).catch(e=>({ok:false,error:String(e)})),stockCommodities()]);
@@ -297,8 +328,8 @@ function shopGroupFor(service,place){ const have=S.shopPlaces?.[place]; if(!have
 async function loadShopPlaces(){ if(S.shopPlaces!==undefined||!S.live?.log?.uex_token||Date.now()-(S.shopPlacesTry||0)<60000) return;
   S.shopPlaces=null; S.shopPlacesTry=Date.now();
   let r; try{ r=await api().uex_shop_places(); }catch(e){ r=null; }
-  if(!r?.ok){ S.shopPlaces=undefined; return; }
-  S.shopPlaces=r.places; S.shopGroups=r.groups; S.fuelPlaces=r.fuel||{}; if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc"&&r.places[S.selected.name]) renderDetail(); }
+  if(!r?.ok){ S.shopPlaces=undefined; if(S.selected?.kind==="loc") renderDetail(); return; }
+  S.shopPlaces=r.places; S.shopGroups=r.groups; S.fuelPlaces=r.fuel||{}; if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc") renderDetail(); }
 async function toggleShop(place,group){ const st=S.stock;
   if(st?.kind==="shop"&&st.place===place){ if(st.group===group){ closeStock(); return renderDetail(); } st.group=group; st.q=""; renderDetail(); return shopRender(); }
   S.stock={kind:"shop",place,group,data:null,q:"",sort:S.shopSort||"name"}; renderDetail(); shopRender();
@@ -478,6 +509,17 @@ function renderDetail(){
       ${a.loc_hotkey&&a.chat_key?`<div class="muted" style="font-size:12px;margin-top:6px">Chat in game: <b>${a.chat_hidden?"hidden":"showing"}</b>. While it's hidden, ${esc(a.loc_hotkey)} won't type (your letters would trigger key bindings). Out of step? Press ${esc(a.loc_hotkey)} twice to send anyway.</div>`:""}
       <div class="muted" style="font-size:12px;margin-top:8px">The game still sees your hotkeys, so pick keys that aren't bound in game.</div>
       ${afkHtml(a)}</div>
+      <div class="sub">Window</div>
+      <div class="note set-box" style="margin:4px 0 12px"><div class="muted" style="font-size:12px;margin-bottom:8px">Title bar</div>
+        <div class="win-pick">${[["quantum","Quantum Theme",`<div class="wp-bar wp-q"><span class="wp-logo"></span><b>QUANTUM</b><span class="wp-sp"></span><i></i><i></i><i class="x"></i></div>`],
+          ["windows","Windows",`<div class="wp-bar wp-w"><span class="wp-ico"></span><b>Quantum</b><span class="wp-sp"></span><i>&#8211;</i><i>&#9633;</i><i>&#10005;</i></div>`]]
+          .map(([k,label,bar])=>`<button type="button" class="wp-opt${(S.winStyle?.style||"quantum")===k?" on":""}" data-winstyle="${k}" ${S.winStyle?.available===false?"disabled":""} aria-pressed="${(S.winStyle?.style||"quantum")===k}">
+            <div class="wp-prev">${bar}<div class="wp-body"><span class="wp-rail"></span><span class="wp-side"></span><span class="wp-map"></span></div></div><span class="wp-l">${label}</span></button>`).join("")}</div>
+        ${S.winStyle&&(S.winStyle.style==="quantum")!==S.winStyle.active?`<div class="wp-note">Please restart Quantum for the changes to take effect.</div>`:""}</div>
+      <div class="sub">Sidebar</div>
+      <div class="note set-box" style="margin:4px 0 12px"><div class="row" style="gap:8px;align-items:center">
+        <div class="muted" style="font-size:12px;flex:1">Drag the sections in the left-hand bar up or down to put them in the order you like (or focus one and press Alt+↑ / Alt+↓). Your order is saved on its own.</div>
+        <button class="btn small ghost" data-a="railreset" ${S.railCustom?"":"disabled"}>Reset order</button></div></div>
       <div class="sub">Log</div>
       <div class="note set-box" style="margin:4px 0 12px"><div class="align-list" style="max-height:150px">${(a.events||[]).slice().reverse().map(e=>`<div class="a" style="grid-template-columns:62px 1fr"><span class="s">${new Date(e.t*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span><span>${esc(e.text)}</span></div>`).join("")||'<div class="muted">Nothing yet. Press a hotkey in game, then look here.</div>'}</div></div>`;
     const save=async()=>{
@@ -493,6 +535,10 @@ function renderDetail(){
     const ccSave=async()=>{ if(!$("s-ccmode")) return; S.ccImg=null; S.ccPos=null; await api().set_city_clock($("s-ccmode").value,$("s-ccpos").value,$("s-cch24").value==="1",$("s-ccsize").value,$("s-ccagain").value); await poll(); renderDetail(); toast("Saved"); };
     for(const id of ["s-ccmode","s-ccpos","s-cch24","s-ccsize","s-ccagain"]) if($(id)) $(id).onchange=ccSave;
     ccPlacer();
+    for(const b of d.querySelectorAll("[data-winstyle]")) b.onclick=async()=>{ if(S.winStyle?.style===b.dataset.winstyle) return;
+      S.winStyle=await api().set_window_style(b.dataset.winstyle); renderDetail();
+      toast(S.winStyle.style===(S.winStyle.active?"quantum":"windows")?"Saved":"Please restart Quantum for the changes to take effect"); };
+    const rr=d.querySelector('[data-a="railreset"]'); if(rr) rr.onclick=async()=>{ await railSave(null); railApply(railDefault); renderDetail(); toast("Sidebar back to its default order"); };
     $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
       toast(e.target.checked?"Game.log will be cleared when Quantum starts (unless the game is running)":"Game.log will be left as is"); };
   } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
@@ -532,6 +578,7 @@ function renderDetail(){
       <div class="kv"><span class="k">Contract</span><span>${esc(m.c.name)}</span>${distFromYou(m.g,S.system)!=null?`<span class="k">From you</span><span>${fmtDist(distFromYou(m.g,S.system))}</span>`:""}</div>
       <div class="acts"><button class="btn go" data-a="mguide">Guide me</button><button class="btn" data-a="mroute">Add to route</button></div>`;
   } else { const L=S.locMap[sel.name]; if(!L) return d.classList.remove("show");
+    loadTradePlaces(); loadShopPlaces();          // started before the card is drawn, so it can say it's loading
     const g=globalPos(L,t), from=distFromYou(g,L.system), inRoute=live?.route.includes(L.name), guiding=live?.guide?.name===L.name;
     let ll=""; if(L.kind==="surface"){ const q=latLon(L.pos); ll=`${q.lat.toFixed(3)}°, ${q.lon.toFixed(3)}°`; }
     const user=L.source==="user"||L.source==="mission";
@@ -540,8 +587,8 @@ function renderDetail(){
     const unplacedBox = L.unplaced ? `<div class="unknown" style="margin:8px 0">Quantum doesn't know where this station is yet: no published data has its position${L.near?` (it's near ${esc(L.near)})`:""}.
       Dock here, type /showlocation in game chat, then press <b>I'm here: set position</b>. It goes on the map and into your routes from then on.</div>` : "";
     d.innerHTML=`${placePicHtml(placePicKey(sel))}<button class="close" aria-label="Close">×</button><h2>${esc(L.name)}</h2>
-      <div class="sub"><span class="ty ${L.source==="user"?"wp":L.source==="mission"?"mission":L.type}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
-      ${unplacedBox}<div id="d-svc">${L.amen||S.tradePlaces?.has(L.name)?servicesHtml(L.amen?S.svcCache[L.name]||null:null,L.name):""}</div>
+      <div class="sub"><span class="ty ${tyClass(L)}"></span>${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":esc(TYPES[L.type]?.one||"Place")}${L.body?" on "+esc(L.body):" in "+esc(L.system)}${(()=>{ const lt=localTime(L,t); return lt?`<span class="lt-chip" data-lt-chip title="Local time there">${ltChip(lt)}</span>`:""; })()}</div>
+      ${unplacedBox}<div id="d-svc">${L.amen||S.tradePlaces?.has(L.name)||servicesLoading(L.name)?servicesHtml(L.amen?S.svcCache[L.name]||null:null,L.name):""}</div>
       ${jumpTarget(L)?(()=>{ const to=jumpTarget(L), sw=wikiSystem(to), mapped=S.systems.includes(to);
         return `<div class="kv"><span class="k">Leads to</span><span><b>${esc(to)}</b>${mapped?"":" (not charted yet)"}</span>${systemBlurb(sw)}</div>
           <div class="acts" style="margin-bottom:10px">${mapped?`<button class="btn primary" data-a="jump">Jump to ${esc(to)} ▸</button>`:""}${sw?`<button class="btn ghost" data-url="${esc(sw.url)}">${esc(to)} on the wiki</button>`:""}</div>`; })():""}
@@ -729,6 +776,55 @@ for(const t of document.querySelectorAll(".tab[data-ckind]")) t.addEventListener
   for(const id of ["cat","mk"]){ const sel=$(`gr-${id}-consumables`); if(sel) sel.value=""; }
   grCkFilters(); if(st.data){ grFillFilters("consumables"); grRender("consumables"); } });
 syncRail();
+
+// ---- rearranging the rail: drag a section up or down (or Alt+↑/↓ on a focused one). The order is saved in
+// Quantum's settings and put back at every start. The profile button stays at the top, Cart and Settings at
+// the foot; everything between can go in any order.
+const railMovable=b=>!!b&&b.matches?.("#rail .rail-btn[data-group]")&&!b.closest(".rail-gap~*")&&b.dataset.group!=="cart";
+const railItems=()=>[...document.querySelectorAll("#rail .rail-btn[data-group]")].filter(railMovable);
+const railDefault=railItems().map(b=>b.dataset.group);
+const railOrder=()=>railItems().map(b=>b.dataset.group);
+function railApply(order){ if(!Array.isArray(order)) return;
+  const items=railItems(), by=Object.fromEntries(items.map(b=>[b.dataset.group,b])), gap=$("rail").querySelector(".rail-gap");
+  const want=order.filter((g,i)=>by[g]&&order.indexOf(g)===i);
+  // a section added in an update (not in the saved order) goes in at its usual place
+  railDefault.forEach((g,i)=>{ if(by[g]&&!want.includes(g)) want.splice(Math.min(i,want.length),0,g); });
+  for(const g of want) gap.parentNode.insertBefore(by[g],gap);
+  S.railCustom=want.join()!==railDefault.join(); }
+async function railSave(order){ S.railCustom=!!order&&order.join()!==railDefault.join();
+  try{ await api().rail_order_set(S.railCustom?order:[]); }catch(_){ toast("Couldn't save the sidebar order"); } }
+const railLoad=()=>api().rail_order?.().then(r=>{ if(r?.order?.length) railApply(r.order); }).catch(()=>{});
+if(window.pywebview?.api?.rail_order) railLoad(); else window.addEventListener("pywebviewready",railLoad,{once:true});
+(()=>{ const rail=$("rail"); let rd=null, eat=false;
+  const mid=el=>{ const r=el.getBoundingClientRect(); return r.top+r.height/2; };
+  const end=()=>{ if(!rd) return; const {b,on,from}=rd; rd=null; if(!on) return;
+    b.style.transform=""; b.classList.remove("rail-drag"); rail.classList.remove("rail-sorting");
+    eat=true; setTimeout(()=>{ eat=false; },0);                  // the click that ends a drag doesn't open the section
+    const o=railOrder(); if(o.join()!==from) railSave(o); };
+  rail.addEventListener("pointerdown",e=>{ const b=e.target.closest(".rail-btn"); if(e.button!==0||!railMovable(b)) return;
+    rd={b,id:e.pointerId,y0:e.clientY,on:false,from:railOrder().join()}; });
+  window.addEventListener("pointermove",e=>{ if(!rd||e.pointerId!==rd.id) return; const b=rd.b;
+    if(!rd.on){ if(Math.abs(e.clientY-rd.y0)<6) return;          // a plain click stays a click
+      rd.on=true; try{ b.setPointerCapture(e.pointerId); }catch(_){}
+      b.classList.add("rail-drag"); rail.classList.add("rail-sorting"); rd.grab=e.clientY-b.getBoundingClientRect().top; }
+    const rr=rail.getBoundingClientRect();                       // near the top or foot of a short window: scroll the rail
+    if(e.clientY<rr.top+28) rail.scrollTop-=10; else if(e.clientY>rr.bottom-28) rail.scrollTop+=10;
+    b.style.transform=""; const h=b.offsetHeight, c=e.clientY-rd.grab+h/2;
+    for(let k=0;k<40;k++){ const p=b.previousElementSibling, n=b.nextElementSibling;
+      if(railMovable(p)&&c<mid(p)) b.parentNode.insertBefore(b,p);
+      else if(railMovable(n)&&c>mid(n)) b.parentNode.insertBefore(n,b);
+      else break; }
+    const items=railItems(), first=items[0].getBoundingClientRect().top, last=items[items.length-1].getBoundingClientRect().top;
+    const y=Math.max(first,Math.min(last,e.clientY-rd.grab));      // the button stays within the movable sections
+    b.style.transform=`translateY(${y-b.getBoundingClientRect().top}px)`; });
+  window.addEventListener("pointerup",end); window.addEventListener("pointercancel",end);
+  rail.addEventListener("click",e=>{ if(eat){ e.stopPropagation(); e.preventDefault(); eat=false; } },true);
+  rail.addEventListener("keydown",e=>{ const b=e.target.closest(".rail-btn"); if(!e.altKey||!railMovable(b)||(e.key!=="ArrowUp"&&e.key!=="ArrowDown")) return;
+    e.preventDefault(); const p=b.previousElementSibling, n=b.nextElementSibling;
+    if(e.key==="ArrowUp"&&railMovable(p)) b.parentNode.insertBefore(b,p);
+    else if(e.key==="ArrowDown"&&railMovable(n)) b.parentNode.insertBefore(n,b);
+    else return;
+    b.focus(); railSave(railOrder()); }); })();
 
 // =================================================================== styled suggestions for every list box
 // Text boxes with a list of suggestions (Add a ship in My Fleet, the commodity search, places, org ships,
