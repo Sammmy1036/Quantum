@@ -8,7 +8,13 @@
 
 <p align="center">
   <a href="https://quantumsc.org/media/Quantum-Demo.mp4">▶ Watch the demo</a><br>
-  <video src="https://github.com/user-attachments/assets/11a8c488-6eb3-40d1-8b66-301771122156" width="1000" controls muted></video>
+  <table>
+  <tr>
+    <td><a href="images/3D-Cities.png"><img src="images/3D-Cities.png" width="300"></a></td>
+    <td><a href="images/FleetManagement.png"><img src="images/FleetManagement.png" width="300"></a></td>
+    <td><a href="images/RoutePlanning.png"><img src="images/RoutePlanning.png" width="300"></a></td>
+  </tr>
+</table>
 </p>
 
 > **Fan project.** Quantum is unofficial and not affiliated with or endorsed by Cloud Imperium Games. It never changes game files or memory. It reads `Game.log` and your clipboard and, only when you ask, types `/showlocation` into chat and screenshots the game window for price reports.
