@@ -1,0 +1,2945 @@
+{
+ "%doc": "What fits inside each ship (cargo bay or hangar), for the Vehicles page. From citizen-starter-guide.com's 'What fits in Star Citizen ships' (worked out from each ship's and vehicle's real dimensions, so approximate). 'fits' fits as is; 'tight' only just fits or only in some orientations. 'keys' match each label to Quantum's vehicle names (maker left out, lowercase letters and digits only, contained in the name).",
+ "source": "https://citizen-starter-guide.com/what-fits-in-star-citizen-ships/",
+ "updated": "2026-11-22",
+ "keys": {
+  "100i / Variants": [
+   "100i",
+   "125a",
+   "135c"
+  ],
+  "300i / Variants": [
+   "300i",
+   "315p",
+   "325a",
+   "350r"
+  ],
+  "85X": [
+   "85x"
+  ],
+  "ATLS / GEO / ITKI": [
+   "atls"
+  ],
+  "Archimedes": [
+   "archimedes"
+  ],
+  "Ares": [
+   "ares"
+  ],
+  "Arrow": [
+   "arrow"
+  ],
+  "Aurora MkI": [
+   "auroramki",
+   "auroraes",
+   "auroramr",
+   "auroracl",
+   "auroraln",
+   "auroralx"
+  ],
+  "Aurora MkII": [
+   "auroramkii"
+  ],
+  "Avenger (ALL)": [
+   "avenger"
+  ],
+  "Ballista": [
+   "ballista"
+  ],
+  "Basher": [
+   "basher"
+  ],
+  "Blade": [
+   "blade"
+  ],
+  "Buccaneer": [
+   "buccaneer"
+  ],
+  "C8 Pisces": [
+   "piscesc8",
+   "c8pisces"
+  ],
+  "CSV-SM": [
+   "csv"
+  ],
+  "Centurion": [
+   "centurion"
+  ],
+  "Clipper": [
+   "clipper"
+  ],
+  "Cutlass / Variants": [
+   "cutlass"
+  ],
+  "Cutter / Variants": [
+   "cutter"
+  ],
+  "Cyclone / Variants": [
+   "cyclone"
+  ],
+  "Cyclone MT": [
+   "cyclonemt"
+  ],
+  "Defender": [
+   "defender"
+  ],
+  "Dragonfly": [
+   "dragonfly"
+  ],
+  "Drake Marauder": [
+   "marauder"
+  ],
+  "Eclipse": [
+   "eclipse"
+  ],
+  "F7A/C-Variants": [
+   "f7c",
+   "f7a"
+  ],
+  "F8A / F8C": [
+   "f8c",
+   "f8a"
+  ],
+  "Fortune": [
+   "fortune"
+  ],
+  "Freelancer": [
+   "freelancer"
+  ],
+  "Freelancer MAX": [
+   "freelancermax"
+  ],
+  "Fury / Variants": [
+   "fury"
+  ],
+  "Gladiator": [
+   "gladiator"
+  ],
+  "Gladius": [
+   "gladius"
+  ],
+  "Glaive": [
+   "glaive"
+  ],
+  "Golem": [
+   "golem"
+  ],
+  "Golem OX": [
+   "golemox"
+  ],
+  "Guardian / QI": [
+   "guardian"
+  ],
+  "Guardian MX": [
+   "guardianmx"
+  ],
+  "Hawk": [
+   "hawk"
+  ],
+  "Herald": [
+   "herald"
+  ],
+  "Hoverquad": [
+   "hoverquad"
+  ],
+  "Hull-A": [
+   "hulla"
+  ],
+  "Hurricane": [
+   "hurricane"
+  ],
+  "Intrepid": [
+   "intrepid"
+  ],
+  "Khartu-al": [
+   "khartu"
+  ],
+  "L-21 / L-22": [
+   "l21",
+   "l22"
+  ],
+  "Lynx": [
+   "lynx"
+  ],
+  "M50": [
+   "m50"
+  ],
+  "M80": [
+   "m80"
+  ],
+  "MDC (new pdc)": [
+   "mdc"
+  ],
+  "MOTH": [
+   "moth"
+  ],
+  "MPUV / Variants": [
+   "mpuv"
+  ],
+  "MTC": [
+   "mtc"
+  ],
+  "Mantis": [
+   "mantis"
+  ],
+  "Merlin": [
+   "merlin"
+  ],
+  "Meteor": [
+   "meteor"
+  ],
+  "Mule": [
+   "mule"
+  ],
+  "Mustang / Variants": [
+   "mustang"
+  ],
+  "Nomad": [
+   "nomad"
+  ],
+  "Nova": [
+   "nova"
+  ],
+  "Nox": [
+   "nox"
+  ],
+  "PTV (Golf cart)": [
+   "ptv"
+  ],
+  "Pitbull": [
+   "pitbull"
+  ],
+  "Prospector": [
+   "prospector"
+  ],
+  "Pulse / LX": [
+   "pulse"
+  ],
+  "RAFT": [
+   "raft"
+  ],
+  "ROC": [
+   "roc"
+  ],
+  "ROC-DS": [
+   "rocds"
+  ],
+  "RSI Skylark": [
+   "skylark"
+  ],
+  "Razor / variants": [
+   "razor"
+  ],
+  "Redeemer": [
+   "redeemer"
+  ],
+  "Reliant / Variants": [
+   "reliant"
+  ],
+  "SRV": [
+   "srv"
+  ],
+  "STV": [
+   "stv"
+  ],
+  "Sabre / Variants": [
+   "sabre"
+  ],
+  "Sabre Firebird": [
+   "firebird"
+  ],
+  "Salvation": [
+   "salvation"
+  ],
+  "San'tok.yāi": [
+   "santok"
+  ],
+  "Scorpius": [
+   "scorpius"
+  ],
+  "Scythe": [
+   "scythe"
+  ],
+  "Shiv": [
+   "shiv"
+  ],
+  "Spartan": [
+   "spartan"
+  ],
+  "Starlite": [
+   "starlite"
+  ],
+  "Stinger": [
+   "stinger"
+  ],
+  "Storm": [
+   "storm"
+  ],
+  "Storm AA": [
+   "stormaa"
+  ],
+  "Syulen": [
+   "syulen"
+  ],
+  "Talon": [
+   "talon"
+  ],
+  "Terrapin/Medic": [
+   "terrapin"
+  ],
+  "UTV": [
+   "utv"
+  ],
+  "Ursa": [
+   "ursa"
+  ],
+  "Valkyrie": [
+   "valkyrie"
+  ],
+  "Vanguard / Variants": [
+   "vanguard"
+  ],
+  "Vulture": [
+   "vulture"
+  ],
+  "X1": [
+   "x1"
+  ],
+  "Zeus": [
+   "zeus"
+  ]
+ },
+ "ships": {
+  "RSI Polaris": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Ares",
+    "Arrow",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Cutter / Variants",
+    "Defender",
+    "Drake Marauder",
+    "Eclipse",
+    "F7A/C-Variants",
+    "F8A / F8C",
+    "Fortune",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Glaive",
+    "Golem",
+    "Golem OX",
+    "Hawk",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Pitbull",
+    "Prospector",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "Scorpius",
+    "Scythe",
+    "Talon",
+    "Terrapin/Medic",
+    "Zeus"
+   ],
+   "tight": [
+    "Freelancer",
+    "Guardian / QI",
+    "Herald",
+    "Khartu-al",
+    "Mustang / Variants",
+    "SRV",
+    "Starlite",
+    "Vulture"
+   ]
+  },
+  "Drake Cutlass Black": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "Lynx",
+    "ROC-DS",
+    "Ursa",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Drake Ironclad": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Arrow",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Clipper",
+    "Cutter / Variants",
+    "Drake Marauder",
+    "F7A/C-Variants",
+    "Fortune",
+    "Freelancer",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Golem",
+    "Golem OX",
+    "Guardian / QI",
+    "Guardian MX",
+    "Hawk",
+    "Herald",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "Khartu-al",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Mustang / Variants",
+    "Nomad",
+    "Pitbull",
+    "Prospector",
+    "RAFT",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "San'tok.yāi",
+    "Scorpius",
+    "Scythe",
+    "Starlite",
+    "Talon",
+    "Terrapin/Medic",
+    "Vulture"
+   ],
+   "tight": [
+    "Ares",
+    "F8A / F8C",
+    "Syulen"
+   ]
+  },
+  "Aegis Idris": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Ares",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Cutlass / Variants",
+    "Cutter / Variants",
+    "Defender",
+    "Drake Marauder",
+    "Eclipse",
+    "F7A/C-Variants",
+    "F8A / F8C",
+    "Fortune",
+    "Freelancer",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Golem",
+    "Golem OX",
+    "Guardian / QI",
+    "Guardian MX",
+    "Herald",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "Khartu-al",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Mustang / Variants",
+    "Nomad",
+    "Pitbull",
+    "Prospector",
+    "RAFT",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "Scorpius",
+    "Scythe",
+    "Shiv",
+    "Starlite",
+    "Stinger",
+    "Talon",
+    "Terrapin/Medic",
+    "Valkyrie",
+    "Vanguard / Variants",
+    "Vulture",
+    "Zeus"
+   ],
+   "tight": [
+    "Nova",
+    "MOTH"
+   ]
+  },
+  "RSI Perseus": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "C8 Pisces"
+   ]
+  },
+  "Anvil Asgard": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Nova",
+    "Aurora MkI",
+    "C8 Pisces",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "Drake Clipper": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Anvil Carrack": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "85X",
+    "Archimedes",
+    "Arrow",
+    "Aurora MkI",
+    "Basher",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "L-21 / L-22",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "MDC (new pdc)",
+    "MTC",
+    "Cutter / Variants"
+   ]
+  },
+  "RSI Galaxy": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "85X",
+    "Archimedes",
+    "Arrow",
+    "Aurora MkI",
+    "Basher",
+    "Buccaneer",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "Nova",
+    "100i / Variants",
+    "Cutter / Variants",
+    "Drake Marauder",
+    "Gladius",
+    "Terrapin/Medic"
+   ]
+  },
+  "Anvil Liberator": {
+   "fits": [
+    "Ballista",
+    "Cyclone / Variants",
+    "Nova",
+    "Storm",
+    "Ursa",
+    "Arrow",
+    "Buccaneer",
+    "C8 Pisces",
+    "Eclipse",
+    "Gladius",
+    "MPUV / Variants",
+    "Pitbull",
+    "Starlite",
+    "Terrapin/Medic",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Cutter / Variants",
+    "Dragonfly",
+    "Drake Marauder",
+    "Fortune",
+    "Fury / Variants",
+    "Glaive",
+    "Golem",
+    "Golem OX",
+    "Hawk",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "L-21 / L-22",
+    "M50",
+    "Mantis",
+    "Merlin",
+    "Nox",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Salvation",
+    "Scorpius",
+    "Scythe",
+    "X1",
+    "Defender",
+    "F7A/C-Variants",
+    "F8A / F8C",
+    "Freelancer",
+    "Gladiator",
+    "Guardian / QI",
+    "Guardian MX",
+    "M80",
+    "Meteor",
+    "Talon"
+   ],
+   "tight": [
+    "Clipper",
+    "Cutlass / Variants",
+    "Herald",
+    "Khartu-al",
+    "Mustang / Variants",
+    "Nomad",
+    "Prospector",
+    "Redeemer",
+    "SRV",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Vanguard / Variants",
+    "Vulture"
+   ]
+  },
+  "Grey's Market Shiv": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "CSV-SM",
+    "Mule",
+    "ROC",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "MISC Starlancer MAX": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Aurora MkI",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "Golem OX",
+    "Hull-A",
+    "M50"
+   ]
+  },
+  "MISC Starlancer TAC": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Aurora MkI",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "CSV-SM",
+    "Mule",
+    "ROC",
+    "Golem OX",
+    "Hull-A",
+    "M50"
+   ]
+  },
+  "Drake Ironclad Assault": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Arrow",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Clipper",
+    "Cutter / Variants",
+    "Drake Marauder",
+    "F7A/C-Variants",
+    "Fortune",
+    "Freelancer",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Golem",
+    "Golem OX",
+    "Guardian / QI",
+    "Guardian MX",
+    "Hawk",
+    "Herald",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "Khartu-al",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Mustang / Variants",
+    "Nomad",
+    "Pitbull",
+    "Prospector",
+    "RAFT",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "San'tok.yāi",
+    "Scorpius",
+    "Scythe",
+    "Starlite",
+    "Talon",
+    "Terrapin/Medic",
+    "Vulture"
+   ],
+   "tight": [
+    "Nova",
+    "Ares",
+    "F8A / F8C",
+    "Syulen"
+   ]
+  },
+  "Origin 100i": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 125a": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 135c": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 300i": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 315p": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 325a": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 350r": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Origin 400i": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "CSV-SM",
+    "Mule",
+    "ROC",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Origin 600i Explorer": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "RSI Skylark"
+   ]
+  },
+  "Origin 600i Executive Edition": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "RSI Skylark"
+   ]
+  },
+  "Origin 600i Touring": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "RSI Skylark"
+   ]
+  },
+  "Origin 600i 2951 BIS": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "RSI Skylark"
+   ]
+  },
+  "Origin 890 Jump": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Ares",
+    "Arrow",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Cutter / Variants",
+    "Defender",
+    "Drake Marauder",
+    "Eclipse",
+    "F7A/C-Variants",
+    "F8A / F8C",
+    "Fortune",
+    "Freelancer",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Glaive",
+    "Golem",
+    "Golem OX",
+    "Guardian / QI",
+    "Guardian MX",
+    "Hawk",
+    "Herald",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "Khartu-al",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Mustang / Variants",
+    "Nomad",
+    "Pitbull",
+    "Prospector",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "SRV",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "Scorpius",
+    "Scythe",
+    "Starlite",
+    "Stinger",
+    "Talon",
+    "Terrapin/Medic",
+    "Vulture",
+    "Zeus"
+   ],
+   "tight": [
+    "Nova",
+    "Cutlass / Variants",
+    "RAFT",
+    "Shiv"
+   ]
+  },
+  "Crusader A1 Spirit": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Crusader A2 Hercules Starlifter": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nova",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "X1",
+    "100i / Variants",
+    "85X",
+    "Archimedes",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Basher",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "Hull-A",
+    "L-21 / L-22",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "Prospector",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "Cutter / Variants",
+    "Herald"
+   ]
+  },
+  "Anvil Valkyrie Liberator Edition": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Golem"
+   ]
+  },
+  "RSI Apollo Medivac": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Archimedes",
+    "Dragonfly",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": []
+  },
+  "RSI Apollo Triage": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Archimedes",
+    "Dragonfly",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": []
+  },
+  "RSI Aurora Mk II": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Aegis Avenger Stalker": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Avenger Titan": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Avenger Titan Renegade": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Avenger Warlock": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Crusader C1 Spirit": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Crusader C2 Hercules Starlifter": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nova",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Aurora MkI",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Hull-A",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "85X",
+    "Aurora MkII",
+    "Golem OX",
+    "M50",
+    "Prospector"
+   ]
+  },
+  "Crusader M2 Hercules Starlifter": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "85X",
+    "Archimedes",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Basher",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "Hull-A",
+    "L-21 / L-22",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "Prospector",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "Nova",
+    "Arrow",
+    "Cutter / Variants",
+    "Herald"
+   ]
+  },
+  "Anvil Pisces C8": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Anvil Pisces C8R Rescue": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Anvil Pisces C8X Expedition": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Anvil Carrack Expedition": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "85X",
+    "Archimedes",
+    "Arrow",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Basher",
+    "C8 Pisces",
+    "Cutter / Variants",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "Herald",
+    "Hull-A",
+    "L-21 / L-22",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "Prospector",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "MDC (new pdc)",
+    "MTC",
+    "Khartu-al",
+    "Scorpius"
+   ]
+  },
+  "Drake Caterpillar": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "C8 Pisces",
+    "MPUV / Variants",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "Drake Caterpillar Pirate Edition": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "C8 Pisces",
+    "MPUV / Variants",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "RSI Constellation Andromeda": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "RSI Constellation Aquila": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "RSI Constellation Phoenix": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "RSI Constellation Taurus": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Drake Corsair": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin"
+   ],
+   "tight": [
+    "Pitbull"
+   ]
+  },
+  "Drake Cutlass Blue": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Hoverquad",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "X1",
+    "Dragonfly",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "STV",
+    "UTV",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Drake Cutlass Red": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Drake Cutlass Steel": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Dragonfly",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Drake Cutter": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Dragonfly",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "STV"
+   ]
+  },
+  "Drake Cutter Rambler": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Fury / Variants",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Drake Cutter Scout": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Dragonfly"
+   ],
+   "tight": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "STV"
+   ]
+  },
+  "MISC Fortune": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "MISC Freelancer": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Fury / Variants"
+   ]
+  },
+  "MISC Freelancer DUR": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Fury / Variants"
+   ]
+  },
+  "MISC Freelancer MAX": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "MISC Freelancer MIS": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "Fury / Variants"
+   ]
+  },
+  "Mirai Guardian MX": {
+   "fits": [],
+   "tight": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Aegis Hammerhead": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "RSI Hermes": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa"
+   ]
+  },
+  "MISC Hull B": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "MISC Hull C": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Aegis Idris M": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Ballista",
+    "CSV-SM",
+    "Centurion",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Spartan",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "100i / Variants",
+    "300i / Variants",
+    "85X",
+    "Archimedes",
+    "Ares",
+    "Aurora MkI",
+    "Aurora MkII",
+    "Avenger (ALL)",
+    "Basher",
+    "Blade",
+    "Buccaneer",
+    "C8 Pisces",
+    "Cutlass / Variants",
+    "Cutter / Variants",
+    "Defender",
+    "Drake Marauder",
+    "Eclipse",
+    "F7A/C-Variants",
+    "F8A / F8C",
+    "Fortune",
+    "Freelancer",
+    "Freelancer MAX",
+    "Fury / Variants",
+    "Gladiator",
+    "Gladius",
+    "Golem",
+    "Golem OX",
+    "Guardian / QI",
+    "Guardian MX",
+    "Herald",
+    "Hull-A",
+    "Hurricane",
+    "Intrepid",
+    "Khartu-al",
+    "L-21 / L-22",
+    "M50",
+    "M80",
+    "MPUV / Variants",
+    "Mantis",
+    "Merlin",
+    "Meteor",
+    "Mustang / Variants",
+    "Nomad",
+    "Pitbull",
+    "Prospector",
+    "RAFT",
+    "RSI Skylark",
+    "Razor / variants",
+    "Reliant / Variants",
+    "Sabre / Variants",
+    "Sabre Firebird",
+    "Salvation",
+    "Scorpius",
+    "Scythe",
+    "Shiv",
+    "Starlite",
+    "Stinger",
+    "Talon",
+    "Terrapin/Medic",
+    "Valkyrie",
+    "Vanguard / Variants",
+    "Vulture",
+    "Zeus"
+   ],
+   "tight": [
+    "Nova",
+    "MOTH"
+   ]
+  },
+  "Crusader Intrepid": {
+   "fits": [
+    "Pulse / LX",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Origin M80": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Argo MOLE": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "Fury / Variants"
+   ]
+  },
+  "Argo MOTH": {
+   "fits": [
+    "Hoverquad",
+    "Nox",
+    "Pulse / LX",
+    "X1",
+    "Dragonfly"
+   ],
+   "tight": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "STV",
+    "Fury / Variants"
+   ]
+  },
+  "Argo MPUV Cargo": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Nox",
+    "X1"
+   ]
+  },
+  "Argo MPUV Passenger": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Nox",
+    "X1"
+   ]
+  },
+  "Argo MPUV Tractor": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "X1",
+    "Nox"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Crusader Mercury Star Runner": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "RSI Skylark"
+   ]
+  },
+  "Consolidated Outland Nomad": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa",
+    "RSI Skylark"
+   ]
+  },
+  "Anvil Paladin": {
+   "fits": [
+    "Pulse / LX",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Esperia Prowler": {
+   "fits": [
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Esperia Prowler Utility": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "X1",
+    "Nox"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Argo RAFT": {
+   "fits": [
+    "Pulse / LX"
+   ],
+   "tight": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ]
+  },
+  "RSI Constellation Phoenix Emerald": {
+   "fits": [
+    "Dragonfly",
+    "Fury / Variants",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "RSI Constellation Mk V Centaurus": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "Storm",
+    "Storm AA",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Fury / Variants"
+   ],
+   "tight": [
+    "Nova",
+    "Archimedes",
+    "Merlin"
+   ]
+  },
+  "Gatac Railen": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "Aegis Reclaimer": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin"
+   ],
+   "tight": [
+    "Pitbull",
+    "RSI Skylark"
+   ]
+  },
+  "Aegis Redeemer": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "MISC Reliant Kore": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "MISC Reliant Mako": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Fury / Variants"
+   ]
+  },
+  "MISC Reliant Sen": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Fury / Variants"
+   ]
+  },
+  "MISC Reliant Tana": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Fury / Variants"
+   ]
+  },
+  "Aegis Retaliator": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Fury / Variants"
+   ]
+  },
+  "Argo SRV": {
+   "fits": [
+    "Pulse / LX",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "MISC Starfarer": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "MPUV / Variants",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "MISC Starfarer Gemini": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "MPUV / Variants",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "MISC Starlite": {
+   "fits": [
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Hoverquad",
+    "Fury / Variants"
+   ]
+  },
+  "Esperia Stinger": {
+   "fits": [
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Gatac Syulen": {
+   "fits": [
+    "Pulse / LX",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Dragonfly"
+   ]
+  },
+  "Anvil Terrapin": {
+   "fits": [
+    "Nox"
+   ],
+   "tight": [
+    "Dragonfly",
+    "X1"
+   ]
+  },
+  "Anvil Terrapin Medic": {
+   "fits": [
+    "Nox"
+   ],
+   "tight": [
+    "Dragonfly",
+    "X1"
+   ]
+  },
+  "Aegis Tiburon": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Golem",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Aurora MkI",
+    "C8 Pisces",
+    "MPUV / Variants",
+    "Razor / variants",
+    "Salvation"
+   ]
+  },
+  "Gatac Tyilui": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "85X",
+    "Archimedes",
+    "Aurora MkI",
+    "C8 Pisces",
+    "Fury / Variants",
+    "Golem",
+    "Golem OX",
+    "M50",
+    "MPUV / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark",
+    "Razor / variants",
+    "Salvation"
+   ],
+   "tight": [
+    "MDC (new pdc)",
+    "MTC",
+    "Basher"
+   ]
+  },
+  "Anvil Valkyrie": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "CSV-SM",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Lynx",
+    "MDC (new pdc)",
+    "MTC",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "ROC",
+    "ROC-DS",
+    "STV",
+    "UTV",
+    "Ursa",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "Golem"
+   ]
+  },
+  "Aegis Vanguard Harbinger": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Vanguard Hoplite": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Vanguard Sentinel": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Aegis Vanguard Warden": {
+   "fits": [
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": []
+  },
+  "Drake Vulture": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "Dragonfly",
+    "Nox",
+    "X1"
+   ],
+   "tight": [
+    "Fury / Variants"
+   ]
+  },
+  "RSI Zeus Mk II CL": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa"
+   ]
+  },
+  "RSI Zeus Mk II ES": {
+   "fits": [
+    "ATLS / GEO / ITKI",
+    "Cyclone / Variants",
+    "Cyclone MT",
+    "Dragonfly",
+    "Hoverquad",
+    "Mule",
+    "Nox",
+    "PTV (Golf cart)",
+    "Pulse / LX",
+    "STV",
+    "UTV",
+    "X1",
+    "Archimedes",
+    "Fury / Variants",
+    "Merlin",
+    "Pitbull",
+    "RSI Skylark"
+   ],
+   "tight": [
+    "CSV-SM",
+    "ROC",
+    "ROC-DS",
+    "Ursa"
+   ]
+  }
+ }
+}

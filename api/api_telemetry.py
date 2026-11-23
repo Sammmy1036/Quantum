@@ -26,6 +26,7 @@ class TelemetryMixin:
         # session stats and the earnings log, from every frame (game/session_stats.py)
         self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None))
         self._tel.on_frame = self._sess.frame
+        threading.Thread(target=self._stats_sync_loop, daemon=True, name="stats-sync").start()   # api_jobs.py
         self._tel.start()
         self._tel.set_enabled(bool(self._settings.get("telemetry_on", True)))
 
@@ -119,13 +120,20 @@ class TelemetryMixin:
     def session_stats(self):
         """The Session window: this game session's stats, earnings today / this week, the latest balance changes."""
         s = getattr(self, "_sess", None)
-        return {"ok": bool(s), **(s.summary() if s else {})}
+        return {"ok": bool(s), **(s.summary() if s else {}), "synced_at": getattr(self, "_stats_synced", 0) or None,
+                "signed_in": bool(self._account_token())}
 
     def earnings_clear(self):
         """Session window > Clear the earnings log (earnings.json)."""
         s = getattr(self, "_sess", None)
         if s:
             s.clear_log()
+        tok, com = self._account_token(), getattr(self, "_community", None)
+        if tok and com:                                   # the copy kept with the account too, or a sync brings it back
+            try:
+                com.stats(tok, "clear", {})
+            except Exception:
+                pass
         return self.session_stats()
 
     def telemetry_ui_get(self):
@@ -143,6 +151,11 @@ class TelemetryMixin:
                 cur[k] = bool(v)
             elif k == "v" and isinstance(v, int):
                 cur[k] = v
+            elif k == "items" and isinstance(v, dict):
+                # the bar's items: order (ids) and the ones switched off. Ids are checked in the UI (unknown ones dropped)
+                order = [str(x)[:16] for x in (v.get("order") or []) if isinstance(x, str)][:40]
+                off = {str(x)[:16]: True for x, on in (v.get("off") or {}).items() if on}
+                cur[k] = {"order": order, "off": off}
         self._settings["telemetry_ui"] = cur
         self._save_settings()
         return cur

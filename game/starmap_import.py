@@ -218,6 +218,13 @@ def apply_extra(db, snap, keep=None):
             # else adds it): add it from the game files, and the measured spot is put on it afterwards
             # (App._apply_place_fixes), so the reading still wins.
             if (_key(name), system) in have:
+                # Already on the map from the community data: still take the game files' word on its quantum
+                # marker. Ashland (Pyro) has one in game but the community data said none ("No quantum marker").
+                cur = db.locations.get(have[(_key(name), system)])
+                if (cur is not None and cur.source == "db" and p.get("qt") and not cur.qt
+                        and p.get("kind") in ("Outpost", "LandingZone", "Manmade")):
+                    cur.qt = True
+                    changed += 1
                 continue
             body = _body_for(db, p.get("body"), system)
             if not body:

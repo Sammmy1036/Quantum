@@ -837,6 +837,17 @@ class GearMixin:
                 continue
         return {"ok": True, "carries": {}}
 
+    def vehicle_fits(self):
+        """What fits inside each ship (vehicle_fits.json, from citizen-starter-guide.com's dimension-based list):
+        {ok, ships: {ship: {fits: [label], tight: [label]}}, keys: {label: [name keys]}, source}."""
+        for base in (HERE, RES):
+            try:
+                d = json.loads((base / "vehicle_fits.json").read_text(encoding="utf-8"))
+                return {"ok": True, "ships": d.get("ships") or {}, "keys": d.get("keys") or {}, "source": d.get("source")}
+            except Exception:
+                continue
+        return {"ok": True, "ships": {}, "keys": {}}
+
     def resource_catalog(self):
         """What can be mined or harvested, and where: {ok, kinds: {ship|roc|hand|harvest: {resource:
         [{body, system, caves}]}}}, from the planets' and moons' own pages on the wiki (services.json)."""

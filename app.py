@@ -26,6 +26,7 @@ from api import (
     api_friendmap,
     api_cargo,
     api_patchhub,
+    api_jobs,
     api_wishlist,
     api_calendar,
     api_telemetry)
@@ -56,7 +57,8 @@ class Api(api_contracts.ContractsMixin,
           api_watch.WatchMixin,
           api_friendmap.FriendMapMixin,
           api_cargo.CargoMixin,
-          api_patchhub.PatchHubMixin):
+          api_patchhub.PatchHubMixin,
+          api_jobs.JobsMixin):
 
     def _refresh_game_data(self):
         """Newer game data from the server's assets (data/): component numbers, then contracts, gear and

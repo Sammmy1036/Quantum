@@ -397,10 +397,12 @@ class FleetMixin:
                     # so a swapped part is powered and cooled the same way its stock one is
                     full = self._game.stats(gi.get("uuid"), fit["name"], s_.get("size")) or dict(gi["stats"])
                     s_["fitted_stats"], s_["fitted_grade"], s_["fitted_maker"] = full, gi.get("grade"), gi.get("maker")
-                    if s_["type"] == "Cooler":              
+                    if s_["type"] in ("Cooler", "Shield", "PowerPlant", "QuantumDrive", "Radar", "WeaponGun"):
+                        # the resource-network numbers (EM range, coolant use, power states) the game-file stats
+                        # don't carry yet come from the wiki's item record (cached for a week)
                         rec = self._wikiapi.item(gi["uuid"], fit["name"])
                         s_["fitted_stats"].update({k: v for k, v in (fleet.item_stats(rec) if rec else {}).items()
-                                                   if k not in s_["fitted_stats"]})
+                                                   if k not in s_["fitted_stats"] or (s_["type"] == "Cooler" and k in fleet.NETWORK_KEYS)})
                 else:
                     rec = self._wikiapi.item(fit.get("uuid"), fit["name"])
                     s_["fitted_stats"] = fleet.item_stats(rec) if rec else {}
@@ -450,7 +452,7 @@ class FleetMixin:
                     lo["delta"][k] = d
                 else:
                     lo["delta"].pop(k, None)
-        lo["power"] = {"mode": mode, "cooling": now["cooling"], "cooling_auto": now["cooling_auto"],
+        lo["power"] = {"mode": mode, "cooling": now["cooling"], "cooling_auto": now["cooling_auto"], "model": now.get("model"),
                        "custom": bool(opts["parts"]) or not now["cooling_auto"],
                        "cool_make": now["cool_make"], "pips_gen": now["pips_gen"], "pips_used": now["pips_used"]}
         for s_ in lo["slots"] + (lo.get("fixed") or []):
@@ -1052,6 +1054,98 @@ class FleetMixin:
             pw["cooling"] = max(0, min(100, int(cooling)))
         self._save_settings()
         return {"ok": True}
+
+    # ---- Recommended loadout: for a role, the best part of each kind the ship can take (from the game files),
+    # shown as a preview with what it does to the ship's numbers, and saved as a new loadout if you like it.
+    REC_ROLES = {"combat": "Combat", "stealth": "Stealth", "travel": "Long range", "balanced": "Balanced"}
+    REC_KINDS = ("Shield", "PowerPlant", "Cooler", "QuantumDrive", "Radar")
+    _GRADE = {"A": 4, "B": 3, "C": 2, "D": 1}
+
+    def _rec_score(self, role, t, st, it, stock):
+        """How good a part is for a role (higher is better), against the stock part's numbers. None: not a pick."""
+        g = self._GRADE.get(str(it.get("grade") or "").upper(), 0)
+        cls = str(it.get("class") or "").lower()
+        em, ir = st.get("em") or 0, st.get("ir") or 0
+        key = {"Shield": st.get("shield_hp") or 0, "PowerPlant": st.get("power") or st.get("power_make") or 0,
+               "Cooler": st.get("coolant_make") or st.get("cooling") or 0, "QuantumDrive": st.get("qt_speed") or 0,
+               "Radar": st.get("aim_range") or st.get("radar_range") or 0}.get(t, 0)
+        skey = {"Shield": stock.get("shield_hp"), "PowerPlant": stock.get("power") or stock.get("power_make"),
+                "Cooler": stock.get("coolant_make") or stock.get("cooling"), "QuantumDrive": stock.get("qt_speed")}.get(t) or 0
+        if role == "stealth":
+            if skey and key < skey * 0.85:
+                return None                                   # don't give up too much for a quieter part
+            return (2 if cls == "stealth" else 0) * 1e9 - (em + ir) + g
+        if role == "combat":
+            if t == "QuantumDrive":
+                return None
+            regen = (st.get("shield_regen") or 0) * 4 if t == "Shield" else 0
+            return (1 if cls == "military" else 0) * 1e6 * (t in ("Shield", "PowerPlant", "Cooler")) + (key + regen) * 10 + g
+        if role == "travel":
+            if t == "QuantumDrive":
+                fuel = st.get("qt_fuel") or 0
+                return key - fuel * 1e5 + g
+            return g * 1e6 + key
+        return g * 1e6 + key - (em + ir) * 0.01                 # balanced: the best grade, then the best numbers
+
+    def fleet_recommend(self, uid, role="balanced", apply=False):
+        """{ok, role, picks: [{port, label, type, size, stock, current, pick, why}], stats, now_stats, delta}:
+        the best part for a role in each component slot (shields, power, coolers, quantum drive, radar), and the
+        ship's numbers with them. apply=True saves them as a new loadout ("Recommended: Combat") and shows it."""
+        role = role if role in self.REC_ROLES else "balanced"
+        f = self._ship(uid)
+        if not f:
+            return {"ok": False, "error": "That ship isn't in your fleet"}
+        lo = self.fleet_loadout(uid)
+        if not lo.get("ok"):
+            return lo
+        picks, fit = [], {}
+        for sl in lo["slots"]:
+            t, size = sl.get("type"), sl.get("size")
+            if t not in self.REC_KINDS or not size:
+                continue
+            stock = (sl.get("stock") or {}).get("stats") or {}
+            best, best_s = None, None
+            for it in self._game.of_kind(t, size):
+                st = self._game.stats(it.get("uuid"), it.get("name"), size) or it.get("stats") or {}
+                sc = self._rec_score(role, t, st, it, stock)
+                if sc is not None and (best_s is None or sc > best_s):
+                    best, best_s = dict(it, stats=st), sc
+            if not best:
+                continue
+            same = (best.get("name") or "").lower() == ((sl.get("stock") or {}).get("name") or "").lower()
+            if not same:
+                fit[sl["port"]] = {"name": best["name"], "uuid": best.get("uuid")}
+            picks.append({"port": sl["port"], "label": sl.get("label") or t, "type": t, "size": size,
+                          "stock": (sl.get("stock") or {}).get("name"), "current": sl.get("fitted"),
+                          "pick": best["name"], "grade": best.get("grade"), "class": best.get("class"), "maker": best.get("maker"),
+                          "keep": same})
+        if not picks:
+            return {"ok": False, "error": "No component slots Quantum can recommend parts for on this ship"}
+        if apply:
+            name = f"Recommended: {self.REC_ROLES[role]}"
+            r = self.fleet_loadout_new(uid, name, copy=True)
+            if not r.get("ok"):
+                return r
+            cur = self._loadout_of(self._ship(uid))["loadout"]
+            for p_ in [p["port"] for p in picks]:
+                cur.pop(p_, None)
+            cur.update(json.loads(json.dumps(fit)))
+            self._save_settings()
+            return {"ok": True, "applied": True, "id": r["id"], "name": name}
+        ship = json.loads(json.dumps(f))
+        act = self._loadout_of(ship)
+        for p_ in [p["port"] for p in picks]:
+            act["loadout"].pop(p_, None)
+        act["loadout"].update(fit)
+        ship["loadout"] = act["loadout"]
+        lo2 = self.fleet_loadout(uid, _ship=ship)
+        if not lo2.get("ok"):
+            return lo2
+        now, rec = lo.get("stats") or {}, lo2.get("stats") or {}
+        delta = {k: rec[k] - now[k] for k in rec if isinstance(rec.get(k), (int, float)) and isinstance(now.get(k), (int, float))
+                 and rec[k] != now[k]}
+        return {"ok": True, "role": role, "roles": self.REC_ROLES, "picks": picks, "stats": rec, "now_stats": now, "delta": delta,
+                "power": lo2.get("power"), "now_power": lo.get("power")}
 
     def fleet_set_slot(self, uid, port, item_name, uuid=None, loadout=None):
         """Fit a part to a slot (or back to stock with no item_name), in the loadout shown in My Fleet, or

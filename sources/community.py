@@ -142,6 +142,16 @@ class Community:
         r = self._acct("/v1/wishlist/sync", {"items": items}, token=token, timeout=20)
         return {"status": "signed_out"} if r.get("status") == "http_401" else r
 
+    def jobs(self, token, path="mine", body=None):
+        """Daily and weekly role jobs (server: jobs.py): GET mine, or POST role / reroll / progress."""
+        r = self._acct(f"/v1/jobs/{path}", body, token=token, timeout=20)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
+    def stats(self, token, path="mine", body=None):
+        """Session stats and the earnings log kept with the account (server: statsync.py): GET mine, POST sync / clear."""
+        r = self._acct(f"/v1/stats/{path}", body, token=token, timeout=30)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
     def calendar_sync(self, token, items):
         """Put this PC's calendar together with the account's (server: mycalendar.py).
         {status: ok, items, updated} | too_big | signed_out | not_found (server without calendars yet) ..."""

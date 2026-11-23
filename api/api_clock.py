@@ -16,7 +16,14 @@ class ClockMixin:
             c["mode"] = "10"
         if c["size"] not in city_clock.SIZES:
             c["size"] = "large"
+        c["color"] = c.get("color") if c.get("color") in city_clock.COLORS else "blue"
+        c["style"] = c.get("style") if c.get("style") in city_clock.STYLES else "full"
+        c["opacity"] = c.get("opacity") if c.get("opacity") in city_clock.OPACITIES else 100
+        c["where"] = c.get("where") if c.get("where") in city_clock.WHERE else "cities"
         return c
+
+    def _clock_look(self, c):
+        return {k: c[k] for k in ("color", "style", "opacity")}
 
     def _city_local_hours(self, city, t=None):
         """Local time of day (0-24) in a city, from its planet's spin and where its star is."""
@@ -43,9 +50,15 @@ class ClockMixin:
         if not spot or how not in ("landed", "log"):
             return None
         city = spaceport_city(spot) or spot
-        if not (city.split(" (")[0].lower() in nav_core.CITIES and city in self._db.locations):
-            return None
-        return city
+        if city.split(" (")[0].lower() in nav_core.CITIES and city in self._db.locations:
+            return city
+        # "Other known locations" (Settings): any place on a planet or moon the log puts you at, with a local time
+        # (outposts, settlements, distribution centres, Levski…). Only once you've landed or the log names it.
+        if self._clock_cfg().get("where") == "all":
+            L = self._db.locations.get(city)
+            if L is not None and L.kind == "surface" and L.body and L.source != "user" and self._city_local_hours(city) is not None:
+                return city
+        return None
 
     def _city_confirmed(self, city, since):
         """A city named only by the log's inventory location ("Location[Stanton1_Lorville]") isn't proof you're
@@ -105,7 +118,8 @@ class ClockMixin:
                     continue                                  # a preview from Settings is showing
                 keep = cfg["mode"] == "city" or (cfg["mode"].isdigit() and now - self._clock_since < int(cfg["mode"]))
                 if city and hours is not None and keep:
-                    self._clock.show({"city": city, "body": body, "hours": hours}, cfg["position"], cfg["h24"], cfg["size"], (cfg["x"], cfg["y"]))
+                    self._clock.show({"city": city, "body": body, "hours": hours}, cfg["position"], cfg["h24"], cfg["size"],
+                                     (cfg["x"], cfg["y"]), self._clock_look(cfg))
                 else:
                     self._clock.hide()
             except Exception:
@@ -133,6 +147,25 @@ class ClockMixin:
             self._save_settings()
         return {"ok": True, **c}
 
+    def set_city_clock_look(self, prefs):
+        """Settings > Location Clock Overlay: colour, layout (full / compact / time only), opacity, and where it
+        shows (the four cities, or every known place on a planet or moon)."""
+        prefs = prefs or {}
+        with self._lock:
+            c = self._clock_cfg()
+            for k, ok in (("color", city_clock.COLORS), ("style", city_clock.STYLES), ("where", city_clock.WHERE)):
+                if prefs.get(k) in ok:
+                    c[k] = prefs[k]
+            try:
+                op = int(prefs.get("opacity")) if prefs.get("opacity") is not None else None
+            except (TypeError, ValueError):
+                op = None
+            if op in city_clock.OPACITIES:
+                c["opacity"] = op
+            self._settings["city_clock"] = c
+            self._save_settings()
+        return {"ok": True, **c}
+
     def city_clock_image(self, city="New Babbage"):
         """The clock as it looks now, as a picture (for placing it in Settings): its size at 1080p."""
         with self._lock:
@@ -142,7 +175,7 @@ class ClockMixin:
         try:
             import base64, io
             img = city_clock.render({"city": city, "body": body, "hours": hours or 12.0}, RES / "ui" / "fonts",
-                                    city_clock.SIZES.get(c["size"], 1.0), c["h24"])
+                                    city_clock.SIZES.get(c["size"], 1.0), c["h24"], c["color"], c["style"])
             raw = bytearray(img.tobytes())          # the overlay's colours are premultiplied: undo that for a picture
             for i in range(0, len(raw), 4):
                 a = raw[i + 3]
@@ -168,7 +201,8 @@ class ClockMixin:
         if hours is None:
             return {"ok": False, "error": "That city's planet has no day length in the map data"}
         self._clock_preview_until = time.time() + 15
-        self._clock.show({"city": city, "body": body, "hours": hours}, c["position"], c["h24"], c["size"], (c["x"], c["y"]))
+        self._clock.show({"city": city, "body": body, "hours": hours}, c["position"], c["h24"], c["size"], (c["x"], c["y"]),
+                         self._clock_look(c))
         return {"ok": True, "available": city_clock.AVAILABLE}
 
     def set_option(self, key, value):

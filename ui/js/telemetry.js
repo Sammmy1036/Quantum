@@ -92,6 +92,7 @@ function tlSettingsWire(d){ const cb=d.querySelector("#s-tlon"); if(!cb) return;
   for(const b of d.querySelectorAll("[data-tlsty]")) b.onclick=e=>{ e.preventDefault(); const [k,v]=b.dataset.tlsty.split(":"); if(tlStyle()[k]===v) return;
     tlSetStyle(k,v); renderDetail(); toast(k==="pos"?`Player stats: ${TL_POS.find(x=>x[0]===v)[1]}`:`Player stats look: ${TL_LOOKS.find(x=>x[0]===v)[1]}`); };
   const sc=d.querySelector("#s-tlshipcard"); if(sc) sc.onchange=()=>{ tlLS("q-tl-shipcard",sc.checked?"1":"0"); tlSave({shipcard:sc.checked}); tlRerender(); };
+  tlItemsWire(d);
   const mo=d.querySelector("#s-tlmaponly"); if(mo) mo.onchange=()=>{ tlLS("q-tl-maponly",mo.checked?"1":"0"); tlSave({maponly:mo.checked}); tlRerender(); };
   cb.onchange=async e=>{ const r=await api().telemetry_set(e.target.checked); if(!r?.ok) return toast(r?.error||"Couldn't change it");
     S.tl.justSetUp=false; tlCfgLoad(true); toast(r.on?"Game telemetry on":"Game telemetry off"); await poll(); };
@@ -113,6 +114,13 @@ const TL_IC={
   hp:'<svg class="tl-ic" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M12 21s-8-5.1-8-11a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 10c0 5.9-8 11-8 11z"/><path class="k" d="M12 9.5v5M9.5 12h5"/></svg>',
   o2:'<svg class="tl-ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="l" cx="10" cy="13" r="7"/><circle class="l" cx="19" cy="5.5" r="2.5"/><text x="10" y="15.6" class="t">O2</text></svg>',
   drink:'<svg class="tl-ic" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M15 6.5c2.6 3.4 5 6.6 5 9.3a5 5 0 0 1-10 0c0-2.7 2.4-5.9 5-9.3z"/><path class="f" d="M7 2.5c1.5 2 2.9 3.8 2.9 5.4a2.9 2.9 0 0 1-5.8 0C4.1 6.3 5.5 4.5 7 2.5z"/></svg>',
+  // ship gauges: hydrogen (an H2 tank), quantum fuel, boost, shields, hull, speed
+  h2:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><rect class="l" x="5" y="5" width="14" height="16.5" rx="4"/><path class="l" d="M9 5V2.5h6V5"/><text x="12" y="16.6" class="t">H2</text></svg>',
+  qt:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><circle class="l" cx="12" cy="12" r="8.5"/><path class="l" d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"/><circle class="f" cx="12" cy="12" r="2.2"/></svg>',
+  boost:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><path class="l" d="M4 7l6 5-6 5M12 7l6 5-6 5"/></svg>',
+  shield:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><path class="l" d="M12 2.8l7.5 3v5.6c0 4.8-3.2 8.3-7.5 9.9-4.3-1.6-7.5-5.1-7.5-9.9V5.8z"/></svg>',
+  hull:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><path class="l" d="M12 2.5l3 7 6.5 4.2-6.5.8-3 7-3-7-6.5-.8L9 9.5z"/></svg>',
+  speed:'<svg class="tl-ic sh" viewBox="0 0 24 24" aria-hidden="true"><path class="l" d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path class="l" d="M12 17l4.5-6"/><circle class="f" cx="12" cy="17" r="1.6"/></svg>',
   food:'<svg class="tl-ic" viewBox="0 0 24 24" aria-hidden="true"><path class="l" d="M6 1.8l3.6 2.1v4.2L6 10.2 2.4 8.1V3.9z"/><path class="l" d="M6 12.8l3.6 2.1v4.2L6 21.2l-3.6-2.1v-4.2z"/><circle class="f" cx="6" cy="6" r="1.2"/><circle class="f" cx="6" cy="17" r="1.2"/><path class="f" d="M21.5 3.5C14 3.5 11.5 8.6 11.5 13c0 3.6 2.4 6.5 5.6 6.5 4.6 0 5.6-7.4 4.4-16z"/><path class="k" d="M13.2 21c1.3-5.2 3.5-9.6 6.6-13.6"/></svg>'
 };
 function tlBar(label,pct,cls,txt,ic){ return pct==null?"":`<div class="tl-bar ${cls||""}"><span>${ic?TL_IC[ic]:""}${label}</span><div><i style="width:${pct}%"></i></div><b>${txt??pct+"%"}</b></div>`; }
@@ -126,8 +134,7 @@ function tlCardHtml(t){ const v=t.vehicle, a=t.actor||{}, w=t.weapons;
     h+=`<div class="tl-sec"><div class="tl-ship"><b>${esc(tlShipName(v))}</b>${v.mode?`<span class="tl-chip ${v.mode}">${v.mode.toUpperCase()}${v.spooled?" · spooled":""}</span>`:""}${v.flight_data===false?"":`<span class="tl-chip">${v.landed?"Landed":v.gear==="deployed"?"Gear down":"Flying"}</span>`}</div>
       ${v.flight_data===false?`<div class="muted tl-small" style="margin:2px 0 6px">${TL_VTYPE[v.type]||"This vehicle"}: the game sends no speed, heading or altitude for it (only ships with a flight computer do)</div>`:""}
       ${v.flight_data===false?"":`<div class="tl-big"><div><b>${Math.round(v.speed||0).toLocaleString()}</b><span>m/s</span></div>${v.heading!=null?`<div><b>${Math.round(v.heading)}°</b><span>heading</span></div>`:""}${v.altitude!=null?`<div><b>${v.altitude>=10000?(v.altitude/1000).toFixed(1)+" km":Math.round(v.altitude)+" m"}</b><span>altitude</span></div>`:""}</div>`}
-      ${tlBar("Quantum fuel",tlQt(v),"q")}${tlBar("Hydrogen",tlPct(v.h_fuel),"h")}${v.shields?tlBar("Shields",tlPct(v.shields.level),"s"):""}${v.health!=null?tlBar("Hull",tlPct(v.health),tlPct(v.health)<35?"bad":"hp"):""}
-      ${v.boost?tlBar("Boost",tlPct(v.boost.reserve),v.boost.critical?"bad":"b"):""}
+      ${tlBar("Quantum fuel",tlQt(v),"q",null,"qt")}${tlBar("Hydrogen",tlPct(v.h_fuel),"h",null,"h2")}${v.boost?tlBar("Boost",tlPct(v.boost.reserve),v.boost.critical?"bad":"b",null,"boost"):""}${v.shields?tlBar("Shields",tlPct(v.shields.level),"s",null,"shield"):""}${v.health!=null?tlBar("Hull",tlPct(v.health),tlPct(v.health)<35?"bad":"hp",null,"hull"):""}
       ${warn.length?`<div class="tl-warn">${warn.map(([k,s])=>`<span class="${TL_WARN_CLS[s]||""}" title="${esc(k)}: ${esc(s.replace("_"," "))}">${k}</span>`).join("")}</div>`:""}
       ${tlLandHtml(v,"card")}
       ${w?.countermeasures?.length?`<div class="tl-row">${w.countermeasures.map(c=>`<span>${c.n} ${c.type==="decoy"?"decoys":"noise"}</span>`).join("")}${w.preset?`<span class="muted">${esc(w.preset)}</span>`:""}</div>`:""}</div>`; }
@@ -162,6 +169,7 @@ async function tlUiLoad(){ let u; try{ u=await api().telemetry_ui_get(); }catch(
     const {pos,look}=tlStyle(); tlSave({pos,look,shipcard:tlShipCardOn(),maponly:tlMapOnly(),v:2}); return; }
   if(u.v!==2){ u.shipcard=false; tlSave({shipcard:false,v:2}); }     // update 12 saved the ship card as on for everyone
   if(u.pos){ S.tl.pos=u.pos; tlLS("q-tl-pos",u.pos); } if(u.look){ S.tl.look=u.look; tlLS("q-tl-look",u.look); }
+  if(u.items){ S.tl.items=tlItemsFix(u.items); tlLS("q-tl-items",JSON.stringify(S.tl.items)); }
   if(u.shipcard!=null) tlLS("q-tl-shipcard",u.shipcard?"1":"0"); if(u.maponly!=null) tlLS("q-tl-maponly",u.maponly?"1":"0");
   tlRerender(); }
 setTimeout(tlUiLoad,800);
@@ -203,12 +211,12 @@ function tlIc(k,v){ if(k==="hp") return tlSvg("HealthIcon")||TL_IC.hp;
 // where the game starts warning; the body temperature it sends is around 36-37 °C when you're fine.
 function tlTempIc(c){ const r=c>=38.5?"TempBodyRange-Hot":c<=35?"TempBodyRange-Cold":"TempBodyRange", g=HUD_SVG;
   return g&&g.TempBodyBulb?`<svg class="tl-ic gic t" viewBox="0 0 128 128" aria-hidden="true">${g.TempBodyBulb.body}${g[r]?g[r].body:""}</svg>`:""; }
-function tlBarsHtml(y){ return y.rows.map(r=>`<div class="tl-bar ${r.k} ${r.low?"bad":""} ${tlCls(r)}"><span>${tlIc(r.k,r.v)}${r.label}</span><div><i style="width:${r.v}%"></i></div><b>${r.v}%</b></div>`).join(""); }
-function tlChipsHtml(y){ return y.rows.map(r=>`<div class="tl-chipstat ${tlCls(r)}" title="${r.label} ${r.v}%">${tlIc(r.k,r.v)}<div><div class="tl-cs-t"><span>${r.label}</span><b>${r.v}%</b></div><div class="tl-cs-b"><i style="width:${r.v}%"></i></div></div></div>`).join(""); }
-function tlTilesHtml(y){ return `<div class="tl-tiles">${y.rows.map(r=>`<div class="tl-tile ${tlCls(r)}" title="${r.label} ${r.v}%"><div class="tl-tile-top">${tlIc(r.k,r.v)}<div class="tl-vm"><i style="height:${r.v}%"></i></div></div><b>${r.v}%</b><span>${r.label}</span></div>`).join("")}</div>`; }
+function tlBarsHtml(y){ return y.rows.map(r=>`<div class="tl-bar ${r.k} ${r.low?"bad":""} ${tlCls(r)}" data-it="${r.k}"><span>${tlIc(r.k,r.v)}${r.label}</span><div><i style="width:${r.v}%"></i></div><b>${r.v}%</b></div>`).join(""); }
+function tlChipsHtml(y){ return y.rows.map(r=>`<div class="tl-chipstat ${tlCls(r)}" data-it="${r.k}" title="${r.label} ${r.v}%">${tlIc(r.k,r.v)}<div><div class="tl-cs-t"><span>${r.label}</span><b>${r.v}%</b></div><div class="tl-cs-b"><i style="width:${r.v}%"></i></div></div></div>`).join(""); }
+function tlTilesHtml(y){ return `<div class="tl-tiles">${y.rows.map(r=>`<div class="tl-tile ${tlCls(r)}" data-it="${r.k}" title="${r.label} ${r.v}%"><div class="tl-tile-top">${tlIc(r.k,r.v)}<div class="tl-vm"><i style="height:${r.v}%"></i></div></div><b>${r.v}%</b><span>${r.label}</span></div>`).join("")}</div>`; }
 function tlRingsHtml(y){ const C=2*Math.PI*22;
-  return `<div class="tl-rings">${y.rows.map(r=>`<div class="tl-ring ${tlCls(r)}" title="${r.label} ${r.v}%"><div class="tl-ring-g"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22"/><circle class="v" cx="27" cy="27" r="22" stroke-dasharray="${(C*r.v/100).toFixed(1)} ${C.toFixed(1)}"/></svg>${tlIc(r.k,r.v)}</div><b>${r.v}%</b><span>${r.label}</span></div>`).join("")}</div>`; }
-function tlCompactHtml(y,fly){ return `<div class="tl-compact">${y.rows.map(r=>`<div class="tl-railit ${tlCls(r)}" tabindex="0" aria-label="${r.label} ${r.v}%">${tlIc(r.k,r.v)}<b>${r.v}</b><div class="tl-rb"><i style="width:${r.v}%"></i></div>
+  return `<div class="tl-rings">${y.rows.map(r=>`<div class="tl-ring ${tlCls(r)}" data-it="${r.k}" title="${r.label} ${r.v}%"><div class="tl-ring-g"><svg viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22"/><circle class="v" cx="27" cy="27" r="22" stroke-dasharray="${(C*r.v/100).toFixed(1)} ${C.toFixed(1)}"/></svg>${tlIc(r.k,r.v)}</div><b>${r.v}%</b><span>${r.label}</span></div>`).join("")}</div>`; }
+function tlCompactHtml(y,fly){ return `<div class="tl-compact">${y.rows.map(r=>`<div class="tl-railit ${tlCls(r)}" data-it="${r.k}" tabindex="0" aria-label="${r.label} ${r.v}%">${tlIc(r.k,r.v)}<b>${r.v}</b><div class="tl-rb"><i style="width:${r.v}%"></i></div>
     ${fly?`<div class="tl-fly"><div class="tl-fly-h">${tlIc(r.k,r.v)}<b>${r.label}</b><b class="tl-fly-v">${r.v}%</b></div><div class="tl-rb"><i style="width:${r.v}%"></i></div>${r.low?`<div class="tl-fly-d">${TL_LOW[r.k][1]}.</div>`:""}</div>`:""}</div>`).join("")}</div>`; }
 const TL_LOW={hp:["Hurt","Use a MedPen or get to a med bed"],o2:["Low oxygen","Get somewhere breathable or swap your tank"],food:["Hungry","Eat something soon"],drink:["Thirsty","Drink something soon"]};
 function tlLowHtml(y){ const r=y.rows.find(x=>x.low); if(!r) return ""; const [t,d]=TL_LOW[r.k];
@@ -220,22 +228,80 @@ function tlLookHtml(y,look,where){
   if(look==="compact") return tlCompactHtml(y,where!=="h");
   return where==="card"?tlBarsHtml(y):`<div class="tl-chips">${tlChipsHtml(y)}</div>`; }
 const tlShort=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+"M":n>=1e4?Math.round(n/1e3)+"k":Math.round(n).toLocaleString();
-// the bar along an edge: your stats, then your balance and the ship you're in
-function tlDockHtml(t,look,o){ const a=t.actor||{}, v=t.vehicle, y=tlYou(a), small=look==="compact"&&o==="v";
-  const meta=tlMetaHtml(a);
-  const fresh=t.fps==null||t.fps>0, tip=fresh?`Live from the game${t.fps?` (${t.fps} updates a second)`:""}`:"No new data from the game right now";
-  let h=`<div class="tl-dk-h" title="${tip}"><span class="tl-live ${fresh?"on":""}"></span>${small?"<b class=\"tl-live-t\">LIVE</b>":"<b>Player Stats</b>"}</div>`;
-  if(y.any) h+=`<div class="tl-dk-g tl-dk-you">${tlLookHtml(y,look,o)}</div>`;
-  if(meta&&!small) h+=`<div class="tl-dk-g tl-dk-meta">${meta}</div>`;
-  if(!small) h+=tlSteerDock(tlSteer(),o);
-  // landing aids get their own spot, right after your stats, while you're coming in
-  if(v&&tlLanding(v)&&!small) h+=`<div class="tl-dk-g tl-dk-land">${tlLandHtml(v,o)}</div>`;
-  if(a.auec!=null){ const se=tlSessNet();
-    h+=`<button type="button" class="tl-dk-g tl-dk-auec" data-tlsess title="Balance · click for this session's earnings and stats"><b>${small?tlShort(a.auec):Math.round(a.auec).toLocaleString()}</b><span>aUEC</span>${se?`<em class="${se>0?"up":"down"}">${se>0?"+":"−"}${small?tlShort(Math.abs(se)):Math.abs(se).toLocaleString()}</em>`:""}</button>`; }
-  if(v){ const sh=[["q","QT fuel",tlQt(v)],["h","Hydrogen",tlPct(v.h_fuel)],["s","Shields",v.shields?tlPct(v.shields.level):null],["hp","Hull",v.health!=null?tlPct(v.health):null]].filter(x=>x[2]!=null);
-    h+=`<div class="tl-dk-g tl-dk-ship" title="${esc(tlShipName(v))}">${small?`<b>${Math.round(v.speed||0)}</b><span>m/s</span>${tlLandHtml(v,"tiny")}`
-      :`<div class="tl-dk-sn"><b>${esc(tlShipName(v))}</b><span>${tlSpd(v)}</span></div>${sh.map(([c,l,p])=>`<div class="tl-chipstat ship tls-${c}${c==="hp"&&p<35?" bad":""}"><div><div class="tl-cs-t"><span>${l}</span><b>${p}%</b></div><div class="tl-cs-b"><i style="width:${p}%"></i></div></div></div>`).join("")}`}</div>`; }
-  return h; }
+// ---- the bar's items: each one can be switched off and moved (Settings › Game telemetry › Bar items).
+// Neighbouring vitals share one group, as do neighbouring ship gauges, so the bar keeps its look.
+// kind: v = a vital (your stats, in the chosen look), g = a ship gauge, s = its own spot
+const TL_ITEMS=[
+  ["head","s","LIVE label",true],["hp","v","Health",true],["o2","v","Oxygen",true],["food","v","Satiety",true],["drink","v","Hydration",true],
+  ["meta","s","Temperature, radiation, heart rate",true],["steer","s","Guide me steering",true],["land","s","Landing aids",true],
+  ["auec","s","aUEC balance",true],["ship","s","Ship name",true],["speed","s","Speed (m/s)",true],["heading","s","Heading",true],
+  ["alt","s","Altitude",false],["mode","s","NAV / SCM mode",false],
+  ["q","g","Quantum fuel",true],["h","g","Hydrogen",true],["b","g","Boost",true],["s","g","Shields",true],["hull","g","Hull",true]];
+const TL_ITEM=Object.fromEntries(TL_ITEMS.map(x=>[x[0],x]));
+// {order:[ids], off:{id:true}}: new items (from a later update) are added in their default place, on by default
+function tlItems(){ if(S.tl.items) return S.tl.items; let st=null; try{ st=JSON.parse(tlLS("q-tl-items")||"null"); }catch(_){}
+  return S.tl.items=tlItemsFix(st); }
+function tlItemsFix(st){ const order=(st?.order||[]).filter(id=>TL_ITEM[id]), off={...(st?.off||{})};
+  if(!st) for(const [id,,,on] of TL_ITEMS) if(!on) off[id]=true;
+  const hi=order.indexOf("head"); if(hi>0){ order.splice(hi,1); order.unshift("head"); }      // the LIVE label stays first
+  TL_ITEMS.forEach(([id,,,on],i)=>{ if(order.includes(id)) return;
+    if(st&&!on) off[id]=true;
+    const prev=TL_ITEMS.slice(0,i).reverse().find(x=>order.includes(x[0]));          // keep it near its default neighbour
+    order.splice(prev?order.indexOf(prev[0])+1:0,0,id); });
+  return {order,off}; }
+function tlItemsSave(st){ S.tl.items=tlItemsFix(st); tlLS("q-tl-items",JSON.stringify(S.tl.items)); tlSave({items:S.tl.items}); tlRerender(); }
+const tlOn=id=>!tlItems().off[id];
+const tlHdg=h=>`${String(Math.round(((h%360)+360)%360)).padStart(3,"0")}°`;
+function tlGauge(v,id){ if(!v) return null;
+  if(id==="q") return {l:"QT fuel",p:tlQt(v)}; if(id==="h") return {l:"Hydrogen",p:tlPct(v.h_fuel)};
+  if(id==="b") return v.boost?{l:"Boost",p:tlPct(v.boost.reserve),bad:v.boost.critical,on:v.boost.on}:null;
+  if(id==="s") return v.shields?{l:"Shields",p:tlPct(v.shields.level)}:null;
+  if(id==="hull") return v.health!=null?{l:"Hull",p:tlPct(v.health),bad:tlPct(v.health)<35}:null; return null; }
+const TL_GIC={q:"qt",h:"h2",b:"boost",s:"shield",hull:"hull"};
+function tlGaugeHtml(id,g,small){ const c=id==="hull"?"hp":id;
+  if(small) return `<div class="tl-railit ship tls-${c}${g.bad?" bad":""}" data-it="${id}" title="${g.l} ${g.p}%">${TL_IC[TL_GIC[id]]||""}<b>${g.p}</b><div class="tl-rb"><i style="width:${g.p}%"></i></div></div>`;
+  return `<div class="tl-chipstat ship tls-${c}${g.bad?" bad":""}${g.on?" boosting":""}" data-it="${id}" title="${g.l} ${g.p}%">${TL_IC[TL_GIC[id]]||""}<div><div class="tl-cs-t"><span>${g.l}</span><b>${g.p}%</b></div><div class="tl-cs-b"><i style="width:${g.p}%"></i></div></div></div>`; }
+// one item on its own -> html, or "" when there's nothing to show for it right now
+function tlSoloHtml(id,t,look,o,small){ const a=t.actor||{}, v=t.vehicle, fl=v&&v.flight_data!==false;
+  switch(id){
+    case "head":{ const fresh=t.fps==null||t.fps>0, tip=fresh?`Live from the game${t.fps?` (${t.fps} updates a second)`:""}`:"No new data from the game right now";
+      return `<div class="tl-dk-h" title="${tip}"><span class="tl-live ${fresh?"on":""}"></span>${small?"<b class=\"tl-live-t\">LIVE</b>":"<b>Player Stats</b>"}</div>`; }
+    case "meta":{ const m=tlMetaHtml(a); return m&&!small?`<div class="tl-dk-g tl-dk-meta" data-it="meta">${m}</div>`:""; }
+    case "steer": return small?"":tlSteerDock(tlSteer(),o);
+    case "land": return v&&tlLanding(v)?(small?`<div class="tl-dk-g tl-dk-ship" data-it="land">${tlLandHtml(v,"tiny")}</div>`:`<div class="tl-dk-g tl-dk-land" data-it="land">${tlLandHtml(v,o)}</div>`):"";
+    case "auec":{ if(a.auec==null) return ""; const se=tlSessNet();
+      return `<button type="button" class="tl-dk-g tl-dk-auec" data-it="auec" data-tlsess title="Balance · click for this session's earnings and stats"><b>${small?tlShort(a.auec):Math.round(a.auec).toLocaleString()}</b><span>aUEC</span>${se?`<em class="${se>0?"up":"down"}">${se>0?"+":"−"}${small?tlShort(Math.abs(se)):Math.abs(se).toLocaleString()}</em>`:""}</button>`; }
+    case "ship": return v&&!small?`<div class="tl-dk-g tl-dk-ship" data-it="ship" title="${esc(tlShipName(v))}"><div class="tl-dk-sn"><b>${esc(tlShipName(v))}</b>${fl?"":`<span>${tlSpd(v)}</span>`}</div></div>`:"";
+    case "speed": return fl?`<div class="tl-dk-g tl-dk-num" data-it="speed" title="Speed">${TL_IC.speed}<b>${Math.round(v.speed||0).toLocaleString()}</b><span>m/s</span></div>`:"";
+    case "heading": return fl&&v.heading!=null?`<div class="tl-dk-g tl-dk-num" data-it="heading" title="Heading">${tlCompass(v.heading)}<b>${tlHdg(v.heading)}</b><span>HDG</span></div>`:"";
+    case "alt": return fl&&v.altitude!=null?`<div class="tl-dk-g tl-dk-num" data-it="alt" title="Altitude"><b>${v.altitude>=10000?(v.altitude/1000).toFixed(1):Math.round(v.altitude).toLocaleString()}</b><span>${v.altitude>=10000?"km":"m"} ALT</span></div>`:"";
+    case "mode": return v&&v.mode?`<div class="tl-dk-g tl-dk-num" data-it="mode"><span class="tl-chip ${v.mode}">${v.mode.toUpperCase()}${v.spooled?" · spooled":""}</span></div>`:"";
+  } return ""; }
+// the compass rose for the heading: a needle turned to it (0° up)
+const tlCompass=h=>`<svg class="tl-ic tl-cmp" viewBox="-12 -12 24 24" aria-hidden="true"><circle r="10.5" class="ring"/><g transform="rotate(${Math.round(h||0)})"><path d="M0,-9 L3.2,1.5 L0,-.5 L-3.2,1.5Z" class="n"/></g></svg>`;
+// the bar along an edge: the items in your order
+function tlDockHtml(t,look,o){ const a=t.actor||{}, v=t.vehicle, y=tlYou(a), small=look==="compact"&&o==="v", rows=Object.fromEntries(y.rows.map(r=>[r.k,r]));
+  const {order,off}=tlItems(); let h="", run=null;
+  const flush=()=>{ if(!run) return;
+    if(run.k==="v") h+=`<div class="tl-dk-g tl-dk-you">${tlLookHtml({rows:run.items,any:true},look,o)}</div>`;
+    else h+=`<div class="tl-dk-g tl-dk-ship tl-dk-gauges">${run.items.map(([id,g])=>tlGaugeHtml(id,g,small)).join("")}</div>`;
+    run=null; };
+  for(const id of order){ if(off[id]) continue; const kind=TL_ITEM[id][1];
+    if(kind==="v"){ const r=rows[id]; if(!r) continue; if(run?.k!=="v"){ flush(); run={k:"v",items:[]}; } run.items.push(r); continue; }
+    if(kind==="g"){ const g=tlGauge(v,id); if(!g||g.p==null) continue; if(run?.k!=="g"){ flush(); run={k:"g",items:[]}; } run.items.push([id,g]); continue; }
+    flush(); h+=tlSoloHtml(id,t,look,o,small); }
+  flush(); return h; }
+// ---- shrink the bar's contents to fit rather than scroll (a window that isn't full screen)
+function tlFit(d){ if(!d||d.hidden) return; const h=d.classList.contains("h");
+  d.style.setProperty("--tlz","1");
+  const need=h?d.scrollWidth:d.scrollHeight, have=h?d.clientWidth:d.clientHeight;
+  if(!have||need<=have+1) return;
+  let z=Math.max(.5,have/need); d.style.setProperty("--tlz",z.toFixed(3));
+  // a second pass: borders and gaps don't scale exactly
+  const n2=h?d.scrollWidth:d.scrollHeight; if(n2>have+1) d.style.setProperty("--tlz",Math.max(.5,z*have/n2).toFixed(3)); }
+if(window.ResizeObserver){ const ro=new ResizeObserver(es=>es.forEach(e=>tlFit(e.target)));
+  const hook=()=>{ const d=$("tl-dock"); if(d&&!d._fit){ d._fit=1; ro.observe(d); } }; setInterval(hook,1000); }
+window.addEventListener("resize",()=>tlFit($("tl-dock")));
 // Settings: where and how, each with a preview (example numbers)
 const TL_SAMPLE={rows:[{k:"hp",label:"Health",v:80},{k:"o2",label:"Oxygen",v:95},{k:"food",label:"Satiety",v:48,mid:true},{k:"drink",label:"Hydration",v:15,low:true}],any:true};
 const TL_SAMPLE_T={actor:{health:{cur:80,max:100},oxygen:{cur:95,max:100},hunger:{cur:64,max:100},thirst:{cur:15,max:100},body_temp:{cur:36.8},heart_rate:72,auec:1234567}};
@@ -251,7 +317,72 @@ function tlStylePicker(){ const {pos,look}=tlStyle(), docked=pos!=="float";
     <div class="tl-sty-l">Where</div><div class="tl-sty-grid pos" role="radiogroup" aria-label="Where player stats show">${TL_POS.map(([id,n,sub])=>opt("pos",id,n,sub,tlPosPreview(id),id===pos)).join("")}</div>
     <div class="tl-sty-l">Look</div><div class="tl-sty-grid look" role="radiogroup" aria-label="How player stats look">${TL_LOOKS.map(([id,n,sub])=>opt("look",id,n,sub,tlLookPreview(id,pos),id===look)).join("")}</div>
     ${docked?`<label class="row tl-small" style="gap:8px;margin-top:10px;cursor:pointer"><input type="checkbox" id="s-tlmaponly" ${tlMapOnly()?"checked":""}> Only on the map (hide the bar while another page is open)</label>`:""}
-    ${docked?`<label class="row tl-small" style="gap:8px;margin-top:6px;cursor:pointer"><input type="checkbox" id="s-tlshipcard" ${tlShipCardOn()?"checked":""}> Keep the full ship card on the map too (warning lights, countermeasures, altitude)</label>`:""}</div>`; }
+    ${docked?`<label class="row tl-small" style="gap:8px;margin-top:6px;cursor:pointer"><input type="checkbox" id="s-tlshipcard" ${tlShipCardOn()?"checked":""}> Keep the full ship card on the map too (warning lights, countermeasures, altitude)</label>`:""}
+    ${docked?tlItemsHtml():""}</div>`; }
+// Settings: what's in the bar and in what order. Drag a row (or use the arrows), untick to hide it. The LIVE label
+// stays first. You can also drag the items about on the bar itself, and right-click one there to hide it.
+const TL_KIND={v:"You",g:"Ship gauge",s:""};
+function tlItemsHtml(){ const {order,off}=tlItems(), mov=order.filter(id=>id!=="head");
+  return `<div class="tl-items"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b>Bar items</b><span class="muted tl-small">Drag to reorder (here or on the bar itself), untick to hide. Ship items show while you're in a ship.</span><span class="spacer"></span><a class="muted tl-small" data-tlit="reset" style="cursor:pointer;text-decoration:underline">Reset</a></div>
+    <div class="tl-items-l" id="tl-items-l">
+      <div class="tl-it pinned ${off.head?"off":""}" data-pin="head"><span class="grip" aria-hidden="true" title="Always first">⌖</span><input type="checkbox" data-ithide="head" ${off.head?"":"checked"} aria-label="Show the LIVE label"><span class="nm">LIVE label</span><span class="kd">Always first</span></div>
+      ${mov.map((id,i)=>{ const [,k,name]=TL_ITEM[id];
+      return `<div class="tl-it ${off[id]?"off":""}" data-it="${id}"><span class="grip" aria-hidden="true">⋮⋮</span><input type="checkbox" data-ithide="${id}" ${off[id]?"":"checked"} aria-label="Show ${esc(name)}"><span class="nm">${esc(name)}</span><span class="kd">${TL_KIND[k]}</span>
+        <button class="iconbtn" data-tlit="up" ${i?"":"disabled"} aria-label="Move ${esc(name)} up">▲</button><button class="iconbtn" data-tlit="down" ${i<mov.length-1?"":"disabled"} aria-label="Move ${esc(name)} down">▼</button></div>`; }).join("")}</div></div>`; }
+// move item `from` before or after `to` in the saved order
+function tlItemsMove(from,to,after){ const st={order:[...tlItems().order],off:{...tlItems().off}};
+  if(from===to||from==="head"||!st.order.includes(from)) return false;
+  st.order.splice(st.order.indexOf(from),1);
+  let j=to==="head"?1:st.order.indexOf(to)+(after?1:0); if(j<1) j=1;
+  st.order.splice(j,0,from); tlItemsSave(st); return true; }
+function tlItemsWire(d){ const L=d.querySelector("#tl-items-l"); if(!L) return;
+  const cur=()=>({order:[...tlItems().order],off:{...tlItems().off}});
+  const save=st=>{ tlItemsSave(st); renderDetail(); };
+  d.querySelector('[data-tlit="reset"]')?.addEventListener("click",e=>{ e.preventDefault(); save(null); toast("Bar items reset"); });
+  for(const cb of L.querySelectorAll("[data-ithide]")) cb.onchange=()=>{ const st=cur(), id=cb.dataset.ithide; if(cb.checked) delete st.off[id]; else st.off[id]=true; save(st); };
+  for(const row of L.querySelectorAll(".tl-it[data-it]")){ const id=row.dataset.it;
+    for(const b of row.querySelectorAll("[data-tlit]")) b.onclick=e=>{ e.preventDefault(); const st=cur(), i=st.order.indexOf(id), j=b.dataset.tlit==="up"?i-1:i+1;
+      if(j<1||j>=st.order.length) return; [st.order[i],st.order[j]]=[st.order[j],st.order[i]]; save(st); }; }
+  tlSortable(L,{axis:"y",drop:(f,t,after)=>{ if(tlItemsMove(f,t,after)) renderDetail(); }}); }
+// ---- dragging to reorder, by pointer (Settings' list and the bar itself). The dragged item follows the pointer
+// and a glowing line shows where it'll go; nothing moves until you let go, and Settings doesn't redraw meanwhile
+// (that redraw every 2 s is what made the old drag jump about).
+function tlSortable(root,{axis:axisOf,drop}){ if(root._sortable) return; root._sortable=1;
+  root.addEventListener("pointerdown",e=>{ if(e.button!==0) return; const it=e.target.closest("[data-it]"); if(!it||!root.contains(it)) return;
+    if(e.target.closest("input,select,.iconbtn")) return;
+    const x0=e.clientX, y0=e.clientY, axis=typeof axisOf==="function"?axisOf():axisOf; let on=false, mark=null, tgt=null, aft=false;
+    const move=ev=>{ const dx=ev.clientX-x0, dy=ev.clientY-y0;
+      if(!on){ if(Math.hypot(dx,dy)<6) return; on=true; S.tlDrag=true; it.classList.add("tl-dragging");
+        mark=Object.assign(document.createElement("div"),{className:"tl-drop-mark "+axis}); document.body.appendChild(mark); }
+      it.style.transform=`translate(${dx}px,${dy}px)`;
+      it.style.pointerEvents="none"; const under=document.elementFromPoint(ev.clientX,ev.clientY); it.style.pointerEvents="";
+      tgt=under?.closest?.("[data-it],[data-pin]"); if(tgt&&(!root.contains(tgt)||tgt===it)) tgt=null;
+      if(!tgt){ mark.hidden=true; return; }
+      const r=tgt.getBoundingClientRect(); aft=tgt.dataset.pin?true:axis==="x"?ev.clientX>r.left+r.width/2:ev.clientY>r.top+r.height/2;
+      mark.hidden=false;
+      Object.assign(mark.style,axis==="x"?{left:(aft?r.right:r.left)-1+"px",top:r.top+"px",height:r.height+"px",width:"3px"}
+        :{top:(aft?r.bottom:r.top)-1+"px",left:r.left+"px",width:r.width+"px",height:"3px"}); };
+    const up=()=>{ window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
+      if(!on) return;
+      it.style.transform=""; it.classList.remove("tl-dragging"); mark?.remove(); S.tlDrag=false;
+      // the click after a drag isn't a click (the balance would open its window)
+      const eat=ev=>{ ev.stopPropagation(); ev.preventDefault(); };
+      window.addEventListener("click",eat,{capture:true,once:true}); setTimeout(()=>window.removeEventListener("click",eat,true),350);
+      if(tgt) drop(it.dataset.it,tgt.dataset.it||tgt.dataset.pin,aft); };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up); }); }
+// the bar: drag items about, right-click one to hide it or open the settings
+function tlDockWire(d){ if(d._wired) return; d._wired=1;
+  tlSortable(d,{axis:()=>d.classList.contains("h")?"x":"y",drop:(f,t,after)=>{ if(tlItemsMove(f,t,after)) toast(`Moved ${TL_ITEM[f]?.[2]||"it"}`); }});
+  d.addEventListener("contextmenu",e=>{ const it=e.target.closest("[data-it]"); e.preventDefault(); tlDockMenu(e.clientX,e.clientY,it?.dataset.it); }); }
+function tlDockMenu(x,y,id){ $("tl-dmenu")?.remove(); const m=Object.assign(document.createElement("div"),{id:"tl-dmenu",className:"tl-dmenu"});
+  m.innerHTML=`${id?`<button type="button" data-dm="hide">Hide ${esc(TL_ITEM[id]?.[2]||"this")}</button>`:""}<button type="button" data-dm="set">Customize the bar…</button>${Object.keys(tlItems().off).length?`<button type="button" data-dm="all">Show everything</button>`:""}`;
+  document.body.appendChild(m); m.style.left=Math.min(x,innerWidth-m.offsetWidth-8)+"px"; m.style.top=Math.min(y,innerHeight-m.offsetHeight-8)+"px";
+  const close=()=>{ m.remove(); document.removeEventListener("pointerdown",away,true); }, away=e=>{ if(!m.contains(e.target)) close(); };
+  setTimeout(()=>document.addEventListener("pointerdown",away,true),0);
+  m.onclick=e=>{ const a=e.target.closest("[data-dm]")?.dataset.dm; if(!a) return; close();
+    if(a==="hide"){ const st={order:[...tlItems().order],off:{...tlItems().off,[id]:true}}; tlItemsSave(st); toast(`${TL_ITEM[id][2]} hidden. Right-click the bar to show it again`); }
+    if(a==="all"){ tlItemsSave({order:[...tlItems().order],off:{}}); toast("Everything's back on the bar"); }
+    if(a==="set"){ S.tl.advOpen=false; select({kind:"settings"}); setTimeout(()=>document.querySelector(".tl-items")?.scrollIntoView({block:"center",behavior:"smooth"}),300); } }; }
 // the card and the rail sit on the right, under the system tabs and Layers, clear of the route and place cards
 function tlPlace(el){ const tr=document.querySelector("#mapwrap .topright"); const top=tr?tr.offsetTop+tr.offsetHeight+12:16;
   el.style.top=top+"px"; el.style.maxHeight=`calc(100% - ${top+110}px)`; }
@@ -263,7 +394,8 @@ function tlRender(){ let c=$("tl-card"); const t=tlLive(), {pos,look}=tlStyle();
   const dockOn=live&&docked&&(y.any||t.vehicle||t.actor?.auec!=null)&&(!tlMapOnly()||!document.querySelector("#mapwrap .pic-panel.show"));
   for(const p of ["top","bottom","left","right"]) app.classList.toggle("dock-"+p,dockOn&&pos===p);
   if(d){ d.hidden=!dockOn; if(dockOn){ const o=pos==="top"||pos==="bottom"?"h":"v"; d.className=`tl-dock ${o} look-${look} at-${pos}`;
-    const html=tlDockHtml(t,look,o); if(d.dataset.k!==html){ d.dataset.k=html; d.innerHTML=html; } } }
+    tlDockWire(d); d.title="Drag items to move them · right-click to hide one";
+    const html=tlDockHtml(t,look,o); if(d.dataset.k!==html&&!S.tlDrag){ d.dataset.k=html; d.innerHTML=html; tlFit(d); } } }
   // floating, compact: a narrow column on the map's edge
   const railHtml=onMap&&!docked&&look==="compact"&&y.any?tlCompactHtml(y,true)+(t.actor?.auec!=null?`<div class="tl-railit auec" title="Balance">aUEC<b>${tlShort(t.actor.auec)}</b></div>`:""):"";
   let r=$("tl-rail");
@@ -313,7 +445,7 @@ function tlSteerCard(s){ if(!s) return "";
     <div class="tl-steer-n"><div><b>${s.est?"≈ ":""}${fmtDist(s.dist)}</b><span>to go</span></div>${s.eta!=null&&!s.there?`<div><b>${tlDur(s.eta)}</b><span>at this speed</span></div>`:""}${s.dAlt!=null&&Math.abs(s.dAlt)>50?`<div><b>${fmtDist(Math.abs(s.dAlt))}</b><span>${s.dAlt<0?"below you":"above you"}</span></div>`:""}</div>
     ${s.est?`<div class="tl-steer-note">Estimated from your heading and speed since your last /showlocation${s.age>600?" (a while ago: a fresh /showlocation will sharpen it)":""}</div>`:""}</div>`; }
 function tlSteerDock(s,o){ if(!s) return "";
-  return `<div class="tl-dk-g tl-dk-steer ${tlTurnCls(s)}" title="Guiding to ${esc(s.name)}">${s.there?"":tlArrowSvg(s.turn)}<div class="tl-dk-sn"><b>${tlTurnTxt(s)}</b><span>${esc(s.name)} · ${s.est?"≈ ":""}${fmtDist(s.dist)}</span></div></div>`; }
+  return `<div class="tl-dk-g tl-dk-steer ${tlTurnCls(s)}" data-it="steer" title="Guiding to ${esc(s.name)}">${s.there?"":tlArrowSvg(s.turn)}<div class="tl-dk-sn"><b>${tlTurnTxt(s)}</b><span>${esc(s.name)} · ${s.est?"≈ ":""}${fmtDist(s.dist)}</span></div></div>`; }
 // ---- landing aids: height above the ground, how fast you're coming down, gear and VTOL. Shown from 1.5 km
 // above the ground (the game's radar altitude) or with the gear down, until you're landed. Vertical speed is
 // taken as positive going up.
@@ -361,14 +493,23 @@ function tlSessHtml(r){ const s=r?.session||{}, e=r?.entries||[];
       ${stat("Hydrogen used",`${Math.round((s.h2_used||0)*100)}%`,"of a tank")}${stat("Contracts paid",s.contracts||0)}${stat("Downed / died",`${s.downs||0} / ${s.deaths||0}`)}
     </div>
     ${s.ships?.length?`<div class="tl-sess-ships muted">Flew: ${s.ships.map(n=>esc(tlShipName({name:n})||n)).join(", ")}</div>`:""}
+    ${tlSessHist(r)}
+    <div class="tl-sess-sync"><span class="dot ${r?.synced_at?"on":""}"></span><span class="muted">${r?.signed_in?(r.synced_at?`Kept with your Quantum account · synced ${agoTs(r.synced_at)}`:"Kept with your Quantum account · not synced yet"):"On this PC only. Sign in to your Quantum account to keep it with you across updates and PCs"}</span><span class="spacer"></span>${r?.signed_in?`<button class="btn ghost sm" data-tlsesssync ${S.tl.sessSync?"disabled":""}>${S.tl.sessSync?"Syncing…":"Sync now"}</button>`:""}</div>
     <div class="tl-sess-lh"><b>Balance changes</b><span class="spacer"></span>${e.length?`<button class="btn ghost sm" data-tlsessclear>Clear</button>`:""}</div>
     <div class="tl-sess-list">${e.length?e.slice(0,80).map(x=>`<div class="tl-sl k-${x.kind}"><span class="t">${day(x.t)}</span><span class="l">${x.kind==="contract"?`<b>Contract</b> ${esc(x.label)}`:esc(x.label)}</span><b class="d ${x.delta>0?"up":"down"}">${x.delta>0?"+":"−"}${Math.abs(x.delta).toLocaleString()}</b><span class="b">${x.balance.toLocaleString()}</span></div>`).join("")
       :`<div class="muted tl-small" style="padding:10px 0">Nothing yet. Every change to your aUEC balance shows here; a payout right after the game says a contract is complete is put down to that contract.</div>`}</div>
   </div>`; }
+// every session you've played (kept across updates, and with your account), and the totals
+function tlSessHist(r){ const h=r?.history||[], L=r?.lifetime; if(!h.length&&!L) return "";
+  const when=t=>new Date(t*1000).toLocaleDateString([],{month:"short",day:"numeric"})+" "+new Date(t*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
+  return `<details class="tl-sess-hist" ${S.tl.histOpen?"open":""} ontoggle="S.tl.histOpen=this.open"><summary><b>All sessions</b> <span class="muted">${r.sessions_n||h.length} · ${tlDur(L?.in_game_s)} in game · +${tlA(L?.earned)} aUEC earned · ${tlDist(L?.distance_m)} flown</span></summary>
+    <div class="tl-sess-list">${h.map(x=>`<div class="tl-sl"><span class="t">${when(x.started)}</span><span class="l">${tlDur(x.in_game_s)} in game · ${tlDist(x.distance_m)}${x.contracts?` · ${x.contracts} contract${x.contracts===1?"":"s"}`:""}</span><b class="d ${(x.earned||0)-(x.spent||0)>=0?"up":"down"}">${(x.earned||0)-(x.spent||0)>=0?"+":"−"}${Math.abs((x.earned||0)-(x.spent||0)).toLocaleString()}</b><span class="b"></span></div>`).join("")||`<div class="muted tl-small" style="padding:8px 0">Finished sessions show here.</div>`}</div></details>`; }
 function tlSessRender(){ const m=$("tl-sess"); if(m) m.innerHTML=tlSessHtml(S.tl.sess); }
 function tlSessOpen(){ let m=$("tl-sess"); if(!m){ m=Object.assign(document.createElement("div"),{id:"tl-sess",className:"tl-sess"}); document.body.appendChild(m);
     m.addEventListener("click",async e=>{ if(e.target===m||e.target.closest("[data-tlsessx]")) return tlSessClose();
-      if(e.target.closest("[data-tlsessclear]")&&await qConfirm({title:"Clear the earnings log?",text:"Every balance change Quantum has written down goes. This session's totals stay.",ok:"Clear",danger:true})){ try{ S.tl.sess=await api().earnings_clear(); }catch(_){} tlSessRender(); } }); }
+      if(e.target.closest("[data-tlsesssync]")){ S.tl.sessSync=true; tlSessRender(); let x; try{ x=await api().stats_sync(); }catch(_){ x={ok:false,error:"Couldn't sync"}; }
+        S.tl.sessSync=false; if(!x?.ok) toast(x?.error||"Couldn't sync"); else toast("Session stats synced with your account"); await tlSessLoad(); tlSessRender(); return; }
+      if(e.target.closest("[data-tlsessclear]")&&await qConfirm({title:"Clear the earnings log?",text:"Every balance change Quantum has written down goes, on this PC and in your Quantum account. This session's totals and your session history stay.",ok:"Clear",danger:true})){ try{ S.tl.sess=await api().earnings_clear(); }catch(_){} tlSessRender(); } }); }
   tlSessRender(); tlSessLoad(); }
 function tlSessClose(){ $("tl-sess")?.remove(); }
 document.addEventListener("click",e=>{ if(e.target.closest("[data-tlsess]")){ e.preventDefault(); tlSessOpen(); } });

@@ -18,6 +18,13 @@ AVAILABLE = os.name == "nt"
 MODES = ("off", "5", "10", "15", "city")     # seconds after arriving, or the whole time you're in the city
 POSITIONS = ("top", "upper", "center", "bottom", "top-right", "bottom-right", "custom")
 SIZES = {"large": 1.0, "medium": 0.75, "small": 0.5}      # how big, against the original size
+# Looks (Settings > Location Clock Overlay): colour (text, rules / sub line, glow), layout, opacity, where it shows
+COLORS = {"blue": ((236, 246, 255), (150, 215, 255), (80, 180, 255)), "amber": ((255, 240, 214), (255, 196, 110), (255, 150, 40)),
+          "green": ((228, 255, 236), (130, 240, 170), (40, 210, 120)), "white": ((255, 255, 255), (205, 212, 222), (170, 185, 205)),
+          "red": ((255, 228, 228), (255, 140, 140), (240, 60, 60)), "purple": ((244, 234, 255), (200, 160, 255), (150, 90, 255))}
+STYLES = ("full", "compact", "time")       # name + time + sub line / name + time / the time alone
+OPACITIES = (100, 85, 70, 55)
+WHERE = ("cities", "all")                  # the four landing-zone cities, or every known place on a planet or moon
 FADE_S = 0.45
 
 
@@ -33,8 +40,9 @@ def clock_text(h, h24=True):
     return f"{(hh % 12) or 12}:{mm:02d} {'AM' if hh < 12 else 'PM'}"
 
 
-def render(info, font_dir, scale=1.0, h24=True):
+def render(info, font_dir, scale=1.0, h24=True, color="blue", style="full"):
     """The overlay picture (premultiplied-alpha RGBA, Pillow Image) for {"city", "body", "hours"}."""
+    main, accent, glow_rgb = COLORS.get(color) or COLORS["blue"]
     from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageChops
 
     def font(weight, size):
@@ -44,10 +52,14 @@ def render(info, font_dir, scale=1.0, h24=True):
             return ImageFont.load_default()
 
     f_city, f_time, f_sub = font(700, 30), font(500, 58), font(500, 15)
-    lines = [(info["city"].upper(), f_city, 0.32, (236, 246, 255)),
-             (clock_text(info["hours"], h24), f_time, 0.06, (255, 255, 255)),
+    lines = [(info["city"].upper(), f_city, 0.32, main),
+             (clock_text(info["hours"], h24), f_time, 0.06, (255, 255, 255) if color in ("blue", "white") else main),
              (f"{(info.get('body') or '').upper()}  //  LOCAL TIME  //  {part_of_day(info['hours']).upper()}",
-              f_sub, 0.30, (150, 215, 255))]
+              f_sub, 0.30, accent)]
+    if style == "compact":
+        lines = lines[:2]
+    elif style == "time":
+        lines = lines[1:2]
 
     def spaced_width(text, f, track):
         return sum(f.getlength(ch) for ch in text) + track * f.size * max(0, len(text) - 1)
@@ -55,8 +67,8 @@ def render(info, font_dir, scale=1.0, h24=True):
     pad, gap = int(28 * scale), int(10 * scale)
     widths = [spaced_width(t, f, tr) for t, f, tr, _ in lines]
     heights = [f.getbbox("HG09")[3] for _, f, _, _ in lines]
-    rule = int(70 * scale)                       # the thin lines either side of the city name
-    w = int(max(widths[0] + 2 * (rule + gap * 2), *widths[1:]) + pad * 2)
+    rule = int(70 * scale) if style != "time" else 0      # the thin lines either side of the city name
+    w = int(max(widths[0] + 2 * (rule + gap * 2), *widths[1:], 1) + pad * 2)
     h = int(sum(heights) + gap * 5 + pad * 2)
     text = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(text)
@@ -70,12 +82,12 @@ def render(info, font_dir, scale=1.0, h24=True):
             cy = y + lh * 0.55
             lx0, lx1 = (w - lw) / 2 - gap * 2 - rule, (w - lw) / 2 - gap * 2
             rx0, rx1 = (w + lw) / 2 + gap * 2, (w + lw) / 2 + gap * 2 + rule
-            d.line((lx0, cy, lx1, cy), fill=(120, 200, 255, 200), width=max(1, int(1.5 * scale)))
-            d.line((rx0, cy, rx1, cy), fill=(120, 200, 255, 200), width=max(1, int(1.5 * scale)))
+            d.line((lx0, cy, lx1, cy), fill=accent + (200,), width=max(1, int(1.5 * scale)))
+            d.line((rx0, cy, rx1, cy), fill=accent + (200,), width=max(1, int(1.5 * scale)))
         y += lh + gap * (2 if f is f_city else 1.6 if f is f_time else 1)
     # Glow: the text blurred, tinted HUD blue, under a dark soft shadow that keeps it readable on snow.
     a = text.getchannel("A")
-    glow = Image.new("RGBA", (w, h), (80, 180, 255, 0))
+    glow = Image.new("RGBA", (w, h), glow_rgb + (0,))
     glow.putalpha(a.filter(ImageFilter.GaussianBlur(9 * scale)).point(lambda v: int(v * 0.9)))
     shade = Image.new("RGBA", (w, h), (0, 8, 20, 0))
     shade.putalpha(a.filter(ImageFilter.GaussianBlur(4 * scale)).point(lambda v: int(v * 0.55)))
@@ -89,16 +101,21 @@ class CityClock:
     def __init__(self, font_dir):
         self.font_dir = str(font_dir)
         self.position, self.h24, self.size = "top", True, "large"
+        self.look = {"color": "blue", "style": "full", "opacity": 100}
         self.xy = (0.5, 0.07)        # custom position: the clock's centre across, its top down, as fractions of the game window
         self._want = None            # info to show, or None
         self._lock = threading.Lock()
         self._thread = None
 
-    def show(self, info, position=None, h24=None, size=None, xy=None):
+    def show(self, info, position=None, h24=None, size=None, xy=None, look=None):
         if not AVAILABLE:
             return
         with self._lock:
             self._want = dict(info)
+            if look:
+                self.look = {"color": look.get("color") if look.get("color") in COLORS else "blue",
+                             "style": look.get("style") if look.get("style") in STYLES else "full",
+                             "opacity": look.get("opacity") if look.get("opacity") in OPACITIES else 100}
             if position in POSITIONS:
                 self.position = position
             if h24 is not None:
@@ -208,11 +225,11 @@ class CityClock:
             now = time.monotonic()
             dt, last = now - last, now
             with self._lock:
-                want, position, h24, sz, xy = self._want, self.position, self.h24, SIZES.get(self.size, 1.0), self.xy
+                want, position, h24, sz, xy, look = self._want, self.position, self.h24, SIZES.get(self.size, 1.0), self.xy, dict(self.look)
             game = overlay._find_game()
             fg = u32.GetForegroundWindow()
             visible = bool(want and game and fg == game)
-            target = 255.0 if visible else 0.0
+            target = 255.0 * look["opacity"] / 100 if visible else 0.0
             step = 255.0 * dt / FADE_S
             alpha = min(target, alpha + step) if alpha < target else max(target, alpha - step)
             if alpha <= 0 and not visible:
@@ -227,9 +244,10 @@ class CityClock:
                 gw, gh = max(640, rc.right - rc.left), max(360, rc.bottom - rc.top)
                 scale = gh / 1080.0 * sz
                 text = clock_text(want["hours"], h24)
-                new_key = (want.get("city"), want.get("body"), text, part_of_day(want["hours"]), round(scale, 2), h24)
+                new_key = (want.get("city"), want.get("body"), text, part_of_day(want["hours"]), round(scale, 2), h24,
+                           look["color"], look["style"])
                 if new_key != key:                         # redraw only when what it says changes
-                    img = render(want, self.font_dir, scale, h24)
+                    img = render(want, self.font_dir, scale, h24, look["color"], look["style"])
                     size = img.size
                     bih = BITMAPINFOHEADER(biSize=ctypes.sizeof(BITMAPINFOHEADER), biWidth=size[0], biHeight=-size[1],
                                            biPlanes=1, biBitCount=32, biCompression=0)

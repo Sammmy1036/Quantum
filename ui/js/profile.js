@@ -199,7 +199,7 @@ function afkHtml(a){ const f=a.afk||{}, keys=["","F5","F6","F7","F8","F9","F10",
     <div class="muted" style="font-size:11.5px;margin-top:4px">Use Anti-AFK feature at your own risk.</div></div>`; }
 // ---- Location clock: drag it to a custom spot on a picture of the game window (saved as fractions of it)
 async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.city_clock; if(!box||!img||!cc) return;
-  const key=`${cc.size}|${cc.h24}`;
+  const key=`${cc.size}|${cc.h24}|${cc.color}|${cc.style}`;
   if(!S.ccImg||S.ccImg.key!==key){ const r=await api().city_clock_image(cc.in_city||"New Babbage").catch(()=>null); if(!r?.ok) return; S.ccImg={...r,key}; }
   if(!$("cc-drag")||$("cc-drag")!==img) return;
   const im=S.ccImg, W=()=>box.clientWidth, H=()=>box.clientHeight, w=()=>im.w*W()/1920, h=()=>im.h*W()/1920;
@@ -808,6 +808,26 @@ async function watchNewObjectives(live){
       if(!o.marker.body) flyTo({kind:"point",pos:o.marker.pos},60000); else flyTo({kind:"local",body:o.marker.body,pos:o.marker.pos},Math.max(15000,S.bodyMap[o.marker.body].radius*0.06),TOPDOWN); }
     toast(`New objective: ${o.label}. Add it to your route from the Contracts tab`);
   } finally { S.objBusy=false; } }
+// ---- Contracts tab behaviour (the options at the top of the tab, kept in the page's storage):
+// open Contracts when you accept one; open Route when stops go in from Contracts; close out delivered jobs by itself.
+const C_OPTS={open:["q-c-open",true],toroute:["q-c-toroute",true],autoclose:["q-c-autoclose",false],hudobj:["q-c-hudobj",true]};
+function cOpt(k,v){ const [key,def]=C_OPTS[k]; try{ if(v===undefined){ const x=localStorage.getItem(key); return x==null?def:x==="1"; } localStorage.setItem(key,v?"1":"0"); }catch(_){ return def; } }
+const goTab=n=>{ if(S.tab===n) return; const t=document.querySelector(`.tab[data-tab="${n}"]`); if(t&&!t.hidden) t.click(); };
+const userBusy=()=>{ const a=document.activeElement; return a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.isContentEditable); };
+function watchContractsNav(live){ const cs=live.contracts||[], act=cs.filter(c=>c.status==="active").map(c=>c.id);
+  // a contract accepted since the last update (not the ones already there when Quantum started)
+  S.cNavT0=S.cNavT0||Date.now();
+  if(S.cNavSeen&&Date.now()-S.cNavT0>15000){ const fresh=act.filter(id=>!S.cNavSeen.has(id));   // not the log's history at start
+    if(fresh.length&&cOpt("open")&&!userBusy()&&!S.selected?.kind?.startsWith?.("settings")){ goTab("contracts"); } }
+  S.cNavSeen=new Set([...(S.cNavSeen||[]),...act]);
+  // stops added to the route while you're on Contracts (Add to route, Plan route for all, a new objective)
+  const n=(live.route||[]).length;
+  if(S.cNavRoute!=null&&n>S.cNavRoute&&S.tab==="contracts"&&cOpt("toroute")&&!userBusy()) goTab("route");
+  S.cNavRoute=n;
+  // delivered jobs close out on their own after a short moment (so the Delivered tick is seen)
+  if(cOpt("autoclose")){ const now_=Date.now(); S.cAuto=S.cAuto||{};
+    for(const c of cs) if(c.status==="complete"&&!c.acked){ const t=S.cAuto[c.id]||(S.cAuto[c.id]=now_);
+      if(now_-t>8000&&!S.cAuto[c.id+"!"]){ S.cAuto[c.id+"!"]=1; api().close_out_contract(c.id).then(()=>poll()).catch(()=>{}); } } } }
 // The Onyx Facility a contract sends you to ("Go to Onyx Facility S1A8"), or true for a Hockrow facility delve
 // that hasn't named it yet, or null
 function onyxOf(c){ const txt=[c.name,c.code,...(c.objectives||[]).map(o=>[o.label,o.location].join(" "))].join(" ");
@@ -937,8 +957,19 @@ function renderContracts(force){
       <div class="sub">${isDelivered?`<span class="dlv-pill">✓ Delivered</span>`:status}${c.system?" · "+esc(c.system):""}</div>
       ${c.tracking_no||c.job_id?`<div class="trackids">${c.tracking_no?`<div class="trackno" title="Click to copy">Tracking <b>${esc(c.tracking_no)}</b></div>`:""}${c.job_id?`<div class="trackno" title="The game's own id for this contract (from Game.log). Click to copy">Job ID <b>${esc(c.job_id)}</b></div>`:""}</div>`:""}${tracker(c)}${cwiki(c)}${turnIn}${objs}
       <div class="row" style="margin-top:10px">${routeBtn}${onyxOf(c)?`<button class="btn small" data-act="onyx" title="The facility's floor plans: the way out, enemy spawns, hazards, loot and mission terminals">Floor plans</button>`:""}<span class="spacer"></span>${isDelivered?`<button class="btn small primary" data-act="closeout" title="Move it to Finished">Close out job</button>`:`<button class="btn small ghost" data-act="dismiss">Dismiss</button>`}</div></div>`; };
-  $("contracts").innerHTML=(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
+  const nDel=cs.filter(delivered).length, nFin=done.length+nDel;
+  const opts=`<div class="c-tools"><details class="c-opts" ${S.cOptsOpen?"open":""}><summary title="Contracts tab options">Options</summary>
+      <label><input type="checkbox" data-copt="open" ${cOpt("open")?"checked":""}> Open Contracts when I accept a contract</label>
+      <label><input type="checkbox" data-copt="toroute" ${cOpt("toroute")?"checked":""}> Open Route when stops are added from here</label>
+      <label><input type="checkbox" data-copt="autoclose" ${cOpt("autoclose")?"checked":""}> Close out delivered jobs automatically</label>
+      <label><input type="checkbox" data-copt="hudobj" ${cOpt("hudobj")?"checked":""}> Show objectives on the map while I fly a route</label></details>
+    <span class="spacer"></span>${nFin?`<button class="btn small ghost" id="btn-clear-all-fin" title="Close out delivered jobs and clear every finished, failed and abandoned one">Clear finished (${nFin})</button>`:""}</div>`;
+  $("contracts").innerHTML=opts+(active.length?active.map(card).join(""):`<div class="empty"><strong>No active contracts</strong>${ok?"Objectives will show up on the map once a contract has been accepted.":"Point the app at Game.log to track contracts."}</div>`)
     +(done.length?`<details class="finished" ${S.finishedOpen?"open":""}><summary>Finished (${done.length})</summary>${done.map(card).join("")}<button class="btn small ghost" id="btn-clear-finished">Clear finished</button></details>`:"");
+  const co=$("contracts").querySelector("details.c-opts"); if(co) co.ontoggle=()=>{ S.cOptsOpen=co.open; };
+  for(const cb of $("contracts").querySelectorAll("[data-copt]")) cb.onchange=()=>{ cOpt(cb.dataset.copt,cb.checked);
+    toast({open:"Open Contracts on accept",toroute:"Open Route when stops are added",autoclose:"Auto close-out",hudobj:"Objectives on the map"}[cb.dataset.copt]+(cb.checked?": on":": off")); if(cb.checked&&cb.dataset.copt==="autoclose") watchContractsNav(S.live); if(cb.dataset.copt==="hudobj") renderHud(); };
+  on("btn-clear-all-fin",async()=>{ for(const c of cs.filter(delivered)) await api().close_out_contract(c.id); await api().clear_finished_contracts(); await poll(); renderContracts(true); toast("Finished contracts cleared"); });
   const fin=$("contracts").querySelector("details.finished"); if(fin) fin.ontoggle=()=>{ S.finishedOpen=fin.open; };
   $("contracts").querySelectorAll("details.cwiki").forEach(d=>d.ontoggle=()=>{ d.open?S.cwOpen.add(d.dataset.cw):S.cwOpen.delete(d.dataset.cw); });
   active.filter(c=>!S.cw[c.id]).forEach(c=>cwFetch(c.id));      // once per contract; cached on disk too

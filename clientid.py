@@ -1,4 +1,6 @@
 import hashlib
+import json
+import os
 import sys
 import threading
 from pathlib import Path
@@ -10,7 +12,7 @@ except Exception:
 
 _value = [None]
 _ready = threading.Event()          # set once the build id has been worked out (or failed)
-WAIT = 60                           # longest a request waits for it, in seconds
+WAIT = 180                          # longest a request waits for it, in seconds (first start on a slow disk)
 
 
 def build_for(exe, base):
@@ -27,10 +29,43 @@ def build_for(exe, base):
     return h.hexdigest()
 
 
+# The build id worked out last time, keyed by Quantum.exe's path, size and modified time, so a start after the first
+# has it at once. Without it, the server calls made while the exe was still being hashed (a few seconds, longer on a
+# slow disk) could time out waiting and go out with no build id: those were the "Older version" rows on the server.
+def _cache_path():
+    base = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(Path.home())
+    return Path(base) / "Quantum" / "build_id.json"
+
+
+def _exe_key():
+    st = os.stat(sys.executable)
+    return f"{os.path.abspath(sys.executable)}|{st.st_size}|{st.st_mtime_ns}|{VERSION}"
+
+
+def _cached():
+    try:
+        d = json.loads(_cache_path().read_text(encoding="utf-8"))
+        return d["digest"] if d.get("key") == _exe_key() and len(d.get("digest", "")) == 64 else None
+    except Exception:
+        return None
+
+
+def _remember(digest):
+    try:
+        p = _cache_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"key": _exe_key(), "digest": digest}), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def _compute():
     try:
         if getattr(sys, "frozen", False):
-            digest = build_for(sys.executable, getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+            digest = _cached()
+            if not digest:
+                digest = build_for(sys.executable, getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+                _remember(digest)
             kind = "exe"
         else:
             h = hashlib.sha256()

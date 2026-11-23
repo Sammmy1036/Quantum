@@ -11,7 +11,7 @@ class CatalogMixin:
     # request), sorted into groups by each item's UEX category.
     SHOP_GROUPS = (("armor", "Armor"), ("clothing", "Clothing"), ("weapons", "Personal weapons"),
                    ("gadgets", "Gadgets and tools"), ("shipweapons", "Ship weapons"), ("components", "Ship components"),
-                   ("food", "Food and drink"), ("medical", "Medical"), ("rentals", "Vehicle rentals"), ("paints", "Paints"),
+                   ("food", "Food and drink"), ("medical", "Medical"), ("vehicles", "Vehicles for sale"), ("rentals", "Vehicle rentals"), ("paints", "Paints"),
                    ("other", "Other"))
 
     @staticmethod
@@ -99,10 +99,36 @@ class CatalogMixin:
         self._rent_cache = (at, out)
         return out, at
 
-    def _rental_item(self, r, v):
+    def _purchase_rows(self):
+        """Every vehicle for sale at a terminal on the map (the ship and vehicle dealers: New Deal, Astro Armada,
+        Teach's, Ashland's dealer…): [(place, terminal, row, vehicle)], newest price per vehicle and terminal."""
+        rows, at = self._uex.get("vehicles_purchases_prices_all")
+        c = getattr(self, "_buyveh_cache", None)
+        if c and c[0] == at:
+            return c[1], at
+        terms = self._uex.terminals()
+        places = self._uex.place_map(self._db.locations)
+        vehicles = {v["id"]: v for v in with_extra_vehicles(self._uex.get("vehicles")[0])}
+        best = {}
+        for r in rows:
+            t = terms.get(r.get("id_terminal"))
+            place = places.get(r.get("id_terminal"))
+            price = r.get("price_buy")
+            if not t or not place or not price or not uex.is_live(t):
+                continue
+            key = (r.get("id_vehicle"), r.get("id_terminal"))
+            prev = best.get(key)
+            if prev and _num_or0(prev[2].get("date_modified")) >= _num_or0(r.get("date_modified")):
+                continue
+            best[key] = (place, t, dict(r, _price=price), vehicles.get(r.get("id_vehicle")) or {})
+        out = list(best.values())
+        self._buyveh_cache = (at, out)
+        return out, at
+
+    def _rental_item(self, r, v, group="rentals"):
         name = v.get("name_full") or v.get("name") or r.get("vehicle_name") or f"#{r.get('id_vehicle')}"
         return {"name": name, "id": r.get("id_vehicle"), "vid": v.get("id") or r.get("id_vehicle"), "price": r["_price"],
-                "per": "day", "at": _num_or0(r.get("date_modified")) or None, "group": "rentals",
+                "per": "day" if group == "rentals" else None, "at": _num_or0(r.get("date_modified")) or None, "group": group,
                 "category": "Ground vehicle" if v.get("is_ground_vehicle") else "Ship",
                 "maker": v.get("company_name") or "", "photo": self._vehicle_photo(v) if v else None,
                 "scu": v.get("scu") or 0, "crew": v.get("crew") or "", "pad": v.get("pad_type")}
@@ -117,6 +143,11 @@ class CatalogMixin:
             try:
                 for place, _t, _r, _v in self._rental_rows()[0]:
                     out.setdefault(place, set()).add("rentals")
+            except uex.UexError:
+                pass
+            try:
+                for place, _t, _r, _v in self._purchase_rows()[0]:
+                    out.setdefault(place, set()).add("vehicles")
             except uex.UexError:
                 pass
             # Fuel, for search ("hydrogen", "quantum fuel"): which kinds UEX lists at each place
@@ -161,12 +192,17 @@ class CatalogMixin:
                 rent = self._rental_rows()[0]
             except uex.UexError:
                 rent = []
-            for p, t, r, v in rent:
-                if p not in group:
-                    continue
-                s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
-                                                "terminal": t.get("name"), "items": []})
-                s["items"].append(self._rental_item(r, v))
+            try:                                     # vehicles for sale, as the dealer's own shop
+                buy = self._purchase_rows()[0]
+            except uex.UexError:
+                buy = []
+            for kind, lst in (("rentals", rent), ("vehicles", buy)):
+                for p, t, r, v in lst:
+                    if p not in group:
+                        continue
+                    s = shops.setdefault(t["id"], {"id": t["id"], "name": self._shop_name(r.get("terminal_name") or t.get("name"), uex.where(t)) or t.get("name"),
+                                                    "terminal": t.get("name"), "items": []})
+                    s["items"].append(self._rental_item(r, v, kind))
             res = []
             for s in shops.values():
                 s["items"].sort(key=lambda i: i["name"].lower())

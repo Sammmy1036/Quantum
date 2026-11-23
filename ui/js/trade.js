@@ -939,7 +939,41 @@ async function vehExtras(v){ const box=()=>S.vehDetail===String(v.id)?$("vd-extr
       <div class="res-chips">${(carries.length?carries:rides).map(link).join("")}</div>
       ${carries.length&&rides.length?`<div class="mk-h" style="margin-top:12px">Rides in</div><div class="res-chips">${rides.map(link).join("")}</div>`:""}
       <div class="muted" style="font-size:11.5px;margin-top:8px">${carries.length?"Docks on it or rides in its garage, as the ship comes.":"Docks on or rides in these ships, as they come."}</div></div>`);
-  const b=box(); if(b) b.innerHTML=out.length?`<div class="vd-grid vd-flat">${out.join("")}</div>`:""; }
+  const fh=await vehFitsHtml(v); if(!box()) return; if(fh) out.push(fh);
+  const b=box(); if(b) b.innerHTML=out.length?`<div class="vd-grid vd-flat">${out.join("")}</div>`:"";
+  b?.querySelectorAll("[data-vfmore]").forEach(x=>x.onclick=()=>{ S.vfMore=(S.vfMore||new Set()); S.vfMore.add(x.dataset.vfmore); vehExtras(v); }); }
+// ---- What fits inside (vehicle_fits.json, from citizen-starter-guide.com: worked out from real dimensions) and,
+// for a small ship or vehicle, the ships it fits inside. Ship names are matched word by word (maker left out), the
+// vehicles in each list by name keys ("cyclone" is every Cyclone).
+const VF_MAKERS=new Set(["rsi","origin","anvil","kruger","drake","misc","aegis","crusader","greycat","tumbril","argo","consolidated","outland","cnou","esperia","gatac","aopoa","mirai","banu","grey","greys","market","vanduul","roberts","space","industries"]);
+const vfTok=n=>String(n||"").toLowerCase().replace(/[’']/g,"").split(/[^a-z0-9]+/).filter(w=>w&&!VF_MAKERS.has(w));
+const vfKey=n=>vfTok(n).join("");
+async function vehFitsData(){ if(S.vehFits) return S.vehFits; try{ S.vehFits=await api().vehicle_fits(); }catch(_){ S.vehFits={ships:{},keys:{}}; } return S.vehFits; }
+// the ship list entry for this vehicle: every word of the entry is in its name, the most specific one wins
+function vfShipFor(full,ships){ const t=new Set(vfTok(full)); let best=null, bn=0;
+  for(const n of Object.keys(ships)){ const w=vfTok(n); if(w.length&&w.every(x=>t.has(x))&&w.length>bn){ best=n; bn=w.length; } } return best; }
+// a list entry -> the vehicle in Vehicles it opens (the shortest name with the most specific key)
+function vfVehicle(label,keys){ const ks=keys[label]||[vfKey(label)];
+  const hits=(S.veh||[]).filter(x=>{ const k=vfKey(x.full); return ks.some(q=>k.includes(q)); }).sort((a,b)=>a.full.length-b.full.length);
+  return hits[0]||null; }
+async function vehFitsHtml(v){ const d=await vehFitsData(), ships=d.ships||{}, keys=d.keys||{}; if(!Object.keys(ships).length) return "";
+  const chip=(label,tight)=>{ const x=vfVehicle(label,keys); return x?`<a data-vhopen="${esc(String(x.id))}" class="${tight?"vf-tight":""}" title="${tight?"Tight fit: only just, or only some ways round":"Fits"}">${esc(label)}</a>`:`<span class="${tight?"vf-tight":""}">${esc(label)}</span>`; };
+  const more=(id,list,mk,n=24)=>{ const all=S.vfMore?.has(id); return list.slice(0,all?list.length:n).map(mk).join("")+(list.length>n&&!all?`<a data-vfmore="${id}" class="vf-more">+${list.length-n} more</a>`:""); };
+  const me=vfShipFor(v.full,ships), mine=me?ships[me]:null, k=vfKey(v.full);
+  // the ships this one fits inside (it's in their lists)
+  const inside=[], tightIn=[];
+  for(const [ship,L] of Object.entries(ships)){ if(ship===me) continue;
+    const hit=lbl=>(keys[lbl]||[vfKey(lbl)]).some(q=>k.includes(q));
+    if((L.fits||[]).some(hit)) inside.push(ship); else if((L.tight||[]).some(hit)) tightIn.push(ship); }
+  const shipChip=(n,tight)=>{ const t=vfTok(n), x=(S.veh||[]).filter(y=>{ const yt=new Set(vfTok(y.full)); return t.every(w=>yt.has(w)); }).sort((a,b)=>a.full.length-b.full.length)[0];
+    return x?`<a data-vhopen="${esc(String(x.id))}" class="${tight?"vf-tight":""}">${esc(n)}</a>`:`<span class="${tight?"vf-tight":""}">${esc(n)}</span>`; };
+  let h="";
+  if(mine&&((mine.fits||[]).length||(mine.tight||[]).length)) h+=`<div class="mk-h">What fits inside <span class="muted" style="font-weight:400">${(mine.fits||[]).length} fit${(mine.tight||[]).length?` · ${(mine.tight||[]).length} tight`:""}</span></div>
+    <div class="res-chips">${more("in",mine.fits||[],l=>chip(l,false))}${more("int",mine.tight||[],l=>chip(l,true),12)}</div>`;
+  if(inside.length||tightIn.length) h+=`<div class="mk-h" style="${h?"margin-top:12px":""}">Fits inside <span class="muted" style="font-weight:400">${inside.length} ship${inside.length===1?"":"s"}${tightIn.length?` · ${tightIn.length} tight`:""}</span></div>
+    <div class="res-chips">${more("out",inside,n=>shipChip(n,false))}${more("outt",tightIn,n=>shipChip(n,true),12)}</div>`;
+  if(!h) return "";
+  return `<div class="vd-sec vd-wide">${h}<div class="muted" style="font-size:11.5px;margin-top:8px">Worked out from each ship's and vehicle's real size, so treat it as a guide: <span class="vf-tight" style="padding:0 6px">dashed</span> ones are a tight fit (only just, or only some ways round). From <a data-ext="${esc(d.source||"https://citizen-starter-guide.com/what-fits-in-star-citizen-ships/")}" style="cursor:pointer;text-decoration:underline">Citizen Starter Guide</a>.</div></div>`; }
 $("vh-search").addEventListener("input",()=>{ S.vehDetail=null; renderVehicles(); });
 
 // ---- Components: a landing page of every category first; pick one to browse it with filters, open a
@@ -1401,8 +1435,10 @@ async function renderShip(uid){
         ${r.power?.pips_gen?`<div class="pwr-row">
           <div class="seg-mini" title="What's powered: Combat = weapons and shields on, quantum drive off. Travel = quantum drive on, weapons and shields off."><button data-pmode="scm" class="${r.power.mode!=="nav"?"on":""}">Combat · SCM</button><button data-pmode="nav" class="${r.power.mode==="nav"?"on":""}">Travel · NAV</button></div>
           <button class="btn small ghost" data-ptoggle="1">${S.flPowerOpen?"Hide power ▴":"Power ▾"}</button>
-          ${r.power.custom?`<span class="muted" style="font-size:12px">custom power</span>`:""}</div>`:""}</div></div>
+          ${r.power.custom?`<span class="muted" style="font-size:12px">custom power</span>`:""}<span class="spacer"></span>
+          <button class="btn small ${S.flRec?.uid===uid?"primary":"ghost"}" data-flrec="${S.flRec?.uid===uid?"close":"open"}" title="The best parts for a role (Combat, Stealth, Long range, Balanced), shown before you change anything">✦ Recommended</button></div>`:""}</div></div>
     ${r.power?.pips_gen&&S.flPowerOpen?powerPanel(r):""}
+    ${S.flRec?.uid===uid?recPanel(r):""}
     <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
       const ms=list[0].type==="Missile"&&r.missiles, msTxt=ms?` · ${Object.entries(ms.by_size).sort((a,b)=>b[0]-a[0]).map(([z,n])=>`${n} × S${z}`).join(", ")}${ms.loaded<ms.slots?` · ${ms.slots-ms.loaded} empty`:""}`:"";
       return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}${esc(msTxt)}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
@@ -1413,6 +1449,28 @@ async function renderShip(uid){
     if(S.flScroll&&b){ S.flScroll=false; S.flScrollUntil=Date.now()+4000; flScrollToSlot(); } }
   watchPic($("fl-panel").querySelector(".mkp-img"));
   loadLiveries(uid); }
+// ---- Recommended loadout (api fleet_recommend): pick a role, see the part it'd put in each slot and what that
+// does to the ship's numbers, then save it as a new loadout. Nothing changes until you save.
+const REC_ROLES=[["balanced","Balanced","Best grade in every slot"],["combat","Combat","Shields, power and cooling first; military parts"],["stealth","Stealth","Lowest EM and IR without giving up much"],["travel","Long range","Fastest, most frugal quantum drive"]];
+function recPanel(r){ const R=S.flRec, d=R.data;
+  const pills=`<div class="seg-mini rec-roles">${REC_ROLES.map(([k,t,sub])=>`<button data-flrecrole="${k}" class="${R.role===k?"on":""}" title="${esc(sub)}">${t}</button>`).join("")}</div>`;
+  if(!d) return `<div class="rec-card">${pills}${qLoader("Working out the best parts…")}</div>`;
+  if(!d.ok) return `<div class="rec-card">${pills}<div class="unknown">${esc(d.error||"Couldn't work it out")}</div></div>`;
+  const KEYS=[["shield","Shield HP"],["shield_regen","Shield regen"],["qt_speed","Quantum"],["em","EM",true],["ir","IR",true]];
+  const fmt=(k,n)=>{ const f=SHIP_STATS.find(x=>x[0]===k); return f?f[2](n):String(Math.round(n)); };
+  const chg=KEYS.filter(([k])=>d.stats?.[k]!=null).map(([k,lab,low])=>{ const dv=d.delta?.[k]||0, good=low?dv<0:dv>0;
+    return `<div class="rec-st ${dv?(good?"up":"down"):""}"><span>${lab}</span><b>${fmt(k,d.stats[k])}</b>${dv?`<em>${dv>0?"+":"−"}${fmt(k,Math.abs(dv))}</em>`:""}</div>`; }).join("");
+  const swaps=d.picks.filter(p=>!p.keep);
+  return `<div class="rec-card"><div class="rec-h"><b>Recommended: ${esc(REC_ROLES.find(x=>x[0]===R.role)?.[1]||"")}</b>${pills}</div>
+    <div class="rec-stats">${chg}${d.power?.cooling!=null?`<div class="rec-st"><span>Cooling</span><b>${d.power.cooling}%</b></div>`:""}</div>
+    <div class="rec-list">${d.picks.map(p=>`<div class="rec-r ${p.keep?"keep":""}"><span class="sz">S${esc(p.size)}</span><span class="t">${esc(p.label)}</span>
+      <span class="was">${esc(p.current||p.stock||"Empty")}</span><span class="ar" aria-hidden="true">${p.keep?"✓":"→"}</span>
+      <b>${esc(p.pick)}</b><span class="muted">${esc([p.grade&&`Grade ${p.grade}`,p.class,p.maker].filter(Boolean).join(" · "))}</span></div>`).join("")}</div>
+    <div class="row" style="gap:8px;margin-top:10px"><span class="muted" style="font-size:12px">${swaps.length?`${plural(swaps.length,"part")} would change. Weapons and missiles stay as they are.`:"The stock parts are already the best for this."}</span><span class="spacer"></span>
+      ${swaps.length?`<button class="btn small primary" data-flrecapply="1">Save as new loadout</button>`:""}</div></div>`; }
+async function recLoad(uid,role){ S.flRec={uid,role,data:null}; renderShip(uid);
+  let d; try{ d=await api().fleet_recommend(uid,role,false); }catch(e){ d={ok:false,error:String(e)}; }
+  if(S.flRec?.uid===uid&&S.flRec.role===role){ S.flRec.data=d; renderShip(uid); } }
 // ---- Livery: any paint there is for the ship, per loadout ("Stock paint" when none is picked).
 S.flLiv=S.flLiv||{};
 function liveryHtml(uid){ const L=S.flLiv[uid];
@@ -1615,6 +1673,10 @@ $("fl-out").onclick=async e=>{
     const r=await api().fleet_move(from,to,spot(e,c)); if(r&&r.ok===false) toast(r.error);
     renderFleet(); }); }
 $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
+  const rc=e.target.closest("[data-flrec]"); if(rc){ if(rc.dataset.flrec==="close"){ S.flRec=null; return renderShip(S.flSel); } return recLoad(S.flSel,S.flRec?.role||"balanced"); }
+  const rr=e.target.closest("[data-flrecrole]"); if(rr){ return recLoad(S.flSel,rr.dataset.flrecrole); }
+  if(e.target.closest("[data-flrecapply]")){ const R=S.flRec; const x=await api().fleet_recommend(S.flSel,R.role,true); if(!x.ok) return toast(x.error);
+    toast(`Saved as "${x.name}" and showing it`); S.flRec=null; S.flLoad=null; return renderShip(S.flSel); }
   const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
   const lo=e.target.closest("[data-lo]"); if(lo) return loadoutAct(lo);
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;

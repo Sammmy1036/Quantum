@@ -17,6 +17,8 @@ from pathlib import Path
 GAP_NEW_SESSION = 15 * 60       # s without frames: the next frame starts a new session
 MAX_DT = 2.0                    # s: longer gaps between frames aren't counted as flying
 KEEP = 2000                     # earnings.json lines kept
+HISTORY = 60                    # finished sessions kept (time in game, earnings, distance…)
+SAVE_EVERY = 30                 # s: the running session is written down this often, so a restart doesn't lose it
 CONTRACT_WINDOW = (-240, 60)    # s around a contract's completion that a balance rise is credited to it
 
 
@@ -34,10 +36,21 @@ class SessionStats:
         self.s = _session()
         self._prev = None                       # last frame's {t, speed, landed, h2, vehicle}
         self._credited = set()                  # contract ids already given a payout line
+        self._ship = (None, 0)                  # (the ship you're in or were last in, when)
+        self._saved_at = 0.0
+        self.dirty = False                      # changed since the last server sync (api_jobs.py)
         try:
-            self.log = json.loads(self.path.read_text(encoding="utf-8")).get("entries", [])[-KEEP:]
+            raw = json.loads(self.path.read_text(encoding="utf-8"))
         except Exception:
-            self.log = []
+            raw = {}
+        self.log = list(raw.get("entries") or [])[-KEEP:]
+        self.history = list(raw.get("sessions") or [])[-HISTORY:]   # finished sessions, newest last
+        # The session that was running when Quantum closed (an update, a restart) carries on if the game kept going:
+        # same Game.log run and frames within GAP_NEW_SESSION. Otherwise it's history and a new one starts.
+        old = raw.get("session")
+        if isinstance(old, dict) and old.get("started"):
+            self.s = {**_session(), **old}
+            self.s["ships"] = list(self.s.get("ships") or [])
 
     # ---- fed by the telemetry reader, ~15 times a second
     def frame(self, d, now=None):
@@ -47,6 +60,7 @@ class SessionStats:
         with self.lock:
             s = self.s
             if s["last"] is None or now - s["last"] > GAP_NEW_SESSION or (key and s["key"] and key != s["key"]):
+                self._finish(s)
                 self.s = s = _session()
                 s["started"], s["key"] = now, key
                 self._prev = None
@@ -69,6 +83,8 @@ class SessionStats:
                 name = v.get("name")
                 if name and name not in s["ships"]:
                     s["ships"].append(name)
+                if name:
+                    self._ship = (name, now)
             for ev in d.get("events") or []:
                 if ev in ("dead", "killed", "death"):
                     s["deaths"] += 1
@@ -82,20 +98,34 @@ class SessionStats:
                     self._change(s, bal - s["balance"], bal, now, tr)
                 s["balance"] = bal
             self._prev = {"t": now, "vehicle": bool(v), "h2": (v or {}).get("h_fuel")}
+            due = now - self._saved_at > SAVE_EVERY
+            if due:
+                self._saved_at = now
+        if due:
+            threading.Thread(target=self._save, daemon=True).start()
 
     def _change(self, s, delta, bal, now, tr):
         label, kind = ("Balance went up", "in") if delta > 0 else ("Balance went down", "out")
+        c = None
         if delta > 0:
             s["earned"] += delta
             c = self._contract_for(now, tr)
+            what = ""
             if c is not None:
                 label, kind = c.name, "contract"
+                what = getattr(c, "subtitle", "") or getattr(c, "code", "") or ""
                 self._credited.add(c.id)
                 s["contracts"] += 1
         else:
             s["spent"] += -delta
         e = {"t": round(now, 1), "delta": int(delta), "balance": int(bal), "label": label, "kind": kind,
              "session": s["started"]}
+        if delta > 0 and c is not None and what:
+            e["what"] = what                           # the contract's kind ("Hauling", "Bounty"…), for Jobs
+        ship, seen = self._ship
+        if ship and now - seen < 600:
+            e["ship"] = ship                           # what you were flying: a sale from a Prospector is ore (Jobs)
+        self.dirty = True
         self.log.append(e)
         del self.log[:-KEEP]
         threading.Thread(target=self._save, daemon=True).start()
@@ -111,9 +141,48 @@ class SessionStats:
                     best = c
         return best
 
+    def _finish(self, s):
+        """A session that ended goes into the history (if there was anything to it)."""
+        if s.get("started") and (s.get("in_game_s") or 0) >= 60:
+            h = {k: s.get(k) for k in ("started", "last", "in_game_s", "flying_s", "distance_m", "top_speed", "h2_used",
+                                       "deaths", "downs", "earned", "spent", "contracts")}
+            h["ships"] = list(s.get("ships") or [])[:12]
+            self.history = [x for x in self.history if x.get("started") != h["started"]] + [h]
+            del self.history[:-HISTORY]
+            self.dirty = True
+
+    def merge(self, entries=None, sessions=None):
+        """Put the server's copy together with this PC's (the same balance change once: its time and amount).
+        Returns True when anything new came in."""
+        with self.lock:
+            n0, h0 = len(self.log), len(self.history)
+            have = {(round(e.get("t") or 0, 1), e.get("delta")) for e in self.log}
+            for e in entries or []:
+                if isinstance(e, dict) and (round(e.get("t") or 0, 1), e.get("delta")) not in have and e.get("t"):
+                    self.log.append(e)
+                    have.add((round(e["t"], 1), e.get("delta")))
+            self.log.sort(key=lambda e: e.get("t") or 0)
+            del self.log[:-KEEP]
+            seen = {x.get("started") for x in self.history}
+            for h in sessions or []:
+                if isinstance(h, dict) and h.get("started") and h["started"] not in seen and h["started"] != self.s.get("started"):
+                    self.history.append(h)
+                    seen.add(h["started"])
+            self.history.sort(key=lambda x: x.get("started") or 0)
+            del self.history[:-HISTORY]
+            changed = len(self.log) != n0 or len(self.history) != h0
+        if changed:
+            self._save()
+        return changed
+
+    def snapshot(self):
+        """What goes to the server: the log, the finished sessions and the one running now."""
+        with self.lock:
+            return {"entries": list(self.log), "sessions": list(self.history), "session": dict(self.s, ships=list(self.s["ships"]))}
+
     def _save(self):
         with self.lock:
-            data = {"entries": list(self.log)}
+            data = {"entries": list(self.log), "sessions": list(self.history), "session": dict(self.s, ships=list(self.s["ships"]))}
         try:
             tmp = self.path.with_suffix(".tmp")
             tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
@@ -130,8 +199,11 @@ class SessionStats:
         day = now - 86400
         week = now - 7 * 86400
         ins = [e for e in log if e["delta"] > 0]
+        hist = list(self.history)
+        life = {k: sum((x.get(k) or 0) for x in hist + [s]) for k in ("in_game_s", "flying_s", "distance_m", "earned", "spent", "contracts", "deaths")}
         return {"session": {**s, "ships": list(s["ships"]), "net": (s["earned"] or 0) - (s["spent"] or 0),
                             "active": bool(s["last"] and now - s["last"] < 60)},
+                "history": hist[-12:][::-1], "lifetime": life, "sessions_n": len(hist) + (1 if s.get("started") else 0),
                 "today": sum(e["delta"] for e in ins if e["t"] >= day),
                 "week": sum(e["delta"] for e in ins if e["t"] >= week),
                 "entries": log[-200:][::-1]}

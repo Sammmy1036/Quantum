@@ -50,6 +50,7 @@
       <button class="tab" role="tab" data-group="navigate" data-tab="waypoints" aria-selected="false">Waypoints <span class="count" id="c-wp">0</span></button>
       <button class="tab" role="tab" data-group="navigate" data-tab="contracts" aria-selected="false">Contracts <span class="count" id="c-contracts">0</span></button>
       <button class="tab" role="tab" data-group="missions" data-tab="missions" aria-selected="false" title="Employers and factions: who hands out contracts and what they offer">Missions <span class="count" id="c-missions"></span></button>
+      <button class="tab" role="tab" data-group="missions" data-tab="jobs" aria-selected="false" title="Daily and weekly jobs for every role, counted from your aUEC earnings">Jobs <span class="count" id="c-jobs"></span></button>
       <button class="tab uex-tab" role="tab" data-group="trade" data-tab="market" aria-selected="false" hidden>Commodities</button>
       <button class="tab uex-tab" role="tab" data-group="trade" data-tab="trade" aria-selected="false" hidden>Trade routes</button>
       <button class="tab uex-tab" role="tab" data-group="data" data-tab="datarunner" aria-selected="false" hidden title="Report terminal prices to UEX">Datarunner</button>
@@ -229,6 +230,7 @@
         <select class="field" id="mi-type" style="flex:1"><option value="">All kinds of work</option></select></div>
       <div id="mi-list" class="mi-list"></div>
     </section>
+    <section class="pane" id="pane-jobs"><div id="jb-side"></div></section>
     <section class="pane" id="pane-wishlist"></section>
     <section class="pane" id="pane-shopping">
       <div id="sh-out"></div>
@@ -270,6 +272,7 @@
     <div id="og-panel" class="pic-panel"></div>
     <div id="ph-panel" class="pic-panel" aria-label="Patch Hub"></div>
     <div id="mi-panel" class="pic-panel" aria-label="Missions"></div>
+    <div id="jb-panel" class="pic-panel" aria-label="Jobs"></div>
     <div id="stk-panel" class="pic-panel stk-panel"></div>
     <button class="btn primary map-back" id="map-back">Back to details</button>
     <button class="pv-next" id="pv-next" type="button"></button>
@@ -312,6 +315,7 @@
 <script src="js/telemetry.js"></script>
 <script src="js/patchhub.js"></script>
 <script src="js/missions.js"></script>
+<script src="js/jobs.js"></script>
 <script src="js/onyx.js"></script>
 <script src="js/main.js"></script>
 <!-- The self-running feature tour, for screen recording: Ctrl+Shift+D, or launch with --demo -->

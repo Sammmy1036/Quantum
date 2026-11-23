@@ -15,7 +15,7 @@ async function poll(){
       // Guiding you to a waypoint: a fresh /showlocation turns following back on, so the map tracks you along the way
       // Any fresh /showlocation is you asking where you are: centre on it, and keep following from there
       if(!first&&fx&&!live.player?.approx){ if(!S.follow) setFollow(true); S.anim=null; setTimeout(followNow,60); } } }
-  watchNewObjectives(live);
+  watchNewObjectives(live); try{ watchContractsNav(live); }catch(e){ console.warn("contracts nav",e); }
   // settings.json couldn't be read at start: say so once, long enough to read
   if(live.settings_note&&!S.settingsNoted){ S.settingsNoted=true; toast(live.settings_note); clearTimeout(toastT);
     toastT=setTimeout(()=>$("toast").classList.remove("show"),15000); }
@@ -91,7 +91,7 @@ async function init(){
   pfPrime(false).catch(()=>{});                                     // your picture and name on the rail
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
-  if(S.selected?.kind==="settings"){ if(!S.ccDrag&&!S.ptrDown&&Date.now()-(S.ptrAt||0)>700&&!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
+  if(S.selected?.kind==="settings"){ if(!S.ccDrag&&!S.tlDrag&&!S.ptrDown&&Date.now()-(S.ptrAt||0)>700&&!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
 }
 S.splashUp=true;
 window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); try{ await init(); } finally {

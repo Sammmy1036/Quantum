@@ -310,12 +310,12 @@ function stockWire(P){
 // Clinic, Vehicle Services…) open the same kind of window as Commodities, with what the shops there sell
 // (UEX's item prices: app.uex_place_shop), on the group that tile is about. The other groups are a click away.
 // A service's tile -> the groups of things it's about (the first one the place has opens)
-const SVC_SHOP=[[/rent|rental/i,["rentals"]],[/ship component/i,["components"]],[/ship weapon|vehicle weapon/i,["shipweapons"]],[/armou?r/i,["armor"]],[/cloth|apparel|fashion/i,["clothing"]],
+const SVC_SHOP=[[/rent|rental/i,["rentals"]],[/(buy|purchase|sell)\w* (ships?|vehicles?)|vehicle (sales|dealer)|ship (sales|dealer|showroom)|showroom/i,["vehicles"]],[/ship component/i,["components"]],[/ship weapon|vehicle weapon/i,["shipweapons"]],[/armou?r/i,["armor"]],[/cloth|apparel|fashion/i,["clothing"]],
   [/weapon|gun ?shop|armory/i,["weapons"]],[/food|restaurant|bar\b|drink|cafe|diner/i,["food"]],[/clinic|hospital|medical|pharmacy/i,["medical"]],
   [/gadget|tool|mining equipment/i,["gadgets"]]];
 // The wiki's one "Buy Ship Items and Weapons" is shown as two tiles, ship weapons and ship components (only the
 // ones UEX lists there, once that's known). A shop UEX lists that no amenity covers gets its tile too.
-const SHOP_TILE={armor:"Buy Armor",clothing:"Buy Clothing",weapons:"Buy Weapons",shipweapons:"Buy Ship Weapons",components:"Buy Ship Components",rentals:"Rent Vehicles"};
+const SHOP_TILE={armor:"Buy Armor",clothing:"Buy Clothing",weapons:"Buy Weapons",shipweapons:"Buy Ship Weapons",components:"Buy Ship Components",vehicles:"Buy Vehicles",rentals:"Rent Vehicles"};
 function placeAmenities(list,place){ const have=place&&S.shopPlaces?.[place], out=[];
   for(const a of list){
     if(/ship items and weapons/i.test(a)){ const both=["shipweapons","components"], keep=have&&both.some(g=>have.includes(g))?both.filter(g=>have.includes(g)):both;
@@ -324,8 +324,12 @@ function placeAmenities(list,place){ const have=place&&S.shopPlaces?.[place], ou
   if(have){ const covered=new Set(out.flatMap(a=>{ const h=SVC_SHOP.find(([rx])=>rx.test(a)); return h?h[1]:[]; }));
     for(const g of Object.keys(SHOP_TILE)) if(have.includes(g)&&!covered.has(g)) out.push(SHOP_TILE[g]); }
   return [...new Set(out)]; }
-function shopGroupFor(service,place){ const have=S.shopPlaces?.[place]; if(!have) return null;
-  const hit=SVC_SHOP.find(([rx])=>rx.test(service)); return hit?hit[1].find(g=>have.includes(g))||null:null; }
+function shopGroupFor(service,place){ const have=S.shopPlaces?.[place];
+  const hit=SVC_SHOP.find(([rx])=>rx.test(service));
+  // Buy Vehicles opens its window even when UEX hasn't matched a dealer to this place yet (Ashland): it then says
+  // what UEX does or doesn't list, rather than the tile doing nothing
+  if(hit?.[1][0]==="vehicles"&&S.shopPlaces) return "vehicles";
+  if(!have) return null; return hit?hit[1].find(g=>have.includes(g))||null:null; }
 async function loadShopPlaces(){ if(S.shopPlaces!==undefined||!S.live?.log?.uex_token||Date.now()-(S.shopPlacesTry||0)<60000) return;
   S.shopPlaces=null; S.shopPlacesTry=Date.now();
   let r; try{ r=await api().uex_shop_places(); }catch(e){ r=null; }
@@ -361,8 +365,8 @@ function shopRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="sh
   const rentCard=i=>{ const a=drAge(i.at), facts=[i.scu?`${Number(i.scu).toLocaleString()} SCU`:"",i.crew?`crew ${i.crew}`:"",i.pad?`${padLabel(i.pad)} pad`:""].filter(Boolean).join(" · ");
     return `<div class="stk-card shop rent" data-vhopen="${esc(i.vid)}" title="Open the ${esc(i.name)} in Vehicles"><div class="ph">${i.photo?`<img src="${esc(i.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div>
       <div class="bd"><div class="nm"><b>${esc(i.name)}</b></div><div class="cat">${esc([i.maker,i.category].filter(Boolean).join(" · "))}</div>${facts?`<div class="key">${esc(facts)}</div>`:""}
-        <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>aUEC / day</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
-  const card=i=>{ if(i.group==="rentals") return rentCard(i); const m=shopGear(i), G=m&&GEAR[m.tab], a=drAge(i.at), ship=i.group==="components"||i.group==="shipweapons";
+        <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>${i.per==="day"?"aUEC / day":"aUEC"}</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
+  const card=i=>{ if(i.group==="rentals"||i.group==="vehicles") return rentCard(i); const m=shopGear(i), G=m&&GEAR[m.tab], a=drAge(i.at), ship=i.group==="components"||i.group==="shipweapons";
     const link=m?`data-shopgear="${esc(m.tab)}|${esc(m.g.uuid||m.g.name)}" title="Open ${esc(i.name)} in Gear"`:ship&&i.cat?`data-shopcp="${esc(i.cat)}|${esc(i.id)}" title="Open ${esc(i.name)} in Components"`:"";
     const img=m?.g?.image;
     return `<div class="stk-card shop${link?"":" nolink"}" ${link}><div class="ph" ${img?"":SHOP_GEAR_KIND.has(i.group)?`data-gpic="${esc(i.name)}"`:`data-pic="${esc(i.name)}"`}>${img?`<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard(ship?"component":"commodity")}</div>
@@ -372,11 +376,11 @@ function shopRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="sh
   P.innerHTML=head+statBlock([{label:st.group==="rentals"?"For rent":"For sale",value:String(shown.length)},{label:"Prices",value:prices.length?(Math.min(...prices)===Math.max(...prices)?`${Math.round(prices[0]).toLocaleString()} aUEC`:`${shortMoney(Math.min(...prices))} to ${shortMoney(Math.max(...prices))}`):"—"},{label:"Newest report",value:newest?agoTs(newest):"None"}],
       oldest&&newest&&newest-oldest>86400?[{label:"Oldest price here",value:agoTs(oldest)}]:[])
     +(groups.length>1||st.group==="all"?`<div class="stk-chips">${[["all","Everything"],...groups].map(([k,t])=>`<button data-shopg="${k}" class="${st.group===k?"on":""}">${esc(t)}<b>${k==="all"?all.length:count[k]}</b></button>`).join("")}</div>`:"")
-    +`<div class="stk-tools"><input class="search" data-stkq="1" placeholder="${st.group==="rentals"?"Search vehicles for rent here":"Search what's sold here"}" value="${esc(st.q)}" autocomplete="off" spellcheck="false">
+    +`<div class="stk-tools"><input class="search" data-stkq="1" placeholder="${st.group==="rentals"?"Search vehicles for rent here":st.group==="vehicles"?"Search vehicles for sale here":"Search what's sold here"}" value="${esc(st.q)}" autocomplete="off" spellcheck="false">
       <select class="field" data-stksort="1">${[["name","A–Z"],["cheap","Price: low to high"],["dear","Price: high to low"],["fresh","Most recently reported"]].map(([v,t])=>`<option value="${v}" ${st.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`
-    +(!all.length?`<div class="empty">UEX has nothing listed for sale here yet.</div>`
+    +(!all.length?`<div class="empty">${st.group==="vehicles"?`UEX has no vehicle sales listed at ${esc(st.place)} yet. The Vehicles tab shows where each ship is sold.`:"UEX has nothing listed for sale here yet."}</div>`
       :r.shops.map(s=>{ const rows=s.items.filter(keep).sort(by); if(!rows.length) return ""; const a=drAge(s.updated);
-        return `<div class="stk-th"><b>${esc(s.name)}</b>${s.updated?`<span style="${a.c==="a0"?"color:#57e39b":a.c==="a2"?"color:#f2c14e":a.c==="a3"?"color:#ff8a5c":""}">updated ${esc(agoTs(s.updated))}</span>`:""}<span>${rows.length} ${st.group==="rentals"?"vehicle":"item"}${rows.length===1?"":"s"}</span></div>
+        return `<div class="stk-th"><b>${esc(s.name)}</b>${s.updated?`<span style="${a.c==="a0"?"color:#57e39b":a.c==="a2"?"color:#f2c14e":a.c==="a3"?"color:#ff8a5c":""}">updated ${esc(agoTs(s.updated))}</span>`:""}<span>${rows.length} ${st.group==="rentals"||st.group==="vehicles"?"vehicle":"item"}${rows.length===1?"":"s"}</span></div>
           <div class="stk-grid">${rows.map(card).join("")}</div>`; }).join("")||`<div class="muted" style="font-size:13px;padding:6px 2px">${q?"Nothing here matches.":`No ${esc((gname[st.group]||"items").toLowerCase())} for sale here on UEX.`}</div>`)
     +`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the shop before you buy. Age colours: green under a day, yellow up to 3 days, orange older. ${st.group==="rentals"?" Rental prices are for one day.":""} Click an item for its full page.</div>`;
   shopWire(P); fillGearPictures(P); fillPictures(P); }
@@ -493,7 +497,11 @@ function renderDetail(){
           <span class="k">Size</span><select class="field" id="s-ccsize">${[["large","Large"],["medium","Medium (3/4)"],["small","Small (1/2)"]].map(([v,l])=>`<option value="${v}" ${(cc.size||"large")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Show again</span><select class="field" id="s-ccagain" title="The city is known as you fly in. Show the clock again when you get there">${[["seat","When I leave the pilot seat"],["hangar","When my hangar is assigned"],["both","Both"],["none","Never"]].map(([v,l])=>`<option value="${v}" ${(cc.again||"seat")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Clock</span><select class="field" id="s-cch24"><option value="1" ${cc.h24?"selected":""}>24-hour</option><option value="0" ${cc.h24?"":"selected"}>12-hour</option></select>
+          <span class="k">Show at</span><select class="field" id="s-ccwhere" data-cclook="where">${[["cities","Lorville, Area 18, New Babbage, Orison"],["all","Those and every other known location (outposts, settlements, Levski…)"]].map(([v,l])=>`<option value="${v}" ${(cc.where||"cities")===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Layout</span><select class="field" id="s-ccstyle" data-cclook="style">${[["full","Name, time and planet line"],["compact","Name and time"],["time","Time only"]].map(([v,l])=>`<option value="${v}" ${(cc.style||"full")===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Opacity</span><select class="field" id="s-ccop" data-cclook="opacity">${[100,85,70,55].map(v=>`<option value="${v}" ${(cc.opacity||100)===v?"selected":""}>${v}%</option>`).join("")}</select>
         </div>
+        <div class="cc-colors" role="radiogroup" aria-label="Clock colour">${[["blue","#50b4ff"],["amber","#ff9628"],["green","#28d278"],["white","#e6ebf2"],["red","#f03c3c"],["purple","#965aff"]].map(([k,c])=>`<button type="button" class="cc-sw${(cc.color||"blue")===k?" on":""}" data-cccolor="${k}" style="--sw:${c}" role="radio" aria-checked="${(cc.color||"blue")===k}" title="${k[0].toUpperCase()+k.slice(1)}"></button>`).join("")}<span class="muted" style="font-size:12px;margin-left:6px">Colour</span></div>
         <div class="cc-place"><div class="muted" style="font-size:12px;margin:2px 0 6px">${cc.position==="custom"?"Drag the clock to where you want it on your screen.":"Where it shows on your screen. Drag it to place it yourself."}</div>
           <div class="cc-scr" id="cc-scr"><img id="cc-drag" alt="Location clock" draggable="false" hidden></div></div>
         <div class="row" style="gap:6px;margin-top:8px"><span class="spacer"></span><button class="btn small ghost" data-a="ccpreview" ${cc.available?"":"disabled"}>Preview in game</button></div>
@@ -536,6 +544,9 @@ function renderDetail(){
       toast(r.shot_hotkey?`${r.shot_hotkey} takes a terminal screenshot for your UEX report`:"Screenshot key off"); };
     const ccSave=async()=>{ if(!$("s-ccmode")) return; S.ccImg=null; S.ccPos=null; await api().set_city_clock($("s-ccmode").value,$("s-ccpos").value,$("s-cch24").value==="1",$("s-ccsize").value,$("s-ccagain").value); await poll(); renderDetail(); toast("Saved"); };
     for(const id of ["s-ccmode","s-ccpos","s-cch24","s-ccsize","s-ccagain"]) if($(id)) $(id).onchange=ccSave;
+    const ccLook=async prefs=>{ S.ccImg=null; await api().set_city_clock_look(prefs); await poll(); renderDetail(); toast("Saved"); };
+    for(const el of d.querySelectorAll("[data-cclook]")) el.onchange=()=>ccLook({[el.dataset.cclook]:el.dataset.cclook==="opacity"?+el.value:el.value});
+    for(const b of d.querySelectorAll("[data-cccolor]")) b.onclick=()=>ccLook({color:b.dataset.cccolor});
     ccPlacer();
     for(const b of d.querySelectorAll("[data-winstyle]")) b.onclick=async()=>{ if(S.winStyle?.style===b.dataset.winstyle) return;
       S.winStyle=await api().set_window_style(b.dataset.winstyle); renderDetail();
@@ -687,6 +698,24 @@ function renderDetail(){
 function compass(deg){ return `<svg class="compass" viewBox="-22 -22 44 44" aria-label="heading ${Math.round(deg)} degrees"><circle r="20" fill="none" stroke="#2c3f63" stroke-width="1.5"/>
   <text y="-12" text-anchor="middle" font-size="7" fill="#7684a0" font-family="Exo 2">N</text>
   <g transform="rotate(${deg})"><path d="M0,-15 L6,6 L0,2 L-6,6 Z" fill="#7fe7ff"/></g></svg>`; }
+// ---- Contract objectives over the map while you fly a route (Deliver 0/4, Collect 1/2…), like the game's own
+// tracker. Only contracts with a stop in your route; hidden with Contracts › Options › "Objectives on the map".
+function objTrackerHtml(live){ if(typeof cOpt==="function"&&!cOpt("hudobj")) return "";
+  const route=live.route||[]; if(!route.length) return "";
+  const cs=(live.contracts||[]).filter(c=>c.status==="active"&&(c.objectives||[]).some(o=>o.in_route)); if(!cs.length) return "";
+  const row=(txt,a,b,done)=>`<div class="ot-r ${done?"done":""}"><span class="ot-d" aria-hidden="true"></span><span class="ot-t">${txt}</span>${a!=null?`<b>${a}/${b}</b>`:""}</div>`;
+  const body=c=>{ const tr=c.tracking, out=[];
+    if(tr&&!tr.collection){
+      if(tr.pickups) out.push(row(tr.pickups>1?"Collect cargo":"Collect the cargo",Math.min(tr.picked||(tr.stage>=1?tr.pickups:0),tr.pickups),tr.pickups,tr.stage>=1));
+      const cg=tr.cargo||[];
+      if(cg.length) for(const g of cg) out.push(row(`Deliver ${esc(g.what)}${tr.dest&&!(tr.dropoffs>1)?` to ${esc(tr.dest)}`:""} <span class="u">SCU</span>`,g.done||0,g.total,(g.done||0)>=g.total));
+      if(tr.dropoffs>1||!cg.length) out.push(row(tr.dropoffs>1?"Drop-offs":`Deliver${tr.dest?` to ${esc(tr.dest)}`:""}`,tr.delivered||0,tr.dropoffs||1,(tr.delivered||0)>=(tr.dropoffs||1)));
+      return out.join(""); }
+    const obs=c.objectives||[], done=obs.filter(o=>o.status==="complete").length;
+    return obs.filter(o=>o.status!=="failed").slice(0,5).map(o=>row(esc(o.label),null,null,o.status==="complete")).join("")+(obs.length>1?`<div class="ot-n">${done}/${obs.length} done</div>`:""); };
+  const open=!S.otShut;
+  return `<div class="card objtrk"><button class="ot-h" id="ot-toggle" aria-expanded="${open}"><span>Objectives</span><b>${cs.length}</b><span class="spacer"></span><span class="ot-c">${open?"▾":"▸"}</span></button>
+    ${open?cs.slice(0,3).map(c=>`<div class="ot-c1"><div class="ot-nm">${esc(c.subtitle?c.subtitle+": ":"")}${esc(c.name)}</div>${body(c)}</div>`).join("")+(cs.length>3?`<div class="ot-n">+${cs.length-3} more in Contracts</div>`:""):""}</div>`; }
 function renderHud(){
   const live=S.live, g=live.guide, n=live.next; let html="";
   if(g){ const pl=live.player, approxPos=pl?.approx, ageMin=pl&&!approxPos?Math.round(pl.age/60):0;
@@ -709,6 +738,7 @@ function renderHud(){
       ${n.pad&&n.pad!=="unknown"?`<div><div class="v" style="color:var(--ink)">${esc(padLabel(n.pad))}</div><div class="k">pad</div></div>`:""}</div>`
       :`<div class="hint">Type /showlocation in game chat to see the distance.</div>`}
     ${(live.stop_roles?.[0]||[]).some(r=>r.kind==="buy"||r.kind==="sell")?`<div style="margin-top:6px">${roleTags((live.stop_roles[0]||[]).filter(r=>r.kind==="buy"||r.kind==="sell"))}</div>`:""}</div>`; }
+  html+=objTrackerHtml(live);                                       // contract objectives, like the game's tracker
   if(typeof runsHudHtml==="function") html+=runsHudHtml();         // your trade runs (trade.js)
   // Offer to line the planet up when your reading clearly matches a place the map has elsewhere.
   const cs=live.calib_suggest;
@@ -729,6 +759,7 @@ function renderHud(){
       <div class="ovlist">${route.map((n,i)=>`<div class="i"><span class="n">${i+1}</span><span>${roleTxt(n,i)}${esc(n)}</span></div>`).join("")}</div></div>`+html; }
   $("hud").innerHTML=html; if(typeof tlHudSteer==="function") tlHudSteer(); const st=$("hud-stop"); if(st) st.onclick=async()=>{ await api().set_guide(null); await poll(); };
   const oc=$("hud-ov-close"); if(oc) oc.onclick=()=>{ S.overview=null; renderHud(); };
+  const ot=$("ot-toggle"); if(ot) ot.onclick=()=>{ S.otShut=!S.otShut; renderHud(); };
   if(typeof runsHudWire==="function") runsHudWire($("hud"));
   const cx=$("cal-x"); if(cx) cx.onclick=()=>{ S.calDismissed=cs.reading_t; renderHud(); };
   for(const b of $("hud").querySelectorAll("[data-cal]")) b.onclick=async()=>{ const r=await api().calibrate_at(b.dataset.cal);
@@ -759,13 +790,14 @@ for(const t of document.querySelectorAll(".tab")) t.onclick=()=>{ S.tab=t.datase
   $("og-panel").classList.toggle("show",S.tab==="orgs"); if(S.tab==="orgs") openOrg();
   $("ph-panel").classList.toggle("show",S.tab==="patchhub"); if(S.tab==="patchhub") openPatchHub();
   $("mi-panel").classList.toggle("show",S.tab==="missions"); if(S.tab==="missions") openMissions();
+  $("jb-panel").classList.toggle("show",S.tab==="jobs"); if(S.tab==="jobs") openJobs();
   $("dr-panel").classList.toggle("show",S.tab==="datarunner"); $("dr-view").classList.remove("show"); if(S.tab==="datarunner") openDatarunner();
   if(S.tab==="market") openMarket(); if(S.tab==="trade"){ openTrade(); if(S.trView==="mine") renderRuns(); } if(S.tab==="vehicles") openVehicles(); };
 
 // ---- the rail: one button per section; each section's own tabs show as pills under its title
 const GROUPS={navigate:{t:"Home",tabs:["route","waypoints","contracts"]},trade:{t:"Trade",tabs:["market","trade"]},data:{t:"Datarunner",tabs:["datarunner"]},
   ships:{t:"Ships",tabs:["fleet","components","vehicles","ccu"]},gear:{t:"Gear",tabs:["weapons","attachments","armor","clothing","gadgets","gearlo"]},
-  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing","alerts"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions"]},profile:{t:"Profile",tabs:["profile"]}};
+  consumables:{t:"Consumables",tabs:["consumables","utility"]},crafting:{t:"Blueprints",tabs:["blueprints"]},cart:{t:"Cart",tabs:["shopping","wishlist"]},exchange:{t:"Market",tabs:["pm-items","pm-services","pm-mine","pm-standing","alerts"]},org:{t:"Org",tabs:["orgs"]},social:{t:"Social",tabs:["friends","friendmap"]},patch:{t:"Patch Hub",tabs:["patchhub"]},missions:{t:"Missions",tabs:["missions","jobs"]},profile:{t:"Profile",tabs:["profile"]}};
 const groupOf=tab=>Object.keys(GROUPS).find(g=>GROUPS[g].tabs.includes(tab))||"navigate";
 S.lastTab=S.lastTab||{};
 function syncRail(){ const g=groupOf(S.tab||"route"); S.lastTab[g]=S.tab||"route";

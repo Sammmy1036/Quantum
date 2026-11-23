@@ -1021,8 +1021,25 @@ def item_stats(it):
         "power": _dig(it, "resource_network", "generation", "power"),
         "em": _dig(it, "emission", "em_max"),
         "ir": _dig(it, "emission", "ir"),
+        # The 4.x resource network (Erkul's Power Management works from these): EM at a part's fewest pips, the
+        # coolant it uses at its fewest and most pips, and a plant's coolant use at full output
+        "em_min": _dig(it, "emission", "em_min"),
+        "coolant_min": _dig(it, "resource_network", "usage", "coolant", "min"),
+        "coolant_use": _dig(it, "resource_network", "usage", "coolant", "max"),
     }
-    return {k: v for k, v in out.items() if isinstance(v, (int, float)) and v}
+    out = {k: v for k, v in out.items() if isinstance(v, (int, float)) and v}
+    # A cooler's output by pips: [(from pip, x output)], e.g. Low 1 = 0.70, Standard 2 = 0.85, High 3 = 1.00
+    for st_ in _dig(it, "resource_network", "states") or []:
+        if isinstance(st_, dict) and str(st_.get("name") or "").lower() == "online":
+            pr = [(r.get("start"), r.get("modifier")) for r in st_.get("power_ranges") or [] if isinstance(r, dict)]
+            pr = [(int(a), float(b)) for a, b in pr if isinstance(a, (int, float)) and isinstance(b, (int, float))]
+            if pr:
+                out["power_ranges"] = sorted(pr)
+    return out
+
+
+# Extra numbers from the wiki's item record that the game-file stats (component_stats.json) don't carry yet
+NETWORK_KEYS = ("em_min", "coolant_min", "coolant_use", "power_ranges", "cooling")
 
 
 # Ship stats that follow from components: (ship stat, item stat, how it combines)
@@ -1132,10 +1149,15 @@ class GameData:
                 and (slot_type != "Missile" or bool(it.get("ground")) == bool(ground))]
 
 
-# Cooling demand per pip in use. Not in the game files (parts' coolant use is 0 there); fitted to
-# Erkul readings of an Intrepid and a Cutlass Red: at full power both need ~1.46 cooling/s per pip.
+# Cooling demand per pip in use, for parts with no coolant numbers of their own: fitted to Erkul readings of an
+# Intrepid and a Cutlass Red (~1.46 cooling/s per pip at full power). The 4.x resource network gives each part its
+# coolant use (min at its fewest pips, max at its most; a power plant uses about one per pip it makes), and Erkul
+# works from those: with them, the need is worked out part by part instead (NETWORK_MODEL). That's also why 1.46
+# fitted: plant coolant (≈ the pips in use) + the parts' own (≈ their pips, coolers none) ≈ 1.5 x the pips in use.
 COOLANT_PER_PIP = 1.46
 COOLANT_BASE = 0.0
+NETWORK_MODEL = True          # use the parts' own coolant use, EM ranges and cooler power states when known
+NET_COOLANT_PER_PIP = 1.0     # a part with no coolant numbers, in that model (the plant's own share is counted apart)
 WEAPONS = "weapons"                                   # the ship's weapon power pool (one bar, like Erkul)
 # Order Erkul's Auto tops parts up in, after everyone has their minimum. Coolers are switched on only
 # as many as the cooling needs. Matches Erkul on the Intrepid and the Cutlass Red.
@@ -1227,6 +1249,37 @@ def allocate(parts, gen, mode, overrides, fitted=True, pool=0):
     return alloc, info
 
 
+def _lerp_pips(lo, hi, p, pmin, pmax):
+    """A value that goes from lo at a part's fewest pips to hi at its most (EM, coolant use). 0 when off."""
+    if not p:
+        return 0.0
+    if pmax <= pmin:
+        return float(hi)
+    f = max(0.0, min(1.0, (p - pmin) / (pmax - pmin)))
+    return float(lo) + (float(hi) - float(lo)) * f
+
+
+def _state_mod(st, p):
+    """A cooler's output multiplier at p pips, from its power states (Low/Standard/High). 1 when unknown."""
+    pr = st.get("power_ranges")
+    if not pr or not p:
+        return 1.0 if p else 0.0
+    m = pr[0][1]
+    for start, mod in pr:
+        if p >= start:
+            m = mod
+    return m
+
+
+def _part_coolant(st, p, pmin, pmax):
+    """Coolant a part uses at p pips, from its own numbers (None when it has none)."""
+    hi = st.get("coolant_use")
+    if hi is None:
+        return None
+    lo = st.get("coolant_min")
+    return _lerp_pips(hi if lo is None else lo, hi, p, pmin, pmax)
+
+
 def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=None, fixed=None, armor=None):
     """Ship EM and IR, estimated the way Erkul's Power Management works them out:
       pips: Erkul-style Auto (allocate) or your own, from the power plants' output
@@ -1249,10 +1302,36 @@ def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=No
     used = min(gen, sum(alloc.values()))
     share = (used / gen) if gen else 1
     on_coolers = [sl for sl in slots if sl.get("type") == "Cooler" and alloc.get(sl.get("port"))]
-    cool_make = sum(_pstats(sl, fitted).get("coolant_make") or 0 for sl in on_coolers)
+    net = NETWORK_MODEL and any(_pstats(sl, fitted).get("coolant_use") is not None for sl in every
+                                if sl.get("type") not in ("Cooler", "Missile"))
+    if net:
+        # each cooler's output at its pips (its power states: Low 0.70, Standard 0.85, High 1.00…)
+        cool_make = sum((_pstats(sl, fitted).get("coolant_make") or _pstats(sl, fitted).get("cooling") or 0)
+                        * _state_mod(_pstats(sl, fitted), alloc.get(sl.get("port"), 0)) for sl in on_coolers)
+    else:
+        cool_make = sum(_pstats(sl, fitted).get("coolant_make") or 0 for sl in on_coolers)
     auto_cool = cooling is None
     if auto_cool:
-        cooling = min(100, round((COOLANT_BASE + used * COOLANT_PER_PIP) / cool_make * 100)) if cool_make else 100
+        if net:
+            need, guns_cool = 0.0, 0.0
+            for sl in every:
+                st, t, p_ = _pstats(sl, fitted), sl.get("type"), sl.get("port")
+                if t in ("Missile", "Cooler", "JumpDrive"):
+                    continue
+                if t == "PowerPlant":                  # a plant's coolant follows the share of its output in use
+                    cu = st.get("coolant_use")
+                    need += (cu if cu is not None else (st.get("power") or st.get("power_make") or 0)) * share
+                elif t == "WeaponGun":
+                    guns_cool += st.get("coolant_use") or 0
+                else:
+                    i = info.get(p_) or {}
+                    c = _part_coolant(st, alloc.get(p_, 0), i.get("min", 1), i.get("max", 1))
+                    need += c if c is not None else NET_COOLANT_PER_PIP * alloc.get(p_, 0)
+            if pool:
+                need += (guns_cool or NET_COOLANT_PER_PIP * pool) * alloc.get(WEAPONS, 0) / pool
+            cooling = min(100, round(need / cool_make * 100)) if cool_make else 100
+        else:
+            cooling = min(100, round((COOLANT_BASE + used * COOLANT_PER_PIP) / cool_make * 100)) if cool_make else 100
     em = ir = 0.0
     per = {p: {"pips": alloc.get(p, 0), "max": i["max"], "min": i["min"], "auto": p not in overrides}
            for p, i in info.items()}
@@ -1266,11 +1345,18 @@ def signatures(slots, fitted=True, pips=None, mode="scm", cooling=None, parts=No
             em += (st.get("em") or 0) * (alloc.get(WEAPONS, 0) / pool if pool else 0)
         elif t != "LifeSupportGenerator":
             p = sl.get("port")
-            em += (st.get("em") or 0) * alloc.get(p, 0) / max(1, info.get(p, {}).get("max", 1))
+            i = info.get(p, {})
+            if NETWORK_MODEL and st.get("em_min") is not None and st.get("em"):
+                # the game's EM range: em_min at its fewest pips up to em at its most (a shield on 2 of 3 pips is
+                # at its minimum, not two thirds of its maximum)
+                em += _lerp_pips(min(st["em_min"], st["em"]), st["em"], alloc.get(p, 0), i.get("min", 1), i.get("max", 1))
+            else:
+                em += (st.get("em") or 0) * alloc.get(p, 0) / max(1, i.get("max", 1))
             if t == "Cooler" and alloc.get(p):
                 ir += (st.get("ir") or 0) * max(0, min(100, cooling)) / 100
     if APPLY_ARMOR_SIGNAL and armor:
         em *= armor.get("em", 1.0)
         ir *= armor.get("ir", 1.0)
     return {"em": em, "ir": ir, "pips_gen": gen, "pips_used": used, "parts": per,
-            "cooling": cooling, "cooling_auto": auto_cool, "cool_make": cool_make, "pool": pool}
+            "cooling": cooling, "cooling_auto": auto_cool, "cool_make": round(cool_make, 1), "pool": pool,
+            "model": "network" if net else "fitted"}
