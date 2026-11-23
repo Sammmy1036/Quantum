@@ -446,8 +446,7 @@ function renderDetail(){
           <textarea class="field" id="s-bugmsg" rows="5" maxlength="5000" style="width:100%;resize:vertical" placeholder="What you did, what you expected, and what happened instead" oninput="S.bugMsg=this.value">${esc(S.bugMsg||"")}</textarea>
           <label class="k" for="s-bugcontact" style="display:block;font-weight:600;font-size:12.5px;margin:10px 2px 5px">How can we reach you? <span class="muted" style="font-weight:400">(optional: Discord, email…)</span></label>
           <input class="field" id="s-bugcontact" maxlength="200" style="width:100%" value="${esc(S.bugContact||"")}" oninput="S.bugContact=this.value" autocomplete="off">
-          <div class="muted" style="font-size:12px;margin-top:6px">Sent with your UEX name (if you've added your Secret Key), this Quantum version and your game version. Only the Quantum developer sees it.</div>
-          <div class="row" style="gap:6px;margin-top:8px"><button class="btn small primary" data-a="bugsend" ${S.bugBusy?"disabled":""}>${S.bugBusy?"Sending…":"Send bug report"}</button><button class="btn small ghost" data-a="bugcancel">Cancel</button></div>`}</div>
+          <div class="row" style="gap:6px;margin-top:8px"><button class="btn small primary" data-a="bugsend" ${S.bugBusy?"disabled":""}>${S.bugBusy?"Sending…":"Send"}</button><button class="btn small ghost" data-a="bugcancel">Cancel</button></div>`}</div>
       <div class="sub">Game.log</div>
       <div class="note" style="margin:4px 0 12px"><div class="row"><span class="dot ${lg.status==="watching"?"on":"warn"}"></span><b>${lg.status==="watching"?"Reading Game.log":"Looking for Game.log (found automatically when the game starts)"}</b><span class="spacer"></span><button class="btn small ghost" data-a="logchange">Change</button></div>
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
