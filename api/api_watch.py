@@ -7,7 +7,10 @@ in Settings > Log. Each terminal alerts once when it gets there and again only a
 mark, so a price that sits at your mark doesn't keep alerting.
 
 Kept in settings.json under "watchlist": {"items": [watch, ...], "fired": {"<watch>|<terminal>|<low/high>": price}}.
-A watch: {id, id_commodity, name, side: "buy" | "sell", low, high, system, max_age_h, on, created}.
+A watch: {id, kind: "commodity" | "item", id_commodity | id_item, name, side: "buy" | "sell", low, high, system,
+max_age_h, on, created}. "item" watches are personal gear (weapons, armor, clothing, gadgets, medical, food…) from
+UEX's item prices at shop terminals; prices are per item rather than per SCU. Watches saved before items existed
+have no kind and are commodities.
   side "buy":  what terminals SELL it for (the price you buy at). A low mark is the usual one: "tell me when it's cheap".
   side "sell": what terminals BUY it for (the price you sell at). A high mark is the usual one: "tell me when it pays".
 """
@@ -20,6 +23,8 @@ from sources import uex
 WATCH_EVERY = 300            # seconds between checks (UEX's price list itself is cached for 30 minutes)
 WATCH_MAX = 50               # watches you can keep
 AGE_CHOICES = (24, 72, 168, 0)   # "Prices reported within": a day, 3 days, a week, any age (0)
+# The shop groups (CatalogMixin.SHOP_GROUPS) that count as gear you can watch: not ship parts, paints or rentals
+ITEM_GROUPS = ("weapons", "armor", "clothing", "gadgets", "medical", "food", "other")
 
 
 class WatchMixin:
@@ -49,7 +54,10 @@ class WatchMixin:
         except (TypeError, ValueError):
             age = 72
         system = w.get("system") if w.get("system") in uex.SYSTEMS else ""
-        return {"id": str(w.get("id") or secrets.token_hex(4)), "id_commodity": int(w["id_commodity"]),
+        kind = "item" if w.get("kind") == "item" else "commodity"
+        ids = {"id_item": int(w["id_item"])} if kind == "item" else {"id_commodity": int(w["id_commodity"])}
+        return {"id": str(w.get("id") or secrets.token_hex(4)), "kind": kind, **ids,
+                "group": str(w.get("group") or "")[:20] if kind == "item" else "",
                 "name": str(w.get("name") or "")[:80], "side": side, "low": low, "high": high, "system": system,
                 "max_age_h": age if age in AGE_CHOICES else 72, "on": w.get("on", True) is not False,
                 "created": int(w.get("created") or time.time())}
@@ -69,7 +77,7 @@ class WatchMixin:
         try:
             w = self._watch_clean(w or {})
         except (KeyError, TypeError, ValueError):
-            return {"ok": False, "error": "Pick a commodity first"}
+            return {"ok": False, "error": "Pick a commodity or a piece of gear first"}
         if not w["low"] and not w["high"]:
             return {"ok": False, "error": "Set a low price, a high price, or both"}
         cfg = self._watch_cfg()
@@ -102,6 +110,27 @@ class WatchMixin:
         self._save_settings()
         self._watch_kick()
         return self.watch_list()
+
+    def watch_items(self):
+        """Gear you can set a price alert on: every personal item a live terminal sells or buys, from UEX's
+        item prices. {ok, items: [{id, name, group, buy (cheapest a shop sells it for), sell (best a terminal
+        pays), shops, buyers}], at}. Items with a "sell" are ones you can sell at a terminal."""
+        def run():
+            rows, at = self._watch_item_rows()
+            out = {}
+            for tid, t, r in rows:
+                i = out.setdefault(r["id_item"], {"id": r["id_item"], "name": r.get("item_name") or "", "group": r["_group"],
+                                                   "buy": None, "sell": None, "shops": 0, "buyers": 0})
+                pb, ps = r.get("price_buy") or 0, r.get("price_sell") or 0
+                if pb > 0:
+                    i["shops"] += 1
+                    i["buy"] = pb if i["buy"] is None else min(i["buy"], pb)
+                if ps > 0:
+                    i["buyers"] += 1
+                    i["sell"] = ps if i["sell"] is None else max(i["sell"], ps)
+            items = sorted((i for i in out.values() if i["name"] and (i["buy"] or i["sell"])), key=lambda i: i["name"].lower())
+            return {"ok": True, "items": items, "at": at}
+        return self._uex_call(run)
 
     def watch_check_now(self):
         """Check every watch now (the page's Check now). Alerts as usual."""
@@ -145,6 +174,33 @@ class WatchMixin:
             pass
         return [(r.get("id_terminal"), terms.get(r.get("id_terminal")), r) for r in rows], at
 
+    def _watch_item_rows(self):
+        """[(terminal id, terminal, row)] for every gear price row at a live terminal, newest per item and
+        terminal (UEX can hold an old report next to a newer one). Each row gets "_group", its shop group."""
+        rows, at = self._uex.get("items_prices_all")
+        c = getattr(self, "_watch_item_cache", None)
+        if c and c[0] == at:
+            return c[1], at
+        terms = self._uex.terminals()
+        cats = {c_["id"]: c_ for c_ in self._uex.get("categories")[0]}
+        best = {}
+        for r in rows or []:
+            tid = r.get("id_terminal")
+            t = terms.get(tid)
+            if not t or not uex.is_live(t) or not r.get("id_item"):
+                continue
+            g = self._shop_group(cats.get(r.get("id_category")))
+            if g not in ITEM_GROUPS:
+                continue
+            key = (r["id_item"], tid)
+            prev = best.get(key)
+            if prev and str(prev[2].get("date_modified") or "") >= str(r.get("date_modified") or ""):
+                continue
+            best[key] = (tid, t, dict(r, _group=g))
+        out = list(best.values())
+        self._watch_item_cache = (at, out)
+        return out, at
+
     def _watch_run(self, notify=True):
         lock = self.__dict__.setdefault("_watch_lock", threading.Lock())
         if not lock.acquire(blocking=False):
@@ -157,8 +213,10 @@ class WatchMixin:
     def _watch_run_locked(self, notify):
         cfg = self._watch_cfg()
         watches = [w for w in cfg["items"] if w.get("on", True)]
+        kinds = {w.get("kind") or "commodity" for w in watches}
         try:
-            rows, at = self._watch_prices() if watches else ([], None)
+            rows, at = self._watch_prices() if "commodity" in kinds else ([], None)
+            item_rows, item_at = self._watch_item_rows() if "item" in kinds else ([], None)
             places = self._uex.place_map(self._db.locations) if watches else {}
         except uex.UexError as e:
             self._watch_last = dict(getattr(self, "_watch_last", None) or {}, error=str(e), at=time.time())
@@ -169,8 +227,10 @@ class WatchMixin:
         for w in watches:
             key = "price_buy" if w["side"] == "buy" else "price_sell"
             seen = []
-            for tid, t, r in rows:
-                if r.get("id_commodity") != w["id_commodity"] or not t or not uex.is_live(t):
+            item = (w.get("kind") or "commodity") == "item"
+            for tid, t, r in (item_rows if item else rows):
+                if (r.get("id_item") != w.get("id_item") if item else r.get("id_commodity") != w.get("id_commodity")) \
+                        or not t or not uex.is_live(t):
                     continue
                 price = r.get(key) or 0
                 if price <= 0:
@@ -207,7 +267,7 @@ class WatchMixin:
             if fk not in live_keys:
                 cfg["fired"].pop(fk, None)
                 changed = True
-        self._watch_last = {"at": now, "prices_at": at, "best": best, "hits": hits, "error": None}
+        self._watch_last = {"at": now, "prices_at": at or item_at, "best": best, "hits": hits, "error": None}
         if changed:
             self._save_settings()
         if new and notify:
@@ -226,7 +286,8 @@ class WatchMixin:
             verb = ("sells for" if w["side"] == "buy" else "buys for")
             more = f" (+{len(L) - 1} more)" if len(L) > 1 else ""
             mark = w["low"] if kind == "low" else w["high"]
-            lines.append(f"{w['name']} {verb} {top['price']:,.0f} aUEC at {top['where']}"
+            each = " each" if w.get("kind") == "item" else ""
+            lines.append(f"{w['name']} {verb} {top['price']:,.0f} aUEC{each} at {top['where']}"
                          f" ({'at or below' if kind == 'low' else 'at or above'} your {mark:,.0f}){more}")
         text = "; ".join(lines)
         n = (getattr(self, "_watch_note", None) or {}).get("n", 0) + 1

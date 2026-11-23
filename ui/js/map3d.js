@@ -14,6 +14,16 @@ function resize(){ const r=$("mapwrap").getBoundingClientRect(); W=r.width; H=r.
   renderer.setPixelRatio(DPR); renderer.setSize(W,H,false); camera.aspect=W/H; camera.updateProjectionMatrix();
   ovc.width=Math.round(W*DPR); ovc.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); }
 window.addEventListener("resize",resize);
+// The map's area can change size without the browser window's resize event: Quantum's own title bar appearing
+// after start-up, Windows restoring, snapping or un-maximising the frameless window, a display-scale change.
+// Measured only on "resize", W and H went stale: the picture was stretched to the new size while labels, icons
+// and clicks still used the old one, so a click had to land well below what it was aimed at. Re-measure
+// whenever the area itself changes, and whenever the screen's scale does.
+new ResizeObserver(()=>{ const r=$("mapwrap").getBoundingClientRect(); if(r.width&&r.height&&(Math.abs(r.width-W)>0.5||Math.abs(r.height-H)>0.5)){ resize(); mapBusy(); } }).observe($("mapwrap"));
+(function watchDpr(){ const m=matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`);
+  m.addEventListener("change",()=>{ resize(); mapBusy(); watchDpr(); },{once:true}); })();
+// The mouse in the map's own coordinates (those of W and H), whatever size the overlay is drawn at right now
+function mapXY(e){ const r=ov.getBoundingClientRect(); return [(e.clientX-r.left)*(r.width?W/r.width:1),(e.clientY-r.top)*(r.height?H/r.height:1)]; }
 
 // =================================================================== sky
 // What's behind the map, in the spirit of the in-game starmap: a galaxy backdrop (nebula clouds and the
@@ -1055,12 +1065,12 @@ function stopAnim(){ if(!S.anim) return;
   const d=norm3([camera.position.x,camera.position.y,camera.position.z]);
   S.anim=null; S.focus={kind:"point",pos:[...S.cam.target]}; setLock(null); S.cam.yaw=Math.atan2(d[1],d[0]); S.cam.pitch=Math.asin(d[2]); }
 let downHit=null;
-ov.addEventListener("pointerdown",e=>{ { const r=ov.getBoundingClientRect(); downHit=pick(e.clientX-r.left,e.clientY-r.top); } stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
+ov.addEventListener("pointerdown",e=>{ { const [x,y]=mapXY(e); downHit=pick(x,y); } stopAnim(); if(S.follow) setFollow(false); drag={x:e.clientX,y:e.clientY,pan:e.button===1||e.shiftKey,turn:e.button===2}; if(e.button===1) e.preventDefault(); moved=false; ov.classList.add("dragging");
   try{ ov.setPointerCapture(e.pointerId); }catch(_){} $("help").style.display="none"; });
 const endDrag=()=>{ drag=null; ov.classList.remove("dragging"); };
 window.addEventListener("pointerup",endDrag); window.addEventListener("pointercancel",endDrag);
 window.addEventListener("pointermove",e=>{
-  const r=ov.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+  const [mx,my]=mapXY(e);
   if(drag){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>2) moved=true; drag.x=e.clientX; drag.y=e.clientY;
     if(!surfaceBodyOf(S.focus)) attachToGround();                    // a free point just above a planet: back onto its ground
     const surf=!!surfaceBodyOf(S.focus);
@@ -1147,11 +1157,11 @@ function jumpThrough(name){ const L=S.locMap[name], to=jumpTarget(L); if(!to) re
     if(back){ select({kind:"loc",name:back.name}); if(back.pos) focusLoc(back.name,false); } else select(null);
     toast(`Jumped to ${to}`); }
   else { select({kind:"loc",name}); toast(`${to} isn't charted in Quantum yet`); } }
-ov.addEventListener("click",e=>{ if(moved) return; const r=ov.getBoundingClientRect(); const hit=downHit||pick(e.clientX-r.left,e.clientY-r.top); downHit=null;
+ov.addEventListener("click",e=>{ if(moved) return; const [x,y]=mapXY(e); const hit=downHit||pick(x,y); downHit=null;
   if(e.detail===3 && hit?.kind==="loc" && jumpTarget(S.locMap[hit.name])) return jumpThrough(hit.name);
   if(!hit) return select(null); if(hit.kind==="friend") return fmPickFriend(hit.id); if(hit.kind==="mission"){ const L=hit.mission.o.location; select(L?{kind:"loc",name:L}:{kind:"mission",m:hit.mission}); return; }
   select({kind:hit.kind,name:hit.name}); });
-ov.addEventListener("dblclick",e=>{ const r=ov.getBoundingClientRect(); const hit=pick(e.clientX-r.left,e.clientY-r.top); if(!hit) return;
+ov.addEventListener("dblclick",e=>{ const [x,y]=mapXY(e); const hit=pick(x,y); if(!hit) return;
   if(hit.kind==="body") focusBody(hit.name);
   else if(hit.kind==="friend") fmFlyTo(hit.id);
   else if(hit.kind==="mission"){ const m=hit.mission; if(m.o.marker){ if(!m.o.marker.body) flyTo({kind:"point",pos:m.o.marker.pos},60000);

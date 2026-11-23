@@ -1096,7 +1096,8 @@ function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot")
   const bits=[];
   // The log only says what you last did, not where you are now, so word it as a report.
   if(tv.activity) bits.push(`Last report: ${esc(tv.activity.text.charAt(0).toLowerCase()+tv.activity.text.slice(1))} <span class="muted">(${ago(tv.activity.at)})</span>`);
-  if(tv.vehicle) bits.push(`Ship: <b>${esc(tv.vehicle.name)}</b>`);
+  const tlx=typeof tlStatusExtra==="function"?tlStatusExtra():"";      // the game's own data, when telemetry is on
+  if(tlx) bits.push(tlx); else if(tv.vehicle) bits.push(`Ship: <b>${esc(tv.vehicle.name)}</b>`);
   if(tv.armistice===false) bits.push(`<span style="color:#ffb454">Outside the armistice zone</span>`);
   const ct=contactsNear(); if(ct.length) bits.push(contactsHtml(ct));
   if(bits.length) pt.innerHTML+=`<div class="muted" style="font-size:12px;margin-top:2px;line-height:1.35">${bits.join("<br>")}</div>`;
@@ -1126,3 +1127,18 @@ function renderAcctStatus(){ const box=$("acct-rows"); if(!box) return;
 let toastT; function toast(msg,ms){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),ms||2600); }
 // A longer note that stays up long enough to read (price alerts)
 const toastLong=msg=>toast(msg,Math.min(12000,2600+String(msg||"").length*45));
+// A question in Quantum's own style, in place of the browser's confirm() (which showed "127.0.0.1:42001 says").
+// qConfirm({title, text, ok, danger}) -> Promise<true | false>. Enter confirms, Escape or a click outside cancels.
+function qConfirm({title,text="",ok="OK",cancel="Cancel",danger=false}={}){ return new Promise(res=>{
+  document.getElementById("qc-modal")?._done?.(false);
+  const d=Object.assign(document.createElement("div"),{className:"qc-modal",id:"qc-modal"}), back=document.activeElement;
+  d.innerHTML=`<div class="qc-box ${danger?"danger":""}" role="alertdialog" aria-modal="true" aria-labelledby="qc-t" aria-describedby="qc-x">
+    <div class="qc-ic">${danger?`<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>`:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>`}</div>
+    <div class="qc-bd"><b id="qc-t">${esc(title||"Are you sure?")}</b>${text?`<div id="qc-x">${esc(text)}</div>`:""}
+      <div class="qc-acts"><button class="btn ghost" data-qc="0">${esc(cancel)}</button><button class="btn ${danger?"danger":"primary"}" data-qc="1">${esc(ok)}</button></div></div></div>`;
+  const done=v=>{ if(!d.isConnected) return; d.remove(); document.removeEventListener("keydown",key,true); try{ back?.focus?.(); }catch(_){} res(v); };
+  const key=e=>{ if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); done(false); } else if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); done(true); } };
+  d._done=done;
+  d.addEventListener("click",e=>{ const b=e.target.closest("[data-qc]"); if(b) return done(b.dataset.qc==="1"); if(e.target===d) done(false); });
+  document.addEventListener("keydown",key,true); document.body.appendChild(d);
+  requestAnimationFrame(()=>d.classList.add("show")); d.querySelector(`[data-qc="${danger?0:1}"]`).focus(); }); }

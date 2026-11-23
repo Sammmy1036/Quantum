@@ -67,33 +67,36 @@ function ogApply(r){ if(r.ok&&r.org){ S.og.data=r; ogRender(); S.og.allEvAt=0; o
 // on the right). A dot per org on each day with events; pick a day for its events (today's, or the next few
 // coming up, until you do); click one to open its org's calendar at it.
 const OG_DOT=["#7fe7ff","#f2c14e","#ff7ab6","#57e39b","#c99bff","#ffb454","#4b8dff","#ff8a7a"];
-async function ogMiniLoad(force){ const orgs=S.og.mine?.orgs||[]; if(!orgs.length) return;
+async function ogMiniLoad(force){ const orgs=S.og.mine?.orgs||[];
+  if(typeof calLoad==="function") await calLoad();          // your own entries (calendar.js), shown with the orgs' events
   if(!force&&S.og.allEv&&Date.now()-(S.og.allEvAt||0)<120000) return;
   if(S.og.allEvBusy) return; S.og.allEvBusy=true; S.og.allEvAt=Date.now();
   try{ const got=await Promise.all(orgs.map(o=>ogCall(`org?id=${o.id}`).then(r=>({o,r})).catch(()=>({o,r:null}))));
     const list=[]; got.forEach(({o,r},i)=>{ for(const e of r?.ok?r.events||[]:[]) list.push({...e,org:{id:o.id,name:o.name,tag:o.tag,dot:OG_DOT[i%OG_DOT.length]}}); });
-    S.og.allEv=list.sort((a,b)=>a.starts-b.starts); }
+    S.og.allEv=list; }
   finally{ S.og.allEvBusy=false; }
   const M=$("og-mini"); if(M){ M.innerHTML=ogMiniHtml(); ogMiniWire(); } }
 function ogMiniHtml(){ const now=new Date(), key=x=>x.toDateString();
   const m0=S.og.miniMonth||(S.og.miniMonth=new Date(now.getFullYear(),now.getMonth(),1));
   const first=new Date(m0.getFullYear(),m0.getMonth(),1), start=new Date(first); start.setDate(1-((first.getDay()+6)%7));
   const days=[...Array(42)].map((_,i)=>{ const x=new Date(start); x.setDate(start.getDate()+i); return x; });
-  const evs=S.og.allEv||[], byDay={}; for(const e of evs){ const k=key(new Date(e.starts*1000)); (byDay[k]=byDay[k]||[]).push(e); }
+  const evs=[...(S.og.allEv||[]),...(typeof calAsEvents==="function"?calAsEvents():[])].sort((a,b)=>a.starts-b.starts), byDay={}; for(const e of evs){ const k=key(new Date(e.starts*1000)); (byDay[k]=byDay[k]||[]).push(e); }
   const sel=S.og.miniDay, nowS=Date.now()/1000;
   const list=sel?(byDay[sel]||[]):evs.filter(e=>e.starts+(e.minutes||60)*60>nowS).slice(0,3);
   const t=e=>new Date(e.starts*1000), when=e=>sel?t(e).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):t(e).toLocaleDateString([], {weekday:"short",day:"numeric",month:"short"})+" "+t(e).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
   const orgsN=new Set(evs.map(e=>e.org.id)).size;
   return `<div class="og-mini-h"><b>${m0.toLocaleDateString([], {month:"long",year:"numeric"})}</b><span class="spacer"></span>
-      <button class="iconbtn" data-ogmm="-1" aria-label="Previous month">‹</button><button class="iconbtn" data-ogmm="0" title="This month">•</button><button class="iconbtn" data-ogmm="1" aria-label="Next month">›</button></div>
+      <button class="iconbtn" data-ogmm="-1" aria-label="Previous month">‹</button><button class="iconbtn" data-ogmm="0" title="This month">•</button><button class="iconbtn" data-ogmm="1" aria-label="Next month">›</button><button class="btn small primary og-mini-add" data-ogmadd="1" title="Add something to your calendar">+ Add</button></div>
     <div class="og-mini-cal">${["M","T","W","T","F","S","S"].map(x=>`<i>${x}</i>`).join("")}${days.map(x=>{ const k=key(x), es=byDay[k]||[], dots=[...new Map(es.map(e=>[e.org.id,e.org.dot])).values()].slice(0,3);
         return `<button class="d ${x.getMonth()!==m0.getMonth()?"out":""} ${k===key(now)?"today":""} ${k===sel?"sel":""} ${es.length?"has":""}" data-ogmd="${esc(k)}" title="${es.length?es.map(e=>`${esc(e.title)} · ${esc(e.org.tag||e.org.name)}`).join("&#10;"):""}">${x.getDate()}<span class="dots">${dots.map(c=>`<s style="background:${c}"></s>`).join("")}</span></button>`; }).join("")}</div>
-    <div class="og-mini-l"><div class="og-mini-k">${sel?new Date(sel).toLocaleDateString([], {weekday:"long",day:"numeric",month:"long"}):"Coming up"}${orgsN>1&&!sel?` <span class="muted">· all your orgs</span>`:""}</div>
-      ${S.og.allEv==null?`<div class="muted" style="font-size:12px">Loading…</div>`:list.length?list.map(e=>`<div class="og-mini-e" data-ogmev="${e.id}" data-ogmorg="${e.org.id}" data-ogmat="${e.starts}" title="Open it in ${esc(e.org.name)}'s calendar">
+    <div class="og-mini-l"><div class="og-mini-k">${sel?new Date(sel).toLocaleDateString([], {weekday:"long",day:"numeric",month:"long"}):"Coming up"}${orgsN>1&&!sel?` <span class="muted">· yours and your orgs'</span>`:""}${sel?`<a class="og-mini-addday" data-ogmadd="day">+ Add on this day</a>`:""}</div>
+      ${S.og.allEv==null?`<div class="muted" style="font-size:12px">Loading…</div>`:list.length?list.map(e=>`<div class="og-mini-e ${e.cal?"mine":""}" ${e.cal?`data-ogmcal="${esc(e.cal.id)}" title="${esc([e.cal.place,e.cal.notes].filter(Boolean).join(" · ")||"Click to edit")}"`:`data-ogmev="${e.id}" data-ogmorg="${e.org.id}" data-ogmat="${e.starts}" title="Open it in ${esc(e.org.name)}'s calendar"`}>
           <s style="background:${e.org.dot}"></s><span class="tm">${esc(when(e))}</span><span class="ti">${esc(e.title)}</span><span class="tg">${esc(e.org.tag||"")}</span></div>`).join("")
-        :`<div class="muted" style="font-size:12px">${sel?"Nothing that day.":"Nothing planned in your orgs."}</div>`}</div>`; }
+        :`<div class="muted" style="font-size:12px">${sel?"Nothing that day.":"Nothing planned yet. Add a mining run, a meet-up or a reminder."}</div>`}</div>`; }
 function ogMiniWire(){ const M=$("og-mini"); if(!M) return;
   M.onclick=async e=>{ const mm=e.target.closest("[data-ogmm]"), d=e.target.closest("[data-ogmd]"), ev=e.target.closest("[data-ogmev]");
+    const add=e.target.closest("[data-ogmadd]"); if(add) return calOpen(null,add.dataset.ogmadd==="day"?S.og.miniDay:null);
+    const mc=e.target.closest("[data-ogmcal]"); if(mc){ const c=(S.cal.items||[]).find(x=>x.id===mc.dataset.ogmcal); if(c) calOpen(c); return; }
     if(mm){ const k=+mm.dataset.ogmm, m=S.og.miniMonth, n=new Date(); S.og.miniMonth=k?new Date(m.getFullYear(),m.getMonth()+k,1):new Date(n.getFullYear(),n.getMonth(),1); if(!k) S.og.miniDay=null; }
     else if(d){ S.og.miniDay=S.og.miniDay===d.dataset.ogmd?null:d.dataset.ogmd; }
     else if(ev){ const id=+ev.dataset.ogmev, org=+ev.dataset.ogmorg, at=new Date(+ev.dataset.ogmat*1000);
@@ -115,7 +118,7 @@ function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
     ${m?orgs.length?orgs.map(o=>`<div class="so-row click ${S.og.view==="org"&&S.og.cur===o.id?"on":""}" data-ogopen="${o.id}">${ogLogo(o,1)}<div class="who"><b>${esc(o.name)}${o.verified?` <span style="color:#9fe0b4" title="Verified with RSI">✓</span>`:""}</b><small>[${esc(o.tag)}] · ${esc(o.my_rank||"")}</small></div></div>`).join("")
       :`<div class="so-empty">You're not in an org yet. Create one, or find one to join.</div>`:`<div class="so-empty">Loading…</div>`}
     ${req.length?`<div class="so-h">Waiting to join</div>${req.map(r=>`<div class="so-row click" data-ogopen="${r.org.id}">${ogLogo(r.org,1)}<div class="who"><b>${esc(r.org.name)}</b><small>Request sent ${soAgo(r.at)}</small></div></div>`).join("")}`:""}`;
-  if(orgs.length){ P.insertAdjacentHTML("beforeend",`<div class="og-mini" id="og-mini">${ogMiniHtml()}</div>`); ogMiniWire(); ogMiniLoad(); }
+  if(m){ P.insertAdjacentHTML("beforeend",`<div class="og-mini" id="og-mini">${ogMiniHtml()}</div>`); ogMiniWire(); ogMiniLoad(); }   // your calendar, with or without orgs
   for(const b of P.querySelectorAll("[data-ogopen]")) b.onclick=()=>{ S.og.tab="overview"; ogOpen(+b.dataset.ogopen); };
   for(const b of P.querySelectorAll("[data-ognew]")) b.onclick=()=>{ S.og.view="create"; S.og.form={name:"",tag:"",slogan:"",about:"",recruiting:true}; ogPane(); ogRender(); };
   for(const b of P.querySelectorAll("[data-ogfind]")) b.onclick=()=>{ S.og.view="browse"; ogPane(); ogRender(); ogBrowse(); };

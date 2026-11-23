@@ -26,7 +26,7 @@ function soApply(r){ if(!r) return; const was=JSON.stringify([S.so.signed,S.so.s
   for(const n of r.notes||[]){
     if(n.wish){ toast(`On your wish list: a player is selling ${n.title}${n.price?` for ${money(n.price)}`:""}. Open it from Cart › Wish list`,6000); if(typeof wlLoad==="function") wlLoad(); continue; }
     if(n.request) toast(`${n.name} sent you a friend request`);
-    else if(!(S.tab==="friends"&&S.so.open===n.from)) toast(`${n.name}: ${n.body}`); }
+    else if(!(S.tab==="friends"&&S.so.open===n.from)&&!soMuted(n.from)) toast(`${n.name}: ${n.body}`); }
   if(S.tab==="friends"&&JSON.stringify([S.so.signed,S.so.st])!==was){ renderSocialLists(); if(!S.so.open||!S.so.conv) renderSocialPanel(); else soHead(); } }
 // Opening Social starts with no conversation open: one opens when you click a friend (or Message on someone's
 // card, which asks for it: S.so.want). Before, the last one reopened with its message box taking the cursor.
@@ -45,9 +45,11 @@ function renderSocialPane(){ const P=$("pane-friends"); if(!P) return;
       <button class="btn primary small" onclick="openProfileView('overview')">Sign in</button></div>`; P.dataset.built=""; return; }
   if(S.so.st?.status==="unavailable"){ P.innerHTML=`<div class="note">The Quantum server doesn't have friends and messages yet.</div>`; P.dataset.built=""; return; }
   if(!P.dataset.built){ P.dataset.built="1";
-    P.innerHTML=`<div class="so-me" id="so-me"></div>
-      <input class="search" id="so-q" placeholder="Find people by @username or name" autocomplete="off" spellcheck="false">
+    P.innerHTML=`<div class="so-inbox-h"><h3>Messages</h3><button class="btn small primary" id="so-new" title="Find someone by @username or name to message or add as a friend">New message</button></div>
+      <div class="so-me" id="so-me"></div>
+      <input class="search" id="so-q" placeholder="Find people by @username or name" autocomplete="off" spellcheck="false" ${S.so.q?"":"hidden"}>
       <div id="so-results"></div><div id="so-lists"></div>`;
+    $("so-new").onclick=()=>{ const q=$("so-q"); q.hidden=false; q.focus(); q.select(); };
     let t; $("so-q").oninput=e=>{ S.so.q=e.target.value; clearTimeout(t); t=setTimeout(soSearch,350); };
     $("so-q").value=S.so.q||""; }
   renderSocialLists(); renderSocialResults(); }
@@ -78,21 +80,44 @@ function renderSocialLists(){ const L=$("so-lists"), M=$("so-me"); if(!L||!M) re
   if(me.findable!==false) $("so-hint")?.remove();
   for(const u of document.querySelectorAll("#pane-friends [data-url]")) u.onclick=()=>api().open_url(u.dataset.url);
   $("so-pres").onchange=async e=>{ const r=await api().social_set_status(e.target.value); if(!r.ok) return toast(r.error); S.so.my=e.target.value; toast(e.target.value==="invisible"?"You appear offline to your friends":`You're ${SO_PRES[e.target.value].toLowerCase()}`); };
-  const inc=st.incoming||[], out=st.outgoing||[], fr=st.friends||[], on=fr.filter(f=>f.online);
-  let h="";
-  if(inc.length) h+=`<div class="so-h">Friend requests <b>${inc.length}</b></div>`+inc.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>${p.uex?"UEX: "+esc(p.uex):"Wants to be friends"}</small></div>
-      <div class="acts"><button class="btn small primary" data-soacc="${p.id}">Accept</button><button class="btn small ghost" data-sodec="${p.id}">Decline</button></div></div>`).join("");
-  h+=`<div class="so-h">Friends <b>${on.length?`${on.length} online · `:""}${fr.length}</b></div>`;
-  h+=fr.length?fr.map(f=>`<div class="so-row click ${S.so.open===f.id?"on":""}" data-soopen="${f.id}">${soAvDot(f)}<div class="who"><b>${esc(f.name)}</b><small class="${f.playing?"playing":""}">${esc(soPresence(f))}</small></div>${f.unread?`<span class="so-n">${f.unread}</span>`:""}</div>`).join("")
-    :`<div class="so-empty">No friends yet. Search for people above and send them a request.</div>`;
-  const ch=st.chats||[];
-  if(ch.length) h+=`<div class="so-h">Conversations <b>${ch.length}</b></div>`+ch.map(c=>`<div class="so-row click ${S.so.open===c.id?"on":""}" data-soopen="${c.id}">${soAv(c)}<div class="who"><b>${esc(c.name)}</b><small>${esc(c.why||"Marketplace")}</small></div>${c.unread?`<span class="so-n">${c.unread}</span>`:""}</div>`).join("");
-  if(out.length) h+=`<div class="so-h">Sent requests</div>`+out.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>Waiting · ${soAgo(p.at)}</small></div>
-      <div class="acts"><button class="btn small ghost" data-sorm="${p.id}">Cancel</button></div></div>`).join("");
+  const inc=st.incoming||[], out=st.outgoing||[], fr=st.friends||[], ch=st.chats||[], on=fr.filter(f=>f.online);
+  // The inbox (design C): who's online now along the top, filters, then every conversation newest first with
+  // its last message. Right-click anyone (or their ⋯) for their profile, ships, the Friend Map, an org invite…
+  const flt=S.so.filter||"all", unreadN=fr.concat(ch).filter(x=>x.unread).length;
+  const strip=on.slice().sort((a,b)=>(b.playing?1:0)-(a.playing?1:0)).slice(0,8);
+  let h=strip.length?`<div class="so-strip" aria-label="Online now">${strip.map(f=>`<button class="so-sav" data-soopen="${f.id}" data-soctx="${f.id}" title="${esc(f.name)} · ${esc(soPresence(f))}">${soAvDot(f)}<span>${esc(String(f.name).split(/\s+/)[0])}</span></button>`).join("")}</div>`:"";
+  const chip=(k,t,n)=>`<button class="so-chip ${flt===k?"on":""}" data-soflt="${k}">${t}${n?` <b>${n}</b>`:""}</button>`;
+  h+=`<div class="so-chips">${chip("all","All")}${chip("unread","Unread",unreadN)}${chip("requests","Requests",inc.length)}${chip("friends","Friends",fr.length)}</div>`;
+  const when=t=>{ if(!t) return ""; const d=new Date(t*1000), now=new Date(), days=(now-d)/864e5;
+    return d.toDateString()===now.toDateString()?d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):days<6?d.toLocaleDateString([], {weekday:"short"}):d.toLocaleDateString([], {day:"numeric",month:"short"}); };
+  const thread=(x,chat)=>{ const pv=x.preview?`${x.preview_mine?"You: ":""}${x.preview}`:chat?(x.why||"Marketplace"):soPresence(x);
+    return `<div class="so-row so-th click ${S.so.open===x.id?"on":""} ${x.unread?"unread":""}" data-soopen="${x.id}" data-soctx="${x.id}">${chat?soAv(x):soAvDot(x)}
+      <div class="who"><div class="so-th-top"><b>${esc(x.name)}</b><time>${esc(when(x.last))}</time></div>
+        <div class="so-th-bot"><small class="${!x.preview&&x.playing?"playing":""}">${esc(pv)}</small>${x.unread?`<span class="so-n">${x.unread}</span>`:""}</div></div>
+      <button class="so-more" data-somenu="${x.id}" aria-label="More for ${esc(x.name)}" title="More">⋯</button></div>`; };
+  const reqRow=(p,mine)=>`<div class="so-row" data-soctx="${p.id}">${soAv(p)}<div class="who"><b class="up-name" data-upid="${esc(p.id)}">${esc(p.name)}</b><small>${mine?`Waiting · ${soAgo(p.at)}`:p.uex?"UEX: "+esc(p.uex):"Wants to be friends"}</small></div>
+      <div class="acts">${mine?`<button class="btn small ghost" data-sorm="${p.id}">Cancel</button>`:`<button class="btn small primary" data-soacc="${p.id}">Accept</button><button class="btn small ghost" data-sodec="${p.id}">Decline</button>`}</div></div>`;
+  if(flt==="requests"){
+    h+=inc.length?`<div class="so-h">Asking to be friends <b>${inc.length}</b></div>${inc.map(p=>reqRow(p,false)).join("")}`:"";
+    h+=out.length?`<div class="so-h">You asked <b>${out.length}</b></div>${out.map(p=>reqRow(p,true)).join("")}`:"";
+    if(!inc.length&&!out.length) h+=`<div class="so-empty">No friend requests.</div>`;
+  } else if(flt==="friends"){
+    const L2=fr.slice().sort((a,b)=>(b.online?1:0)-(a.online?1:0)||a.name.localeCompare(b.name));
+    h+=L2.length?L2.map(f=>thread({...f,preview:null},false)).join(""):`<div class="so-empty">No friends yet. Use New message to find people by @username.</div>`;
+  } else {
+    if(flt==="all"&&inc.length) h+=`<button class="so-reqbar" data-soflt="requests"><b>${plural(inc.length,"friend request")}</b><span>Review</span></button>`;
+    let T=[...fr.map(f=>[f,false]),...ch.map(c=>[c,true])];
+    if(flt==="unread") T=T.filter(([x])=>x.unread);
+    T.sort((a,b)=>(b[0].last||0)-(a[0].last||0)||(b[0].online?1:0)-(a[0].online?1:0)||a[0].name.localeCompare(b[0].name));
+    h+=T.length?T.map(([x,c])=>thread(x,c)).join(""):flt==="unread"?`<div class="so-empty">You're all caught up.</div>`
+      :`<div class="so-empty">No conversations yet. Use New message to find people by @username and send them a friend request.</div>`;
+  }
   h+=`<div style="margin:16px 2px 4px"><a class="muted" style="font-size:12px;cursor:pointer;text-decoration:underline" data-soblk="1">${S.so.showBlocked?"Hide blocked people":"Blocked people"}</a></div>`;
   if(S.so.showBlocked) h+=S.so.blocked==null?`<div class="so-empty">Loading…</div>`:S.so.blocked.length?S.so.blocked.map(p=>`<div class="so-row">${soAv(p)}<div class="who"><b>${esc(p.name)}</b></div>
       <div class="acts"><button class="btn small ghost" data-sounb="${p.id}">Unblock</button></div></div>`).join(""):`<div class="so-empty">Nobody blocked.</div>`;
-  L.innerHTML=h; soWire(L); }
+  L.innerHTML=h; soWire(L);
+  for(const b of L.querySelectorAll("[data-soflt]")) b.onclick=()=>{ S.so.filter=b.dataset.soflt; renderSocialLists(); };
+  for(const b of L.querySelectorAll("[data-somenu]")) b.onclick=e=>{ e.stopPropagation(); const r=b.getBoundingClientRect(); soMenu(b.dataset.somenu,r.left,r.bottom+4); }; }
 async function soSearch(){ const q=(S.so.q||"").trim(); if(q.replace(/^@/,"").length<(q.startsWith("@")?2:3)){ S.so.results=null; return renderSocialResults(); }
   const r=await api().social_search(q); if((S.so.q||"").trim()!==q) return;
   S.so.results=r.ok?r.people:{error:r.error}; renderSocialResults(); }
@@ -116,6 +141,78 @@ function soWire(root){
   act("[data-sounb]",async id=>{ const r=await api().social_block(id,false); if(r.ok) S.so.blocked=(S.so.blocked||[]).filter(p=>p.id!==id); return r; },()=>"Unblocked");
   for(const b of root.querySelectorAll("[data-soblk]")) b.onclick=async()=>{ S.so.showBlocked=!S.so.showBlocked; S.so.blocked=null; renderSocialLists();
     if(S.so.showBlocked){ const r=await api().social_blocked(); S.so.blocked=r.ok?r.people:[]; renderSocialLists(); } }; }
+
+// ---- right-click (or ⋯) on anyone in Social: everything you can do with them in one menu
+function soPerson(id){ const st=S.so.st||{}; return soFriend(id)||soChat(id)||(st.incoming||[]).find(p=>p.id===id)||(st.outgoing||[]).find(p=>p.id===id)||(S.so.conv?.with?.id===id?S.so.conv.with:null); }
+function soMuted(id){ try{ return (JSON.parse(localStorage.getItem("q-so-mute")||"[]")).includes(id); }catch(_){ return false; } }
+function soSetMuted(id,on){ try{ const L=new Set(JSON.parse(localStorage.getItem("q-so-mute")||"[]")); on?L.add(id):L.delete(id); localStorage.setItem("q-so-mute",JSON.stringify([...L])); }catch(_){} }
+function soOnMap(id){ try{ return (typeof fmAll==="function"?fmAll():[]).some(x=>x.id===id); }catch(_){ return false; } }
+const SO_IC={msg:'<path d="M4 5h16v10H9l-5 4z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',ship:'<path d="M12 1 14.7 4 14.7 4.6 16.1 4.8 15.9 5.4 14.6 5.6 14.5 6.2 14.7 10.4 15 11.2 17.9 14.2 20.6 13.4 20.8 12.7 21.3 12.7 21.3 16.8 20.8 16.8 20.6 15.6 17.9 19.6 17.9 20.3 15.1 22.8 14.1 22.8 13.9 20.1 12.6 20.1 12.5 21.3 11.5 21.3 11.4 20.1 10.1 20.1 9.9 22.8 8.9 22.8 6.1 20.3 6.1 19.6 3.4 15.6 3.2 16.8 2.7 16.8 2.7 12.7 3.2 12.7 3.4 13.4 6.1 14.2 9 11.2 9.3 10.4 9.5 6.2 9.4 5.6 8.1 5.4 7.9 4.8 9.3 4.6 9.3 4z"/>',
+  map:'<path d="M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',pin:'<path d="M6 3h12v18l-6-4-6 4z"/>',org:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/>',bell:'<path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 003.4 0"/>',
+  add:'<circle cx="10" cy="8" r="4"/><path d="M2 21c1.5-4 4.5-6 8-6 1.5 0 2.9.3 4 1M19 14v6M16 17h6"/>',rm:'<circle cx="10" cy="8" r="4"/><path d="M2 21c1.5-4 4.5-6 8-6 1.5 0 2.9.3 4 1M16 17h6"/>',block:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',ok:'<path d="M5 12l5 5 9-10"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>'};
+function soMenuClose(){ document.getElementById("so-menu")?.remove(); }
+async function soMenu(id,x,y){ soMenuClose(); const p=soPerson(id); if(!p) return; const st=S.so.st||{};
+  const friend=!!soFriend(id), incoming=(st.incoming||[]).some(q=>q.id===id), outgoing=(st.outgoing||[]).some(q=>q.id===id);
+  const canMsg=friend||!!soChat(id), muted=soMuted(id), onMap=friend&&soOnMap(id);
+  const it=(k,ic,t,opts={})=>`<button role="menuitem" class="so-mi ${opts.danger?"danger":""}" data-mi="${k}" ${opts.off?`disabled title="${esc(opts.off)}"`:""}><svg viewBox="0 0 24 24" aria-hidden="true">${SO_IC[ic]}</svg><span>${t}</span>${opts.sub?`<small>${opts.sub}</small>`:""}</button>`;
+  const sep='<div class="so-msep"></div>';
+  let h=`<div class="so-mh">${soAv(p)}<div><b>${esc(p.name)}</b><small>${esc(p.tag||(p.username?"@"+p.username:""))}</small></div></div>`;
+  if(incoming) h+=it("accept","ok","Accept friend request")+it("decline","x","Decline")+sep;
+  if(canMsg) h+=it("msg","msg","Send message");
+  h+=it("profile","user","View profile")+it("ships","ship","See their ships",{sub:"Fleet and loadouts on their profile"});
+  if(friend) h+=it("map","map","Show on Friend Map",onMap?{}:{off:`${p.name} isn't sharing their location right now`})
+    +it("wp","pin","Share a waypoint…")+it("org","org","Invite to your org…");
+  h+=it("copy","copy","Copy username");
+  if(canMsg) h+=it("mute","bell",muted?"Turn notifications back on":"Mute notifications",{sub:muted?"You don't get a pop-up when they message":""});
+  h+=sep;
+  if(!friend&&!incoming&&!outgoing) h+=it("add","add","Add friend");
+  if(outgoing) h+=it("cancel","x","Cancel friend request");
+  if(friend) h+=it("remove","rm","Remove friend",{danger:true});
+  h+=it("block","block","Block",{danger:true});
+  const M=Object.assign(document.createElement("div"),{id:"so-menu",className:"so-menu"}); M.setAttribute("role","menu"); M.innerHTML=h; document.body.appendChild(M);
+  const r=M.getBoundingClientRect(); M.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+"px"; M.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+"px";
+  M.querySelector("button:not([disabled])")?.focus();
+  M.addEventListener("keydown",e=>{ const B=[...M.querySelectorAll("button:not([disabled])")], i=B.indexOf(document.activeElement);
+    if(e.key==="ArrowDown"){ e.preventDefault(); B[(i+1)%B.length]?.focus(); } else if(e.key==="ArrowUp"){ e.preventDefault(); B[(i-1+B.length)%B.length]?.focus(); }
+    else if(e.key==="Escape"){ e.preventDefault(); soMenuClose(); } });
+  M.onclick=async e=>{ const b=e.target.closest("[data-mi]"); if(!b||b.disabled) return; const k=b.dataset.mi, br=b.getBoundingClientRect();
+    if(k==="org") return soOrgMenu(id,p,br);
+    soMenuClose(); await soMenuDo(k,id,p,br); }; }
+async function soMenuDo(k,id,p,br){ const refresh=async()=>{ soApply(await api().social_refresh()); renderSocialLists(); };
+  if(k==="msg") return soOpen(id);
+  if(k==="profile") return upOpen(id);
+  if(k==="ships"){ await upOpen(id); const sec=[...document.querySelectorAll("#up-view .mk-h")].find(x=>/^Fleet/.test(x.textContent)); sec?sec.scrollIntoView({block:"start",behavior:"smooth"}):toast(`${p.name} doesn't show their ships on their profile`); return; }
+  if(k==="map") return fmPickFriend(id);
+  if(k==="wp"){ const a=Object.assign(document.createElement("span"),{style:`position:fixed;left:${br.left}px;top:${br.top}px;width:${br.width}px;height:${br.height}px`}); document.body.appendChild(a); wpSharePick(a,id); setTimeout(()=>a.remove(),0); return; }
+  if(k==="copy"){ const u=p.tag||(p.username?"@"+p.username:p.name); try{ await navigator.clipboard.writeText(u); toast(`Copied ${u}`); }catch(_){ toast(u); } return; }
+  if(k==="mute"){ const m=!soMuted(id); soSetMuted(id,m); return toast(m?`You won't get pop-ups for messages from ${p.name}`:`Pop-ups for ${p.name} are back on`); }
+  const run=async(fn,msg)=>{ const r=await fn(); if(!r?.ok) return toast(r?.error||"That didn't work"); toast(msg); await refresh(); };
+  if(k==="accept") return run(()=>api().social_respond(id,true),"You're friends now");
+  if(k==="decline") return run(()=>api().social_respond(id,false),"Request declined");
+  if(k==="add") return run(()=>api().social_request(id),"Friend request sent");
+  if(k==="cancel") return run(()=>api().social_remove(id),"Request cancelled");
+  if(k==="remove"||k==="block"){ const blk=k==="block";
+    if(!await qConfirm({title:blk?`Block ${p.name}?`:`Remove ${p.name}?`,danger:true,ok:blk?"Block":"Remove",
+      text:blk?"You won't be friends any more, they can't find you or send you requests, and neither of you can message the other."
+        :"You won't be able to message each other until one of you sends a new friend request."})) return;
+    const r=blk?await api().social_block(id,true):await api().social_remove(id); if(!r?.ok) return toast(r?.error||"That didn't work");
+    toast(blk?`${p.name} is blocked`:`${p.name} removed from your friends`);
+    if(S.so.open===id){ S.so.open=null; S.so.conv=null; S.so.ask=null; renderSocialPanel(); } return refresh(); } }
+// Invite to your org: the orgs you're in, a click sends the invite (the server checks you may invite)
+async function soOrgMenu(id,p,br){ const M=$("so-menu"); if(!M) return;
+  if(!S.og.mine) await ogLoadMine().catch(()=>{});
+  const orgs=S.og.mine?.orgs||[];
+  M.innerHTML=`<button class="so-mi" data-back="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>Invite ${esc(p.name)} to…</span></button><div class="so-msep"></div>`
+    +(orgs.length?orgs.map(o=>`<button class="so-mi" data-org="${o.id}">${typeof ogLogo==="function"?ogLogo(o).replace(/class="/,'class="so-ol '):""}<span>${esc(o.name)}</span><small>${esc(o.tag||"")}</small></button>`).join("")
+      :`<div class="so-empty" style="padding:8px 12px">You're not in an org yet.</div>`);
+  M.querySelector("button")?.focus();
+  M.onclick=async e=>{ const b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.back){ const r=M.getBoundingClientRect(); return soMenu(id,r.left,r.top); }
+    soMenuClose(); const r=await ogCall("invite",{org:+b.dataset.org,member:id}); toast(r.ok?(r.org?`${p.name} had asked to join: they're in now`:`Invited ${p.name}`):r.error); }; }
+document.addEventListener("contextmenu",e=>{ const n=e.target.closest?.("[data-soctx]"); if(!n) return; e.preventDefault(); soMenu(n.dataset.soctx,e.clientX,e.clientY); });
+document.addEventListener("mousedown",e=>{ const M=$("so-menu"); if(M&&!M.contains(e.target)) soMenuClose(); },true);
+window.addEventListener("blur",soMenuClose); window.addEventListener("resize",soMenuClose);
 
 // ---- the conversation
 function soOpen(id){ if(S.tab!=="friends"){ S.so.want=id; S.so.conv=null; S.so.ask=null; return document.querySelector('.tab[data-tab="friends"]').click(); }
@@ -150,8 +247,10 @@ function soHead(){ const H=$("so-head"); if(!H) return; const id=S.so.open, w=so
   const k=JSON.stringify([w,S.so.ask,S.so.conv?.friends]); if(H.dataset.k===k) return; H.dataset.k=k;
   const isF=!!soFriend(id);
   H.innerHTML=`${soAvDot(w,true)}<div class="who"><b class="up-name" data-upid="${esc(w.id)}" title="View profile">${esc(w.name)}</b><small class="${w.playing?"playing":""}">${isF?esc(soPresence(w)):esc(soChat(id)?.why||"Not friends")}${w.uex?` · UEX: ${esc(w.uex)}`:""}${w.org?` · ${esc(w.org)}`:""}</small></div>
-    <span class="spacer" style="flex:1"></span>${isF?`<button class="btn small ghost" data-soask="remove">Remove friend</button>`:`<button class="btn small ghost" data-soadd="${id}">Add friend</button>`}<button class="btn small ghost" data-soask="block">Block</button>`;
-  for(const b of H.querySelectorAll("[data-soask]")) b.onclick=()=>{ S.so.ask=b.dataset.soask; soAsk(); };
+    <span class="spacer" style="flex:1"></span>${isF&&soOnMap(id)?`<button class="btn small ghost" data-sohmap="1">Find on map</button>`:""}${isF?"":`<button class="btn small ghost" data-soadd="${id}">Add friend</button>`}<button class="btn small ghost" data-upid="${esc(w.id)}">Profile</button><button class="btn small ghost" data-sohmore="1" aria-label="More options" title="More">⋯</button>`;
+  H.dataset.soctx=id;
+  for(const b of H.querySelectorAll("[data-sohmore]")) b.onclick=e=>{ e.stopPropagation(); const r=b.getBoundingClientRect(); soMenu(id,r.right-240,r.bottom+4); };
+  for(const b of H.querySelectorAll("[data-sohmap]")) b.onclick=()=>fmPickFriend(id);
   for(const b of H.querySelectorAll("[data-soadd]")) b.onclick=async()=>{ b.disabled=true; const r=await api().social_request(b.dataset.soadd); toast(r.ok?(r.relation==="friends"?"You're friends now":"Friend request sent"):r.error); };
   soAsk(); }
 function soAsk(){ const A=$("so-askbox"); if(!A) return; const w=S.so.conv?.with||soFriend(S.so.open); const a=S.so.ask;

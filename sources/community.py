@@ -142,6 +142,12 @@ class Community:
         r = self._acct("/v1/wishlist/sync", {"items": items}, token=token, timeout=20)
         return {"status": "signed_out"} if r.get("status") == "http_401" else r
 
+    def calendar_sync(self, token, items):
+        """Put this PC's calendar together with the account's (server: mycalendar.py).
+        {status: ok, items, updated} | too_big | signed_out | not_found (server without calendars yet) ..."""
+        r = self._acct("/v1/calendar/sync", {"items": items}, token=token, timeout=20)
+        return {"status": "signed_out"} if r.get("status") == "http_401" else r
+
     def wishlist_clear(self, token):
         return self._acct("/v1/wishlist/clear", {}, token=token, timeout=10)
 

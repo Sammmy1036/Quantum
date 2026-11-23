@@ -36,7 +36,7 @@ function shRenderReceipt(r){ const p=r.plan, cur=r.step, mode=r.mode||"fewest", 
     ${r.items.length?`<div class="shr-card">
       ${p?.steps?.length?`<span class="shr-k">Shopping route</span><ol class="shr-stops">${p.steps.map((st,i)=>{ const past=cur==null||i<cur;
           return `<li class="${past&&i!==cur?"past":""}"><span class="n">${past&&i!==cur?"✓":i+1}</span><span class="w">${st.place?`<a data-open="${esc(st.place)}">${esc(st.where)}</a>`:esc(st.where)}</span><span class="v">${money(st.subtotal)}</span></li>`; }).join("")}</ol><div class="shr-rule"></div>`:""}
-      <div class="shr-total"><span class="shr-k">${p?"Total":"About"}</span><b>${Math.round(total).toLocaleString()}<small>aUEC</small></b></div>
+      <div class="shr-total"><span class="shr-k">${p?"Total":"About"}</span><b>${Math.round(total).toLocaleString()}<small>aUEC</small></b></div>${typeof tlBalanceHtml==="function"?tlBalanceHtml(total):""}
       <div class="shr-meta">${plural(r.items.length,"item")} · ${Math.max(0,all-bought).toLocaleString()} still to buy${p?.steps?.length?` · ${plural(p.steps.length,"stop")}`:""}${bought?` · ${bought.toLocaleString()} already bought`:""}${p?.distance?` · ${fmtDist(p.distance)}${p.from_you?" from you":""}`:""}</div>
       <fieldset class="shr-mode"><legend class="shr-k">Plan for</legend>
         ${[["fewest","Fewest stops","Get it all in as few places as possible"],["cheapest","Lowest price","Each item where it's cheapest, more stops"]].map(([v,t,d])=>`<label class="${mode===v?"on":""}"><input type="radio" name="sh-mode" value="${v}" ${mode===v?"checked":""}><span><b>${t}</b><small>${d}</small></span></label>`).join("")}</fieldset>

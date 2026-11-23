@@ -416,14 +416,19 @@ function drSyncHeld(){ if(!S.drClaims) return; S.drHeld=S.drHeld||{};
       sub:{t:"Update prices",p:"Map a station",a:"Planet alignment",ph:"Picture"}[k]||"Job"}; } }
 function drIsOpen(id){ const [k,...r]=id.split(":"), v=r.join(":");
   return k==="t"?String(S.drPriceJob?.id)===v:k==="p"?S.drMapJob?.name===v:k==="a"?S.drAlignJob?.body===v:k==="ph"?S.drPhotoJob?.id===id:false; }
-function drMyJobsHtml(){ drSyncHeld(); const L=Object.values(S.drHeld||{}).sort((a,b)=>a.until-b.until); if(!L.length) return "";
-  if(L.length===1&&drIsOpen(L[0].id)) return "";
-  return `<div class="mk-h" style="margin-top:2px">Your jobs <span class="muted" style="text-transform:none;letter-spacing:0">${L.length} of ${DR_MAX_JOBS} held</span></div>
-    ${L.map(h=>{ const left=Math.max(0,Math.round((h.until-Date.now())/60000)), open=drIsOpen(h.id);
-      return `<div class="dr-job ${open?"here":""}"><div class="n">${h.id.startsWith("a:")?"🪐":h.id.startsWith("ph:")?IC_PIC:h.id.startsWith("p:")?"📍":"⛁"}</div>
-        <div class="age ${left>10?"a0":left>3?"a2":"a3"}" style="font-size:12px">${left} min</div>
-        <div class="info"><b>${esc(h.label)}</b><div class="muted" style="font-size:12.5px;margin-top:2px">${esc(h.sub||"")}${open?" · open below":""}</div></div>
-        <div class="go">${open?"":`<button class="btn small primary" data-myjob="${esc(h.id)}">Work on it</button>`}<button class="btn small ghost" data-myjobdrop="${esc(h.id)}">Let go</button></div></div>`; }).join("")}`; }
+// Your jobs: a tray of DR_MAX_JOBS slots at the top of Jobs, like the contracts you've accepted in game. Each
+// held job shows its kind, how long it's held for (and a bar that runs down), and Work on it / Let go; the
+// rest are free slots. Always shown, so you can see at a glance how many more you can take.
+const DR_KIND={t:["Prices","k-t"],p:["Map a station","k-p"],a:["Alignment","k-a"],ph:["Picture","k-ph"]};
+function drMyJobsHtml(){ drSyncHeld(); const L=Object.values(S.drHeld||{}).sort((a,b)=>a.until-b.until);
+  const slot=h=>{ const left=Math.max(0,Math.round((h.until-Date.now())/60000)), open=drIsOpen(h.id), k=DR_KIND[h.id.split(":")[0]]||["Job","k-t"];
+    const pct=Math.max(0,Math.min(100,Math.round(left/CLAIM_MIN*100)));
+    return `<div class="dr-slot ${open?"open":""}"><div class="row" style="gap:6px;align-items:center"><span class="dr-kind ${k[1]}">${k[0]}</span>${open?`<span class="dr-kind k-here">Open below</span>`:""}<span class="spacer"></span><span class="dr-left ${left>10?"":left>3?"warn":"bad"}">${left} min left</span></div>
+      <b title="${esc(h.label)}">${esc(h.label)}</b><div class="dr-bar"><i style="width:${pct}%"></i></div>
+      <div class="row" style="gap:6px">${open?"":`<button class="btn small primary" data-myjob="${esc(h.id)}">Work on it</button>`}<button class="btn small ghost" data-myjobdrop="${esc(h.id)}">Let go</button></div></div>`; };
+  const free=Math.max(0,DR_MAX_JOBS-L.length);
+  return `<div class="dr-tray"><div class="dr-tray-h"><b>Your jobs</b><span>${L.length} of ${DR_MAX_JOBS} held · each held ${CLAIM_MIN} min</span></div>
+    <div class="dr-slots">${L.map(slot).join("")}${Array.from({length:free},()=>`<div class="dr-slot free">Free slot</div>`).join("")}</div></div>`; }
 async function drMyJobClick(e){ const o=e.target.closest("[data-myjob]"), d=e.target.closest("[data-myjobdrop]"); if(!o&&!d) return false;
   const id=(o||d).dataset.myjob||(o||d).dataset.myjobdrop, h=S.drHeld?.[id], [k,...r]=id.split(":"), v=r.join(":");
   if(d){ drRelease(id); if(drIsOpen(id)){ if(k==="t") S.drPriceJob=null; else if(k==="p") S.drMapJob=null; else if(k==="a") S.drAlignJob=null; else S.drPhotoJob=null; }
@@ -618,12 +623,12 @@ function jobAgeTxt(j){ const k=j.rows-j.never, sk=j.stale-j.never, out=[];
   return out.join(" · "); }
 function drFreshReading(L){ const pl=S.live?.player; return L.placeable&&pl&&!pl.approx&&pl.age<900&&pl.system===L.system&&(L.kind==="surface"?pl.body===L.body:(L.type!=="jump"||!pl.body)); }
 function drMapCard(L){ const reading=drFreshReading;
-  if(L.fix_pending&&!L.placeable) return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a2" title="Reported in the wrong spot">!</div>
+  if(L.fix_pending&&!L.placeable) return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n"><span class="dr-kind k-c">Fix a spot</span></div><div class="age a2" title="Reported in the wrong spot">Wrong spot</div>
       <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Place")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}</div>
         <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${plural(L.fix_pending,"datarunner")} reported it's in the wrong spot on the map. Go there, type /showlocation, open it on the map and use <b>Wrong spot on the map?</b> to send yours. <span style="color:#7fe7ff">The new spot goes live once your reading agrees.</span></div></div>
       <div class="go"><button class="btn small ghost" data-jobroute="${esc(L.name)}" title="Add it to your route">+ Route</button></div></div>`;
-  return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n">📍</div><div class="age a3" title="${L.pos?"Position not confirmed in game yet":"No position for this station yet"}">?</div>
+  return `<div class="dr-job map ${reading(L)?"here":""}"><div class="n"><span class="dr-kind ${L.pos?"k-c":"k-p"}">${L.pos?"Check a position":"Map a station"}</span></div><div class="age a3" title="${L.pos?"Position not confirmed in game yet":"No position for this station yet"}">${L.pos?"Unconfirmed":"New"}</div>
       <div class="info"><b>${esc(L.name)}</b>${reading(L)?` <span class="chip y" style="margin-left:6px">● Fresh /showlocation</span>`:""}${drClaimChip(`p:${L.name}`)}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(TYPES[L.type]?.one||"Station")}${L.body?` on ${esc(L.body)}`:""} · ${esc(L.system)}${L.near?` · near ${esc(L.near)}`:""}</div>
         <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${L.pos?`On the map from ${L.type==="jump"?"game-file":"older"} data, but nobody has confirmed it in game. ${L.type==="jump"?"Stop at the jump point":"Dock there"} and send a /showlocation.`:"Not on the map yet."} Accept the job and Quantum walks you through it. <span style="color:#7fe7ff">Goes live on Quantum once a second datarunner agrees.</span></div></div>
@@ -646,9 +651,9 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
   S.drJobsList=r.jobs;
   const card=(j,i)=>{ const a=j.median!=null?drAge(Date.now()/1000-j.median*86400,true):{t:"never",c:"a3"};
     return `<div class="dr-job ${j.here?"here":""}">
-      <div class="n">${i+1}</div>
+      <div class="n"><span class="dr-kind k-t">Prices</span>${j.here?`<span class="dr-kind k-here">You're here</span>`:""}</div>
       <div class="age ${a.c}" title="Half this terminal's prices are older than this">${a.t}</div>
-      <div class="info"><b>${esc(j.name)}</b>${j.here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`t:${j.id}`)}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
+      <div class="info"><b>${esc(j.name)}</b>${drClaimChip(`t:${j.id}`)}${j.mine?` <span class="chip" style="margin-left:6px">You reported it ${esc(agoTs(j.mine))}</span>`:""}
         <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.where||"")}${j.system?` · ${esc(j.system)}`:""}${j.dist!=null?` · ${fmtDist(j.dist)} away`:""}</div>
         <div style="font-size:12.5px;margin-top:4px;color:var(--ink-2)">${jobAgeTxt(j)}</div></div>
       <div class="go">${j.place&&S.locMap[j.place]?.unplaced?`<button class="btn small ghost" data-mapjob="${esc(j.place)}" title="${esc(j.place)} isn't on the map yet: map it while you're there">Map it too</button>`
@@ -669,12 +674,12 @@ async function renderDrJobs(){ const d=S.dr, P=$("dr-panel");
         ${drJobTabs(kind,unmapped)}
         <select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===S.drJobSys?"selected":""}>${esc(x)}</option>`).join("")}</select>
         <div class="seg-mini"><button data-jobsort="oldest" class="${sort==="oldest"?"on":""}">Oldest data</button><button data-jobsort="nearest" class="${sort==="nearest"?"on":""}">Nearest</button></div></div></div>
-    <div class="dr-list dr-jobs">${drMyJobsHtml()}${drPriceJobHtml()}${drMapJobHtml()}${kind==="all"?drAlignGuide()+drPhotoBanner():""}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div>${mapJobs.map(mapCard).join("")}`+(checkJobs.length?`<div class="mk-h" style="margin-top:10px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div>${checkJobs.map(mapCard).join("")}`:"")
-        :checkJobs.length?`<div class="mk-h" style="margin-top:2px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div>${checkJobs.map(mapCard).join("")}`
+    <div class="dr-list dr-jobs">${drMyJobsHtml()}${drPriceJobHtml()}${drMapJobHtml()}${kind==="all"?drAlignGuide()+drPhotoBanner():""}${kind!=="prices"?(mapJobs.length?`<div class="mk-h" style="margin-top:2px">Map a station <span class="muted" style="text-transform:none;letter-spacing:0">${mapJobs.length} not on the map yet</span></div><div class="dr-board">${mapJobs.map(mapCard).join("")}</div>`+(checkJobs.length?`<div class="mk-h" style="margin-top:10px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div><div class="dr-board">${checkJobs.map(mapCard).join("")}</div>`:"")
+        :checkJobs.length?`<div class="mk-h" style="margin-top:2px">Check a position <span class="muted" style="text-transform:none;letter-spacing:0">${checkJobs.length} Gateway${checkJobs.length===1?"":"s"} and stations nobody has confirmed in game</span></div><div class="dr-board">${checkJobs.map(mapCard).join("")}</div>`
         :kind==="map"?`<div class="dr-empty">Every station${S.drJobSys?` in ${esc(S.drJobSys)}`:""} is on the map.</div>`:""):""}
       ${kind==="all"?`<div id="dr-all-extra"></div>`:""}
       ${kind!=="map"?`${kind==="all"?`<div class="mk-h">Update prices <span class="muted" style="text-transform:none;letter-spacing:0">stalest terminals first</span></div>`:""}
-      ${r.jobs.length?r.jobs.map(card).join(""):`<div class="dr-empty">No commodity terminals here.</div>`}
+      ${r.jobs.length?`<div class="dr-board">${r.jobs.map(card).join("")}</div>`:`<div class="dr-empty">No commodity terminals here.</div>`}
       ${r.reported?`<div class="muted" style="font-size:12px;margin:4px 2px 8px">✓ ${plural(r.reported,"terminal")} you reported in the last day ${r.reported===1?"is":"are"} left out of your list while UEX reviews ${r.reported===1?"it":"them"}.</div>`:""}`:""}${uexCredit(r.at)}
       <div class="muted" style="font-size:12px;margin:6px 2px 10px">Hid a place by mistake? <a data-unhide="1" style="cursor:pointer;text-decoration:underline">Show the places you hid again</a></div></div>`;
   if(kind==="all") drAllExtras(); }
@@ -691,8 +696,8 @@ async function drAllExtras(){ if(!S.drExtra||Date.now()-S.drExtra.at>60000)
     .sort((x,y)=>(x.system!==S.system)-(y.system!==S.system)||rank[x.status]-rank[y.status]||x.body.localeCompare(y.body)):[];
   const mine=drPhotoMine(), ph=(p?.ok?p.jobs:[]).filter(j=>!drPhotoYou(j,mine));
   const more=(k,n)=>n>SHOW?`<button class="btn small ghost" data-jobkind="${k}" style="margin:0 2px 12px">See all ${n}</button>`:"";
-  box.innerHTML=(al.length?`<div class="mk-h">Alignment ${h(`${al.length} to line up for ${gameVerTxt(a)}`)}</div>${al.slice(0,SHOW).map(ajCard).join("")}${more("align",al.length)}`:"")
-    +(ph.length?`<div class="mk-h">Pictures ${h(`${plural(ph.length,"thing")} with no picture yet`)}</div>${ph.slice(0,SHOW).map(j=>pjCard(j,mine)).join("")}${more("photos",ph.length)}`:""); }
+  box.innerHTML=(al.length?`<div class="mk-h">Alignment ${h(`${al.length} to line up for ${gameVerTxt(a)}`)}</div><div class="dr-board">${al.slice(0,SHOW).map(ajCard).join("")}</div>${more("align",al.length)}`:"")
+    +(ph.length?`<div class="mk-h">Pictures ${h(`${plural(ph.length,"thing")} with no picture yet`)}</div><div class="dr-board">${ph.slice(0,SHOW).map(j=>pjCard(j,mine)).join("")}</div>${more("photos",ph.length)}`:""); }
 
 // How many jobs of each kind there are, so a tab with none hides itself (and comes back when there are).
 function drJobCounts(a,p){ const n=S.drJobN=S.drJobN||{};
@@ -730,7 +735,7 @@ function ajCard(j){ const [label,col]=AJ_ST[j.status], mine=S.drAlignJob?.body==
     :j.status==="mine"?`Waiting for another datarunner's alignment to agree with yours`
     :j.status==="waiting"?`${plural(Math.max(1,j.others),"datarunner")} lined it up already: yours confirms it, and you both get the approved report`
     :`Nobody has lined it up for this game version yet`;
-  return `<div class="dr-job ${j.you_here?"here":""}"><div class="n">🪐</div><div class="age ${j.status==="live"?"a0":j.status==="mine"?"a1":j.status==="waiting"?"a2":"a3"}" style="font-size:12px">${j.kind==="moon"?"Moon":"Planet"}</div>
+  return `<div class="dr-job ${j.you_here?"here":""}"><div class="n"><span class="dr-kind k-a">Alignment</span></div><div class="age ${j.status==="live"?"a0":j.status==="mine"?"a1":j.status==="waiting"?"a2":"a3"}" style="font-size:12px">${j.kind==="moon"?"Moon":"Planet"}</div>
     <div class="info"><b>${esc(j.body)}</b>${j.you_here?` <span class="chip y" style="margin-left:6px">● You're here</span>`:""}${drClaimChip(`a:${j.body}`)}
       <span class="badge" style="margin-left:8px;color:${col};border-color:${col}66;background:${col}14">${label}</span>
       <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.system)}${j.place_count?` · land at any of ${j.place_count} known places, like ${j.places.slice(0,3).map(esc).join(", ")}`:""}</div>
@@ -806,9 +811,9 @@ async function renderDrAlignJobs(){ const d=S.dr, P=$("dr-panel");
   P.innerHTML=`${drViews()}${drJobsHead("align",`<select class="field" id="dr-jobs-sys"><option value="">All systems</option>${r.systems.map(x=>`<option ${x===sys?"selected":""}>${esc(x)}</option>`).join("")}</select>`,
       `${gameVerTxt(r,true)} · ${todo?`${todo} ${todo===1?"planet or moon":"planets and moons"} still to line up`:"every planet and moon is lined up"}${chk.length?`, plus ${chk.length} ${chk.length===1?"Gateway or station":"Gateways and stations"} to confirm`:""}. Each update can shift where a planet's surface is turned, so they're lined up again per version.`)}
     <div class="dr-list dr-jobs special align">${ajWhyHtml()}${r.offline?`<div class="warnbox" style="margin:0 2px 10px">The Quantum server couldn't be reached, so what other datarunners have done isn't shown.</div>`:""}${drMyJobsHtml()}${drAlignGuide()}${drMapJobHtml()}
-      ${L.length?`<div class="mk-h" style="margin-top:2px">Planets and moons</div>${L.map(ajCard).join("")}`:doneN?`<div class="dr-empty">Every planet and moon${sys?` in ${esc(sys)}`:""} is lined up for this version.</div>`:""}
+      ${L.length?`<div class="mk-h" style="margin-top:2px">Planets and moons</div><div class="dr-board">${L.map(ajCard).join("")}</div>`:doneN?`<div class="dr-empty">Every planet and moon${sys?` in ${esc(sys)}`:""} is lined up for this version.</div>`:""}
       ${doneN?`<div class="muted" style="font-size:12px;margin:6px 2px 10px"><a data-ajshowdone="1" style="cursor:pointer;text-decoration:underline">${S.ajShowDone?`Hide the ${doneN} already lined up`:`Show the ${doneN} already lined up`}</a></div>`:""}
-      ${chk.length?`<div class="mk-h" style="margin-top:10px">Gateways and stations <span class="muted" style="text-transform:none;letter-spacing:0">${chk.length} on the map that nobody has confirmed in game</span></div>${chk.map(drMapCard).join("")}`:""}
+      ${chk.length?`<div class="mk-h" style="margin-top:10px">Gateways and stations <span class="muted" style="text-transform:none;letter-spacing:0">${chk.length} on the map that nobody has confirmed in game</span></div><div class="dr-board">${chk.map(drMapCard).join("")}</div>`:""}
       ${!L.length&&!chk.length?`<div class="dr-empty">Nothing to line up here.</div>`:""}</div>`; }
 
 // ---- Picture jobs: ships, vehicles, components and commodities with no picture anywhere yet.
@@ -818,7 +823,7 @@ function drPhotoHeld(){ const h=S.drPhotoJob; if(h&&h.until>Date.now()) return h
 function drPhotoMine(){ return new Set((S.drProf?.contrib||[]).filter(c=>c.type==="photo"&&["submitted","in_review"].includes(c.status)).map(c=>`${c.kind}:${String(c.name).toLowerCase()}`)); }
 function drPhotoYou(j,mine){ const key=`${j.kind}:${j.title.toLowerCase()}`; return !!((S.drPhotoSent||{})[key]||mine.has(key)); }
 function pjCard(j,mine){ const id=`ph:${j.kind}:${j.title}`, you=drPhotoYou(j,mine), isMine=drPhotoHeld()?.id===id;
-  return `<div class="dr-job ${isMine?"here":""}"><div class="n">${IC_PIC}</div><div class="age a3" style="font-size:12px">${j.kind==="vehicle"?"Ship":j.kind==="component"?"Part":"Cargo"}</div>
+  return `<div class="dr-job ${isMine?"here":""}"><div class="n"><span class="dr-kind k-ph">Picture</span></div><div class="age a3" style="font-size:12px">${j.kind==="vehicle"?"Ship":j.kind==="component"?"Part":"Cargo"}</div>
     <div class="info"><b>${esc(j.label)}</b>${drClaimChip(id)}${you?` <span class="chip" style="margin-left:6px;color:#f2c14e">You sent one · in review</span>`:""}
       <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(j.group)} · ${esc(PJ_KIND[j.kind])}</div></div>
     <div class="go">${you?"":isMine?`<span class="chip y">Your job</span>`:drClaimOf(id)?`<span class="chip" title="Another datarunner accepted it">Taken</span>`
@@ -847,7 +852,7 @@ async function renderDrPhotoJobs(refresh){ const d=S.dr, P=$("dr-panel");
 function drPhotoList(){ const box=$("dr-ph-cards"); if(!box) return;
   const k=S.drPhotoKind||"", q=(S.drPhotoQ||"").trim().toLowerCase(), mine=drPhotoMine();
   const L=(S.drPhotoJobs||[]).filter(j=>(!k||j.kind===k)&&(!q||`${j.label} ${j.group}`.toLowerCase().includes(q)));
-  box.innerHTML=L.length?L.slice(0,150).map(j=>pjCard(j,mine)).join("")+(L.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">Showing 150 of ${L.length}: search to narrow.</div>`:"")
+  box.innerHTML=L.length?`<div class="dr-board">${L.slice(0,150).map(j=>pjCard(j,mine)).join("")}</div>`+(L.length>150?`<div class="muted" style="font-size:12px;margin:6px 2px">Showing 150 of ${L.length}: search to narrow.</div>`:"")
     :`<div class="dr-empty">${q||k?"Nothing matches.":"Everything has a picture. Thank you, datarunners!"}</div>`; }
 // A picture went out from anywhere in Quantum: that job is done (the server frees its hold).
 document.addEventListener("quantum:photosent",e=>{ const title=pfTitle(e.detail.name);

@@ -100,6 +100,12 @@ NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
 # Places taken out of the game that older map data still lists. Removed from the map on load (yours,
 # a waypoint you saved under the same name, is left alone).
 REMOVED_PLACES = {"port olisar"}      # removed from the game in Alpha 3.20.0 (Sept 2023)
+# Places the game moved to another body, by plain name -> the body they're on now. The community data still
+# lists the old spot under the plain name and calls the real, current one "<name> (old Location)" (it has it
+# the wrong way round): Paradise Cove moved from Lyria to Wala for Jumptown 2.1, and the Wala one is the one
+# with the quantum marker. The current one gets the plain name; the stale copy on the old body goes.
+MOVED_PLACES = {"paradise cove": "Wala"}
+_OLD_TAG = re.compile(r"\s*\((?:old|former|previous)\s+location\)\s*$", re.I)
 STATION_NAMES = {"levski", "grim hex", "grimhex"}   # data calls them landing zones; they're stations
 
 
@@ -140,9 +146,40 @@ def normalize(db) -> bool:
     for loc in db.locations.values():
         if loc.name.split(" (")[0].lower() in STATION_NAMES and loc.category != "station":
             loc.category, changed = "station", True
+    if fix_moved_places(db):
+        changed = True
     if merge_duplicates(db):
         changed = True
     return changed
+
+
+def fix_moved_places(db) -> dict:
+    """MOVED_PLACES: the current spot gets the plain name ("Paradise Cove (old Location)" on Wala becomes
+    "Paradise Cove"), and the data's stale copy on the old body goes. A place of your own under the plain
+    name is left alone. Returns {old name: new name} (also kept in db.merged, so routes follow)."""
+    out = {}
+    for plain_l, body in MOVED_PLACES.items():
+        cur = next((l for l in db.locations.values() if l.source == "db" and l.body == body
+                    and _OLD_TAG.sub("", l.name).lower() == plain_l), None)
+        if cur is None:
+            continue
+        plain = _OLD_TAG.sub("", cur.name)
+        stale = db.locations.get(plain)
+        if stale is cur:
+            continue
+        if stale is not None:
+            if stale.source != "db" or stale.body == body:
+                continue                                  # yours, or already the right one
+            db.locations.pop(plain)
+            out[plain] = plain                            # same name, now the current spot
+        old = cur.name
+        db.locations.pop(old)
+        cur.name = plain
+        db.locations[plain] = cur
+        out[old] = plain
+    if out:
+        db.merged = {**getattr(db, "merged", {}), **{k: v for k, v in out.items() if k != v}}
+    return out
 
 
 def same_place(a, b, within=3000.0) -> bool:
@@ -153,7 +190,8 @@ def same_place(a, b, within=3000.0) -> bool:
 
 
 def merge_duplicates(db) -> dict:
-    """Places listed twice: "Port Tressler" and "Port Tressler (microTech)" a few hundred metres apart.
+    """Places listed twice: "Port Tressler" and "Port Tressler (microTech)" a few hundred metres apart, or
+    "Finn's Folly" and "Finn's Folly (Hydrona Farm)" on the same spot.
     The import gave a place it had already seen its body's name when a second dataset listed it again;
     those are the same place. The plain name is kept, with anything the copy adds (its category, a QT
     marker, a pad size, notes), and the copy goes. Same-named places that really are elsewhere keep
@@ -161,10 +199,15 @@ def merge_duplicates(db) -> dict:
     merged = {}
     for name, loc in list(db.locations.items()):
         m = re.match(r"^(.*) \(([^)]*)\)$", name)
-        if not m or loc.source != "db" or m.group(2) not in (loc.body or loc.system or ""):
+        if not m or loc.source != "db":
             continue
         keep = db.locations.get(m.group(1))
-        if keep is None or keep.source != "db" or not same_place(keep, loc):
+        if keep is None or keep.source != "db":
+            continue
+        # "(Body)" copies within a few km; any other "(…)" copy only on the very same spot: "Finn's Folly
+        # (Hydrona Farm)" sits exactly on "Finn's Folly", but without the QT marker, so a route to it said
+        # "no quantum marker, quantum to Finn's Folly and fly 0 m"
+        if not same_place(keep, loc, 3000.0 if m.group(2) in (loc.body or loc.system or "") else 50.0):
             continue
         if not keep.category and loc.category:
             keep.category = loc.category

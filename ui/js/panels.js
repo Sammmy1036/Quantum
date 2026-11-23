@@ -447,6 +447,7 @@ function renderDetail(){
         <div class="path" style="word-break:break-all;color:var(--dim);font-size:12px;margin-top:4px">${esc(lg.path||"Browse to …\\StarCitizen\\LIVE\\Game.log")}</div>
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
+      ${typeof tlSettingsHtml==="function"?tlSettingsHtml():""}
       ${inSys.length?`<div class="sub">Alignment</div>
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>`:""}
       <div class="sub">Quantum API</div>
@@ -540,6 +541,7 @@ function renderDetail(){
       S.winStyle=await api().set_window_style(b.dataset.winstyle); renderDetail();
       toast(S.winStyle.style===(S.winStyle.active?"quantum":"windows")?"Saved":"Please restart Quantum for the changes to take effect"); };
     const rr=d.querySelector('[data-a="railreset"]'); if(rr) rr.onclick=async()=>{ await railSave(null); railApply(railDefault); renderDetail(); toast("Sidebar back to its default order"); };
+    if(typeof tlSettingsWire==="function") tlSettingsWire(d);
     $("s-clearlog").onchange=async e=>{ await api().set_option("clear_log_on_start", e.target.checked); await poll();
       toast(e.target.checked?"Game.log will be cleared when Quantum starts (unless the game is running)":"Game.log will be left as is"); };
   } else if(sel.kind==="align"){ const st=S.alignStatus; if(!st) return d.classList.remove("show");
@@ -674,7 +676,9 @@ function renderDetail(){
         if(pr.state==="queued"||pr.state==="error"){ toast(`${n}: the Quantum server couldn't take it yet. Quantum sends it again later`); break; } }
       return; }
     if(a==="calibrate"){ const r=await api().calibrate_at(sel.name); if(!r.ok) return toast(r.error); await poll(); toast(`${S.locMap[sel.name].body} calibrated (${r.correction.toFixed(2)}° correction)`); }
-    if(a==="delete"){ if(confirm(`Delete ${sel.name}?`)){ await api().delete_location(sel.name); select(null); await poll(); } }
+    if(a==="delete"){ const n=sel.name, L=S.locMap?.[n];
+      if(!await qConfirm({title:`Delete ${n}?`,text:`This removes the waypoint${L?.body?` on ${L.body}`:""} from your map${S.live?.route?.includes(n)?" and from your route":""}. This can't be undone.`,ok:"Delete",danger:true})) return;
+      await api().delete_location(n); select(null); await poll(); toast(`${n} deleted`); }
     if(a==="mguide"){ const r=await api().guide_objective(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); select({kind:"loc",name:r.name}); showRoute(); toast(`Guiding you to ${r.name}`); }
     if(a==="mroute"){ const r=await api().add_contract_stops(sel.m.c.id,sel.m.o.id); if(!r.ok) return toast(r.error); await poll(); showRoute(); toast("Added to route"); fitRoute(false); } };
 }

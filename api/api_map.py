@@ -78,6 +78,15 @@ class MapMixin:
         Landed/docked there > arrived there by quantum > talking to its traffic control or entering it >
         just took off from it. Unknown places, deaths and quantum jumps under way give nothing."""
         cur, locs = cur or {}, self._db.locations
+        spot = self._log_spot_any(cur, locs)
+        # A guess in another system than the one the log says you're in is a wrong guess (a marker matched to
+        # a same-word place elsewhere): systems only change through a gateway, and the log names those
+        wsys = (self._tracker.where or {}).get("system")
+        if spot[0] and wsys in nav_core.SYSTEMS and locs[spot[0]].system and locs[spot[0]].system != wsys:
+            return None, 0, None
+        return spot
+
+    def _log_spot_any(self, cur, locs):
         if cur.get("dead"):
             return None, 0, None
         if cur.get("landing") and cur.get("place") in locs:
@@ -182,7 +191,8 @@ class MapMixin:
                     "onyx_here": gamelog.onyx_name((self._tracker.where or {}).get("code")) if game_on else None,
                     "arrived": self._arrived_note if game_on else None, "game_off": not game_on,
                     "play": self._play_tick(game_on, t),
-                    "trade_ver": getattr(self, "_trade_changed", 0)}
+                    "trade_ver": getattr(self, "_trade_changed", 0),
+                    "telemetry": self._tel_live() if game_on else None}
             if p:
                 body = self._db.body_near(p, psys)
                 how = getattr(self, "_sys_how", None) or ("log", "", None)
@@ -673,6 +683,9 @@ class MapMixin:
                 out[n] = {"contract": True}
                 continue
             g = self._db.guidance(loc, p, psys, t)
+            a0 = (g.get("approach") or [None])[0]
+            if a0 and min(x for x in (a0.get("straight"), a0.get("ground"), 1e9) if x is not None) < 250:
+                continue                                 # a marker right on it (the same place listed twice)
             out[n] = {"approach": [{k: a.get(k) for k in ("name", "ground", "straight", "heading", "orbit")}
                                    for a in g.get("approach", [])[:2]],
                       "closer": g.get("ground") is not None and bool(g.get("approach")) and g["ground"] < g["approach"][0]["ground"]}

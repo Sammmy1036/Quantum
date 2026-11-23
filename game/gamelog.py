@@ -350,7 +350,12 @@ class Contract:
 # "Out for delivery" isn't guessed from time passing or from leaving the elevator: it starts when you set
 # your in-game route (quantum destination) to the drop-off, or press "Out for delivery" in Quantum.
 GENERIC_TOKENS = {"lawful", "semilawful", "unlawful", "port", "station", "stanton", "pyro", "nyx", "location",
-                  "distributioncentre", "distribution", "centre", "center", "datamanager", "outpost"}
+                  "distributioncentre", "distribution", "centre", "center", "datamanager", "outpost",
+                  # words in the game's generic markers, never part of a place: "NavPoint_Dynamic_926331618843"
+                  # (a dynamic marker in Pyro) scored "point" against "Sky Point" and put you in Nyx
+                  "navpoint", "point", "dynamic", "objectcontainer", "container", "marker", "beacon"}
+# Codes that are a marker the game made on the fly, not a place: never matched to one by their words.
+RE_DYNAMIC_DEST = re.compile(r"(?i)^(?:NavPoint_Dynamic|Dynamic_?NavPoint|NavMarker|ObjectiveMarker)_?\d*")
 
 
 def _compact(s: str) -> str:
@@ -454,6 +459,7 @@ class ContractTracker(threading.Thread):
         self.loading = False       # the game's loading screen is up (from "OpenLoadingScreen" to "Loading screen ... closed")
         self.spawned_at = None     # when you last spawned in the game world (logging in, or respawning after death)
         self.armistice = None      # (inside: bool, at)
+        self.tel_log = None        # this session: did the game start its telemetry server? (telemetry.py)
         self.contacts = []         # ships that streamed in near you: {"id", "code", "name", "threat", "at", "safe"}
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
@@ -1273,6 +1279,8 @@ class ContractTracker(threading.Thread):
             tag = f"{m.group(1)}-{m.group(2)}".lower()
             return next((n for n, l in self.nav.locations.items() if l.source == "db" and tag in n.lower()
                          and l.category != "lpoint" and "station" in n.lower()), None)
+        if RE_DYNAMIC_DEST.match(code or ""):
+            return None
         return self._place_for_words(code, body)
 
     def _place_for_words(self, code: str, body: str | None = None):
@@ -1281,9 +1289,14 @@ class ContractTracker(threading.Thread):
         code = re.sub(r"^ATC_DataManager_Port_", "", code)
         code = re.sub(r"-\d+$", "", code)
         parts = code.split("_")
+        system = None
         if parts and re.fullmatch(r"(?i)(stanton|pyro|nyx)\d*[a-z]?", parts[0]):
             body = body or self._body_by_internal(parts[0])
+            system = re.match(r"(?i)stanton|pyro|nyx", parts[0]).group(0).capitalize()
             parts = parts[1:]
+        # A code that doesn't name its system: only places in the system you're in. Matching across systems
+        # once put a Pyro marker at Sky Point in Nyx and moved the map there.
+        system = system or (self.where or {}).get("system")
         toks = [t.lower() for p in parts for t in re.split(r"(?<=[a-z])(?=[A-Z])|-", p)]
         toks += [p.lower() for p in parts]                     # also whole words: "goldenrod", "s4dc05"
         toks = {t for t in toks if len(t) >= 4 and t not in GENERIC_TOKENS}
@@ -1291,7 +1304,7 @@ class ContractTracker(threading.Thread):
             return None
         scores = []
         for loc in self.nav.locations.values():
-            if loc.source != "db" or (body and loc.body != body):
+            if loc.source != "db" or (body and loc.body != body) or (system and loc.system and loc.system != system):
                 continue
             name = _compact(loc.name)
             sc = sum(len(t) for t in toks if t in name)
@@ -1401,6 +1414,19 @@ class ContractTracker(threading.Thread):
             self.spawned_at = log_time(line) or time.time()
         if "CSystem::Quit" in line or "<SystemQuit>" in line or "[FastShutdown]" in line:
             self.quit_at = time.time()          # the game is shutting down: don't wait for the process to go
+        # The game's own telemetry server (game/telemetry.py): whether this game session started it. Settings uses
+        # it to say which side is the problem when Quantum gets no data.
+        if "Log started on" in line:
+            self.tel_log = {"server": False, "cfg": False, "at": log_time(line) or time.time(), "addr": None, "clients": 0}
+        elif "GameTelemetryService" in line and "registered" in line:
+            self.tel_log = {**(getattr(self, "tel_log", None) or {}), "server": True}
+        elif "Local services server is running on" in line:
+            m = re.search(r"running on\s+([0-9.:\[\]a-fA-F]+)", line)
+            self.tel_log = {**(getattr(self, "tel_log", None) or {}), "server": True, "addr": m.group(1) if m else None}
+        elif "server.game.telemetry.enabled" in line and ("User CFG" in line or "=true" in line.replace(" ", "")):
+            self.tel_log = {**(getattr(self, "tel_log", None) or {}), "cfg": True}
+        elif "Client connected" in line and getattr(self, "tel_log", None):
+            self.tel_log["clients"] = self.tel_log.get("clients", 0) + 1
         if "OpenLoadingScreen] Started" in line:
             self.loading = True
         elif self.loading and line.find("Loading screen for") >= 0 and "closed" in line:
@@ -1533,6 +1559,8 @@ class ContractTracker(threading.Thread):
         d = self.dest_ids.get(dest)
         if d and self.dest_is_specific(dest):
             return None if d.get("ambiguous") else d["place"]
+        if RE_DYNAMIC_DEST.match(dest or ""):
+            return None                                  # a marker made on the fly: no place to name
         direct = self.place_for_code(dest)
         if direct:
             return direct

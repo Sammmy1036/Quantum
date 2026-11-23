@@ -254,6 +254,15 @@ function grSpecPairs(kind,i){ const G=GEAR[kind]; if(!G||!i) return [];
   for(const p of grExtraPairs(kind,i)) if(!out.some(([l])=>l===p[0])) out.push(p);
   if(i.maker&&!out.some(([l])=>l==="Maker")) out.unshift(["Maker",i.maker]);
   return out; }
+const GR_SELL_SVG=`<svg class="gr-sell-ic" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>`;
+// Market › Items › Sell an item, already linked to this piece of gear (its picture, stats, title and category)
+function grSell(kind,id){ const i=(grState(kind).data?.items||[]).find(x=>(x.uuid||x.name)===id); if(!i) return;
+  const t=document.querySelector('.tab[data-tab="pm-items"]'); if(!t) return toast("The marketplace isn't available");
+  t.click(); pmNew(); pmLinkPick(kind,i.uuid||i.name); }
+// "Price alert" beside it when a terminal has a price for it (UEX's item prices): set one in Market › Price alerts
+function grPriceAlertBtn(i){ if(!S.live?.log?.uex_token) return;
+  paItemsLoad().then(()=>{ const box=$("grd-pa"), u=paItemFor(i.name); if(!box||!u||!box.isConnected) return;
+    box.outerHTML=`<button class="btn ghost" data-grpa="${esc(String(u.id))}" title="Get told when a shop sells ${esc(i.name)} cheaply enough${u.sell?", or a terminal pays enough for it":""}">🔔 Price alert</button>`; }); }
 async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.items, g=$("gr-panel");
   if(st.mission) return grMission(kind);
   const back=`<div class="row" style="gap:8px;margin-bottom:14px">${wlBackBtn(kind)}<button class="btn" data-grback="1">← All ${esc(st.view==="sets"&&kind==="armor"?"armor sets":G.title.toLowerCase())}</button></div>`;
@@ -277,13 +286,14 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
   g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">${esc([i.maker,kind==="weapons"?[i.cls,i.kind].filter(Boolean).join(" "):GR_ITEM[kind]?i.kind:`${i.weight?i.weight+" ":""}${i.slot}`].filter(Boolean).join(" · "))}</div></div>${titleLogo(i.maker,false,true)}</div>
       ${statBlock(G.hero(i),[{label:"Sold at",value:i.buy?.length?plural(i.buy.length,"shop"):null}])}
-      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${glKinds.has(kind)?`<button class="btn ghost" data-gladd="${esc(i.uuid||i.name)}">Add to loadout</button>`:""}${wishBtn({kind:GR_CART[kind],name:i.name,uuid:i.uuid,class_name:i.class_name,maker:i.maker,photo:i.image||null})}${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
+      <div class="row" style="gap:8px;margin-top:12px">${i.buy?.length?cartBtn({name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name},"Add to cart"):""}${glKinds.has(kind)?`<button class="btn ghost" data-gladd="${esc(i.uuid||i.name)}">Add to loadout</button>`:""}${wishBtn({kind:GR_CART[kind],name:i.name,uuid:i.uuid,class_name:i.class_name,maker:i.maker,photo:i.image||null})}${PM_GEAR_TABS.includes(kind)?`<button class="btn ghost" data-grsell="${esc(i.uuid||i.name)}" title="List ${esc(i.name)} on the player marketplace: its picture and stats go on the listing">${GR_SELL_SVG}Sell this item</button>`:""}<span id="grd-pa"></span>${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}</div></div></div>
     ${grDesc(i.desc)?`<p class="gr-desc">${esc(grDesc(i.desc))}</p>`:""}
     <div class="vd-grid vd-flat"><div class="vd-sec"><div class="mk-h">Stats</div>${rows+extra||`<div class="muted" style="font-size:13px;padding:6px 0">No numbers on the wiki for this one.</div>`}</div>
       <div class="vd-sec"><div class="mk-h">${i.buy?.length?"Where to buy":"How to get it"}</div>${i.buy?.length?vehSpots(i.buy,"buy")+`<div id="grd-get"></div>`:`<div id="grd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
     <div id="grd-where"></div>
-    <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>`;
-  grObtain(i,kind);
+    <div class="uex-credit">From the Star Citizen Wiki; prices from UEX, reported by players, so check the terminal before you buy.</div>
+    <div id="grd-compare"></div>`;
+  grObtain(i,kind); grPriceAlertBtn(i); if(typeof cmpGear==="function") cmpGear(kind,i);
   // A weapon whose list entry has no attachment slots: ask its own record once, then show them
   if(kind==="weapons"&&!i.ports&&!((i.uuid||i.name) in S.attPorts)) weaponPorts(i).then(p=>{ if(p.length){ i.ports=p; if(S.tab==="weapons"&&st.sel===(i.uuid||i.name)) grDetail(kind); } });
   // An attachment: which weapons take it needs the weapon list (loaded quietly)
@@ -431,6 +441,8 @@ async function glAddMenu(e,kind,i){ if(!S.gl.list) await glLoad().catch(()=>{});
     const c=await glSave(lo,true); if(c) toast(`${i.name} added to ${c.name}`); }; }
 
 $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return; const kind=S.tab; if(!GEAR[kind]) return; const st=grState(kind);
+  const gs=e.target.closest("[data-grsell]"); if(gs) return grSell(kind,gs.dataset.grsell);
+  const gp=e.target.closest("[data-grpa]"); if(gp){ const u=(S.paItems||[]).find(x=>String(x.id)===gp.dataset.grpa); if(u) paNewItem(u); return; }
   const ga=e.target.closest("[data-gladd]"); if(ga){ const it=(st.data?.items||[]).find(x=>(x.uuid||x.name)===ga.dataset.gladd); if(it) glAddMenu(e,kind,it); return; }
   if(e.target.closest("[data-grretry]")) return grLoad(kind);
   const gm=e.target.closest("[data-grmission]"); if(gm){ let x; try{ x=JSON.parse(gm.dataset.grmission); }catch(_){ return; } return grOpenMission(kind,x); }

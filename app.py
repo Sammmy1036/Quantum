@@ -26,7 +26,9 @@ from api import (
     api_friendmap,
     api_cargo,
     api_patchhub,
-    api_wishlist)
+    api_wishlist,
+    api_calendar,
+    api_telemetry)
 from sources import netcache
 from game import gamefiles
 
@@ -36,6 +38,8 @@ from game import gamefiles
 # win): _check_mixins below stops Quantum at start if that ever happens.
 class Api(api_contracts.ContractsMixin,
           api_wishlist.WishlistMixin,
+          api_calendar.CalendarMixin,
+          api_telemetry.TelemetryMixin,
           api_shopping.ShoppingMixin,
           api_fleet.FleetMixin,
           api_catalog.CatalogMixin,
@@ -192,6 +196,7 @@ class Api(api_contracts.ContractsMixin,
         netcache.set_patch_source(self._patch_key)
         self._tracker.player_ref = lambda: (self._player, self._player_sys, self._player_t)
         self._tracker.start()
+        self._tel_start()                     # game telemetry: off unless turned on in Settings (api_telemetry.py)
         self._watcher = ClipboardWatcher(self._on_position)
         self._watcher.start()
         # F9 shows/hides Quantum and F10 types /showlocation, by default (until you change them in Settings). Windows only.
