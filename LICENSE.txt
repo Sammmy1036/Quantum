@@ -37,9 +37,10 @@ https://quantumsc.org/terms:
      community features off ("community_url": "off").
 
   2. Quantum account required. Sending anything to the Server (price reports,
-     pictures, station positions, planet alignments, jobs, messages, listings,
-     org changes) requires a Quantum account with its UEX name linked. One
-     person, one account.
+     pictures, station positions, planet alignments, jobs, session stats,
+     Friend Map locations, wish lists, calendars, messages, listings, org
+     changes) requires a Quantum account with its UEX name linked. One person,
+     one account.
 
   3. No automated or bulk access. Don't call the Server's API from your own
      scripts or apps, copy its data in bulk, or get around its rate limits,
@@ -83,6 +84,10 @@ Quantum includes or loads code from other projects, each under its own license:
     of DENSO WAVE INCORPORATED.
   - Cloudflare Turnstile (quantumsc.org's sign-up and forgotten-password
     pages): a bot check loaded from Cloudflare, under Cloudflare's own terms.
+  - Python packages bundled into Quantum.exe, each under its own license:
+    Python (PSF License), pywebview (BSD 3-Clause), pyperclip (BSD 3-Clause),
+    Pillow (MIT-CMU License), pystray (GNU LGPL v3) and grpcio (Apache
+    License 2.0, used only for Game telemetry).
 
 -------------------------------------------------------------------------------
 Third-party data and trademarks
@@ -99,7 +104,15 @@ ships keeps its own terms:
   - Valalol / Star-Citizen-Navigation and starnav: community navigation data,
     under their own licenses.
   - Roberts Space Industries (robertsspaceindustries.com): to verify an org,
-    the Quantum server reads that org's public RSI page.
+    the Quantum server reads that org's public RSI page. Ship upgrade (CCU)
+    prices and RSI store packs are read from RSI's website as a guest (no RSI
+    account), the way RSI's own Ship Upgrades and store pages ask for them. RSI's data stays RSI's, and
+    prices may change at any time.
+  - Star Citizen's game telemetry: the live data stream the game client serves
+    on the user's own PC. Quantum only reads it. It is not documented by Cloud
+    Imperium Games and may change or stop with any patch.
+  - The Impound (theimpound.com): the CCU page links to a search there when
+    RSI sells no upgrade. It is a separate store, not run by RSI or Quantum.
   - Ship, component, gear and contract data (stats, loadouts, cargo,
     rewards) extracted from the Star Citizen game files, the property of
     Cloud Imperium Games, and downloaded from the Quantum server after each
@@ -107,8 +120,8 @@ ships keeps its own terms:
   - Manufacturer logos, downloaded at run time from the Star Citizen Wiki (and,
     for the Vanduul, the Star Citizen Fandom wiki), the property of Cloud
     Imperium Games, shown to identify each manufacturer.
-  - 3D city layouts, terrain, city lights, planet surfaces and station models
-    (downloaded from the Quantum server as map data) are built from the Star
+  - 3D city layouts, terrain, city lights, planet surfaces, station models and
+    Onyx Facility floor plans (downloaded from the Quantum server as map data) are built from the Star
     Citizen game files, the property of Cloud Imperium Games, and are used
     only to show those places on Quantum's map.
   - Interface icons for component and vehicle types are Star Citizen's own
@@ -119,8 +132,8 @@ ships keeps its own terms:
 Content users share
 
 Prices, station positions, pad sizes, planet alignments, pictures, shared
-routes, messages, marketplace listings, org pages, logos and rank icons, and
-public profiles are made by Quantum's users, and each user is responsible for
+routes, Friend Map locations, messages, marketplace listings, org pages, logos
+and rank icons, and public profiles are made by Quantum's users, and each user is responsible for
 what they share. By uploading a picture or logo, a user confirms they have the
 right to share it and agrees that it may be shown to other Quantum users.
 
@@ -149,10 +162,13 @@ at their own risk.
 Privacy
 
 How Quantum and the Quantum server handle your data (accounts, usernames,
-friends and messages, marketplace, ratings and reviews, orgs, public profiles,
-report screenshots, the build of Quantum you use, emails the server and the
-moderation team send, backups and UEX keys) is described in the privacy policy at
-https://quantumsc.org/privacy.
+friends and messages, Friend Map locations, marketplace, ratings and reviews,
+orgs, public profiles, jobs, session stats and earnings logs, wish lists and
+calendars, report screenshots, the build of Quantum you use, emails the server
+and the moderation team send, backups and UEX keys) is described in the
+privacy policy at https://quantumsc.org/privacy. Game telemetry is read on
+your PC; only the session stats and earnings log worked out from it are sent,
+and only while you're signed in.
 Anyone running their own community server receives the same kinds of data
 and should handle them with the same care.
 
