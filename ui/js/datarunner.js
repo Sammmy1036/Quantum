@@ -41,7 +41,7 @@ async function openDatarunner(id){
   S.drTerms=r.terminals; const cur=r.terminals.find(t=>t.id===r.id_terminal);
   $("dr-term-q").value=cur?`${cur.where} · ${cur.name}`:""; $("dr-term-q").dataset.label=$("dr-term-q").value;
   $("dr-here").textContent=r.you_are_at?(r.terminals.some(t=>t.here)?`You're at ${r.you_are_at} (from the game log).`:`You're at ${r.you_are_at}, which has no commodity terminal on UEX.`)
-    :"Land or dock somewhere and the terminal there is picked for you.";
+    :"Land at a location and the terminal should be automatically detected.";
   drShowVer(r);
   renderDrStats(r.stats); renderDrPanel(); renderDrShots(); drSyncInputs();
   if(!S.drProf||Date.now()-(S.drProfAt||0)>60000) drProfLoad(false).then(p=>{ if(p?.ok&&S.dr) renderDrStats(S.dr.pf.stats); }).catch(()=>{}); }

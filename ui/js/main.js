@@ -61,7 +61,7 @@ async function poll(){
     if(S.srvOk!==undefined&&ok!==S.srvOk){
       if(ok) toast("Quantum server is back online");
       if(S.communityStatus) S.communityStatus={...S.communityStatus,ok,error:live.server.error};
-      if(S.selected?.kind==="settings") renderDetail();
+      if(S.selected?.kind==="settings") keepScroll($("detail"),renderDetail);
       if(ok&&S.tab==="market") openMarket?.(); }
     S.srvOk=ok; }
   if(!S.bkNext||Date.now()>S.bkNext){ S.bkNext=Date.now()+15000;      // a background restore finished?
@@ -91,8 +91,14 @@ async function init(){
   pfPrime(false).catch(()=>{});                                     // your picture and name on the rail
   setInterval(()=>poll().catch(console.error),700); setTimeout(()=>$("help").style.display="none",12000);
   setInterval(()=>{ const a=document.activeElement; if(S.selected?.kind==="align") return;
-  if(S.selected?.kind==="settings"){ if(!S.ccDrag&&!S.tlDrag&&!S.ptrDown&&Date.now()-(S.ptrAt||0)>700&&!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) renderDetail(); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
+  // Settings: not while you're scrolling it (the wheel too), and the scroll boxes inside it (Bar items) keep their place
+  if(S.selected?.kind==="settings"){ if(!S.ccDrag&&!S.tlDrag&&!S.ptrDown&&Date.now()-(S.ptrAt||0)>700&&Date.now()-(S.scrollAt||0)>1500&&!(a&&$("detail").contains(a)&&/^(SELECT|INPUT|TEXTAREA)$/.test(a.tagName))) keepScroll($("detail"),renderDetail); return; } if(S.selected&&!(a&&$("detail").contains(a))) renderDetail(); },2000);
 }
+// Draw something again without losing where its inner scroll boxes were scrolled to (by their ids)
+function keepScroll(root,draw){ const keep=root?[...root.querySelectorAll("[id]")].filter(e=>e.scrollTop>0).map(e=>[e.id,e.scrollTop]):[];
+  draw(); for(const [id,top] of keep){ const e=document.getElementById(id); if(e) e.scrollTop=top; } }
+// Scrolling the side panel (wheel, trackpad or keys) counts as using it, like a click: the timed redraw waits
+$("detail")?.addEventListener("scroll",()=>{ S.scrollAt=Date.now(); },true);
 S.splashUp=true;
 window.addEventListener("pywebviewready",async()=>{ const t0=performance.now(); try{ await init(); } finally {
   setTimeout(()=>{ S.splashUp=false; $("splash").classList.add("hide"); }, Math.max(0,1400-(performance.now()-t0))); } });

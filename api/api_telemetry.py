@@ -24,7 +24,8 @@ class TelemetryMixin:
             return bool(at) and time.time() - at > 60
         self._tel.may_discover = spawned_a_while
         # session stats and the earnings log, from every frame (game/session_stats.py)
-        self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None))
+        self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None),
+                                              ctype_fn=self._contract_type)
         self._tel.on_frame = self._sess.frame
         threading.Thread(target=self._stats_sync_loop, daemon=True, name="stats-sync").start()   # api_jobs.py
         self._tel.start()
@@ -48,6 +49,17 @@ class TelemetryMixin:
             self._settings["telemetry_launcher_at"] = int(time.time())
             self._save_settings()
         return r
+
+    def _contract_type(self, code, name):
+        """A contract's mission data from the game files, for Jobs: {type ("Delivery", "Bounty Hunting"…), giver,
+        reward, reward_max}; None if Quantum doesn't know it."""
+        files = getattr(self, "_files", None)
+        if not files or not getattr(files, "contracts", None):
+            return None
+        _uid, c = files.contracts.find(code, name)
+        if not c:
+            return None
+        return {"type": c.get("type"), "giver": c.get("giver"), "reward": c.get("reward"), "reward_max": c.get("reward_max")}
 
     def _tel_event(self, name, at):
         """Spawn, death, downed, seat changes the moment the game sends them: shown as a note by the page."""

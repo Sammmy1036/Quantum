@@ -2715,7 +2715,7 @@ button.tl-dk-auec:hover b{color:#9fd0ff}
 /* Jobs (jobs.js): the app's own icons (game icons, Components and Missions symbols) */
 .jb-ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;color:#9cc8ff}
 .jb-ic svg{width:22px;height:22px}.jb-ic svg:not(.ofc):not(.gi){fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}
-.jb-ic .jb-img{width:22px;height:22px;object-fit:contain}
+.jb-ic .jb-img{display:block;width:22px;height:22px;background:currentColor;-webkit-mask:center/contain no-repeat;mask:center/contain no-repeat}
 .jb-h2{display:flex;align-items:center;gap:10px}.jb-h2 .jb-ic{width:28px;height:28px}.jb-h2 .jb-ic svg,.jb-h2 .jb-ic .jb-img{width:26px;height:26px}.jb-h2 svg.gi{width:26px;height:26px}
 .jb-side-h{font:600 11px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:4px 2px 8px}
 .jb-roles{display:grid;gap:4px}
@@ -2726,6 +2726,12 @@ button.tl-dk-auec:hover b{color:#9fd0ff}
 .jb-stats>div{display:flex;flex-direction:column;align-items:center;padding:8px 4px;border:1px solid var(--line);border-radius:8px}
 .jb-stats b{font:700 16px Orbitron,var(--display)}.jb-stats span{font-size:10.5px;color:var(--ink-2);text-align:center}
 .jb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+/* Jobs: game telemetry isn't set up yet */
+.jb-tel{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 16px;padding:12px 14px;border:1px solid rgba(77,163,255,.45);border-radius:10px;background:rgba(30,80,150,.16)}
+.jb-tel.warn{border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.08)}
+.jb-tel-t{flex:1;min-width:240px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.5}
+.jb-tel-t b{font-size:13.5px}.jb-tel-t span{color:var(--muted,#9fb0c8)}
+.jb-tel-a{display:flex;gap:8px;flex-wrap:wrap}
 .jb-card{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line-2);border-radius:10px;background:rgba(13,21,40,.6)}
 .jb-card.done{border-color:#2f6b52;background:rgba(87,227,155,.06)}
 .jb-top{display:flex;align-items:center;gap:8px}.jb-kind{font:600 10.5px var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}

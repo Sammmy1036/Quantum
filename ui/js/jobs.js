@@ -10,7 +10,8 @@ S.jb=S.jb||{data:null,busy:false,at:0,view:"all"};
 // The icons the rest of Quantum already uses for this work: the game's own (Components, Missions, place services)
 function jbIc(k){
   const off=n=>typeof offIcon==="function"?offIcon(n):"", gi=n=>typeof gameIcon==="function"?gameIcon(n,"jb-gi"):"";
-  const img=src=>src?`<img class="jb-img" src="${src}" alt="" aria-hidden="true">`:"";
+  // a picture used as a mask, so it takes the section's colour like the rest (as an <img> its shape drew black)
+  const img=src=>src?`<i class="jb-img" style="-webkit-mask-image:url('${src}');mask-image:url('${src}')" aria-hidden="true"></i>`:"";
   const h={hauler:()=>off("hauler"),courier:()=>off("shipCapacity"),bounty:()=>img(typeof MI_KIND_ICON!=="undefined"&&MI_KIND_ICON.bounty),
     mercenary:()=>off("weapons"),salvager:()=>gi("salvageable"),miner:()=>off("miningLasers"),refueler:()=>gi("fuel_tanks"),
     trader:()=>typeof SVC_COMMODITY!=="undefined"?SVC_COMMODITY:""}[k];
@@ -26,7 +27,26 @@ async function jbLoad(sync){ if(S.jb.busy) return; S.jb.busy=true;
   jbCount(); if(S.tab==="jobs") jbRender(); }
 function jbCount(){ const d=S.jb.data, c=$("c-jobs"); if(!c) return; if(!d?.ok){ c.textContent=""; return; }
   const n=jbAll(d).filter(j=>j.done_at).length; c.textContent=n?`${n}/${jbAll(d).length}`:""; }
-function openJobs(){ jbRender(); jbLoad(true); }
+function openJobs(){ jbRender(); jbLoad(true); jbTelLoad(); }
+// ---- Game telemetry isn't working yet: Jobs can't see any earnings without it, so say what's left to do, with the
+// same one-click fixes as Settings › Game telemetry. Gone for good once data has come in once (telemetry_status.seen).
+async function jbTelLoad(){ let t; try{ t=await api().telemetry_status(); }catch(_){ return; }
+  const k=JSON.stringify([t?.on,t?.seen,t?.ready?.configured,t?.ready?.known,t?.game_running]); S.jb.tel=t;
+  if(k!==S.jb.telKey){ S.jb.telKey=k; if(S.tab==="jobs") jbRender(); } }
+function jbTelStep(t){ if(!t?.ok) return null; const rd=t.ready||{};
+  if(!t.on) return {title:"Game telemetry is off",text:"Jobs counts the aUEC you earn from the game's telemetry, so with it off nothing counts.",btn:["on","Turn it on"]};
+  if(!t.seen&&t.windows&&!rd.configured) return {title:"Set up game telemetry to start counting jobs",
+    text:"Jobs counts the aUEC you earn from the game's telemetry, which is off in Star Citizen until it's set up. Quantum can do it for you; it takes effect the next time the RSI Launcher and the game start.",btn:["setup","Set up the game for me"]};
+  if(!t.seen) return {title:"Almost there: restart the RSI Launcher and the game",
+    text:t.game_running?"Telemetry is set up, but this game session started without it. Close Star Citizen, restart the RSI Launcher, start the game from it and spawn in.":"Telemetry is set up. Restart the RSI Launcher, start Star Citizen from it and spawn in: jobs start counting then.",
+    btn:t.windows&&!t.game_running?["launcher","Restart the RSI Launcher for me"]:null};
+  if(rd.known===false) return {title:"Quantum hasn't found Game.log",warn:true,
+    text:"Earnings still count, but without Game.log contracts can't be told apart from sales, so hauling, delivery, bounty and mercenary jobs may not count.",btn:null};
+  return null; }
+function jbTelHtml(){ const x=jbTelStep(S.jb.tel); if(!x) return "";
+  return `<div class="jb-tel ${x.warn?"warn":""}" role="status"><div class="jb-tel-t"><b>${esc(x.title)}</b><span>${esc(x.text)}</span></div>
+    <div class="jb-tel-a">${x.btn?`<button class="btn small primary" data-jbtel="${x.btn[0]}" ${S.jb.telBusy?"disabled":""}>${S.jb.telBusy?"Working…":esc(x.btn[1])}</button>`:""}
+      <button class="btn small ghost" data-jbtel="settings">Settings</button></div></div>`; }
 const jbMoney=j=>["earn","big","bestday"].includes(j.metric);
 const jbVal=(j,n)=>jbMoney(j)?Math.round(n).toLocaleString():String(Math.round(n));
 function jbCard(j,d){ const pct=Math.min(100,Math.round((j.progress||0)/j.target*100));
@@ -43,7 +63,7 @@ function jbRow(r){ const all=[...r.daily,...r.weekly], open=all.filter(j=>!j.don
 function jbRender(){ const P=$("jb-panel"), side=$("jb-side"), d=S.jb.data; if(!P) return;
   if(!d){ P.innerHTML=qLoader("Getting your jobs…"); if(side) side.innerHTML=""; return; }
   if(!d.ok){ const out=d.status==="signed_out";
-    P.innerHTML=`<div class="empty" style="margin-top:60px"><strong>${out?"Sign in for jobs":"Jobs aren't available"}</strong>${esc(d.error||"")}${out?`<div style="margin-top:12px"><button class="btn primary" data-jbacct="1">Sign in</button></div>`:""}</div>`;
+    P.innerHTML=jbTelHtml()+`<div class="empty" style="margin-top:60px"><strong>${out?"Sign in for jobs":"Jobs aren't available"}</strong>${esc(d.error||"")}${out?`<div style="margin-top:12px"><button class="btn primary" data-jbacct="1">Sign in</button></div>`:""}</div>`;
     if(side) side.innerHTML=""; return; }
   const view=d.roles.some(r=>r.id===S.jb.view)?S.jb.view:"all", done=jbAll(d).filter(j=>j.done_at).length;
   if(side) side.innerHTML=`<div class="jb-side-h">Jobs</div><div class="jb-roles">
@@ -54,17 +74,28 @@ function jbRender(){ const P=$("jb-panel"), side=$("jb-side"), d=S.jb.data; if(!
   const head=(icon,title)=>`<div class="mkp-head" style="grid-template-columns:1fr"><div class="hd-main"><div class="hd-title"><div><h2 class="jb-h2">${icon}${esc(title)}</h2>
       <div class="sub">${d.swaps_left} of ${d.swaps_max} swaps left today · new dailies in ${jbLeft(d.daily_next)} · new weeklies in ${jbLeft(d.weekly_next)}${d.measured_at?` · progress from ${agoTs(d.measured_at)}`:""}</div></div>
       <button class="btn small ghost" data-jbsync="1" ${S.jb.busy?"disabled":""}>${S.jb.busy?"Updating…":"Update progress"}</button></div></div></div>`;
-  const foot=`<div class="uex-credit" style="margin-top:18px">Progress counts the aUEC balance changes Quantum sees through the game's telemetry (Settings › Game telemetry), from 08:00 Pacific today or Monday. A contract counts for a role when its name says what it is (hauling, delivery, bounty, patrol…). A sale counts by the ship you sold from: a Prospector, MOLE or ROC is a Miner's, a Vulture or Reclaimer a Salvager's, a Starfarer a Refueler's, anything else a Trader's. Resets at ${esc(d.reset)}.</div>`;
-  if(view==="all"){ P.innerHTML=head(typeof gameIcon==="function"?gameIcon("missions","jb-gi"):"","Jobs")+`<div class="jb-rows">${d.roles.map(jbRow).join("")}</div>`+foot; return; }
+  const foot=`<div class="uex-credit" style="margin-top:18px">Progress counts the aUEC balance changes Quantum sees through the game's telemetry (Settings › Game telemetry), from 08:00 Pacific today or Monday. Each payout counts for one role at most. A contract counts by its kind of work in the game files (hauling, delivery, bounty, patrol…), never by its cargo, so hauling fuel isn't refuelling. A sale counts by the ship you sold from, landed or docked: a Prospector, MOLE or ROC is a Miner's, a Vulture or Reclaimer a Salvager's, a Starfarer a Refueler's (in flight too), anything else a Trader's. Money from a friend or a refund counts for nobody. Resets at ${esc(d.reset)}.</div>`;
+  if(view==="all"){ P.innerHTML=head(typeof gameIcon==="function"?gameIcon("missions","jb-gi"):"","Jobs")+jbTelHtml()+`<div class="jb-rows">${d.roles.map(jbRow).join("")}</div>`+foot; return; }
   const r=d.roles.find(x=>x.id===view);
-  P.innerHTML=head(jbIc(r.id),`${r.name} jobs`)+`<div class="mk-h">Today</div><div class="jb-grid">${r.daily.map(j=>jbCard(j,d)).join("")}</div>
+  P.innerHTML=head(jbIc(r.id),`${r.name} jobs`)+jbTelHtml()+`<div class="mk-h">Today</div><div class="jb-grid">${r.daily.map(j=>jbCard(j,d)).join("")}</div>
     <div class="mk-h" style="margin-top:18px">This week</div><div class="jb-grid">${r.weekly.map(j=>jbCard(j,d)).join("")}</div>`+foot; }
 document.addEventListener("click",async e=>{ if(!e.target.closest("#jb-panel,#jb-side")) return;
   const v=e.target.closest("[data-jbview]"); if(v){ S.jb.view=v.dataset.jbview; return jbRender(); }
   const sw=e.target.closest("[data-jbswap]"); if(sw){ sw.disabled=true; const x=await api().jobs_reroll(sw.dataset.jbswap); if(!x.ok){ sw.disabled=false; return toast(x.error); }
     S.jb.data=x; jbRender(); jbLoad(true); return toast(`New job. ${x.swaps_left} swap${x.swaps_left===1?"":"s"} left today`); }
+  const tb=e.target.closest("[data-jbtel]"); if(tb){ const a=tb.dataset.jbtel;
+    if(a==="settings"){ select({kind:"settings"}); return setTimeout(()=>document.querySelector('[data-a="tlsetup"],[data-a="tlfix"],#s-tl,.tl-items')?.scrollIntoView({block:"center",behavior:"smooth"}),300); }
+    S.jb.telBusy=true; jbRender(); let r;
+    try{ r=a==="on"?await api().telemetry_set(true):a==="setup"?await api().telemetry_setup_game():await api().telemetry_restart_launcher(); }
+    catch(_){ r={ok:false,error:"Couldn't do that"}; }
+    S.jb.telBusy=false;
+    if(r?.ok===false||(a==="setup"&&!r?.ready?.configured)) toast(r?.error||"Setup didn't finish: try it from Settings › Game telemetry");
+    else toast(a==="on"?"Game telemetry on":a==="setup"?"Set up. Now restart the RSI Launcher and the game":"RSI Launcher restarted with the setting. Start Star Citizen from it");
+    if(typeof S.tl==="object") S.tl.cfgAt=0;
+    return jbTelLoad().then(jbRender); }
   if(e.target.closest("[data-jbsync]")){ jbRender(); return jbLoad(true); }
   if(e.target.closest("[data-jbacct]")&&typeof openProfileView==="function") openProfileView("accounts"); });
 // in the background: every 3 minutes while the game sends data (or the tab is open), so a finished job is noticed
+setInterval(()=>{ if(S.tab==="jobs"&&!S.jb.tel?.seen) jbTelLoad(); },15000);
 setInterval(()=>{ const live=S.live?.telemetry?.status==="connected"; if((S.tab==="jobs"||live)&&Date.now()-S.jb.at>170000&&S.jb.data?.ok!==false) jbLoad(true); },20000);
 setTimeout(()=>jbLoad(false),6000);

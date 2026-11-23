@@ -24,7 +24,8 @@ const tlQt=v=>v&&v.q_fuel?tlPct(v.q_fuel):null;
 function tlCfgLoad(force){ const now=Date.now(); if(S.tl.cfgBusy||(!force&&S.tl.cfg&&now-(S.tl.cfgAt||0)<3000)) return;
   S.tl.cfgBusy=true; S.tl.cfgAt=now;
   api().telemetry_status().then(x=>{ S.tl.cfgBusy=false; const k=JSON.stringify(x); if(k===S.tl.cfgKey) return; S.tl.cfgKey=k; S.tl.cfg=x;
-    if(S.selected?.kind==="settings") renderDetail(); }).catch(()=>{ S.tl.cfgBusy=false; }); }
+    // (its fps and age change every few seconds: the redraw keeps the Bar items list where you scrolled it)
+    if(S.selected?.kind==="settings") keepScroll($("detail"),renderDetail); }).catch(()=>{ S.tl.cfgBusy=false; }); }
 // Why there's no data yet, from what Quantum can see: the reader's own state and this game session's Game.log
 // (the game writes a line when it starts its telemetry server). -> {cls: ok|warn|bad|"", text, restart}
 const TL_GRACE=60;   // s after spawning before "it isn't working" is said
@@ -325,7 +326,7 @@ const TL_KIND={v:"You",g:"Ship gauge",s:""};
 function tlItemsHtml(){ const {order,off}=tlItems(), mov=order.filter(id=>id!=="head");
   return `<div class="tl-items"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b>Bar items</b><span class="muted tl-small">Drag to reorder (here or on the bar itself), untick to hide. Ship items show while you're in a ship.</span><span class="spacer"></span><a class="muted tl-small" data-tlit="reset" style="cursor:pointer;text-decoration:underline">Reset</a></div>
     <div class="tl-items-l" id="tl-items-l">
-      <div class="tl-it pinned ${off.head?"off":""}" data-pin="head"><span class="grip" aria-hidden="true" title="Always first">⌖</span><input type="checkbox" data-ithide="head" ${off.head?"":"checked"} aria-label="Show the LIVE label"><span class="nm">LIVE label</span><span class="kd">Always first</span></div>
+      <div class="tl-it pinned ${off.head?"off":""}" data-pin="head"><span class="grip" aria-hidden="true">⌖</span><input type="checkbox" data-ithide="head" ${off.head?"":"checked"} aria-label="Show the LIVE label"><span class="nm">LIVE label</span></div>
       ${mov.map((id,i)=>{ const [,k,name]=TL_ITEM[id];
       return `<div class="tl-it ${off[id]?"off":""}" data-it="${id}"><span class="grip" aria-hidden="true">⋮⋮</span><input type="checkbox" data-ithide="${id}" ${off[id]?"":"checked"} aria-label="Show ${esc(name)}"><span class="nm">${esc(name)}</span><span class="kd">${TL_KIND[k]}</span>
         <button class="iconbtn" data-tlit="up" ${i?"":"disabled"} aria-label="Move ${esc(name)} up">▲</button><button class="iconbtn" data-tlit="down" ${i<mov.length-1?"":"disabled"} aria-label="Move ${esc(name)} down">▼</button></div>`; }).join("")}</div></div>`; }

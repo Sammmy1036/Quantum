@@ -862,15 +862,42 @@ class FleetMixin:
         names = {(x.get("name") or "").lower() for x in have} | {(x.get("uuid") or "").lower() for x in have}
         add = [w for w in self._wiki_parts(*kind) if (not size or str(w.get("size")) == str(size))
                and w["name"].lower() not in names and (w.get("uuid") or "").lower() not in names]
-        from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=8) as ex:
-            recs = list(ex.map(lambda w: self._wikiapi.item(w.get("uuid"), w["name"]), add))
+        recs = self._lookup_all(lambda w: self._wikiapi.item(w.get("uuid"), w["name"]), add)
         return [{"id": w["id"], "uuid": w.get("uuid"), "name": w["name"], "maker": w["maker"], "size": w["size"],
                  "grade": w["grade"], "stats": fleet.item_stats(rec) if rec else {}, "extra": w.get("extra") or [],
                  "price": w["buy"][0]["price"] if w["buy"] else None, "buy": w["buy"][:6], "wiki_only": True}
                 for w, rec in zip(add, recs)]
 
     def fleet_options(self, slot_type, size, uid=None):
+        """fleet_options, but any failure comes back as an error to show (an exception here left the Change
+        list loading forever)."""
+        try:
+            return self._fleet_options(slot_type, size, uid)
+        except Exception as e:
+            import sys, traceback
+            traceback.print_exc(file=sys.stderr)
+            return {"ok": False, "error": f"Couldn't load the components ({type(e).__name__}: {e})"[:300]}
+
+    @staticmethod
+    def _lookup_all(fn, items, budget=20):
+        """fn(item) for each item, 8 at a time; anything not back within budget seconds is None (its
+        numbers are left blank) so one slow wiki page can't hold up the whole list."""
+        from concurrent.futures import ThreadPoolExecutor, wait
+        if not items:
+            return []
+        ex = ThreadPoolExecutor(max_workers=8)
+        futs = [ex.submit(fn, i) for i in items]
+        wait(futs, timeout=budget)
+        ex.shutdown(wait=False, cancel_futures=True)
+        out = []
+        for f in futs:
+            try:
+                out.append(f.result() if f.done() else None)
+            except Exception:
+                out.append(None)
+        return out
+
+    def _fleet_options(self, slot_type, size, uid=None):
         """Components that fit a slot (same kind and size), with where to buy them. From the game files
         when they cover this kind of slot (every part, exact numbers), else UEX's lists."""
         if slot_type == "FlightController":
@@ -907,9 +934,7 @@ class FleetMixin:
             out.sort(key=lambda x: (x["price"] is None, x["price"] or 0, x["name"] or ""))
             out = out[:40]
             # Each option's numbers from the wiki (cached a week), fetched side by side.
-            from concurrent.futures import ThreadPoolExecutor
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                recs = list(ex.map(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out))
+            recs = self._lookup_all(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out)
             for i, rec in zip(out, recs):
                 i["stats"] = fleet.item_stats(rec) if rec else {}
             out += self._wiki_options(slot_type, size, out)          # ones UEX doesn't list (the Helix lasers)
@@ -1013,9 +1038,7 @@ class FleetMixin:
                         "size": g.get("size"), "grade": g.get("grade"), "class": g.get("class"),
                         "stats": dict(g.get("stats") or {}), "price": buy[0]["price"] if buy else None, "buy": buy[:6]})
         if slot_type == "Cooler":                            # cooling rate: from the wiki
-            from concurrent.futures import ThreadPoolExecutor
-            with ThreadPoolExecutor(max_workers=8) as ex:
-                recs = list(ex.map(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out))
+            recs = self._lookup_all(lambda i: self._wikiapi.item(i["uuid"], i["name"]), out)
             for i, rec in zip(out, recs):
                 i["stats"].update({k: v for k, v in (fleet.item_stats(rec) if rec else {}).items() if k not in i["stats"]})
         out.sort(key=lambda x: (x["price"] is None, x["price"] or 0, x["name"] or ""))

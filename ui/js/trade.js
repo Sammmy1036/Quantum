@@ -1419,7 +1419,7 @@ async function renderShip(uid){
         <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.rack_name?` · on ${esc(sl.rack_name)}`:sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.type==="Shield"?shRegen(stats):""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
         ${val?`<div class="val"><b>${ITEM_STAT[k][1](val,stats)}${sl.fitted&&stockVal&&k!=="missiles"?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
         <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
-      ${open?`<div class="opts" id="fl-opts">Loading what fits…</div>`:""}</div>`; };
+      ${open?`<div class="opts" id="fl-opts">Loading components…</div>`:""}</div>`; };
   // The loadout picker, paint and module sit under the picture (they change what it shows); the ship's
   // name, numbers and power stay on the right
   $("fl-panel").innerHTML=`<div class="mkp-head fl-head"><div class="fl-side"><div class="mkp-img">${r.ship.photo?`<img src="${esc(r.ship.photo)}" alt="" referrerpolicy="no-referrer">`:picMissing("vehicle",r.ship.full||"")}</div>
@@ -1495,11 +1495,20 @@ document.addEventListener("change",async e=>{ if(e.target.id!=="fl-liv") return;
   const fs=(S.fleet||[]).find(x=>x.uid===uid); if(fs&&r.photo&&fs.primary_name&&S.flLoad?.loadouts?.active===S.flLoad?.loadouts?.primary) fs.photo=r.photo;   // the fleet card shows the primary loadout's paint
   toast(it?(r.photo&&r.photo!==r.stock_photo?`${it.name} on this loadout`:`${it.name} on this loadout · No photo of selected livery. Displaying stock image.`):"Back to the stock paint");
   S.flLoad=null; renderShip(uid); });
+// If the call fails or takes over a minute, say so with a Try again button instead of loading forever
 async function loadSlotOptions(type,size){
-  const box=$("fl-opts"); if(!box) return; box.innerHTML=`<div class="muted" style="font-size:12px">Loading what fits, with each one's numbers…</div>`;
-  const r=await api().fleet_options(type,size?+size:0,S.flSel); if(!$("fl-opts")) return;
-  if(!r.ok){ $("fl-opts").innerHTML=`<div class="unknown">${esc(r.error)}</div>`; return; }
-  S.flOpts=r; renderSlotOptions(); flScrollToSlot(); }
+  const box=$("fl-opts"); if(!box) return; box.innerHTML=`<div class="muted" style="font-size:12px">Loading components…</div>`;
+  const slot=S.flSlot; let r;
+  try{ r=await Promise.race([api().fleet_options(type,size?+size:0,S.flSel),
+         new Promise(res=>setTimeout(()=>res({ok:false,error:"This is taking too long (UEX or the Star Citizen Wiki may be slow)."}),60000))]); }
+  catch(e){ r={ok:false,error:`Couldn't load the components: ${e?.message||e||"unknown error"}`}; }
+  if(!$("fl-opts")||S.flSlot!==slot) return;
+  if(!r?.ok){ $("fl-opts").innerHTML=`<div class="unknown">${esc(r?.error||"Couldn't load the components")}
+      <button class="btn small ghost" data-flretry data-type="${esc(type)}" data-size="${esc(size||"")}" style="margin-left:8px">Try again</button></div>`; return; }
+  S.flOpts=r;
+  try{ renderSlotOptions(); }
+  catch(e){ console.error(e); $("fl-opts").innerHTML=`<div class="unknown">Couldn't show the components: ${esc(e?.message||String(e))}</div>`; return; }
+  flScrollToSlot(); }
 // Just opened with Change: bring the slot and its table of options into view. The page keeps moving under it
 // for a moment after the click (the ship picture loads and pushes everything down, the options table fills
 // in), so it's placed again each time, for a few seconds, rather than once straight away.
@@ -1578,7 +1587,8 @@ const CMP_STATS=[...CP_STATS.filter(([k])=>k!=="damage_type"&&k!=="coolant_make"
 const LOWER_BETTER=new Set(["jump_fuel","em","ir","qt_spool","qt_cooldown","qt_fuel","regen_delay","down_delay","power_use","power_draw","power_min"]);
 const slotNow=sl=>sl?(sl.fitted?{name:sl.fitted,maker:sl.fitted_maker,grade:sl.fitted_grade,stats:sl.fitted_stats||{},yours:true}
   :{name:sl.stock?.name||"Empty",maker:sl.stock?.maker,grade:sl.stock?.grade,stats:sl.stock?.stats||{},yours:false}):null;
-function cmpDelta(k,a,b){ if(typeof a!=="number"||typeof b!=="number"||a===b) return ""; const d=b-a, good=LOWER_BETTER.has(k)?d<0:d>0, f=(CMP_STATS.find(x=>x[0]===k)||[0,0,n=>Math.round(n*10)/10])[2];
+// (Not called cmpDelta: compare.js has its own, loads later and replaced this one, which broke the Change list)
+function flDelta(k,a,b){ if(typeof a!=="number"||typeof b!=="number"||a===b) return ""; const d=b-a, good=LOWER_BETTER.has(k)?d<0:d>0, f=(CMP_STATS.find(x=>x[0]===k)||[0,0,n=>Math.round(n*10)/10])[2];
   const pct=a?Math.abs(d)/Math.abs(a)*100:null, pctTxt=pct==null?"":Number.isInteger(+pct.toFixed(2))?String(Math.round(pct)):pct.toFixed(2);   // 12.40%, 5%
   return `<span class="cmp-d ${good?"up":"down"}">${d>0?"▲":"▼"} ${esc(String(f(Math.abs(d))))}${pct&&pct<1000?` <small>${pctTxt}%</small>`:""}</span>`; }
 function compareHtml(now,opt,k){
@@ -1595,7 +1605,7 @@ function compareHtml(now,opt,k){
       ${lab==="Option"?`<span>${o.price?money(o.price):"Not in shops"}${o.buy?.[0]?` · ${o.buy[0].place?`<a data-open="${esc(o.buy[0].place)}">${esc(o.buy[0].where)}</a>`:esc(o.buy[0].where)}`:""}</span>`:`<span>${o.yours?"Your swap":"Stock part"}</span>`}</div>`;
   return `<div class="cmp"><div class="cmp-top">${head(now,"In this slot now")}<div class="cmp-vs">vs</div>${head(opt,"Option")}</div>
     <table class="cmp-t"><thead><tr><th>Stat</th><th>Now</th><th>${esc(opt.name)}</th><th>Change</th></tr></thead><tbody>
-    ${keys.map(([x,lab,f])=>`<tr class="${x===k?"key":""}"><td>${esc(lab)}${LOWER_BETTER.has(x)?' <small class="muted">lower is better</small>':""}</td><td>${val(now.stats,x,f)}</td><td>${val(opt.stats,x,f)}</td><td>${cmpDelta(x,now.stats[x],opt.stats[x])}</td></tr>`).join("")
+    ${keys.map(([x,lab,f])=>`<tr class="${x===k?"key":""}"><td>${esc(lab)}${LOWER_BETTER.has(x)?' <small class="muted">lower is better</small>':""}</td><td>${val(now.stats,x,f)}</td><td>${val(opt.stats,x,f)}</td><td>${flDelta(x,now.stats[x],opt.stats[x])}</td></tr>`).join("")
       ||`<tr><td colspan="4" class="muted">No numbers to compare for these parts.</td></tr>`}</tbody></table>
     <div class="row" style="gap:6px;justify-content:flex-end"><button class="btn small ghost" data-flcmpclose="1">Close comparison</button><button class="btn small primary" data-flfit="${esc(opt.name)}" data-uuid="${esc(opt.uuid||"")}">Fit ${esc(opt.name)}</button></div></div>`; }
 function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) return;
@@ -1630,10 +1640,10 @@ function renderSlotOptions(){ const r=S.flOpts, box=$("fl-opts"); if(!r||!box) r
       return `<tr class="${on?"on":""} ${here?"here":""}" data-flcmp="${esc(i.uuid||i.name)}" title="Click to compare with what's in the slot now">
         <td><b>${esc(i.name)}</b>${n===0&&sort==="best"&&(v||byGrade)?' <span class="best-tag">best</span>':""}${here?' <span class="now-tag">in slot</span>':""}<div class="sub">${esc(i.maker)}${i.class?` · ${esc(i.class)}`:""}${i.buy[0]?` · ${i.buy[0].place?`<a data-open="${esc(i.buy[0].place)}">${esc(i.buy[0].where)}</a>`:esc(i.buy[0].where)}`:" · not in shops"}</div></td>
         <td>${i.grade?`<span class="gr-b">${esc(i.grade)}</span>`:"–"}</td>
-        ${k?`<td class="num">${v!=null?`<b>${esc(String(fmt(v,i.stats)))}</b><div class="bar"><i style="width:${Math.max(3,Math.round((+v||0)/top*100))}%"></i></div>`:"–"}</td><td class="num">${v!=null&&cur!=null&&!here?cmpDelta(k,+cur,+v)||'<span class="muted">same</span>':""}</td>`:""}
-        ${sh?`<td class="num">${i.stats.shield_regen!=null?`${Math.round(i.stats.shield_regen).toLocaleString()}/s${now?.stats?.shield_regen!=null&&!here?`<div>${cmpDelta("shield_regen",+now.stats.shield_regen,+i.stats.shield_regen)}</div>`:""}`:"–"}</td>`:""}
-        ${qd?`<td class="num">${i.stats.qt_spool!=null?`${nf(i.stats.qt_spool)} s${now?.stats?.qt_spool!=null&&!here?`<div>${cmpDelta("qt_spool",+now.stats.qt_spool,+i.stats.qt_spool)}</div>`:""}`:"–"}</td>
-          <td class="num">${i.stats.qt_cooldown!=null?`${nf(i.stats.qt_cooldown)} s${now?.stats?.qt_cooldown!=null&&!here?`<div>${cmpDelta("qt_cooldown",+now.stats.qt_cooldown,+i.stats.qt_cooldown)}</div>`:""}`:"–"}</td>`:""}
+        ${k?`<td class="num">${v!=null?`<b>${esc(String(fmt(v,i.stats)))}</b><div class="bar"><i style="width:${Math.max(3,Math.round((+v||0)/top*100))}%"></i></div>`:"–"}</td><td class="num">${v!=null&&cur!=null&&!here?flDelta(k,+cur,+v)||'<span class="muted">same</span>':""}</td>`:""}
+        ${sh?`<td class="num">${i.stats.shield_regen!=null?`${Math.round(i.stats.shield_regen).toLocaleString()}/s${now?.stats?.shield_regen!=null&&!here?`<div>${flDelta("shield_regen",+now.stats.shield_regen,+i.stats.shield_regen)}</div>`:""}`:"–"}</td>`:""}
+        ${qd?`<td class="num">${i.stats.qt_spool!=null?`${nf(i.stats.qt_spool)} s${now?.stats?.qt_spool!=null&&!here?`<div>${flDelta("qt_spool",+now.stats.qt_spool,+i.stats.qt_spool)}</div>`:""}`:"–"}</td>
+          <td class="num">${i.stats.qt_cooldown!=null?`${nf(i.stats.qt_cooldown)} s${now?.stats?.qt_cooldown!=null&&!here?`<div>${flDelta("qt_cooldown",+now.stats.qt_cooldown,+i.stats.qt_cooldown)}</div>`:""}`:"–"}</td>`:""}
         <td class="num">${i.stats.em!=null?fmtBig(i.stats.em):"–"}</td>
         <td class="num">${i.price?money(i.price):'<span class="muted">–</span>'}</td>
         <td class="act">${i.buy?.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null}):""}<button class="btn small ghost" data-flcmp="${esc(i.uuid||i.name)}">Compare</button>${here?"":`<button class="btn small primary" data-flfit="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}">Fit</button>`}${rackN>1&&rackN<shipN?`<button class="btn small ghost" data-flfill="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to all ${rackN} slots on ${esc(sl.rack_name||"this rack")}">This rack (${rackN})</button>`:""}${shipN>1?`<button class="btn small primary" data-flfillall="${esc(i.name)}" data-uuid="${esc(i.uuid||"")}" title="Fit this missile to every size ${esc(String(sl.size??""))} missile slot on the ship: all ${shipN}, on every rack">All ${shipN} slots</button>`:""}</td></tr>`; }).join("")}
@@ -1677,6 +1687,7 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const rr=e.target.closest("[data-flrecrole]"); if(rr){ return recLoad(S.flSel,rr.dataset.flrecrole); }
   if(e.target.closest("[data-flrecapply]")){ const R=S.flRec; const x=await api().fleet_recommend(S.flSel,R.role,true); if(!x.ok) return toast(x.error);
     toast(`Saved as "${x.name}" and showing it`); S.flRec=null; S.flLoad=null; return renderShip(S.flSel); }
+  const rt=e.target.closest("[data-flretry]"); if(rt) return loadSlotOptions(rt.dataset.type,rt.dataset.size);
   const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
   const lo=e.target.closest("[data-lo]"); if(lo) return loadoutAct(lo);
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;

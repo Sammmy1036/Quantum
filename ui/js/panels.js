@@ -310,7 +310,9 @@ function stockWire(P){
 // Clinic, Vehicle Services…) open the same kind of window as Commodities, with what the shops there sell
 // (UEX's item prices: app.uex_place_shop), on the group that tile is about. The other groups are a click away.
 // A service's tile -> the groups of things it's about (the first one the place has opens)
-const SVC_SHOP=[[/rent|rental/i,["rentals"]],[/(buy|purchase|sell)\w* (ships?|vehicles?)|vehicle (sales|dealer)|ship (sales|dealer|showroom)|showroom/i,["vehicles"]],[/ship component/i,["components"]],[/ship weapon|vehicle weapon/i,["shipweapons"]],[/armou?r/i,["armor"]],[/cloth|apparel|fashion/i,["clothing"]],
+// Ship components and ship weapons come before the vehicle dealers: "Buy Ship Components" and "Buy Ship Weapons" start
+// with "Buy Ship" too, and were taken for dealers (their tiles lit up with Buy Vehicles, and opened the vehicles)
+const SVC_SHOP=[[/rent|rental/i,["rentals"]],[/ship component/i,["components"]],[/ship weapon|vehicle weapon/i,["shipweapons"]],[/(buy|purchase|sell)\w* (ships?|vehicles?)\b(?! *(components?|weapons?|items?|parts?))|vehicle (sales|dealer)|ship (sales|dealer|showroom)|showroom/i,["vehicles"]],[/armou?r/i,["armor"]],[/cloth|apparel|fashion/i,["clothing"]],
   [/weapon|gun ?shop|armory/i,["weapons"]],[/food|restaurant|bar\b|drink|cafe|diner/i,["food"]],[/clinic|hospital|medical|pharmacy/i,["medical"]],
   [/gadget|tool|mining equipment/i,["gadgets"]]];
 // The wiki's one "Buy Ship Items and Weapons" is shown as two tiles, ship weapons and ship components (only the
@@ -432,7 +434,7 @@ function renderDetail(){
     const keys=["","F5","F6","F7","F8","F9","F10","F11","F12"];
     const when=a.last_sent?new Date(a.last_sent*1000).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"}):"never";
     const lg=S.live?.log||{}, cl=lg.cleared;
-    const inSys=S.bodies.filter(b=>b.system===S.system&&b.alignable), done=inSys.filter(b=>b.calibrated).length;
+    const inSys=S.bodies.filter(b=>b.system===S.system&&b.alignable), done=inSys.filter(b=>b.aligned_now??b.calibrated).length;
     const keyOpts=(cur,other)=>keys.map(k=>`<option value="${k}" ${k===cur?"selected":""} ${k&&k===other?"disabled":""}>${k||"Off"}${k&&k===other?" (used)":""}</option>`).join("");
     d.innerHTML=`<button class="close" aria-label="Close">×</button><h2>Settings</h2>
       <div class="set-ver"><div class="v"><b title="${S.qBuild?`Build ${esc(S.qBuild)}`:""}">Quantum ${esc(S.qVersion||"")}</b><span class="muted">${esc(S.updNote||"")}</span></div>
@@ -453,7 +455,7 @@ function renderDetail(){
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
       ${typeof tlSettingsHtml==="function"?tlSettingsHtml():""}
       ${inSys.length?`<div class="sub">Alignment</div>
-      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>`:""}
+      <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}${done<inSys.length&&inSys.some(b=>b.calibrated&&b.aligned_now===false)?` <span class="muted">· the rest are from before the last game update</span>`:""}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>`:""}
       <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
         ${(()=>{ if(S.communityStatus&&S.live?.server&&S.live.server.ok!==S.communityStatus.ok) S.communityStatus={...S.communityStatus,ok:!!S.live.server.ok,error:S.live.server.error};
@@ -560,7 +562,8 @@ function renderDetail(){
     const rows=st.bodies.filter(b=>b.system===S.system).map(b=>{
       let mark="no", text="Community values";
       const q={hangar:"from a hangar, within a few km",station:"from the station, within ~1 km",place:"exact",estimate:"estimated, will be replaced by your first reading",community:"agreed by Quantum datarunners for this game version"}[b.quality]||"older calibration, accuracy unknown";
-      if(b.calibrated){ mark=b.quality?"ok":"warn"; text=`Aligned at ${esc(b.place||"a known place")} (${q})${b.at?" · "+day(b.at):""}`;
+      if(b.calibrated&&b.aligned_now===false){ mark="warn"; text=`Aligned before the last game update${b.at?" ("+day(b.at)+")":""}: line it up again for this version`; }
+      else if(b.calibrated){ mark=b.quality?"ok":"warn"; text=`Aligned at ${esc(b.place||"a known place")} (${q})${b.at?" · "+day(b.at):""}`;
         if(b.checks){ const drift=b.worst_check; mark=drift<0.2?"ok":"warn";
           text+=` · ${b.checks} check${b.checks>1?"s":""} over ${b.sessions} session${b.sessions>1?"s":""}, ${drift<0.2?"stable":"drift up to "+drift.toFixed(2)+"°"}`; } }
       return `<div class="a"><span class="${mark}">${mark==="ok"?"✓":mark==="warn"?"!":"○"}</span><div><b>${esc(b.name)}</b> <span class="s">${b.kind}</span><div class="s">${text}</div></div>

@@ -5,9 +5,17 @@ tel_log["at"]) or after 15 minutes with no frames. Kept per session: time in gam
 flown (speed x time while not landed), top speed, hydrogen used, deaths and downs, and every change to your
 aUEC balance.
 
-Balance changes also go to earnings.json (the last 2000), so the earnings log spans sessions. A rise just
-after a contract the game says is complete is credited to that contract; anything else is a plain
+Balance changes also go to earnings.json (the last 2000), so the earnings log spans sessions. A rise from a
+minute before to ten minutes after a contract the game says is complete is credited to that contract (if Game.log
+says so a little after the money arrives, the line is put right then: see _recheck). Anything else is a plain
 "Balance went up / down" line (shops, fines, transfers, refunds all look the same from here).
+
+What Jobs needs to tell these apart is written with each rise (the server's jobs.py role_of decides):
+  a contract payout: the contract's internal code, and from Quantum's mission data (the game files) its type and
+    employer (code, ctype, giver). The mission data's payout range also picks which contract a rise is: one far
+    bigger than a contract ever pays isn't its payout (a sale made just after handing it in, say)
+  any other rise: the ship you were in (ship), and whether you were flying, landed or on foot then (pos); a rise
+    that gives back exactly what you spent in the last 15 minutes is marked as a refund (src)
 """
 import json
 import threading
@@ -19,7 +27,10 @@ MAX_DT = 2.0                    # s: longer gaps between frames aren't counted a
 KEEP = 2000                     # earnings.json lines kept
 HISTORY = 60                    # finished sessions kept (time in game, earnings, distance…)
 SAVE_EVERY = 30                 # s: the running session is written down this often, so a restart doesn't lose it
-CONTRACT_WINDOW = (-240, 60)    # s around a contract's completion that a balance rise is credited to it
+CONTRACT_WINDOW = (-600, 60)    # s around a contract's completion that a balance rise is credited to it
+RECHECK_S = 120                 # s a plain rise waits for Game.log to say a contract completed (then it's that contract's)
+PAY_OVER, PAY_SLACK = 3, 10_000   # a rise over 3 × a contract's top payout (+10k) isn't that contract's payout
+REFUND_S = 15 * 60              # s: a rise that gives back exactly what you spent this long before is a refund
 
 
 def _session():
@@ -29,9 +40,12 @@ def _session():
 
 
 class SessionStats:
-    def __init__(self, path, tracker_fn=None):
+    def __init__(self, path, tracker_fn=None, ctype_fn=None):
         self.path = Path(path)
         self.tracker_fn = tracker_fn            # fn() -> the Game.log tracker (contracts, tel_log), or None
+        self.ctype_fn = ctype_fn                # fn(code, name) -> {type, giver, reward, reward_max} from the mission data, or None
+        self._info = {}                         # contract id -> that, looked up once
+        self._pos = None                        # flying / landed / foot, from the last frame
         self.lock = threading.Lock()
         self.s = _session()
         self._prev = None                       # last frame's {t, speed, landed, h2, vehicle}
@@ -70,6 +84,7 @@ class SessionStats:
             s["last"] = now
             s["in_game_s"] += dt
             v, a = d.get("vehicle"), d.get("actor") or {}
+            self._pos = ("flying" if not v.get("landed") and v.get("flight_data") is not False else "landed") if v else "foot"
             if v:
                 sp = v.get("speed") or 0.0
                 if self._prev and self._prev.get("vehicle") and not v.get("landed") and v.get("flight_data") is not False:
@@ -97,6 +112,7 @@ class SessionStats:
                 elif s["balance"] is not None and bal != s["balance"]:
                     self._change(s, bal - s["balance"], bal, now, tr)
                 s["balance"] = bal
+            self._recheck(now, tr)
             self._prev = {"t": now, "vehicle": bool(v), "h2": (v or {}).get("h_fuel")}
             due = now - self._saved_at > SAVE_EVERY
             if due:
@@ -109,19 +125,17 @@ class SessionStats:
         c = None
         if delta > 0:
             s["earned"] += delta
-            c = self._contract_for(now, tr)
-            what = ""
-            if c is not None:
-                label, kind = c.name, "contract"
-                what = getattr(c, "subtitle", "") or getattr(c, "code", "") or ""
-                self._credited.add(c.id)
-                s["contracts"] += 1
+            c = self._contract_for(now, tr, delta)
         else:
             s["spent"] += -delta
         e = {"t": round(now, 1), "delta": int(delta), "balance": int(bal), "label": label, "kind": kind,
              "session": s["started"]}
-        if delta > 0 and c is not None and what:
-            e["what"] = what                           # the contract's kind ("Hauling", "Bounty"…), for Jobs
+        if c is not None:
+            self._credit(e, c, s)
+        elif delta > 0:
+            e["pos"] = self._pos or ""                 # where you were: terminals sell on the ground or at a station (Jobs)
+            if self._refund(delta, now):
+                e["src"] = "refund"                    # exactly what you spent a moment ago, back: nobody's job
         ship, seen = self._ship
         if ship and now - seen < 600:
             e["ship"] = ship                           # what you were flying: a sale from a Prospector is ore (Jobs)
@@ -130,15 +144,88 @@ class SessionStats:
         del self.log[:-KEEP]
         threading.Thread(target=self._save, daemon=True).start()
 
-    def _contract_for(self, now, tr):
-        best = None
+    def _credit(self, e, c, s):
+        """A rise is this contract's payout: its name, code and kind of work (from the game files) go with it."""
+        e.update(label=c.name, kind="contract")
+        e.pop("pos", None), e.pop("src", None)
+        code = getattr(c, "code", "") or ""
+        if code:
+            e["code"] = code
+        info = self._mission(c)
+        if info.get("type"):
+            e["ctype"] = str(info["type"])[:60]
+        if info.get("giver"):
+            e["giver"] = str(info["giver"])[:60]
+        what = getattr(c, "subtitle", "") or ""
+        if what:
+            e["what"] = what                           # the cargo: shown, never used to pick the job
+        self._credited.add(c.id)
+        s["contracts"] += 1
+
+    def _refund(self, delta, now):
+        """Did you spend exactly this much in the last few minutes (and not get it back already)?"""
+        for x in reversed(self.log):
+            if now - (x.get("t") or 0) > REFUND_S:
+                break
+            if x.get("delta") == delta and x.get("src") == "refund":
+                return False                           # that spend has its refund already
+            if x.get("delta") == -delta:
+                return True
+        return False
+
+    def _recheck(self, now, tr):
+        """A plain rise from the last couple of minutes becomes a contract's payout once Game.log says that
+        contract completed (the money can arrive before the log line is read)."""
+        if not tr:
+            return
+        for e in reversed(self.log):
+            if now - (e.get("t") or 0) > RECHECK_S:
+                break
+            if e.get("kind") != "in" or e.get("src"):
+                continue
+            c = self._contract_for(e["t"], tr, e.get("delta"))
+            if c is not None:
+                self._credit(e, c, self.s)
+                self.dirty = True
+                threading.Thread(target=self._save, daemon=True).start()
+
+    def _mission(self, c):
+        """The contract's mission data: {type, giver, reward, reward_max} (empty if Quantum doesn't know it)."""
+        if c.id not in self._info:
+            info = None
+            if self.ctype_fn:
+                try:
+                    info = self.ctype_fn(getattr(c, "code", "") or "", c.name)
+                except Exception:
+                    info = None
+            self._info[c.id] = info if isinstance(info, dict) else {"type": info} if info else {}
+        return self._info[c.id]
+
+    def _pays(self, c, delta):
+        """Could this contract have paid delta? None: its payout isn't known. Loose on purpose: a shared contract's
+        payout is split between the party, and some pay a bonus, so only a rise far over its top payout says no."""
+        info = self._mission(c)
+        top = max(float(info.get("reward") or 0), float(info.get("reward_max") or 0))
+        if not top or not delta:
+            return None
+        return delta <= top * PAY_OVER + PAY_SLACK
+
+    def _contract_for(self, now, tr, delta=None):
+        """The completed contract a rise at `now` is the payout of: inside CONTRACT_WINDOW, not credited yet, and
+        able to pay that much; one whose payout matches beats one whose payout isn't known, then the nearest in time."""
+        best, best_key = None, None
         for c in list((getattr(tr, "contracts", None) or {}).values()):
             if c.status != "complete" or not c.closed_at or c.id in self._credited:
                 continue
             d = now - c.closed_at
-            if -CONTRACT_WINDOW[1] <= d <= -CONTRACT_WINDOW[0]:            # paid up to 4 min after, or 1 min before the log says
-                if best is None or abs(d) < abs(now - best.closed_at):
-                    best = c
+            if not -CONTRACT_WINDOW[1] <= d <= -CONTRACT_WINDOW[0]:        # paid up to 10 min after, or 1 min before the log says
+                continue
+            fits = self._pays(c, delta)
+            if fits is False:
+                continue                                                    # far more than it ever pays: not this one
+            key = (0 if fits else 1, abs(d))
+            if best_key is None or key < best_key:
+                best, best_key = c, key
         return best
 
     def _finish(self, s):
@@ -156,11 +243,18 @@ class SessionStats:
         Returns True when anything new came in."""
         with self.lock:
             n0, h0 = len(self.log), len(self.history)
-            have = {(round(e.get("t") or 0, 1), e.get("delta")) for e in self.log}
+            have = {(round(e.get("t") or 0, 1), e.get("delta")): i for i, e in enumerate(self.log)}
+            relabelled = 0
             for e in entries or []:
-                if isinstance(e, dict) and (round(e.get("t") or 0, 1), e.get("delta")) not in have and e.get("t"):
+                if not isinstance(e, dict) or not e.get("t"):
+                    continue
+                k = (round(e["t"], 1), e.get("delta"))
+                if k not in have:
+                    have[k] = len(self.log)
                     self.log.append(e)
-                    have.add((round(e["t"], 1), e.get("delta")))
+                elif e.get("kind") == "contract" and self.log[have[k]].get("kind") != "contract":
+                    self.log[have[k]] = e              # another PC tied it to its contract: that copy wins
+                    relabelled += 1
             self.log.sort(key=lambda e: e.get("t") or 0)
             del self.log[:-KEEP]
             seen = {x.get("started") for x in self.history}
@@ -170,7 +264,7 @@ class SessionStats:
                     seen.add(h["started"])
             self.history.sort(key=lambda x: x.get("started") or 0)
             del self.history[:-HISTORY]
-            changed = len(self.log) != n0 or len(self.history) != h0
+            changed = len(self.log) != n0 or len(self.history) != h0 or relabelled > 0
         if changed:
             self._save()
         return changed
