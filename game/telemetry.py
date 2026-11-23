@@ -1,4 +1,4 @@
-"""Star Citizen's local game telemetry (optional, off by default: Settings > Game telemetry).
+"""Star Citizen's local game telemetry (on by default, can be turned off: Settings > Game telemetry).
 
 The game client can serve a live stream of your ship's and your character's state on this PC, at 127.0.0.1:2942
 (gRPC, about 14-20 frames a second, only once you've spawned). CIG hasn't documented it and it can change with any
@@ -155,6 +155,7 @@ def decode(raw):
         if an is not None:
             v["warnings"] = {n: WARN.get(_int(an, i + 1), "off") for i, n in enumerate(WARN_NAMES)}
         fl = _msg(vs, 8)
+        v["flight_data"] = fl is not None and _msg(fl, 3) is not None     # speed, heading, altitude... (ships send it)
         if fl is not None:
             st, ins, se = _msg(fl, 1), _msg(fl, 3), _msg(fl, 2)
             if st is not None:
@@ -219,6 +220,7 @@ class Telemetry(threading.Thread):
         self._listen = None                   # what the game is listening on, last looked at: {at, game, ports}
         self.enabled = False
         self.on_event = on_event              # fn(name, at): spawn, dead, downed, enter_seat... (the app's notes)
+        self.on_frame = None                  # fn(frame, at): every decoded frame (session stats, earnings)
         self._lock = threading.Lock()
         self._wake = threading.Event()
         self._call = None
@@ -346,6 +348,11 @@ class Telemetry(threading.Thread):
                 self._events.append((ev, now))
             del self._events[:-30]
             self._latest = d
+        if self.on_frame:
+            try:
+                self.on_frame(d, now)
+            except Exception:
+                pass
         for ev in new:
             if self.on_event:
                 try:

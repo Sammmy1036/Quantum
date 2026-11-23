@@ -1679,14 +1679,15 @@ class ContractTracker(threading.Thread):
         """What killed you, as far as the log says: {"by": name or None, "how", "ship", "reason", "weapon", "damage"}.
         A ship you were thrown out of was destroyed just before (its Vehicle Destroyed line names who the game credits);
         older game versions also logged who killed you on foot. None when the log has neither."""
+        nobody = ("", "none", "null", "unknown", "nobody")     # the log writes 'None' when no one is credited
         k = getattr(self, "kill_line", None)
         if k and abs(ts - k["at"]) < 30:
-            by = k["killer"] if k["killer"] and k["killer"] != actor else None
+            by = k["killer"] if k["killer"] and k["killer"] != actor and k["killer"].strip().lower() not in nobody else None
             return {"by": by, "how": "killed" if by else "died", "weapon": k.get("weapon"), "damage": k.get("damage"),
                     "ship": None, "reason": None}
         w = next((w for w in reversed(getattr(self, "wrecks", [])) if w["zone"] == from_zone and abs(ts - w["at"]) < 30), None)
         if w:
-            by = w["killer"] if w["killer"] and w["killer"] != actor else None
+            by = w["killer"] if w["killer"] and w["killer"] != actor and w["killer"].strip().lower() not in nobody else None
             return {"by": by, "how": "ship destroyed", "ship": re.sub(r"(\d)([A-Z])", r"\1 \2", vehicle_name(w["cls"])), "reason": w["reason"],
                     "reason_text": WRECK_REASONS.get(w["reason"], w["reason"]), "weapon": None, "damage": None}
         return None

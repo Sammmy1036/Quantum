@@ -1067,20 +1067,28 @@ function contactsAlert(){ const L=(S.live?.contacts||[]).filter(c=>c.level==="hi
 // What killed you, as the log has it: "Killed by PlayerName", or "The game destroyed your 890 Jump due to a
 // Boundary Violation" when no player was credited. Nothing when the log doesn't say.
 function deathCause(c){ if(!c) return "";
+  const by=c.by&&!/^(none|null|unknown|nobody)$/i.test(String(c.by).trim())?c.by:null;   // 'None': no one was credited
+  if(by!==c.by) c={...c,by:null};
   const t=c.by?`Killed by <b>${esc(c.by)}</b>`
     :c.how==="ship destroyed"?`The game destroyed your ${esc(c.ship||"ship")}${c.reason?` due to a ${esc(c.reason.replace(/([a-z])([A-Z])/g,"$1 $2"))}`:""}`:"";
   return t?`<div style="font-size:12.5px;margin-top:3px;color:${c.by?"#ff8a8a":"var(--ink-2)"}">${t}</div>`:""; }
-function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv=S.live.travel||{};
+// Died, then the game's telemetry says you've spawned again (or sends you alive since): you've respawned, even
+// before Game.log gets round to saying so
+function aliveAgain(tv){ const t=S.live?.telemetry; if(!t||!tv.at) return false;
+  if((t.events||[]).some(e=>(e.type==="spawn"||e.type==="respawn")&&e.at>tv.at)) return true;
+  const h=t.actor?.health; return !!(h&&h.cur>0&&t.age!=null&&t.age<5&&(S.live.now-tv.at)>20&&t.actor?.locomotion); }
+function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot"), pt=$("pos-text"), tv0=S.live.travel||{};
+  const tv=tv0.state==="dead"&&aliveAgain(tv0)?{...tv0,state:"respawned",place:null}:tv0;
   if(!pt.dataset.sysBound){ pt.dataset.sysBound=1; pt.addEventListener("change",async e=>{ if(!e.target.classList.contains("sys-pick")) return;
     const v=e.target.value, r=await api().set_my_system(v); if(!r.ok) return toast(r.error); await poll(); toast(`Got it: you're in ${v}`); }); }
   if(pt.querySelector("select.sys-pick:focus")) return;     // don't redraw under an open picker
   const ago=x=>{ const a=Math.max(0,S.live.now-x); return a<60?`${Math.round(a)} s ago`:a<3600?`${Math.round(a/60)} min ago`:`${(a/3600).toFixed(1)} h ago`; };
   renderPlayTime();
   if(S.live.game_off){ pd.className="dot"; pt.innerHTML=`<b>Star Citizen isn't running</b>`; }
-  else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>Died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`
+  else if(tv.state==="dead"){ pd.className="dot warn"; pt.innerHTML=`<b>You died</b>${tv.near?` near ${esc(tv.near)}`:""} <span class="muted">(${ago(tv.at)})</span>`
     +deathCause(tv.cause)
     +(tv.threats?.length?`<div class="muted" style="font-size:12px;margin-top:2px">Ships that showed up near you just before: ${tv.threats.map(c=>`<span style="color:${c.threat==="ship"?"#ffd38a":"#ff6b6b"}">${esc(c.name)}</span> (${c.age<60?c.age+" s":Math.round(c.age/60)+" min"} before)`).join(", ")}</div>`:""); }
-  else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`+deathCause(tv.cause); }
+  else if(tv.state==="respawned"){ pd.className="dot on"; pt.innerHTML=`<b>Respawned</b>${tv.place?` at ${esc(tv.place)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="jumping"){ pd.className="dot on"; pt.innerHTML=`<b>Quantum jump</b>${tv.from?` from ${esc(tv.from)}`:""}${tv.to?` to <b>${esc(tv.to)}</b>`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(tv.state==="arrived" && (!p || p.approx || (p.t||0) < tv.at)){ pd.className="dot on";
     pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown spot <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }

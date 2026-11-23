@@ -700,7 +700,7 @@ function renderHud(){
     const direct = g.target_is_qt ? `<div class="a"><span class="i">★</span><span>It has its own quantum marker. Pick it in your starmap.</span></div>` : "";
     const faster = !approxPos && g.ground!=null && g.approach?.[0] && g.ground < g.approach[0].ground ? `<div class="a"><span class="i">★</span><span>You're closer than any QT marker: fly there directly.</span></div>` : "";
     html+=`<div class="card guide"><div class="lbl">Guiding to<span class="spacer"></span><button class="btn small ghost" id="hud-stop">Stop</button></div>
-      <div class="nm">${esc(g.name)}</div>${nums}${(ap||direct)?`<div class="approach"><div class="muted" style="font-size:12px">Fastest way there</div>${faster||direct}${ap}</div>`:""}</div>`; }
+      <div class="nm">${esc(g.name)}</div>${nums}<div id="hud-steer"></div>${(ap||direct)?`<div class="approach"><div class="muted" style="font-size:12px">Fastest way there</div>${faster||direct}${ap}</div>`:""}</div>`; }
   const here=live.travel?.state==="landed"&&live.travel?.place===n?.name;
   const gate=(live.stop_roles?.[0]||[]).find(r=>r.kind==="gate");
   if(n){ html+=`<div class="card next"><div class="lbl">Next stop${live.route.length>1?` · 1 of ${live.route.length}`:""}${here?' <span style="color:var(--ok);font-weight:600">· You\'re here</span>':""}</div><div class="nm">${esc(n.name)}</div>
@@ -727,7 +727,7 @@ function renderHud(){
       ${ov.jumps?`<div><div class="v">${ov.jumps}</div><div class="k">jumps</div></div>`:""}</div>
       <div class="hint" style="margin-top:8px">${ov.bodies.map(esc).join(" → ")}${ov.added?` · ${ov.added} contract task${ov.added>1?"s":""} added`:""}${ov.revisits?` · ${ov.revisits} return visit${ov.revisits>1?"s":""}`:""}</div>
       <div class="ovlist">${route.map((n,i)=>`<div class="i"><span class="n">${i+1}</span><span>${roleTxt(n,i)}${esc(n)}</span></div>`).join("")}</div></div>`+html; }
-  $("hud").innerHTML=html; const st=$("hud-stop"); if(st) st.onclick=async()=>{ await api().set_guide(null); await poll(); };
+  $("hud").innerHTML=html; if(typeof tlHudSteer==="function") tlHudSteer(); const st=$("hud-stop"); if(st) st.onclick=async()=>{ await api().set_guide(null); await poll(); };
   const oc=$("hud-ov-close"); if(oc) oc.onclick=()=>{ S.overview=null; renderHud(); };
   if(typeof runsHudWire==="function") runsHudWire($("hud"));
   const cx=$("cal-x"); if(cx) cx.onclick=()=>{ S.calDismissed=cs.reading_t; renderHud(); };

@@ -784,6 +784,23 @@ function playerNode(){ const p=S.live?.player;
   // lines drawn from where you were last seen, for up to 10 minutes, instead of losing them until the next reading.
   const L=S.lastPN; if(!L||L.sys!==S.system||S.live?.game_off||Date.now()-L.at>600000) return null;
   const B=L.body&&L.local&&S.bodyMap[L.body]; return {g:B?toGlobal(B,L.local,now()):L.pos, body:L.body, local:L.local, stale:true}; }
+// The way your ship is pointing (the game's telemetry: compass heading, 0 = north), drawn as an arrow from
+// the "You" marker. Near a planet or moon only: that's where a compass heading means something. Your
+// position itself still comes from /showlocation; the arrow turns live as you turn.
+function facingArrow(pn,q){ const v=S.live?.telemetry?.vehicle; if(!v||v.heading==null||!pn.body||!pn.local) return;
+  const B=S.bodyMap?.[pn.body]; if(!B) return;
+  const p=pn.local, r=Math.hypot(p[0],p[1],p[2]); if(!r) return;
+  const u=[p[0]/r,p[1]/r,p[2]/r];
+  let N=[-u[2]*u[0],-u[2]*u[1],1-u[2]*u[2]]; const nl=Math.hypot(...N); if(nl<1e-6) return; N=N.map(x=>x/nl);   // north: towards the pole
+  const E=[-u[1],u[0],0].map(x=>x/(Math.hypot(u[0],u[1])||1));                                            // east: pole x up
+  const h=v.heading*Math.PI/180, d=[N[0]*Math.cos(h)+E[0]*Math.sin(h),N[1]*Math.cos(h)+E[1]*Math.sin(h),N[2]*Math.cos(h)+E[2]*Math.sin(h)];
+  const k=Math.max(r*0.002,50), q2=proj(toGlobal(B,[p[0]+d[0]*k,p[1]+d[1]*k,p[2]+d[2]*k],now())); if(!q2) return;
+  let dx=q2[0]-q[0], dy=q2[1]-q[1]; const l=Math.hypot(dx,dy); if(l<0.01) return; dx/=l; dy/=l;
+  const L=30, tx=q[0]+dx*L, ty=q[1]+dy*L, nx=-dy, ny=dx;
+  ctx.save(); ctx.lineCap="round"; ctx.strokeStyle="rgba(5,8,15,.85)"; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(q[0]+dx*7,q[1]+dy*7); ctx.lineTo(tx-dx*6,ty-dy*6); ctx.stroke();
+  ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(tx-dx*11+nx*6,ty-dy*11+ny*6); ctx.lineTo(tx-dx*8,ty-dy*8); ctx.lineTo(tx-dx*11-nx*6,ty-dy*11-ny*6); ctx.closePath();
+  ctx.fillStyle="#7fe7ff"; ctx.strokeStyle="#05080f"; ctx.lineWidth=1.5; ctx.fill(); ctx.stroke(); ctx.restore(); }
 function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
   let prev=null; const segs=[]; let cur=[];
   for(const s of samples){ const q=proj(s.g); const vis=q&&visible(s.g,s.body); if(vis){ cur.push(q); } else { if(cur.length>1) segs.push(cur); cur=[]; } }
@@ -895,6 +912,7 @@ function drawOverlay(t){
   if(pn){ const q=proj(pn.g); if(q&&visible(pn.g,pn.body)){ const ph=(performance.now()/1400)%1;
     ctx.strokeStyle=`rgba(127,231,255,${.55*(1-ph)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q[0],q[1],7+ph*18,0,7); ctx.stroke();
     if(S.live.player?.approx||pn.stale){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
+    facingArrow(pn,q);
     ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke();
     labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label(pn.stale?"You (last seen)":"You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
     // Ships that just streamed in near you (profile.js contactsNear): a red ring round you and their names to

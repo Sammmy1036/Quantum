@@ -1,4 +1,4 @@
-"""Api, part of: Star Citizen's local game telemetry (game/telemetry.py). Off by default: Settings > Game telemetry.
+"""Api, part of: Star Citizen's local game telemetry (game/telemetry.py). On by default; it can be turned off in Settings > Game telemetry.
 
 A mixin of app.py's Api (class Api(... TelemetryMixin ...)): the methods are the Api's, `self` is the one Api.
 Module-level names come from qbase.py.
@@ -9,6 +9,7 @@ your health and oxygen, your aUEC balance (the Cart says whether you can afford 
 moment it happens. Everything else still comes from Game.log and /showlocation."""
 from qbase import *  # noqa: F401,F403
 from game import telemetry as telemetry_mod
+from game import session_stats as session_mod
 
 
 class TelemetryMixin:
@@ -22,8 +23,11 @@ class TelemetryMixin:
             at = tr and tr.in_pu and (tr.spawned_at or tr.pu_at)
             return bool(at) and time.time() - at > 60
         self._tel.may_discover = spawned_a_while
+        # session stats and the earnings log, from every frame (game/session_stats.py)
+        self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None))
+        self._tel.on_frame = self._sess.frame
         self._tel.start()
-        self._tel.set_enabled(bool(self._settings.get("telemetry_on", False)))
+        self._tel.set_enabled(bool(self._settings.get("telemetry_on", True)))
 
     def _tel_port_found(self, port):
         """The game serves its telemetry on another port than the one set: use that one from now on."""
@@ -73,7 +77,7 @@ class TelemetryMixin:
         """For Settings: whether it's on, the reader's state (even while the game is closed), whether the game's side
         is switched on (environment variable, USER.cfg), when you set it up, and whether data has ever come in."""
         t = getattr(self, "_tel", None)
-        on = bool(self._settings.get("telemetry_on", False))
+        on = bool(self._settings.get("telemetry_on", True))
         st = t.state() if t and on else None
         if st:
             if st.get("status") == "off":
@@ -111,6 +115,37 @@ class TelemetryMixin:
         if t:
             t.set_enabled(bool(on), port)
         return {"ok": True, "on": bool(on), "state": self._tel_live()}
+
+    def session_stats(self):
+        """The Session window: this game session's stats, earnings today / this week, the latest balance changes."""
+        s = getattr(self, "_sess", None)
+        return {"ok": bool(s), **(s.summary() if s else {})}
+
+    def earnings_clear(self):
+        """Session window > Clear the earnings log (earnings.json)."""
+        s = getattr(self, "_sess", None)
+        if s:
+            s.clear_log()
+        return self.session_stats()
+
+    def telemetry_ui_get(self):
+        """Where and how the player stats show (Settings > Game telemetry > Player stats), kept in settings.json."""
+        return dict(self._settings.get("telemetry_ui") or {})
+
+    def telemetry_ui_set(self, prefs):
+        """Save the player stats placement: pos (float/top/bottom/left/right), look, shipcard, maponly."""
+        ok = {"pos": ("float", "top", "bottom", "left", "right"), "look": ("bars", "tiles", "rings", "compact")}
+        cur = dict(self._settings.get("telemetry_ui") or {})
+        for k, v in (prefs or {}).items():
+            if k in ok and v in ok[k]:
+                cur[k] = v
+            elif k in ("shipcard", "maponly"):
+                cur[k] = bool(v)
+            elif k == "v" and isinstance(v, int):
+                cur[k] = v
+        self._settings["telemetry_ui"] = cur
+        self._save_settings()
+        return cur
 
     def telemetry_setup_game(self):
         """"Set up the game for me": switches the game's telemetry server on for this PC (the 4.10 environment

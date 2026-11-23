@@ -196,7 +196,7 @@ class Api(api_contracts.ContractsMixin,
         netcache.set_patch_source(self._patch_key)
         self._tracker.player_ref = lambda: (self._player, self._player_sys, self._player_t)
         self._tracker.start()
-        self._tel_start()                     # game telemetry: off unless turned on in Settings (api_telemetry.py)
+        self._tel_start()                     # game telemetry: on unless turned off in Settings (api_telemetry.py)
         self._watcher = ClipboardWatcher(self._on_position)
         self._watcher.start()
         # F9 shows/hides Quantum and F10 types /showlocation, by default (until you change them in Settings). Windows only.
