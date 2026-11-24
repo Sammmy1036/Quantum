@@ -55,7 +55,8 @@ function pfSide(){ const on=pfSignedIn(), p=S.drProf, t=S.drTrust, nm=pfName();
       <b class="pf-name">${esc(on?(nm||"Your profile"):"Not signed in")}</b>
       ${S.acct?.email?`<div class="muted pf-mail">${esc(S.acct.email)}</div>`:""}
       ${on?`<div class="pf-badges">${trusted?`<span class="pf-trust">✓ Trusted datarunner</span>`:p?.username?`<span class="pf-trust no">Not trusted yet</span>`:""}
-        ${p?.rank?`<span class="rank-badge r${Math.max(0,rankI)}">${esc(p.rank.name)}</span>`:""}</div>`:""}
+        ${p?.rank?`<span class="rank-badge r${Math.max(0,rankI)}">${esc(p.rank.name)}</span>`:""}</div>
+        ${typeof jbEarned==="function"&&jbEarned(S.jb?.data).length?`<div class="pf-badges" style="margin-top:8px" title="Your best job badges">${jbEarned(S.jb.data).slice(0,3).map(b=>jbMedal(b,"sm")).join("")}</div>`:""}`:""}
       ${S.pfPhoto?`<button class="btn small ghost" data-pf="photo-remove">Remove photo</button>`:""}
     </div>
     <nav class="pf-nav" aria-label="Profile">${PF_VIEWS.map(([k,l,ic])=>`<button data-pfv="${k}" class="${S.pfView===k?"on":""}" ${S.pfView===k?'aria-current="page"':""}><svg viewBox="0 0 24 24" aria-hidden="true">${ic}</svg><span>${l}</span>${counts[k]?`<span class="n">${counts[k]}</span>`:""}</button>`).join("")}</nav>
@@ -144,12 +145,21 @@ function pfMain(){ const P=$("pf-panel"), v=S.pfView, on=pfSignedIn(), p=S.drPro
       ${sec(`Trusted contributor`,trustBody,trusted?`<span style="color:#57e39b">✓ trusted</span>`:"")}
       <div>${sec(`Linked accounts${link("accounts","Manage")}`,keys)}${sec(`Backup${link("backup","More")}`,backupBody)}</div>
       ${sec(`Recent submissions${link("submissions","See all")}`,subs)}
+      ${pfJobBadgesHtml(link)}
       ${pfCommunityHtml()}
       ${shipsOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My fleet<span class="mk-note">${ships.length?plural(ships.length,"ship"):""}</span>${lg.uex_token&&ships.length?link("fleet","Arrange"):""}</div>${fleet}</div>`}
       ${losOn.off?"":`<div class="vd-sec vd-full"><div class="mk-h">My personal loadouts<span class="mk-note">${los.length?plural(los.length,"loadout"):""}</span>${los.length?link("gearlo","Arrange"):""}</div>${gear}</div>`}
     </div>`;
   fillGearPictures(P); }
 const var_dim="var(--dim)";
+// Your job badges (from Jobs): the ones earned, and whether your profile shows them
+function pfJobBadgesHtml(link){ const d=S.jb?.data; if(!d?.ok||!d.badges||typeof jbEarned!=="function") return "";
+  const E=jbEarned(d);
+  return `<div class="vd-sec vd-full"><div class="mk-h">Job badges<span class="mk-note">${E.length} of ${d.badges.length} roles${d.badges_shown?" · shown on your profile":" · hidden from your profile"}</span>
+      <a data-pfjobs="1" style="cursor:pointer;color:var(--route-2);font-size:12.5px;margin-left:auto">See all</a></div>
+    ${E.length?`<div class="pf-jbadges">${E.map(b=>`<div>${jbMedal(b,"md")}<b>${esc(b.name)}</b><span class="jb-btier t-${b.tier}">${esc(b.tier_name)}</span></div>`).join("")}</div>`
+      :`<div class="muted" style="font-size:13px;padding:6px 0">None yet. Finish 5 jobs of a role in Jobs for its Bronze badge.</div>`}</div>`; }
+document.addEventListener("click",e=>{ if(e.target.closest?.("[data-pfjobs]")) jbOpenRole("all"); });
 // ---- Profile overview: your orgs and what you have up on the marketplace (loaded once, when the overview opens)
 // Asked again when the last answer was an error (signed out at the time, the server was busy): the overview
 // used to keep that first answer, so your orgs never showed after signing in.
@@ -299,6 +309,7 @@ function upRender(){ let V=$("up-view"); if(!S.up) return upClose();
   let body="";
   if(d.private){ body=`<div class="empty" style="margin-top:14px"><strong>${d.sees==="friends"?"This profile is for friends":"This profile is private"}</strong>${d.sees==="friends"?`Only ${esc(p.name)}'s friends can see their fleet, loadouts, orgs and listings.`:`${esc(p.name)} keeps their profile to themselves.`}</div>`; }
   else{
+    if(d.badges?.length) body+=sec("Job badges",`<div class="up-badges">${d.badges.map(b=>`<div>${jbMedal(b,"md")}<b>${esc(b.name)}</b><span class="jb-btier t-${b.tier}">${esc(b.tier_name)}</span></div>`).join("")}</div>`,`${d.badges.length} earned`);
     if(st) body+=sec("Datarunner",`<div class="up-stats">${[["Rank",esc(st.rank||"–")],["Rating",st.rated?`${(+st.stars).toFixed(1)} ★`:"–"],["Approved reports",(st.approved||0).toLocaleString()],["Trusted",st.trusted?`<span style="color:#57e39b">✓ Trusted datarunner</span>`:"Not yet"]].map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>`);
     if(d.orgs) body+=sec("Orgs",d.orgs.length?`<div class="og-cards">${d.orgs.map(o=>`<div class="og-card" data-upog="${o.id}">${ogLogo(o)}<div class="who"><b>${esc(o.name)} <span class="og-tag">${esc(o.tag)}</span> ${ogVer(o)}</b>${o.slogan?`<div class="og-slogan" style="font-size:13px">${esc(o.slogan)}</div>`:""}<small>${esc(o.their_rank||"Member")}${o.owner?" · Owner":""} · ${o.members} member${o.members===1?"":"s"}</small></div></div>`).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:6px 0">Not in an org.</div>`,d.orgs.length||"");
     if(lists){ const items=lists.filter(l=>l.kind!=="service"), svcs=lists.filter(l=>l.kind==="service");

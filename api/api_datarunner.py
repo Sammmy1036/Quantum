@@ -1264,8 +1264,9 @@ class DatarunnerMixin:
             if L.kind == "surface" and L.source == "db" and L.body:
                 places.setdefault(L.body, []).append(L.name)
         jobs = []
+        unreleased = self._unreleased_bodies()              # built from the PTU, not in LIVE yet (Nyx I until 5.0)
         for b in sorted(self._db.bodies.values(), key=lambda b: (b.system, b.kind != "planet", b.name)):
-            if not can_align(b):
+            if not can_align(b) or b.name in unreleased:
                 continue
             a = r["agreed"].get(b.name)
             st = "live" if a else "mine" if b.name in mine else "waiting" if r["waiting"].get(b.name) else "open"

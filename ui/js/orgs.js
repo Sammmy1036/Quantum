@@ -111,7 +111,9 @@ function ogPane(){ const P=$("pane-orgs"); if(!P) return; const m=S.og.mine;
   if(m&&(m.signed_in===false||m.error==="Sign in to your Quantum account first.")){ P.innerHTML=`<div class="note"><b>Sign in to use orgs</b><div class="muted" style="font-size:12.5px;margin:6px 0 10px">Orgs go with your Quantum account.</div><button class="btn primary small" onclick="openProfileView('overview')">Sign in</button></div>`; return; }
   if(m?.error){ P.innerHTML=`<div class="note">${esc(m.error)}</div>`; return; }
   const orgs=m?.orgs||[], inv=m?.invites||[], req=m?.requests||[];
-  P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn primary" style="flex:1" data-ognew="1">+ Create an org</button><button class="btn" style="flex:1" data-ogfind="1">Find orgs</button></div>
+  // the one for the page that's open is the blue one (Create an org when neither is: it's the main thing to do here)
+  const finding=S.og.view==="browse";
+  P.innerHTML=`<div class="row" style="gap:8px;margin-bottom:10px"><button class="btn ${finding?"":"primary"}" style="flex:1" data-ognew="1" aria-pressed="${S.og.view==="create"}">+ Create an org</button><button class="btn ${finding?"primary":""}" style="flex:1" data-ogfind="1" aria-pressed="${finding}">Find orgs</button></div>
     ${inv.length?`<div class="so-h">Invitations <b>${inv.length}</b></div>${inv.map(i=>`<div class="so-row">${ogLogo(i.org,1)}<div class="who"><b>${esc(i.org.name)} <span class="muted" style="font-weight:400">[${esc(i.org.tag)}]</span></b><small>${i.by?`From ${esc(i.by.name)} · `:""}${i.org.members} member${i.org.members===1?"":"s"}</small></div>
       <div class="acts"><button class="btn small primary" data-oginv="${i.id}" data-yes="1">Join</button><button class="btn small ghost" data-oginv="${i.id}" data-yes="0">Decline</button></div></div>`).join("")}`:""}
     <div class="so-h">My orgs <b>${orgs.length}</b></div>

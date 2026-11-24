@@ -41,6 +41,10 @@ class JobsMixin:
     def jobs_state(self):
         return self._jobs_call("mine")
 
+    def jobs_badges_show(self, show=True):
+        """Show your job badges on your profile, or not (kept with the account on the server)."""
+        return self._jobs_call("badges", {"show": bool(show)})
+
     def jobs_reroll(self, jid):
         return self._jobs_call("reroll", {"id": str(jid or "")[:24]})
 

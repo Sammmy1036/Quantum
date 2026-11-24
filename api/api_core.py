@@ -722,7 +722,12 @@ class CoreMixin:
             return {"ok": False, "error": f"You have {r.get('max') or 5} jobs on the go. Finish or let go of one first"}
         if r.get("status") == "off":
             return {"ok": True, "until": None, "offline": True}
-        return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+        st = str(r.get("status") or "")
+        if st == "unreachable":
+            return {"ok": False, "error": "The Quantum server couldn't be reached. Try again in a minute"}
+        # it answered, just not with a claim: say so (before, every answer that wasn't one read "couldn't be reached")
+        return {"ok": False, "error": f"The Quantum server couldn't take the job ({r.get('detail') or r.get('message') or st or 'no answer'}). "
+                                      "Try again in a minute"}
 
     def withdraw_place(self, name):
         """You set a station's position by mistake: take your reading back from the Quantum server and

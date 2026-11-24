@@ -1,6 +1,15 @@
 // Quantum UI: Constants, the shared state S, small helpers (api(), qFetch) and math.
 // One of several classic scripts sharing one global scope; index.html loads them in order.
 "use strict";
+// The button style picked in Settings > Window (none: Quantum's own), on before anything is drawn
+const BTN_STYLES=[["","A. Classic","Rounded Buttons / No Capitalization"],["a","B. HUD Chamfer","Capitalization"],["b","C. RSI Launcher Outline","Capitalization"],
+  ["c","D. Angled","Capitalization"],["d","E. Bracketed Glass","Targeting Corners / Capitalization"]];
+// HUD Chamfer until you pick another; "cur" is Classic, picked. (An empty value saved by an earlier build counts as
+// not picked, so it moves to HUD Chamfer too.)
+function btnStyle(){ try{ const v=localStorage.getItem("q-btnstyle"); if(v==="cur") return ""; return v&&BTN_STYLES.some(x=>x[0]===v)?v:"a"; }catch(_){ return "a"; } }
+function setBtnStyle(v){ try{ localStorage.setItem("q-btnstyle",v||"cur"); }catch(_){}
+  if(v) document.body.dataset.bs=v; else delete document.body.dataset.bs; }
+if(btnStyle()) document.body.dataset.bs=btnStyle();
 // =================================================================== constants
 const TYPES = {
   city:{label:"Cities",one:"City",color:"#eef3fb",def:true}, station:{label:"Stations",one:"Station",color:"#f2c14e",def:true},

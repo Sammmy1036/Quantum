@@ -576,6 +576,11 @@ function renderDetail(){
           .map(([k,label,bar])=>`<button type="button" class="wp-opt${(S.winStyle?.style||"quantum")===k?" on":""}" data-winstyle="${k}" ${S.winStyle?.available===false?"disabled":""} aria-pressed="${(S.winStyle?.style||"quantum")===k}">
             <div class="wp-prev">${bar}<div class="wp-body"><span class="wp-rail"></span><span class="wp-side"></span><span class="wp-map"></span></div></div><span class="wp-l">${label}</span></button>`).join("")}</div>
         ${S.winStyle&&(S.winStyle.style==="quantum")!==S.winStyle.active?`<div class="wp-note">Please restart Quantum for the changes to take effect.</div>`:""}</div>
+      <div class="note set-box" style="margin:4px 0 12px"><div class="muted" style="font-size:12px;margin-bottom:8px">Button style</div>
+        <div class="bs-pick" role="radiogroup" aria-label="Button style">${BTN_STYLES.map(([k,label,sub])=>{ const on=btnStyle()===k;
+          return `<div class="bs-opt${on?" on":""}" data-bspick="${k}" role="radio" aria-checked="${on}" tabindex="0"><div class="bs-l"><b>${esc(label)}</b><span>${esc(sub)}</span></div>
+            <div class="bs-pv" ${k?`data-bs="${k}"`:""} aria-hidden="true"><span class="btn small primary">Plan route</span><span class="btn small">Map</span><span class="btn small ghost">Swap</span>
+              <span class="tab" aria-selected="true">Route</span><span class="tab" aria-selected="false">Waypoints</span><span class="fchip" aria-pressed="true">All</span><span class="fchip" aria-pressed="false">Cities</span></div></div>`; }).join("")}</div></div>
       ${S.launcher?.available===false?"":`<div class="note set-box" style="margin:4px 0 12px"><label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="s-launchbtn" ${launcherBtnOn()?"checked":""} onchange="setLauncherBtn(this.checked)"> Show the RSI Launcher button</label>
         <div class="muted" style="font-size:12px;margin-top:6px">Beside Settings at the foot of the sidebar: <b>Start Launcher</b> opens the RSI Launcher, and it shows <b>Launcher Running</b> while it's open.</div></div>`}
       <div class="sub">Sidebar</div>
@@ -600,6 +605,8 @@ function renderDetail(){
     for(const el of d.querySelectorAll("[data-cclook]")) el.onchange=()=>ccLook({[el.dataset.cclook]:el.dataset.cclook==="opacity"?+el.value:el.value});
     for(const b of d.querySelectorAll("[data-cccolor]")) b.onclick=()=>ccLook({color:b.dataset.cccolor});
     ccPlacer();
+    for(const b of d.querySelectorAll("[data-bspick]")){ const pick=()=>{ if(btnStyle()===b.dataset.bspick) return; setBtnStyle(b.dataset.bspick); renderDetail(); };
+      b.onclick=pick; b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); } }; }
     for(const b of d.querySelectorAll("[data-winstyle]")) b.onclick=async()=>{ if(S.winStyle?.style===b.dataset.winstyle) return;
       S.winStyle=await api().set_window_style(b.dataset.winstyle); renderDetail();
       toast(S.winStyle.style===(S.winStyle.active?"quantum":"windows")?"Saved":"Please restart Quantum for the changes to take effect"); };
