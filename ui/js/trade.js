@@ -246,7 +246,10 @@ function paItemFor(name){ const m=S.paItemByName; if(!m||!name) return null; ret
 function paRule(w){ const what=w.side==="buy"?"Buy price":"Sell price", m=[];
   if(w.low) m.push(`≤ ${money(w.low)}`); if(w.high) m.push(`≥ ${money(w.high)}`);
   return `${what} ${m.join(" or ")}${w.system?` · ${esc(w.system)}`:" · any system"}`; }
-const paHitCount=()=>(S.pa?.items||[]).reduce((a,w)=>a+(w.on?w.hits.length:0),0);
+// Market › Price alerts is for gear (weapons, armor, clothing, items); commodity alerts live on each commodity's
+// page in Trade › Commodities (and the list at the top of Commodities). Both are the same watch list underneath.
+const paGear=()=>(S.pa?.items||[]).filter(paIsItem), paCommod=()=>(S.pa?.items||[]).filter(w=>!paIsItem(w));
+const paHitCount=(L=paGear())=>L.reduce((a,w)=>a+(w.on?w.hits.length:0),0);
 // how far today's best price is from your mark: "12% above your mark"
 function paGap(w){ const b=w.best?.price; if(!b) return "";
   const g=[]; if(w.low) g.push(b<=w.low?0:(b-w.low)/w.low); if(w.high) g.push(b>=w.high?0:(w.high-b)/w.high); if(!g.length) return "";
@@ -274,7 +277,7 @@ function mkAlertRender(){ const box=$("mkp-alert"), d=S.mkData; if(!box||!d) ret
   const f=S.mka, mine=(S.pa?.items||[]).filter(w=>!paIsItem(w)&&String(w.id_commodity)===String(c.id));
   const opt=(v,t)=>`<option value="${v}" ${f.side===v?"selected":""}>${t}</option>`;
   box.innerHTML=`<div class="mka"><div class="mka-h"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 003.4 0"/></svg><b>Price alert</b>
-      <span class="muted">Told when any terminal reaches your price</span><span class="spacer"></span>${(S.pa?.items||[]).length?`<a data-act="paopen" class="mka-all">All alerts</a>`:""}</div>
+      <span class="muted">Told when any terminal reaches your price</span><span class="spacer"></span></div>
     ${mine.map(w=>{ const h=w.on?w.hits.length:0; return `<div class="mka-row"><span class="pa-chip ${!w.on?"off":h?"hit":""}">${!w.on?"Paused":h?`${plural(h,"terminal")} at your mark`:"Watching"}</span>
       <span class="mka-rule">${paRule(w)}</span>${w.on&&w.best?`<span class="muted">${w.side==="buy"?"cheapest":"best"} now ${money(w.best.price)}</span>`:""}
       <span class="spacer"></span><button class="btn small ghost" data-mka="toggle" data-id="${esc(w.id)}">${w.on?"Pause":"Resume"}</button><button class="btn small ghost" data-mka="del" data-id="${esc(w.id)}" aria-label="Remove this alert" title="Remove this alert">✕</button></div>`; }).join("")}
@@ -300,35 +303,33 @@ async function mkAlertClick(a,id){ const d=S.mkData; if(!d) return; const c=d.c;
 // The page: a new alert's form first (when you're making one), then every alert; the edit form opens inside its card
 async function renderAlerts(force){ const P=$("pa-panel"); syncWatchCount(); renderAlertsPane(); if(!P||S.tab!=="alerts") return;
   if(!S.live?.log?.uex_token){ P.innerHTML=`<div class="pa-wrap">${needToken}</div>`; return; }
-  await paLoad(force).catch(()=>{}); const d=S.pa, f=S.paForm, items=d?.items||[];
-  P.innerHTML=`<div class="pa-wrap"><div class="pm-top"><h2>Price alerts</h2><span class="muted">${items.length?`${items.length} watched${paHitCount()?` · <span style="color:#57e39b">${paHitCount()} at your mark</span>`:""}`:""}</span></div>
+  await paLoad(force).catch(()=>{}); const d=S.pa, f=S.paForm, items=paGear();
+  P.innerHTML=`<div class="pa-wrap${!items.length&&!f?" empty":""}"><div class="pm-top"><h2>Price alerts</h2><span class="muted">${items.length?`${items.length} watched${paHitCount()?` · <span style="color:#57e39b">${paHitCount()} at your mark</span>`:""}`:""}</span></div>
     ${f&&!f.id?`<div class="pa-card new">${paFormHtml(f)}</div>`:""}
     ${items.length?`<div class="pa-grid">${items.map(paCard).join("")}</div>`
-      :!f?`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 003.4 0"/></svg><h2>No price alerts yet</h2><div>Pick a commodity or a piece of gear on the left, or set one from a commodity's page in Trade › Commodities or a weapon, armor or other gear page. You're told when any terminal gets low or high enough.</div></div>`:""}
+      :!f?`<div class="so-land"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 003.4 0"/></svg><h2>No price alerts yet</h2><div>Pick a weapon, armor, clothing or other item on the left, or set one from its page in Gear. You're told when any shop sells it cheap enough, or a terminal pays enough for it.</div><div class="muted" style="font-size:12px;margin-top:10px">Commodity price alerts are on each commodity's page in Trade › Commodities.</div></div>`:""}
     ${d?.error?`<div class="muted" style="font-size:12px;margin-top:10px;color:#ffb454">${esc(d.error)}</div>`:""}</div>`;
   if(S.paScroll){ const id=S.paScroll; S.paScroll=null; P.querySelector(id==="new"?".pa-card.new":`[data-paid="${CSS.escape(id)}"] .wl-form`)?.scrollIntoView({block:"nearest",behavior:"smooth"}); } }
 // The left side: start an alert by commodity, and when it was last checked
 function renderAlertsPane(){ const P=$("pane-alerts"); if(!P) return; const d=S.pa;
   if(!P.dataset.built){ P.dataset.built="1";
-    P.innerHTML=`<div class="fm-k" style="margin-bottom:6px">Watch a commodity</div>
-      <input class="search" id="pa-q" list="mk-dl" placeholder="Commodity, like “Laranite”" autocomplete="off">
-      <div class="fm-k" style="margin:14px 0 6px">Watch gear</div>
+    P.innerHTML=`<div class="fm-k" style="margin-bottom:6px">Watch gear, weapons or items</div>
       <input class="search" id="pa-gq" list="pa-items-dl" placeholder="Weapon, armor, clothing, like “P4-AR”" autocomplete="off">
       <datalist id="pa-items-dl"></datalist>
-      <div class="muted" style="font-size:12px;margin:8px 2px 14px;line-height:1.5">You're told when any terminal sells it for less than your mark, or pays more than it. Gear is priced per item: what shops sell it for, and what a terminal pays if you can sell it there. One alert per terminal: it alerts again only after the price has gone back past your mark.</div>
+      <div class="muted" style="font-size:12px;margin:8px 2px 14px;line-height:1.5">You're told when any shop sells it for less than your mark, or a terminal pays more than it. Priced per item: what shops sell it for, and what a terminal pays if you can sell it there. One alert per terminal: it alerts again only after the price has gone back past your mark. Commodity alerts are on each commodity's page in Trade › Commodities.</div>
       <div id="pa-status"></div>`;
-    const q=$("pa-q"), go=()=>{ const c=S.mkByName?.[q.value.trim().toLowerCase()]; if(c){ q.value=""; paNewFor(c); } };
-    q.addEventListener("change",go); q.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
     const g=$("pa-gq"), gogo=()=>{ const i=paItemFor(g.value.trim()); if(i){ g.value=""; paNewItem(i); } else if(g.value.trim()&&S.paItems) toast("No terminal has a price for that one yet"); };
     g.addEventListener("focus",()=>paItemsLoad(),{once:true}); g.addEventListener("change",gogo); g.addEventListener("keydown",e=>{ if(e.key==="Enter") gogo(); });
     paItemsLoad(); }
   const st=$("pa-status"); if(!st) return;
-  st.innerHTML=(d?.items||[]).length?`<div class="row" style="gap:8px;align-items:center"><button class="btn small" data-pa="check" ${S.paBusy?"disabled":""}>${S.paBusy?"Checking…":"Check now"}</button>
+  st.innerHTML=paGear().length?`<div class="row" style="gap:8px;align-items:center"><button class="btn small" data-pa="check" ${S.paBusy?"disabled":""}>${S.paBusy?"Checking…":"Check now"}</button>
       <span class="muted" style="font-size:12px">${d?.checked?`Checked ${agoTs(d.checked)}`:"Not checked yet"} · every ${Math.round((d?.every||300)/60)} min while Quantum is open</span></div>`:""; }
 function syncWatchCount(){ const n=paHitCount(); for(const id of ["c-watch"]){ const el=$(id); if(!el) continue;
   el.hidden=!n; el.textContent=n||""; el.title=n?`${plural(n,"terminal")} at a price alert's mark`:""; }
-  const box=$("mk-watch"); if(box){ const k=(S.pa?.items||[]).length;          // in Commodities: just a pointer to the page
-    box.innerHTML=k?`<a data-act="paopen" class="pa-link">🔔 ${plural(k,"price alert")}${n?` · <b style="color:#57e39b">${n} at your mark</b>`:""} <span class="muted">· Market › Price alerts</span></a>`:""; } }
+  // In Trade › Commodities: your commodity alerts, each a click from its page (where they're changed)
+  const box=$("mk-watch"); if(box){ const L=paCommod(), cn=paHitCount(L);
+    box.innerHTML=L.length?`<div class="pa-chead">🔔 ${plural(L.length,"commodity price alert")}${cn?` · <b style="color:#57e39b">${cn} at your mark</b>`:""}</div>
+      <div class="pa-cl">${L.map(w=>{ const h=w.on?w.hits.length:0; return `<a data-pacom="${esc(w.id_commodity)}" title="Open ${esc(w.name)}: its alert is on its page">${esc(w.name)}<span class="pa-chip ${!w.on?"off":h?"hit":""}">${!w.on?"Paused":h?"At your mark":"Watching"}</span></a>`; }).join("")}</div>`:""; } }
 function paFormHtml(f){ const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?"selected":""}>${t}</option>`;
   return `<div class="wl-form" id="wl-form">
     <div class="full"><b>${f.id?"Change alert":"New alert"}: ${esc(f.name)}</b></div>
@@ -339,12 +340,6 @@ function paFormHtml(f){ const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)
     <span class="k">Prices from</span><select class="field" id="wl-age">${PA_AGES.map(([v,t])=>opt(v,v?`Reported in the last ${t}`:"Any age",f.max_age_h??72)).join("")}</select>
     ${f.hint?`<div class="hint">${f.hint}</div>`:""}
     <div class="full row" style="gap:6px"><button class="btn small primary" data-pa="save">${f.id?"Save":"Add alert"}</button><button class="btn small ghost" data-pa="cancel">Cancel</button></div></div>`; }
-// A new alert, with marks a little better than today's best prices
-function paNew(c,r){ const buy=r?.buy?.[0]?.price, sell=r?.sell?.[0]?.price, side=buy?"buy":"sell";
-  const round=n=>n>=1000?Math.round(n/10)*10:Math.round(n*100)/100;
-  S.paForm={id_commodity:c.id,name:c.name,side,low:side==="buy"&&buy?round(buy*0.95):"",high:side==="sell"&&sell?round(sell*1.05):"",system:$("mk-sys")?.value||"",max_age_h:72,
-    hint:buy||sell?`Today: cheapest to buy ${buy?money(buy):"–"}, best sell ${sell?money(sell):"–"}.`:""};
-  S.paScroll="new"; if(S.tab!=="alerts") document.querySelector('.tab[data-tab="alerts"]')?.click(); else renderAlerts(); }
 // A new alert for a piece of gear. One terminals buy is watched for its sell price (the usual reason: "tell me when
 // it pays"), else what shops sell it for.
 function paNewItem(i){ const round=n=>n>=1000?Math.round(n/10)*10:Math.round(n*100)/100, side=i.sell?"sell":"buy";
@@ -357,7 +352,6 @@ async function paOpenItem(w){ await Promise.all(PM_GEAR_TABS.map(t=>glData(t).ca
     document.querySelector(`.tab[data-tab="${tab}"]`)?.click(); const st=grState(tab); if(tab==="armor") st.view="items";
     setTimeout(()=>{ if(st.data) grOpenItem(tab,i.uuid||i.name,null); },150); return; }
   toast(`Couldn't find ${w.name} in Gear`); }
-async function paNewFor(c){ let r=null; try{ r=await api().uex_market(c.id); }catch(_){} paNew(c,r?.ok===false?null:r); }
 function paFormRead(){ const f=S.paForm; if(!f) return null;
   return {...f,side:$("wl-side").value,low:$("wl-low").value.replace(/[^\d.]/g,""),high:$("wl-high").value.replace(/[^\d.]/g,""),system:$("wl-sys").value,max_age_h:+$("wl-age").value}; }
 async function openAlerts(){ renderAlertsPane();
@@ -380,7 +374,8 @@ async function paClick(e){ if(await tradeClick(e)) return; const a=e.target.clos
   if(a==="del"){ S.pa=await api().watch_delete(w.id); qForget("watch"); if(S.paForm?.id===w.id) S.paForm=null; toast(`Price alert for ${w.name} removed`); return renderAlerts(); } }
 for(const id of ["pa-panel","pane-alerts"]){ const el=$(id); if(!el) continue; el.addEventListener("click",paClick);
   el.addEventListener("change",e=>{ if(e.target.id==="wl-side"&&S.paForm){ const f=paFormRead(); S.paForm={...f,low:f.high,high:f.low}; renderAlerts(); } }); }
-$("mk-watch").onclick=e=>{ if(e.target.closest("[data-act=paopen]")) document.querySelector('.tab[data-tab="alerts"]')?.click(); };
+$("mk-watch").onclick=e=>{ const a=e.target.closest("[data-pacom]"); if(!a) return; const c=S.mk?.find(x=>String(x.id)===a.dataset.pacom);
+  if(!c) return toast("Couldn't find it in Commodities"); S.mkSel=c; S.mkData=null; $("mk-search").value=c.name; renderMarket(); };
 // counts on the tabs from the start (and after alerts go off: main.js)
 setTimeout(()=>{ if(S.live?.log?.uex_token) paLoad().then(syncWatchCount).catch(()=>{}); },4000);
 // Does anywhere that buys or sells it have a place on the map (in the system picked)? No: no "See on map".
@@ -399,7 +394,6 @@ function toggleMarketMap(){ const d=S.mkData; if(!d) return; if(!S.mkMap&&!mkOnM
   renderMarket(); }
 $("mk-panel").onclick=async e=>{ if(e.target.closest("[data-act=mkmap]")) return toggleMarketMap();
   if(e.target.closest("[data-act=mkwatch]")&&S.mkData){ const el=$("mkp-alert"); el?.scrollIntoView({block:"center",behavior:"smooth"}); $("mka-low")?.focus(); return; }
-  if(e.target.closest("[data-act=paopen]")) return document.querySelector('.tab[data-tab="alerts"]')?.click();
   const mk=e.target.closest("[data-mka]"); if(mk) return mkAlertClick(mk.dataset.mka,mk.dataset.id);
   if(e.target.closest("[data-act=mksrcmap]")) return mkSourceMap();
   if(e.target.closest("[data-act=mksrcall]")){ S.mkSrcAll=!S.mkSrcAll; return S.mkData&&mkSources(S.mkData.c); }

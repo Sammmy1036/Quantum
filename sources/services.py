@@ -26,15 +26,25 @@ def _get(url):
         return json.loads(r.read().decode("utf-8"))
 
 
+# One amenity the wiki lists for two counters ("Buy and Rent Vehicles" at Area18, Lorville, Orison, Levski):
+# each gets its own tile on the placard, with its own icon
+SPLIT_AMENITIES = {"buy and rent vehicles": ["Buy Vehicles", "Rent Vehicles"],
+                   "rent and buy vehicles": ["Buy Vehicles", "Rent Vehicles"]}
+
+
+def _split_amenity(n):
+    return SPLIT_AMENITIES.get(re.sub(r"\s*(&|/)\s*", " and ", n.strip()).lower(), [n])
+
+
 def _amenity_names(raw):
     out = []
     for a in raw or []:
         if isinstance(a, str):
-            out.append(a)
+            out += _split_amenity(a)
         elif isinstance(a, dict):
             n = a.get("name") or a.get("display_name") or a.get("title")
             if n:
-                out.append(n)
+                out += _split_amenity(n)
     return sorted(set(out))
 
 
@@ -137,17 +147,41 @@ def clean_amenity(name):
 def _clean_labels(out):
     for name, r in out.items():
         seen, amen = set(), []
-        for a in r.get("amenities") or []:
-            a = clean_amenity(a)
-            if a and a not in seen:
-                seen.add(a)
-                amen.append(a)
+        for raw in r.get("amenities") or []:
+            for a in _split_amenity(clean_amenity(raw)):     # also fixes a services.json saved before the split
+                if a and a not in seen:
+                    seen.add(a)
+                    amen.append(a)
         out[name] = dict(r, amenities=amen)
     return out
 
 
+# A place's hospital or clinic is its own record in the data, filed under the place ("Empire Health Services
+# Medstation" under Area18, "Orison General" under Orison, "Mercy Hospital" under Levski)
+RX_MEDICAL = re.compile(r"hospital|clinic|medical|medstation|care cent(?:er|re)|health services|pure of heart|"
+                        r"\borison general\b|\brx\b", re.I)
+
+
+def _with_medical(out, records):
+    kids = {}
+    for r in records:
+        n = r.get("name") or ""
+        if n and not n.startswith("<=") and r.get("parent") and RX_MEDICAL.search(n):
+            kids.setdefault(_key(r["parent"]), []).append(
+                {"name": n, "description": (r.get("description") or "").strip(), "url": r.get("url") or "",
+                 "image": r.get("image") or "", "kind": "hospital" if re.search(r"hospital|general|care cent|"
+                 r"health services|pure of heart|medstation", n, re.I) else "clinic"})
+    for name, r in out.items():
+        src = out.get(r.get("inherited_from"), r) if r.get("inherited_from") else r     # a spaceport: its city's
+        med = kids.get(_key(src.get("name") or name)) or kids.get(_key(name))
+        if med:
+            seen = set()
+            out[name] = dict(r, medical=[m for m in med if not (m["name"] in seen or seen.add(m["name"]))])
+    return out
+
+
 def match(records, locations):
-    return _clean_labels(_with_reported(_match(records, locations), locations))
+    return _with_medical(_clean_labels(_with_reported(_match(records, locations), locations)), records)
 
 
 def _match(records, locations):

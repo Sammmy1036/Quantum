@@ -50,6 +50,31 @@ class TelemetryMixin:
             self._save_settings()
         return r
 
+    # ---- The RSI Launcher button at the foot of the sidebar (Settings > Window can hide it)
+    def launcher_status(self):
+        """{ok, available (Windows), running}. Asked every few seconds while the button shows; tasklist is
+        only run once per 4 s however often the page asks."""
+        now, c = time.time(), getattr(self, "_launch_st", None)
+        if c and now - c[0] < 4:
+            return c[1]
+        try:
+            running = telemetry_mod.launcher_running()
+        except Exception:
+            running = False
+        r = {"ok": True, "available": os.name == "nt", "running": running}
+        self._launch_st = (now, r)
+        return r
+
+    def start_launcher(self):
+        """Start Launcher: starts the RSI Launcher (with the telemetry setting when telemetry is on)."""
+        tr = getattr(self, "_tracker", None)
+        try:
+            r = telemetry_mod.start_launcher(tr.log_path if tr else None, bool(self._settings.get("telemetry_on", True)))
+        except Exception as e:
+            r = {"ok": False, "error": f"Couldn't start the RSI Launcher: {e}"}
+        self._launch_st = None                          # ask again next time, not the cached "not running"
+        return r
+
     def _contract_type(self, code, name):
         """A contract's mission data from the game files, for Jobs: {type ("Delivery", "Bounty Hunting"…), giver,
         reward, reward_max}; None if Quantum doesn't know it."""

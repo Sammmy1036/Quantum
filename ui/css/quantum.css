@@ -240,6 +240,19 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .stk-card .pr i{font-style:normal;font-size:11px;color:var(--ink-2)}.stk-card .pr i.a0{color:#57e39b}.stk-card .pr i.a2{color:#f2c14e}.stk-card .pr i.a3{color:#ff8a5c}
 .stk-card.shop.rent .ph img{object-fit:cover;padding:0}.stk-card.shop.rent{grid-template-columns:128px minmax(0,1fr)}
 .stk-card.nolink{cursor:default}.stk-card.nolink:hover{transform:none;border-color:var(--line)}
+/* A place's Hospital / Clinic window: the hospital, your check-ins there (Game.log) and its pharmacy */
+.hosp-hero{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:14px;margin:14px 0 4px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);overflow:hidden}
+.hosp-hero.noimg{grid-template-columns:minmax(0,1fr)}
+.hosp-ph{background:linear-gradient(135deg,#0c1629,#122038);min-height:140px}.hosp-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.hosp-bd{padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:8px;min-width:0}.hosp-hero.noimg .hosp-bd{padding-left:14px}
+.hosp-bd p{margin:0;font-size:13px;line-height:1.55;color:var(--ink)}.hosp-nm{font:600 15px var(--display)}
+.hosp-svc{display:flex;flex-wrap:wrap;gap:6px}.hosp-svc span{border:1px solid var(--line-2);border-radius:999px;padding:3px 10px;font-size:11.5px;color:var(--ink-2);background:rgba(75,141,255,.06)}
+.hosp-log{display:flex;flex-direction:column;gap:6px}
+.hosp-v{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);padding:8px 12px;font-size:13px}
+.hosp-v .hosp-t{flex:1;min-width:0}.hosp-v i{font-style:normal;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.hosp-room{font:400 12px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.04em;color:#7fc8ff;border:1px solid rgba(127,200,255,.4);border-radius:6px;padding:2px 8px;white-space:nowrap}
+.hosp-shop{margin:4px 2px 8px;font-size:12.5px;color:var(--ink-2)}
+@media (max-width:900px){.hosp-hero{grid-template-columns:minmax(0,1fr)}.hosp-bd{padding:0 14px 12px}}
 .pic-panel .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
 .pic-panel .gh{display:flex;align-items:baseline;gap:10px;margin:0 2px 14px;color:var(--ink-2);font-size:13px}.pic-panel .gh b{color:var(--ink);font-size:17px}
 .main-ship{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:16px;background:var(--panel-2)}.main-ship img{width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:8px}
@@ -472,6 +485,18 @@ svg.gi-color{stroke:none!important}
 
 .status{border-top:1px solid var(--line);padding:11px 16px;font-size:12.5px;color:var(--ink-2);display:grid;gap:5px}
 .status b{color:var(--ink);font-weight:600}
+/* The RSI Launcher button beside Settings: a filled HUD chamfer (top-left and bottom-right corners cut), Orbitron
+   capitals. Blue "Start Launcher"; greyed "Launcher Running"; "Starting…" while it opens. */
+.btn.launch-btn{display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:0;color:#fff;padding:7px 16px;
+  background:linear-gradient(180deg,#3d9bff,#1f6fe0);clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  font:700 9.5px Orbitron,var(--display);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.25);
+  box-shadow:none;transition:filter .15s}
+.btn.launch-btn:not(:disabled):hover{filter:brightness(1.12)}
+.btn.launch-btn:not(:disabled):active{filter:brightness(.92)}
+.btn.launch-btn[hidden]{display:none}
+.btn.launch-btn:disabled{opacity:1;cursor:default}
+.btn.launch-btn.running{background:linear-gradient(180deg,#2a3546,#1c2532);color:#7f8ea3;text-shadow:none}
+.btn.launch-btn.starting{background:linear-gradient(180deg,#2f6fb8,#1d4f99);color:#d6e8ff}
 .rsearch{position:relative;margin:0 0 14px;display:flex;gap:8px;align-items:stretch}
 .rsearch .search{flex:1;min-width:0}
 #rs-panel .filters{margin:-4px 0 10px}
@@ -2206,6 +2231,13 @@ button.hd-logo[data-flmaker]{cursor:pointer}
 
 /* Market › Price alerts */
 .pa-wrap{max-width:1100px}
+/* No alerts yet: the message in the middle of the page, not tucked in the top-left corner */
+.pa-wrap.empty{max-width:none;min-height:100%;display:flex;flex-direction:column}.pa-wrap.empty .so-land{margin:auto}
+/* Trade › Commodities: your commodity alerts, each opening its commodity */
+.pa-chead{font-size:12.5px;color:var(--ink-2)}
+.pa-cl{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+.pa-cl a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-2);border-radius:999px;padding:3px 4px 3px 10px;font-size:12px;color:var(--ink);background:var(--panel-2);cursor:pointer}
+.pa-cl a:hover{border-color:rgba(140,196,255,.55)}.pa-cl .pa-chip{font-size:10.5px}
 .pa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-top:10px}
 .pa-card{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:12px 14px}
 .pa-card.hit{border-color:rgba(87,227,155,.45)}.pa-card.off{opacity:.65}.pa-card.new{margin-top:10px;max-width:560px}
@@ -2757,6 +2789,10 @@ button.tl-dk-auec:hover b{color:#9fd0ff}
 ::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:5px;border:3px solid transparent;background-clip:padding-box}
 ::-webkit-scrollbar-thumb:hover{background-color:#3a5f8a}
 .rail::-webkit-scrollbar{width:0}
+/* The rail never shows a scrollbar: it scales to fit (titlebar.js railFit). The standard properties are needed too:
+   once scrollbar-color is set (the rule above, for everything), WebView2 ignores ::-webkit-scrollbar and drew the
+   rail a classic scrollbar with arrows whenever it ran a pixel over. */
+.rail{scrollbar-width:none;scrollbar-color:auto}
 
 /* dragging to reorder (telemetry.js tlSortable): the item follows the pointer, a line marks where it goes */
 .tl-dragging{position:relative;z-index:60;opacity:.85;box-shadow:0 6px 24px rgba(0,0,0,.5);cursor:grabbing!important;transition:none!important}

@@ -261,6 +261,21 @@ class ClockMixin:
         self._sender.send_after(delay)
         return {"ok": True}
 
+    def hospital_info(self, name):
+        """The Hospital / Clinic tile's window: the place's hospital or clinic (name, description, picture, wiki
+        page, from the Star Citizen Wiki data) and what your Game.log said while you were there (checking in, a
+        room or bed, an imprint set): {ok, place, facilities: [...], visits: [{text, at, place, room}]}.
+        What its pharmacy sells comes from uex_place_shop (the Medical group)."""
+        r = self._services.get(name) or {}
+        facilities = list(r.get("medical") or [])
+        places = set(place_group(name)) | {f["name"] for f in facilities}
+        t = getattr(self, "_tracker", None)
+        try:
+            visits = t.medical_at(places) if t else []
+        except Exception:
+            visits = []
+        return {"ok": True, "place": name, "facilities": facilities, "visits": visits[:12]}
+
     def get_services(self, name):
         """Services, jurisdiction and in-game description for one place (None if unknown), plus fuel
         prices from UEX when there's a token."""

@@ -96,6 +96,12 @@ def gate_pair(a, b):
 RE_TUNNEL = re.compile(r"OOC_JumpPoint_([A-Za-z]+)_([A-Za-z]+)")
 RE_ATC = re.compile(r"(ATC_DataManager_Port_[A-Za-z0-9_\-]+)'? \[(\d+)\]")   # quoted in "ATC '...' [id]" lines
 RE_JURISDICTION = re.compile(r"Entered (.+?) Jurisdiction")
+# A hospital or clinic's notifications (checking in at the Patient Check-In console, a room or bed given, an
+# imprint / regeneration point set, treatment). Kept per place for the Hospital tile on its card.
+RE_MEDICAL = re.compile(r"(?i)\b(regenerat\w*|imprint\w*|check(?:ed|ing)?[- ]?in|patient|hospital|clinic|med ?bed|"
+                        r"medical (?:bed|bay|room|treatment|care)|treatment|admitted|discharged|"
+                        r"(?:room|bed|ward)\s*(?:no\.?|number|#)?\s*\d+)\b")
+RE_MED_ROOM = re.compile(r"(?i)\b(room|bed|ward)\s*(?:no\.?|number|#)?\s*:?\s*([A-Z]?\d+[A-Z]?)\b")
 # What you personally are doing, from lines that name you or come from your own terminals:
 RE_CHARACTER = re.compile(r"geid (\d+) - accountId \d+ - name (\S+) - state STATE_CURRENT")
 RE_COMMS_ATC = re.compile(r"DoEstablishCommunicationCommon: .*? for (\S+) \[\d+\] to track their communication partner "
@@ -472,6 +478,7 @@ class ContractTracker(threading.Thread):
         self.atc = {}              # entity id -> "ATC_DataManager_Port_..." name (station traffic control)
         self.purchases = []        # items you bought at a shop (newest last): {"item", "shop", "where", "at", "n"}
         self.purchase_n = 0
+        self.medical = []          # hospital / clinic notifications (newest last): {"text", "at", "place", "room"}
         self.player_ref = None     # set by the app: () -> (global pos, system, time) of your last /showlocation
         self.phys_systems = []     # systems whose planets the last physics stats dump listed (this session)
         self.tunnel = None         # last wormhole the log mentioned: {"pair": ("Stanton", "Pyro"), "at"}
@@ -506,6 +513,7 @@ class ContractTracker(threading.Thread):
         self.loc_ids, self.cur = raw.get("loc_ids", {}), raw.get("cur", {})
         self.dest_ids, self.qt = raw.get("dest_ids", {}), raw.get("qt", {})
         self.zone_places, self.atc = raw.get("zone_places", {}), {int(k): v for k, v in raw.get("atc", {}).items()}
+        self.medical = [m for m in raw.get("medical", []) if isinstance(m, dict) and m.get("text")][-40:]
         self.code_places = raw.get("code_places", {}) if isinstance(raw.get("code_places"), dict) else {}
         self.gen_places = raw.get("gen_places", {}) if isinstance(raw.get("gen_places"), dict) else {}
         for c in raw.get("contracts", []):
@@ -523,7 +531,7 @@ class ContractTracker(threading.Thread):
                 "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build,
                 "loc_ids": self.loc_ids, "cur": self.cur, "in_pu": self.in_pu, "pu_at": self.pu_at, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places, "code_places": self.code_places, "gen_places": self.gen_places,
                 "phys_systems": self.phys_systems,
-                "atc": {str(k): v for k, v in self.atc.items()},
+                "atc": {str(k): v for k, v in self.atc.items()}, "medical": self.medical[-40:],
                 "contracts": [asdict(c) for c in self.contracts.values()]}
         tmp = self.store_path.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
@@ -1804,6 +1812,21 @@ class ContractTracker(threading.Thread):
         m = re.search(r"\b(Stanton|Pyro|Nyx)\b", name, re.I)
         return m.group(1).capitalize() if m else None
 
+    def _medical_note(self, text, ts):
+        """A hospital / clinic notification, filed under where the log has you now (the city, station…)."""
+        room = RE_MED_ROOM.search(text)
+        last = self.medical[-1] if self.medical else None
+        if last and last["text"] == text and abs(ts - last["at"]) < 5:
+            return                                          # the same line logged twice
+        self.medical = (self.medical + [{"text": text, "at": ts, "place": self.cur.get("place") or None,
+                                         "room": f"{room.group(1).title()} {room.group(2)}" if room else None}])[-40:]
+        self.version += 1
+
+    def medical_at(self, places):
+        """Hospital / clinic notifications logged at any of these places, newest first."""
+        with self.lock:
+            return [dict(m) for m in reversed(self.medical) if m.get("place") in places]
+
     def _notification(self, full: str) -> bool:
         ts0 = log_time(full) or time.time()
         if "channel '" in full and (c := RE_CHANNEL.search(full)):
@@ -1823,6 +1846,10 @@ class ContractTracker(threading.Thread):
         text, mid, oid = m.group(1), m.group(2) or "", m.group(3) or ""
         text = " ".join(text.split()).rstrip(": ").strip()
         ts = log_time(full) or time.time()
+        if not (mid and mid != ZERO_ID) and not re.match(r"(?i)(contract|objective|new objective)\b", text) \
+                and RE_MEDICAL.search(text):
+            self._medical_note(text, ts)
+            return True
         if j := RE_JURISDICTION.match(text):
             if j.group(1) in self.nav.bodies:
                 self.where = {**self.where, "body": j.group(1), "system": self.nav.bodies[j.group(1)].system}

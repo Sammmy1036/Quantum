@@ -544,6 +544,40 @@ async function openAlign(){ S.alignStatus=await api().calibration_status(); S.se
 
 $("btn-settings").onclick=()=>{ if(S.selected?.kind==="settings") return select(null);     // a second click closes it
   S.uexStat=null; S.selected={kind:"settings"}; renderDetail(); };
+// ---- The RSI Launcher button beside Settings (Windows). Blue "Start Launcher" when it isn't running; greyed,
+// unclickable "Launcher Running" when it is. Settings > Window can hide it (kept in localStorage "q-launcher-btn",
+// on by default). Asks the app every 5 s while it shows (the app runs tasklist at most once per 4 s).
+function launcherBtnOn(){ try{ return localStorage.getItem("q-launcher-btn")!=="0"; }catch{ return true; } }
+function setLauncherBtn(on){ try{ localStorage.setItem("q-launcher-btn",on?"1":"0"); }catch{} renderLauncherBtn(); if(on) launcherTick(); }
+// Shown the moment the page loads, from the last state Quantum saw (kept in localStorage "q-launcher-last"; before it
+// waited for the first check, ~10 s), then kept right by asking the app. On Windows only (WebView2 says so in its
+// user agent). Hidden while Star Citizen runs (you're past the launcher), so the rest of the line has the room.
+S.launcher=(()=>{ try{ const v=JSON.parse(localStorage.getItem("q-launcher-last")||"null"); if(v&&typeof v.running==="boolean") return {available:v.available!==false,running:v.running}; }catch{}
+  return {available:/Windows/i.test(navigator.userAgent),running:false}; })();
+const gameRunning=()=>!!S.live?.log?.game_running;
+function renderLauncherBtn(){ const b=$("btn-launcher"); if(!b) return; const L=S.launcher;
+  const show=launcherBtnOn()&&!!L&&L.available!==false&&!gameRunning(); b.hidden=!show; if(!show) return;
+  const starting=!L.running&&S.launcherStarting&&Date.now()-S.launcherStarting<45000;
+  const state=L.running?"running":starting?"starting":"stopped";
+  if(b.dataset.state===state) return; b.dataset.state=state;
+  b.classList.toggle("running",L.running); b.classList.toggle("starting",!!starting); b.disabled=L.running||!!starting;
+  b.textContent=L.running?"Launcher Running":starting?"Starting…":"Start Launcher";
+  b.title=L.running?"The RSI Launcher is running":starting?"Starting the RSI Launcher…":"Start the RSI Launcher"; }
+async function launcherTick(){ if(!launcherBtnOn()||S.launcher?.available===false||gameRunning()) return renderLauncherBtn();
+  if(S.launcherAsking) return; S.launcherAsking=true;
+  try{ const r=await api().launcher_status(); if(r?.ok){ S.launcher={available:r.available,running:r.running};
+      try{ localStorage.setItem("q-launcher-last",JSON.stringify(S.launcher)); }catch{} } }catch(e){}
+  finally{ S.launcherAsking=false; }
+  if(S.launcher.running) S.launcherStarting=null; renderLauncherBtn(); }
+renderLauncherBtn();                                                   // straight away, before the app answers
+if(window.pywebview?.api) setTimeout(launcherTick,0); else window.addEventListener("pywebviewready",()=>setTimeout(launcherTick,0));
+$("btn-launcher").onclick=async()=>{ const b=$("btn-launcher"); if(b.disabled) return;
+  S.launcherStarting=Date.now(); renderLauncherBtn();
+  let r; try{ r=await api().start_launcher(); }catch(e){ r={ok:false,error:String(e)}; }
+  if(!r.ok){ S.launcherStarting=null; renderLauncherBtn(); return toast(r.error||"Couldn't start the RSI Launcher"); }
+  if(r.already){ S.launcher={...S.launcher,running:true}; S.launcherStarting=null; renderLauncherBtn(); return; }
+  toast("Starting the RSI Launcher…"); setTimeout(launcherTick,2500); };
+setInterval(()=>{ if(window.pywebview?.api) launcherTick(); },5000);
 $("btn-plan").onclick=()=>planRoute(false); $("btn-plan-all").onclick=()=>planRoute(true);
 async function planRoute(withContracts){
   const btns=[...document.querySelectorAll(".btn.plan")]; const labels=btns.map(b=>b.innerHTML);
@@ -1145,6 +1179,7 @@ function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot")
   // Only worth a line when something's wrong: tracking contracts is the normal state.
   $("log-row").style.display=lg.status==="watching"||lg.status==="idle"?"none":"";
   $("log-text").innerHTML=lg.status==="error"?"Can't read Game.log right now":"Contract tracking off: Game.log not found";
+  renderLauncherBtn();                                               // hidden while the game runs
   const al=S.live.autoloc||{}; const parts=[]; if(al.hotkey) parts.push(`<b>${esc(al.hotkey)}</b> shows / hides`); if(al.loc_hotkey) parts.push(`<b>${esc(al.loc_hotkey)}</b> /showlocation`); 
   $("key-dot").className="dot"+(al.available&&parts.length?" on":""); $("key-text").innerHTML=al.available===false?"Hotkey: Windows only":parts.length?parts.join(" · "):"Hotkey off";
 

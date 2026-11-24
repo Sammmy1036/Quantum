@@ -432,6 +432,39 @@ def launcher_path(log_path=None):
     return next((str(c) for c in cands if c.exists()), None)
 
 
+def _spawn_launcher(path, env):
+    """Start the RSI Launcher on its own: no console, and not tied to Quantum's. Its output goes nowhere (before,
+    it inherited Quantum's console: the launcher's log filled Quantum's CMD window, and that window stayed open
+    after Quantum closed because the launcher was still holding it)."""
+    subprocess.Popen([path], cwd=str(Path(path).parent), env=env, close_fds=True,
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     creationflags=getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+
+
+def launcher_running():
+    """Is the RSI Launcher running? (Windows; elsewhere never.)"""
+    return os.name == "nt" and bool(_pids(LAUNCHER_EXE))
+
+
+def start_launcher(log_path=None, telemetry=True):
+    """The sidebar's Start Launcher button: start the RSI Launcher if it isn't running (never closes anything).
+    With telemetry on, it's given the setting directly too, so the game it starts serves its telemetry.
+    -> {ok, error, path, already}."""
+    if os.name != "nt":
+        return {"ok": False, "error": "Only on Windows"}
+    if _pids(LAUNCHER_EXE):
+        return {"ok": True, "already": True}
+    path = launcher_path(log_path)
+    if not path:
+        return {"ok": False, "error": "Couldn't find the RSI Launcher. Start it from the Start menu once and Quantum will find it after that"}
+    env = dict(os.environ, **({"GRPC_CLIENT_SERVER_ENABLED": "true"} if telemetry else {}))
+    try:
+        _spawn_launcher(path, env)
+    except OSError as e:
+        return {"ok": False, "error": f"Couldn't start the RSI Launcher: {e}", "path": path}
+    return {"ok": True, "path": path}
+
+
 def restart_launcher(log_path=None):
     """Close the RSI Launcher and start it again with the telemetry setting given to it directly, so the game it
     starts serves its telemetry (whatever Windows' own copy of the setting says). Refused while Star Citizen runs:
@@ -451,8 +484,7 @@ def restart_launcher(log_path=None):
             time.sleep(0.5)
     env = dict(os.environ, GRPC_CLIENT_SERVER_ENABLED="true")
     try:
-        subprocess.Popen([path], cwd=str(Path(path).parent), env=env, close_fds=True,
-                         creationflags=getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
+        _spawn_launcher(path, env)
     except OSError as e:
         return {"ok": False, "error": f"Couldn't start the RSI Launcher: {e}", "path": path}
     return {"ok": True, "path": path}

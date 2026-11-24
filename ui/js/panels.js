@@ -114,7 +114,7 @@ function servicesLoading(place){ const L=place&&S.locMap[place]; if(!L) return f
 const SVC_LOADING=`<div class="svc"><div class="none svc-loading"><span class="svc-spin"></span>Loading services offered…</div></div>`;
 function servicesHtml(r,place){
   if(servicesLoading(place)) return SVC_LOADING;
-  const trade=place&&S.tradePlaces?.has(place), on=trade&&S.stock?.place===place&&S.stock.kind!=="shop";
+  const trade=place&&S.tradePlaces?.has(place), on=trade&&S.stock?.place===place&&S.stock.kind==="commodity";
   // no services (yet, or none listed for the place): a place with a commodity terminal still gets its Commodities
   // tile, so that's where it always is; the card has no Commodities button of its own
   if(!r) return trade?`<div class="svc"><div class="svc-grid">${commodityTile(on)}</div></div>`:"";
@@ -125,6 +125,9 @@ function servicesHtml(r,place){
     if(m&&/^landing/i.test(m[1])){ const pz=padSize(place); if(pz) m[2]=pz; }
     const g=place&&shopGroupFor(a,place), gon=g&&S.stock?.kind==="shop"&&S.stock.place===place&&S.stock.group===g;
     const gk=svcGameKey(a,m?.[2]), sized=!!gk&&/^(pad|hangar)_/.test(gk);   // the game's pad / hangar icons carry their size
+    // Hospital / Clinic: always opens its own window (the hospital itself, your check-ins there, the pharmacy)
+    if(place&&HOSP_RX.test(a)){ const hon=S.stock?.kind==="hospital"&&S.stock.place===place;
+      return `<div class="svc-tile click${hon?" on":""}" data-hosp="1" title="${esc(a)}: the ${/clinic/i.test(a)?"clinic":"hospital"} here, your check-ins and what its pharmacy sells">${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }
     return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?.[2]&&!sized?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
     +(trade?commodityTile(on):"");
   // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
@@ -259,7 +262,7 @@ async function loadTradePlaces(){ if(S.tradePlaces!==undefined||!S.live?.log?.ue
   let r; try{ r=await api().uex_trade_places(); }catch(e){ r=null; }
   if(!r?.ok){ S.tradePlaces=undefined; if(S.selected?.kind==="loc") renderDetail(); return; }   // tried again next time a card opens
   S.tradePlaces=new Set(r.places); if(rsMode()==="search") rsRender(); if(S.selected?.kind==="loc") renderDetail(); }   // (any card: it may be showing "Loading services")
-async function toggleStock(place){ if(S.stock?.place===place&&S.stock.kind!=="shop"){ closeStock(); return renderDetail(); }
+async function toggleStock(place){ if(S.stock?.place===place&&S.stock.kind==="commodity"){ closeStock(); return renderDetail(); }
   S.stock={kind:"commodity",place,data:null,side:S.stockSide||"all",q:"",sort:S.stockSort||"name"}; renderDetail(); stockRender();
   const [r]=await Promise.all([api().uex_place_stock(place).catch(e=>({ok:false,error:String(e)})),stockCommodities()]);
   if(S.stock?.place!==place) return; S.stock.data=r; stockRender(); }
@@ -272,6 +275,7 @@ function stockPrice(x,side){ if(!x) return `<div><span class="lab">${side==="buy
     <i>${x.scu!=null?`${Number(x.scu).toLocaleString()} SCU`:esc(x.status_name||"")}</i><i class="${a.c}">${x.community?"⚡ ":""}${x.at?agoTs(x.at):"age unknown"}</i></div>`; }
 function stockRender(){ const P=$("stk-panel"), st=S.stock; if(!P) return; if(!st){ return closeStock(); }
   if(st.kind==="shop") return shopRender();
+  if(st.kind==="hospital") return hospitalRender();
   P.classList.add("show"); const L=S.locMap[st.place], r=st.data;
   const head=`<div class="stk-top"><div><h2>Commodities at ${esc(st.place)}</h2><div class="sub">${esc(L?`${TYPES[L.type]?.one||"Place"}${L.body?" on "+L.body:" in "+L.system}`:"")}${r?.ok&&r.terminals.length>1?` · ${r.terminals.length} terminals`:""}</div></div>
     <button class="btn small ghost close" data-stkclose="1" aria-label="Close">✕ Close</button></div>`;
@@ -322,6 +326,9 @@ function placeAmenities(list,place){ const have=place&&S.shopPlaces?.[place], ou
   for(const a of list){
     if(/ship items and weapons/i.test(a)){ const both=["shipweapons","components"], keep=have&&both.some(g=>have.includes(g))?both.filter(g=>have.includes(g)):both;
       for(const g of keep) out.push(SHOP_TILE[g]); }
+    // "Buy and Rent Vehicles" (Area18, Lorville, Orison, Levski…) is two counters: a Rent Vehicles tile and a
+    // Buy Vehicles tile, each with its own icon and window (before, it showed as one tile next to a Buy Vehicles)
+    else if(/\b(buy|purchase)\b.*\brent|\brent\b.*\b(buy|purchase)\b/i.test(a)&&/vehicle|ship/i.test(a)) out.push(SHOP_TILE.rentals,SHOP_TILE.vehicles);
     else out.push(a); }
   if(have){ const covered=new Set(out.flatMap(a=>{ const h=SVC_SHOP.find(([rx])=>rx.test(a)); return h?h[1]:[]; }));
     for(const g of Object.keys(SHOP_TILE)) if(have.includes(g)&&!covered.has(g)) out.push(SHOP_TILE[g]); }
@@ -396,6 +403,48 @@ function shopWire(P){
   for(const b of P.querySelectorAll("[data-shopg]")) b.onclick=()=>{ S.stock.group=b.dataset.shopg; shopRender(); renderDetail(); };
   const so=P.querySelector("[data-stksort]"); if(so) so.onchange=()=>{ S.stock.sort=S.shopSort=so.value; shopRender(); };
   const q=P.querySelector("[data-stkq]"); if(q){ let t; q.oninput=()=>{ S.stock.q=q.value; clearTimeout(t); t=setTimeout(()=>{ const pos=q.selectionStart; shopRender(); const n=$("stk-panel").querySelector("[data-stkq]"); if(n){ n.focus(); n.setSelectionRange(pos,pos); } },220); }; } }
+// ---- A place's Hospital / Clinic tile: the hospital itself (its name, picture and description from the Star Citizen
+// Wiki data: Empire Health Services at Area18, Orison General, Maria Pure of Heart…), what your Game.log said while
+// you were there (checking in at the Patient Check-In console, the room or bed you were given, an imprint set) and
+// what its pharmacy sells (UEX's Medical items at the place). Same window as Commodities and the shops.
+const HOSP_RX=/hospital|clinic|medical cent|medbay/i;
+async function toggleHospital(place){ if(S.stock?.kind==="hospital"&&S.stock.place===place){ closeStock(); return renderDetail(); }
+  S.stock={kind:"hospital",place,info:null,shop:null}; renderDetail(); hospitalRender();
+  const st=S.stock, hasUex=!!S.live?.log?.uex_token;
+  const [info,shop]=await Promise.all([api().hospital_info(place).catch(e=>({ok:false,error:String(e)})),
+    hasUex?api().uex_place_shop(place).catch(e=>({ok:false,error:String(e)})):Promise.resolve({ok:false,nouex:true})]);
+  if(S.stock!==st) return; st.info=info; st.shop=shop; hospitalRender();
+  if(shop?.ok&&(shop.shops||[]).some(s=>s.items.some(i=>i.group==="medical"))){ await glData("consumables").catch(()=>[]); if(S.stock===st) hospitalRender(); } }
+function hospitalRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="hospital") return;
+  P.classList.add("show"); const L=S.locMap[st.place], info=st.info, f=info?.facilities?.[0];
+  const amen=(S.svcCache[st.place]?.amenities||[]).find(a=>HOSP_RX.test(a))||"Hospital", what=/clinic/i.test(amen)?"Clinic":"Hospital";
+  const head=`<div class="stk-top"><div><h2>${esc(f?.name||`${what} at ${st.place}`)}</h2><div class="sub">${esc(what)} · ${esc(st.place)}${L?esc(L.body?" on "+L.body:" in "+L.system):""}</div></div>
+    <button class="btn small ghost close" data-stkclose="1" aria-label="Close">✕ Close</button></div>`;
+  if(!info){ P.innerHTML=head+qLoader(`Loading the ${what.toLowerCase()}…`); return shopWire(P); }
+  // the hospital: picture, description, its page on the wiki (a second one at the place, if there is, below it)
+  const fac=(info.facilities||[]).map((x,k)=>`<div class="hosp-hero${x.image?"":" noimg"}">${x.image?`<div class="hosp-ph"><img src="${esc(x.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></div>`:""}
+      <div class="hosp-bd">${k?`<b class="hosp-nm">${esc(x.name)}</b>`:""}${x.description?`<p>${esc(x.description.replace(/^(?:LOCATION:)?[^\n]*(?:Stanton|Pyro|Nyx) System\s*\n+/,"")).replace(/\n+/g,"<br>")}</p>`:""}
+        <div class="hosp-svc">${["Patient check-in","Medical beds and treatment","Regeneration (set your imprint here)","Pharmacy"].map(t=>`<span>${t}</span>`).join("")}</div>
+        ${x.url?`<div class="credit">Info: <a data-ext="${esc(x.url)}">Star Citizen Wiki API</a> (CC BY-SA 4.0)</div>`:""}</div></div>`).join("")
+    ||`<div class="muted" style="font-size:13px;padding:2px">The game data doesn't name the ${what.toLowerCase()} here.</div>`;
+  // your check-ins here, from Game.log
+  const V=info.visits||[];
+  const visits=`<div class="stk-th"><b>Your visits here</b><span>from your Game.log</span></div>`+(V.length?`<div class="hosp-log">${V.map(v=>`<div class="hosp-v">${v.room?`<span class="hosp-room">${esc(v.room)}</span>`:""}<span class="hosp-t">${esc(v.text)}</span><i>${esc(agoTs(v.at))}</i></div>`).join("")}</div>`
+    :`<div class="muted" style="font-size:13px;padding:2px 2px 4px">Nothing logged here yet. Check in at the Patient Check-In console and what the game writes to Game.log about it (your room or bed, an imprint set) shows up here.</div>`);
+  // the pharmacy
+  const sh=st.shop, meds=sh?.ok?(sh.shops||[]).map(s=>({...s,items:s.items.filter(i=>i.group==="medical")})).filter(s=>s.items.length):[];
+  const medCard=i=>{ const m=shopGear(i), a=drAge(i.at), img=m?.g?.image, link=m?`data-shopgear="${esc(m.tab)}|${esc(m.g.uuid||m.g.name)}" title="Open ${esc(i.name)} in Consumables"`:"";
+    return `<div class="stk-card shop${link?"":" nolink"}" ${link}><div class="ph" ${img?"":`data-gpic="${esc(i.name)}"`}>${img?`<img src="${esc(img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:phCard("commodity")}</div>
+      <div class="bd"><div class="nm"><b>${esc(i.name)}</b></div><div class="cat">${esc([m?.g?.maker,i.category||"Medical"].filter(Boolean).join(" · "))}</div>
+        <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>aUEC</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
+  const n=meds.reduce((k,s)=>k+s.items.length,0);
+  const pharm=`<div class="stk-th"><b>Pharmacy</b><span>${sh?.ok?`${n} item${n===1?"":"s"} · prices from UEX`:"prices from UEX"}</span></div>`
+    +(!sh?qLoader("Loading the pharmacy…"):sh.nouex?`<div class="note">Connect UEX in Settings to see what the pharmacy here sells and for how much.</div>`
+      :!sh.ok?`<div class="note">${esc(sh.error||"Couldn't load the pharmacy")}</div>`
+      :!meds.length?`<div class="muted" style="font-size:13px;padding:2px">UEX has no medical items listed for sale at ${esc(st.place)} yet.</div>`
+      :meds.map(s=>`<div class="hosp-shop"><span>${esc(s.name)}</span></div><div class="stk-grid">${[...s.items].sort((a,b)=>a.name.localeCompare(b.name)).map(medCard).join("")}</div>`).join(""));
+  P.innerHTML=head+fac+visits+pharm+(meds.length?`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the shop before you buy. Click an item for its page in Consumables.</div>`:"");
+  shopWire(P); fillGearPictures(P); }
 // "Is something inaccurate?" at the foot of a place's card: the position (sent with a /showlocation), its
 // services (which listed ones aren't there, what's missing) or anything else. Services and the rest go to the
 // team as a report (the same inbox as Report a bug), tagged with the place. Kept in S.fix so the card can redraw.
@@ -527,6 +576,8 @@ function renderDetail(){
           .map(([k,label,bar])=>`<button type="button" class="wp-opt${(S.winStyle?.style||"quantum")===k?" on":""}" data-winstyle="${k}" ${S.winStyle?.available===false?"disabled":""} aria-pressed="${(S.winStyle?.style||"quantum")===k}">
             <div class="wp-prev">${bar}<div class="wp-body"><span class="wp-rail"></span><span class="wp-side"></span><span class="wp-map"></span></div></div><span class="wp-l">${label}</span></button>`).join("")}</div>
         ${S.winStyle&&(S.winStyle.style==="quantum")!==S.winStyle.active?`<div class="wp-note">Please restart Quantum for the changes to take effect.</div>`:""}</div>
+      ${S.launcher?.available===false?"":`<div class="note set-box" style="margin:4px 0 12px"><label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="s-launchbtn" ${launcherBtnOn()?"checked":""} onchange="setLauncherBtn(this.checked)"> Show the RSI Launcher button</label>
+        <div class="muted" style="font-size:12px;margin-top:6px">Beside Settings at the foot of the sidebar: <b>Start Launcher</b> opens the RSI Launcher, and it shows <b>Launcher Running</b> while it's open.</div></div>`}
       <div class="sub">Sidebar</div>
       <div class="note set-box" style="margin:4px 0 12px"><div class="row" style="gap:8px;align-items:center">
         <div class="muted" style="font-size:12px;flex:1">Drag the sections in the left-hand bar up or down to put them in the order you like (or focus one and press Alt+↑ / Alt+↓). Your order is saved on its own.</div>
@@ -656,6 +707,7 @@ function renderDetail(){
       if(dm.dataset.desc==="more"){ S.descOpen.add(sel.name); S.descShut.delete(sel.name); } else { S.descOpen.delete(sel.name); S.descShut.add(sel.name); if(S.descFit===sel.name) S.descFit=null; }
       const el=$("d-svc"); if(el) el.innerHTML=servicesHtml(S.svcCache[sel.name],sel.name); return; }
     if(e.target.closest("[data-stock]")) return toggleStock(sel.name);
+    if(e.target.closest("[data-hosp]")) return toggleHospital(sel.name);
     const sh=e.target.closest("[data-shop]"); if(sh) return toggleShop(sel.name,sh.dataset.shop);
     const gl=e.target.closest("[data-golink]"); if(gl){ const n=gl.dataset.golink; select({kind:"loc",name:n}); if(S.locMap[n]?.pos) focusLoc(n,true); return; }
     const a=e.target.dataset?.a; if(e.target.classList.contains("close")) return select(null); if(!a) return;

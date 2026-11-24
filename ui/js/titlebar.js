@@ -54,6 +54,14 @@ function railFit(){ let lo=0.25, hi=1, best=0.25; const set=k=>{ rail.style.setP
   set(1); if(rail.scrollHeight<=rail.clientHeight+1) return;
   for(let i=0;i<7;i++){ const k=(lo+hi)/2; set(k); if(rail.scrollHeight<=rail.clientHeight+1){ best=k; lo=k; } else hi=k; }
   set(best); }
-new ResizeObserver(railFit).observe(rail); window.addEventListener("resize",railFit); railFit();
+// Fitted again whenever the rail or anything in it changes size: the window, but also buttons shown or hidden after
+// start-up (signed in, UEX connected), the profile photo and count badges arriving, the fonts loading. Before, only
+// the rail's own box was watched, so content that grew after the first fit ran past the bottom.
+let railQ=0; const railSoon=()=>{ if(railQ) return; railQ=requestAnimationFrame(()=>{ railQ=0; railFit(); }); };
+const railRO=new ResizeObserver(railSoon); railRO.observe(rail);
+const railWatch=()=>{ for(const el of rail.children) railRO.observe(el); };
+// (not style: railFit's own --rk writes, and a button's moves while you drag to reorder, would refit every frame)
+new MutationObserver(ms=>{ if(ms.every(m=>m.target===rail&&m.attributeName==="style")) return; railWatch(); railSoon(); }).observe(rail,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","class"]});
+railWatch(); window.addEventListener("resize",railSoon); document.fonts?.ready.then(railSoon); railFit();
 if(window.pywebview?.api?.window_style) init(); else window.addEventListener("pywebviewready",init,{once:true});
 })();
