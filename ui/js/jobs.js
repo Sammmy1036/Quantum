@@ -21,13 +21,14 @@ function jbIc(k){
   return `<span class="jb-ic">${(h&&h())||""}</span>`; }
 const jbLeft=t=>{ const s=Math.max(0,t-Date.now()/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60); return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m`; };
 const jbAll=d=>(d?.roles||[]).flatMap(r=>[...r.daily,...r.weekly]);
-async function jbLoad(sync){ if(S.jb.busy) return; S.jb.busy=true;
+async function jbLoad(sync){ if(S.jb.busy){ if(sync) S.jb.again=true; return; } S.jb.busy=true;
   let r; try{ r=await (sync?api().jobs_sync():api().jobs_state()); }catch(e){ r={ok:false,error:String(e)}; }
   S.jb.busy=false; S.jb.at=Date.now();
   const prev=S.jb.data; S.jb.data=r;
   if(prev?.ok&&r?.ok){ const was=new Set(jbAll(prev).filter(j=>j.done_at).map(j=>j.id));
     for(const j of jbAll(r)) if(j.done_at&&!was.has(j.id)) toast(`Job done: ${j.name} · ${j.title}`); }
-  jbCount(); if(S.tab==="jobs") jbRender(); jbPinsRender(); if(S.tab==="profile"&&typeof renderProfile==="function") renderProfile(); }
+  jbCount(); if(S.tab==="jobs") jbRender(); jbPinsRender(); if(S.tab==="profile"&&typeof renderProfile==="function") renderProfile();
+  if(S.jb.again){ S.jb.again=false; setTimeout(()=>jbLoad(true),500); } }
 function jbCount(){ const d=S.jb.data, c=$("c-jobs"); if(!c) return; if(!d?.ok){ c.textContent=""; return; }
   const n=jbAll(d).filter(j=>j.done_at).length; c.textContent=n?`${n}/${jbAll(d).length}`:""; }
 function openJobs(){ jbRender(); jbLoad(true); jbTelLoad(); }
@@ -75,7 +76,7 @@ function jbRender(){ const P=$("jb-panel"), side=$("jb-side"), d=S.jb.data; if(!
       <button type="button" class="jb-role ${view==="all"?"on":""}" data-jbview="all" aria-pressed="${view==="all"}"><span class="jb-ic">${typeof gameIcon==="function"?gameIcon("missions","jb-gi"):""}</span><span>Every role</span><b>${done}/${jbAll(d).length}</b></button>
       ${d.roles.map(r=>`<button type="button" class="jb-role ${view===r.id?"on":""}" data-jbview="${r.id}" aria-pressed="${view===r.id}">${jbIc(r.id)}<span>${esc(r.name)}</span><b>${r.done}/${r.total}</b></button>`).join("")}</div>
     <div class="jb-stats"><div><b>${d.points||0}</b><span>Job points</span></div><div><b>${d.done?.daily||0}</b><span>Dailies done</span></div><div><b>${d.done?.weekly||0}</b><span>Weeklies done</span></div></div>
-    <div class="muted" style="font-size:11.5px;line-height:1.5;margin-top:10px">Daily Jobs are calculated as 1 point, weekly jobs are calculated as 3 points.</div>`;
+    <div class="muted" style="font-size:11.5px;line-height:1.5;margin-top:10px">Every role's jobs count at the same time: do whichever you like. Dailies are 1 point, weeklies 3.</div>`;
   const head=(icon,title)=>`<div class="mkp-head" style="grid-template-columns:1fr"><div class="hd-main"><div class="hd-title"><div><h2 class="jb-h2">${icon}${esc(title)}</h2>
       <div class="sub">${d.swaps_left} of ${d.swaps_max} swaps left today · new dailies in ${jbLeft(d.daily_next)} · new weeklies in ${jbLeft(d.weekly_next)}${d.measured_at?` · progress from ${agoTs(d.measured_at)}`:""}</div></div>
       <button class="btn small ghost" data-jbsync="1" ${S.jb.busy?"disabled":""}>${S.jb.busy?"Updating…":"Update progress"}</button></div></div></div>`;
@@ -109,6 +110,15 @@ document.addEventListener("click",async e=>{ if(!e.target.closest("#jb-panel,#jb
 // in the background: every 3 minutes while the game sends data (or the tab is open), so a finished job is noticed
 setInterval(()=>{ if(S.tab==="jobs"&&!S.jb.tel?.seen) jbTelLoad(); },15000);
 setInterval(()=>{ const live=S.live?.telemetry?.status==="connected"; if((S.tab==="jobs"||live)&&Date.now()-S.jb.at>170000&&S.jb.data?.ok!==false) jbLoad(true); },20000);
+// Progress moves when you earn: every 4 s the app is asked (locally, no server call) whether the earnings log has a new
+// entry, and if so Jobs and the pinned jobs on Home sync a few seconds later (once the payout has settled). Before, the
+// pins only refreshed with the 3-minute sync, or by opening Jobs.
+S.jb.mark=null;
+setInterval(async()=>{ if(!window.pywebview?.api||S.jb.data?.ok===false) return;
+  if(!(S.tab==="jobs"||jbPins().length)) return;
+  let m; try{ m=await api().jobs_log_mark(); }catch(_){ return; } if(!m?.ok) return;
+  const k=`${m.n}|${m.t}`; if(S.jb.mark===null){ S.jb.mark=k; return; }
+  if(k!==S.jb.mark){ S.jb.mark=k; clearTimeout(S.jb.markT); S.jb.markT=setTimeout(()=>jbLoad(true),3000); } },4000);
 setTimeout(()=>jbLoad(false),6000);
 
 // =================================================================== badges
@@ -187,7 +197,8 @@ function jbPinsWire(W){
       jbLS("q-jb-pins-pos",{x:parseFloat(W.style.left)/wrap.clientWidth,y:parseFloat(W.style.top)/wrap.clientHeight});
       setTimeout(()=>delete W.dataset.moved,0); };
     W.addEventListener("pointermove",mv); W.addEventListener("pointerup",up); W.addEventListener("pointercancel",up); }); }
-for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",()=>setTimeout(jbPinsRender,0));
+for(const t of document.querySelectorAll(".tab")) t.addEventListener("click",()=>setTimeout(()=>{ jbPinsRender();
+  if(jbPins().length&&groupOf(S.tab||"route")==="navigate"&&Date.now()-(S.jb.at||0)>60000&&S.jb.data?.ok!==false) jbLoad(true); },0));
 window.addEventListener("resize",()=>{ const W=$("jb-pins"); if(W&&!W.hidden) jbPinsPlace(W); });
 
 // ---- A badge, opened from Jobs: the medal big, every tier with what it takes, how far along you are, and what counts

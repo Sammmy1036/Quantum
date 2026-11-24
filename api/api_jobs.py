@@ -48,6 +48,14 @@ class JobsMixin:
     def jobs_reroll(self, jid):
         return self._jobs_call("reroll", {"id": str(jid or "")[:24]})
 
+    def jobs_log_mark(self):
+        """A cheap check the page makes every few seconds: how many balance rises the session log has, and the last
+        one's time. When it changes, a job may have moved, so the page syncs (the pinned jobs on Home, Jobs)."""
+        sess = getattr(self, "_sess", None)
+        log = list(getattr(sess, "log", None) or []) if sess else []
+        ups = [e for e in log if (e.get("delta") or 0) > 0]
+        return {"ok": True, "n": len(ups), "t": (ups[-1].get("t") or 0) if ups else 0}
+
     def jobs_sync(self):
         """Send this week's balance changes; every role's jobs come back with their progress."""
         last = getattr(self, "_jobs_last", None) or self._jobs_call("mine")

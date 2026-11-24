@@ -361,13 +361,15 @@ function drMapJobHtml(){ const j=S.drMapJob; if(!j) return ""; const L=S.locMap?
     </ol></div>`; }
 function drMapJobPaint(){ const b=$("dr-mapjob"); if(b) b.outerHTML=drMapJobHtml(); }
 async function drMapJobClick(e){ const a=e.target.closest("[data-mj]"); if(!a) return false; const j=S.drMapJob, w=a.dataset.mj;
-  if(w==="cancel"||w==="done"){ if(w==="cancel"&&j) drRelease(`p:${j.name}`); S.drMapJob=null; renderDrJobs(); return true; }
+  // Cancel lets it go; Done (it's on the map) finishes it. Both free the hold (before, Done didn't: the finished job
+  // stayed in Your jobs, and showed as taken to others, until its 30 minutes ran out)
+  if(w==="cancel"||w==="done"){ if(j) drRelease(`p:${j.name}`); S.drMapJob=null; await drLoadClaims(); renderDrJobs(); return true; }
   if(w==="arrived"&&j){ j.arrived=Date.now(); drMapJobPaint(); return true; }
   if(w==="notyet"&&j){ j.arrived=null; drMapJobPaint(); return true; }
   if(w==="submit"&&j){ a.disabled=true; a.textContent="Submitting…";
     const r=await api().set_place_here(j.name);
     if(!r.ok){ toast(r.error); a.disabled=false; a.textContent=`Submit position for ${j.name}`; return true; }
-    j.state="sent"; j.result={state:"sending"}; drMapJobPaint(); S.drProfAt=0;
+    j.state="sent"; j.result={state:"sending"}; drRelease(`p:${j.name}`); drMapJobPaint(); S.drProfAt=0;   // done: free the hold
     // Up to ~90 s: the app tries the server 3 times before queueing it for later.
     for(let k=0;k<120&&S.drMapJob===j;k++){ await new Promise(r=>setTimeout(r,750)); const pr=await api().place_result(j.name);
       j.result=pr.state==="none"?j.result:pr; drMapJobPaint(); if(pr.state!=="sending"&&pr.state!=="none") break; }
@@ -393,6 +395,7 @@ function drRelease(job){ if(S.drHeld) delete S.drHeld[job]; if(S.drClaims) delet
   (S.drDone=S.drDone||{})[job]=Date.now(); return api().dr_claim(job,true).catch(()=>{}); }
 // A job finished in the last few minutes, or a planet that's already lined up: never one of "Your jobs".
 function drJobFinished(id){ const t=S.drDone?.[id]; if(t&&Date.now()-t<CLAIM_MIN*60000) return true;
+  if(id.startsWith("p:")){ const L=S.locMap?.[id.slice(2)]; if(L?.pos&&!L.verify) return true; }   // that station is on the map now
   return id.startsWith("a:")&&!!S.drAlignedSet?.has(id.slice(2)); }
 // Up to DR_MAX_JOBS jobs can be held at once. One of each kind is "open" (its steps shown); the rest wait in
 // "Your jobs" until you switch to them. S.drHeld keeps what each needs to be opened again.
