@@ -1089,8 +1089,9 @@ class MapMixin:
         except OSError:
             pass
         if (kind.startswith("auto-") or kind == "manual") and self._on_live():   # a new LIVE alignment
-            if self._tracker.build:          # aligned by you in this game build: datarunners' agreed one doesn't replace it
-                self._settings.setdefault("cal_build", {})[body] = str(self._tracker.build)
+            build = self._game_build()       # the checked LIVE build (never a PTU build still held over)
+            if build:                        # aligned by you in this game build: datarunners' agreed one doesn't replace it
+                self._settings.setdefault("cal_build", {})[body] = str(build)
                 self._save_settings()
             self._share_alignment(body, place, kind)
 
@@ -1099,12 +1100,13 @@ class MapMixin:
         alignment of the same body in the same build agrees, it earns points toward your rank (the first
         alignments after a game update are the useful ones)."""
         b = self._db.bodies.get(body_name)
-        if not b or not self._tracker.build:
+        build = self._game_build() if self._on_live() else ""
+        if not b or not build:
             return
         # Kept in settings until the server has it (like shared station positions): an alignment made
         # while the server is down, or before you've signed in, is sent with the next map sync instead
         # of being lost. A newer alignment of the same body replaces the waiting one.
-        entry = {"body": b.name, "system": b.system, "build": str(self._tracker.build),
+        entry = {"body": b.name, "system": b.system, "build": str(build),
                  "offset": round(b.rotation_offset_deg, 6), "period": b.rotation_period_h, "epoch": b.epoch_utc,
                  "place": place, "quality": b.calibration_quality or kind}
         self._settings.setdefault("align_unsent", {})[b.name] = entry

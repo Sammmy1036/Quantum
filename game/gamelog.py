@@ -469,6 +469,7 @@ class ContractTracker(threading.Thread):
         self.contacts = []         # ships that streamed in near you: {"id", "code", "name", "threat", "at", "safe"}
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
+        self.build_log = None      # the Game.log that build was read from (LIVE's or a test channel's)
         self._build_read = False   # read from this log yet (it's read again for every new game session)
         self.branch = ""           # release from the log ("4.10.0"; a hotfix like 4.10.2 can still say 4.10.0)
         self.zone_bodies = {}      # zoneHostId -> body name, learned per game session
@@ -509,6 +510,7 @@ class ContractTracker(threading.Thread):
         self.in_pu, self.pu_at = bool(raw.get("in_pu")), float(raw.get("pu_at") or 0)   # same game session as the offset
         self.where, self.zone_bodies = raw.get("where", {}), raw.get("zone_bodies", {})
         self.build = raw.get("build", "")
+        self.build_log = raw.get("build_log") or (self.log_path if self.build else None)
         self.phys_systems = raw.get("phys_systems", [])
         self.loc_ids, self.cur = raw.get("loc_ids", {}), raw.get("cur", {})
         self.dest_ids, self.qt = raw.get("dest_ids", {}), raw.get("qt", {})
@@ -528,7 +530,7 @@ class ContractTracker(threading.Thread):
 
     def _save(self):
         data = {"log_path": self.log_path, "log_sig": self.log_sig, "offset": self.offset,
-                "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build,
+                "where": self.where, "zone_bodies": self.zone_bodies, "build": self.build, "build_log": self.build_log,
                 "loc_ids": self.loc_ids, "cur": self.cur, "in_pu": self.in_pu, "pu_at": self.pu_at, "dest_ids": self.dest_ids, "qt": self.qt, "zone_places": self.zone_places, "code_places": self.code_places, "gen_places": self.gen_places,
                 "phys_systems": self.phys_systems,
                 "atc": {str(k): v for k, v in self.atc.items()}, "medical": self.medical[-40:],
@@ -1442,7 +1444,7 @@ class ContractTracker(threading.Thread):
         if not self._build_read and "Build(" in line:
             m = re.search(r"Build\((\d+)\)", line)
             if m:
-                self.build, self._build_read = m.group(1), True
+                self.build, self._build_read, self.build_log = m.group(1), True, self.log_path
         if not self.branch and "sc-alpha-" in line:
             m = re.search(r"sc-alpha-(\d+\.\d+(?:\.\d+)?)", line)
             if m:

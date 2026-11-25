@@ -5,7 +5,8 @@ A mixin of app.py's Api (class Api(... JobsMixin ...)): the methods are the Api'
 Module-level names come from qbase.py.
 
 Jobs: every role (Cargo Hauler, Delivery Courier, Bounty Hunter, Mercenary, Salvager, Miner, Refueler, Trader) has 3
-jobs a day and 5 a week, all at once, new at 08:00 Pacific (weekly ones on Mondays), with 3 swaps a day. The server
+jobs a day, and the week has 5 weekly missions that mix roles (steps from 3 or 4 of them), leaning toward your
+preferred role if you mark one. New at 08:00 Pacific (missions on Mondays), with 3 swaps a day. The server
 makes them and counts them from the balance changes Quantum writes down (earnings.json, game/session_stats.py).
 
 Stats: earnings.json (balance changes, finished sessions and the one running now) is sent every few minutes while
@@ -44,6 +45,10 @@ class JobsMixin:
     def jobs_badges_show(self, show=True):
         """Show your job badges on your profile, or not (kept with the account on the server)."""
         return self._jobs_call("badges", {"show": bool(show)})
+
+    def jobs_prefer(self, role=None):
+        """Mark a preferred role for the weekly missions ("" / None: none). Missions not started yet are made again."""
+        return self._jobs_call("prefer", {"role": str(role or "")[:24]})
 
     def jobs_reroll(self, jid):
         return self._jobs_call("reroll", {"id": str(jid or "")[:24]})

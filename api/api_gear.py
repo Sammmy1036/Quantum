@@ -224,16 +224,30 @@ class GearMixin:
         p = (path if path is not None else (self._tracker.log_path or "")).upper().replace("/", "\\")
         return next((c for c in self.GAME_CHANNELS if f"\\{c}\\" in p), "LIVE")
 
-    def _on_live(self):
+    def _on_live(self, path=None):
         """True when the Game.log being read is the LIVE game's. Only LIVE builds count as "the game build":
         logging into the PTU (or EPTU, Tech-Preview, Hotfix) must not look like a game update, start planet
-        alignment over, or tag alignments with a test build."""
-        return self._game_env() == "LIVE"
+        alignment over, or tag alignments with a test build. Strict: only the LIVE folder's Game.log is LIVE (a
+        channel folder Quantum doesn't know by name used to count as LIVE)."""
+        p = (path if path is not None else (self._tracker.log_path or "")).upper().replace("/", "\\")
+        return "\\LIVE\\" in p
 
     def _game_build(self):
         """The LIVE game build (from Game.log), or the last LIVE one seen when the game isn't running or
         you're playing a test channel (PTU and friends never replace it)."""
-        b = str(self._tracker.build or "") if self._on_live() else ""
+        tr = self._tracker
+        b = str(tr.build or "")
+        # The build must have been read from the Game.log being read now, and that log must be LIVE's. Switching
+        # from the PTU's log to LIVE's kept the PTU's build for a moment (until LIVE's header was read): that
+        # looked like a LIVE update, and planet and station alignment started over (twice: in, then back).
+        src = getattr(tr, "build_log", None)
+        same = bool(src) and os.path.normcase(str(src)) == os.path.normcase(str(tr.log_path or ""))
+        test = self._settings.setdefault("test_builds", [])
+        if b and src and not self._on_live(src) and b not in test:      # a test channel's build: never a LIVE update
+            test.append(b)
+            del test[:-30]
+            self._save_settings()
+        b = b if b and same and self._on_live(src) and b not in test else ""
         old = self._settings.get("last_build")
         if b and b != old:
             self._settings["last_build"] = b
@@ -241,7 +255,7 @@ class GearMixin:
             # An older Quantum saved PTU builds here too. Coming back to LIVE from one of those isn't an
             # update: just take the LIVE build quietly.
             old_label = ((self._settings.get("build_labels") or {}).get(str(old)) or "").upper()
-            was_test = any(c in old_label for c in self.GAME_CHANNELS if c != "LIVE")
+            was_test = any(c in old_label for c in self.GAME_CHANNELS if c != "LIVE") or str(old) in test
             if old and not was_test:
                 self._on_new_build(old, b)
         return b or self._settings.get("last_build")

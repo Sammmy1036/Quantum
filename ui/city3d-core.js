@@ -743,7 +743,7 @@ function worldFor(body){ if(worlds[body]) return worlds[body];
   wst=worlds[body]=define({ city:body, body, file:`terrain/${body}.js`, world:true,
     anchorAt:()=>wst.want?{pos:wst.want}:null, alt0:0, extent:110000, edge:[45000,100000], rebuildDist:28000,
     reveal:[160000,40000], revealDist:[1e12,2e12], groundDist:[1e12,2e12], buildDist:1e12, panelDist:1e12,
-    weather:look.weather, note:"Ground from the game's elevation map (a point every few km); finer detail generated.",
+    weather:look.weather,
     async build({F, terrain, pinned, heights, dirAt, fbm3, sstep, THREE}){
       const REAL=heights(), R=F.B.radius, sea=look.sea; if(!REAL) return {hgt:()=>0};
       // The game's own colour map of the planet (planets/<Body>.js, the one the map's globe uses), when there is
@@ -922,8 +922,7 @@ const ui=(()=>{
     <div class="sunl" id="c3d-sun"></div>
     <div class="row"><label id="c3d-precip-l"><input type="checkbox" id="c3d-precip" ${opt.precip?"checked":""}> <span>Snowfall</span></label><label id="c3d-haze-l"><input type="checkbox" id="c3d-haze" ${opt.haze?"checked":""}> Haze</label>
       <button class="btn small" id="c3d-live" hidden>Back to live</button></div>
-    <div class="views" id="c3d-views"></div>
-    <div class="note" id="c3d-note"></div>`;
+    <div class="views" id="c3d-views"></div>`;
   ($("mapwrap")||document.body).appendChild(el);
   // × tucks the panel away to a small button in its corner (the city stays, with the whole view to itself);
   // the button brings it back. "Fly up" leaves the 3D view, as × used to.
@@ -951,7 +950,7 @@ const ui=(()=>{
     const shift=S.timeShift||0, lt=localTime(L,now()+shift);
     if(!lt){ const e=Math.round(Math.asin(Math.max(-1,Math.min(1,lastSin)))*180/Math.PI), Bn=cur.C.body;
       q("#c3d-clock").textContent=`${e>=0?"☀":"☾"} Fixed`; q("#c3d-mode").textContent="No day"; q("#c3d-live").hidden=true;
-      q("#c3d-sun").textContent=`${Bn} doesn't turn: the sun stays ${Math.abs(e)}° ${e>=0?"up":"below the horizon"} here`; return; }
+      q("#c3d-sun").textContent=`${Bn} doesn't rotate like a planet and the sun stays fixed at ${Math.abs(e)}° ${e>=0?"above":"below"} the horizon.`; return; }
     q("#c3d-clock").textContent=`${lt.day?"☀":"☾"} ${fmtClock(lt.h)}`;
     const m=q("#c3d-mode"); m.textContent=shift?"Preview":"Live"; m.classList.toggle("pv",!!shift);
     q("#c3d-live").hidden=!shift;
@@ -961,7 +960,7 @@ const ui=(()=>{
   function views(st){ if(st!==cur&&st!==owner) return; const v=st?.model?.views;
     q("#c3d-views").innerHTML=v?Object.entries(v).map(([k,x])=>`<button data-v="${k}">${esc(x.label)}</button>`).join(""):""; }
   function show(st){ cur=st; place(); if(!st) return;
-    q("#c3d-name").textContent=st.C.city; mini.querySelector("#c3d-mini-name").textContent=st.C.city; q("#c3d-kind").textContent=st.C.world?"3D terrain":"3D city"; q("#c3d-note").textContent=st.C.note||"";
+    q("#c3d-name").textContent=st.C.city; mini.querySelector("#c3d-mini-name").textContent=st.C.city; q("#c3d-kind").textContent=st.C.world?"3D terrain":"3D city";
     const P=st.W.precip; q("#c3d-precip-l").hidden=!P; if(P) q("#c3d-precip-l span").textContent=P.label;
     q("#c3d-haze-l").hidden=!st.W.haze; q("#c3d-precip").checked=opt.precip; q("#c3d-haze").checked=opt.haze;
     const B=S.bodyMap[st.C.body]; slider.hidden=!(B?.period>0);                    // a body that doesn't turn: its time never changes

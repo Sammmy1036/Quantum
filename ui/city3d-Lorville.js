@@ -17,7 +17,6 @@ City3D.define({
   openView:{[PORT_NAME]:"port"},
   alt0:0,
   extent:60000,
-  note:"The game's own city layout; ground from Hurston's elevation map, fitted under the city.",
   weather:{                                // Hurston: a brown-orange haze, smog over the city, dust
     sky:{day:0xc9a983, dusk:0x7d5640, night:0x120c0a},
     zenith:{day:0x9b8a78, dusk:0x4a3530, night:0x07060a},

@@ -2791,6 +2791,23 @@ button.tl-dk-auec:hover b{color:#9fd0ff}
 .jb-pips i.weekly{border-radius:50%}.jb-pips i.part{border-color:#7fe7ff}.jb-pips i.on{background:#57e39b;border-color:#57e39b}
 .jb-pips .sep{width:6px}
 .jb-row-c{font:700 13px Orbitron,var(--display);text-align:right}
+/* ---- Jobs: weekly missions (steps from several roles) and the preferred role */
+.jb-grid.wide{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.jb-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.jb-step{display:flex;align-items:flex-start;gap:10px;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:rgba(8,14,28,.45)}
+.jb-step .jb-ic{width:22px;height:22px;margin-top:1px}.jb-step .jb-ic svg,.jb-step .jb-ic .jb-img{width:19px;height:19px}
+.jb-step-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.35;font-weight:600}
+.jb-step-m{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:500}.jb-step-m b{color:var(--ink)}
+.jb-step.done{border-color:#2f6b52;background:rgba(87,227,155,.06)}.jb-step.done .jb-ic{color:#57e39b}.jb-step.done .jb-step-t>span{color:var(--ink-2)}
+.jb-step.pref:not(.done){border-color:rgba(255,213,107,.35)}
+.jb-step.hl:not(.done){border-color:#2a5a80;background:rgba(127,231,255,.07)}
+.jb-star{color:#ffd56b;font-size:12px}
+.jb-rolew{display:flex;align-items:center;gap:2px}.jb-rolew .jb-role{flex:1;min-width:0}
+.jb-pstar{flex:none;width:30px;height:30px;display:grid;place-items:center;border:1px solid transparent;border-radius:7px;background:none;color:var(--dim);font-size:16px;line-height:1;cursor:pointer}
+.jb-pstar:hover{color:#ffd56b;border-color:var(--line-2)}.jb-pstar.on{color:#ffd56b}.jb-pstar:disabled{opacity:.5;cursor:default}
+.jb-pref{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;padding:10px 14px;border:1px solid rgba(255,213,107,.28);border-radius:10px;background:rgba(255,213,107,.05)}
+.jb-pref b{font:600 12px var(--display);letter-spacing:.08em;text-transform:uppercase}
+.jb-pref select{width:auto;min-width:170px}.jb-pref .muted{flex:1;min-width:220px;font-size:12px;line-height:1.45}
 /* ---- Jobs: pinning a job to the map */
 .jb-pin{margin-left:auto;display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;border:1px solid transparent;background:none;color:var(--dim);cursor:pointer;flex:none}
 .jb-ok+.jb-pin{margin-left:2px}
@@ -2958,3 +2975,10 @@ body[data-bs="d"] .tab[aria-selected=true]:not(.bs-pv *),.bs-pv[data-bs="d"] .ta
 body[data-bs="d"] .fchip:not(.bs-pv *),.bs-pv[data-bs="d"] .fchip {border:0;border-bottom:1.5px solid #233650;border-radius:0;background:none}
 body[data-bs="d"] .fchip[aria-pressed=true]:not(.bs-pv *),.bs-pv[data-bs="d"] .fchip[aria-pressed=true] {border-bottom-color:#6fc0ff;background:none;color:#fff}
 /* ==== end button styles ==== */
+/* Home's Route / Waypoints / Contracts: always one row of three, shrinking with the side panel instead of wrapping */
+.tabs:has(.tab[data-tab="route"]:not(.off-group)){flex-wrap:nowrap}
+.tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab:not(.off-group){flex:1 1 auto;min-width:0;justify-content:center;white-space:nowrap;
+  padding:6px clamp(4px,1.8cqi,12px);gap:clamp(3px,1.2cqi,6px);font-size:clamp(9.5px,3.4cqi,14px)}
+body[data-bs] .tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab:not(.off-group){font-size:clamp(8px,2.9cqi,10.5px);letter-spacing:clamp(.01em,.22cqi,.07em);
+  padding:6px clamp(4px,1.8cqi,12px)}
+.tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab .count{padding:1px clamp(4px,1.4cqi,7px)}

@@ -20,7 +20,6 @@ City3D.define({
                                            // the city was never quite all there and its camera rules barely held)
   panelAlt:180000,
   focusDist:35000,                         // going to Orison (or its spaceport) stops 35 km out: the platforms are small
-  note:"The game's own platforms, floating ~79 km above Crusader's clouds.",
   weather:{                                // Crusader: a clear blue sky over cream and pink clouds, pink at dusk
     sky:{day:0xbcd6ee, dusk:0xd9a3b4, night:0x0b1020},
     zenith:{day:0x5f8fd0, dusk:0x584a78, night:0x05070f},

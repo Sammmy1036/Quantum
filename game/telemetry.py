@@ -134,6 +134,8 @@ ROLE = {1: "pilot", 2: "gunner", 3: "crew"}
 WARN = {1: "nominal", 2: "off", 3: "minor_flashing", 4: "minor", 5: "major_flashing", 6: "major"}
 WARN_NAMES = ("PWR", "WPN", "THR", "SHLD", "COOL", "QDRV", "RADR", "PROX", "HIT", "MISL")
 POWER_NAMES = ("power_plants", "engines", "weapons", "coolers", "life_support", "gravity", "sensors", "shield_generators", "shield_emitters")
+HELD_KEYS = ("shields", "health", "mode", "spooled", "boost")   # sent in some frames only: kept a while (Telemetry._hold)
+HOLD_S = 15
 EVENTS = {1: "spawn", 2: "dead", 3: "enter_seat", 4: "leave_seat", 5: "respawn", 6: "downed"}
 
 
@@ -337,6 +339,7 @@ class Telemetry(threading.Thread):
             while self._frames and now - self._frames[0] > FPS_WINDOW:
                 self._frames.pop(0)
             if "vehicle" in d:
+                self._hold(d["vehicle"], now)
                 self._vehicle = {**d["vehicle"], "at": now}
             elif self._vehicle and not self._vehicle.get("left"):
                 self._vehicle = {**self._vehicle, "left": now}
@@ -359,6 +362,19 @@ class Telemetry(threading.Thread):
                     self.on_event(ev, now)
                 except Exception:
                     pass
+
+    def _hold(self, v, now):
+        """The game doesn't send a ship's shields, hull and NAV/SCM mode in every frame: a frame without them made those
+        items blink out of the bar until the next one that had them. The last reading is kept for the same ship for
+        HOLD_S seconds, so they stay put; a ship with no shields (or a new ship) still shows none. Called under the lock."""
+        held = getattr(self, "_held", None)
+        if held is None or held.get("name") != v.get("name"):
+            held = self._held = {"name": v.get("name")}
+        for k in HELD_KEYS:
+            if v.get(k) is not None:
+                held[k] = (v[k], now)
+            elif k in held and now - held[k][1] <= HOLD_S:
+                v[k] = held[k][0]
 
     def state(self):
         """{on, status, error, fps, age, vehicle, weapons, actor, balance, events} for the page."""

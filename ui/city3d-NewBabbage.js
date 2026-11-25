@@ -24,7 +24,6 @@ City3D.define({
   openView:{[PORT_NAME]:"port"},          // the spaceport's "3D city" button opens on the spaceport
   alt0:6,                                  // ground zero is the lake ice (Lakeside Chairs is at 9 m)
   extent:70000,
-  note:"Placed from Quantum's data; mountains from the game's elevation map, fine detail generated.",
   weather:{                                // microTech: pale blue skies, snow
     sky:{day:0xc4d4e6, dusk:0x6f6f8c, night:0x0a1222},
     zenith:{day:0x7fa3cf, dusk:0x3b3f66, night:0x060b18},

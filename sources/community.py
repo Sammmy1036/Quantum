@@ -143,7 +143,7 @@ class Community:
         return {"status": "signed_out"} if r.get("status") == "http_401" else r
 
     def jobs(self, token, path="mine", body=None):
-        """Daily and weekly role jobs (server: jobs.py): GET mine, or POST role / reroll / progress."""
+        """Daily and weekly role jobs (server: jobs.py): GET mine, or POST prefer / reroll / progress / badges."""
         r = self._acct(f"/v1/jobs/{path}", body, token=token, timeout=20)
         return {"status": "signed_out"} if r.get("status") == "http_401" else r
 

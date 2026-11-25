@@ -233,8 +233,8 @@ const tlShort=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?0:1)+"M":n>=1e4?Math.round(n/1e3)
 // Neighbouring vitals share one group, as do neighbouring ship gauges, so the bar keeps its look.
 // kind: v = a vital (your stats, in the chosen look), g = a ship gauge, s = its own spot
 const TL_ITEMS=[
-  ["head","s","LIVE label",true],["hp","v","Health",true],["o2","v","Oxygen",true],["food","v","Satiety",true],["drink","v","Hydration",true],
-  ["meta","s","Temperature, radiation, heart rate",true],["steer","s","Guide me steering",true],["land","s","Landing aids",true],
+  ["head","s","Status Label",true],["hp","v","Health",true],["o2","v","Oxygen",true],["food","v","Satiety",true],["drink","v","Hydration",true],
+  ["meta","s","Temperature, radiation, heart rate",true],["steer","s","Live Guidance",true],["land","s","Landing aids",true],
   ["auec","s","aUEC balance",true],["ship","s","Ship name",true],["speed","s","Speed (m/s)",true],["heading","s","Heading",true],
   ["alt","s","Altitude",false],["mode","s","NAV / SCM mode",false],
   ["q","g","Quantum fuel",true],["h","g","Hydrogen",true],["b","g","Boost",true],["s","g","Shields",true],["hull","g","Hull",true]];
@@ -322,13 +322,13 @@ function tlStylePicker(){ const {pos,look}=tlStyle(), docked=pos!=="float";
     ${docked?tlItemsHtml():""}</div>`; }
 // Settings: what's in the bar and in what order. Drag a row (or use the arrows), untick to hide it. The LIVE label
 // stays first. You can also drag the items about on the bar itself, and right-click one there to hide it.
-const TL_KIND={v:"You",g:"Ship gauge",s:""};
+const TL_KIND={v:"",g:"",s:""};          // (no "You" / "Ship gauge" tags in the list)
 function tlItemsHtml(){ const {order,off}=tlItems(), mov=order.filter(id=>id!=="head");
-  return `<div class="tl-items"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b>Bar items</b><span class="muted tl-small">Drag to reorder (here or on the bar itself), untick to hide. Ship items show while you're in a ship.</span><span class="spacer"></span><a class="muted tl-small" data-tlit="reset" style="cursor:pointer;text-decoration:underline">Reset</a></div>
+  return `<div class="tl-items"><div class="row" style="align-items:baseline;gap:8px;flex-wrap:wrap"><b>Live Stats Bar</b><span class="muted tl-small">Drag to reorder (here or on the bar itself), untick to hide. Ship items show while you're in a ship.</span><span class="spacer"></span><a class="muted tl-small" data-tlit="reset" style="cursor:pointer;text-decoration:underline">Reset</a></div>
     <div class="tl-items-l" id="tl-items-l">
-      <div class="tl-it pinned ${off.head?"off":""}" data-pin="head"><span class="grip" aria-hidden="true">⌖</span><input type="checkbox" data-ithide="head" ${off.head?"":"checked"} aria-label="Show the LIVE label"><span class="nm">LIVE label</span></div>
+      <div class="tl-it pinned ${off.head?"off":""}" data-pin="head"><span class="grip" aria-hidden="true">⌖</span><input type="checkbox" data-ithide="head" ${off.head?"":"checked"} aria-label="Show the Status Label"><span class="nm">Status Label</span></div>
       ${mov.map((id,i)=>{ const [,k,name]=TL_ITEM[id];
-      return `<div class="tl-it ${off[id]?"off":""}" data-it="${id}"><span class="grip" aria-hidden="true">⋮⋮</span><input type="checkbox" data-ithide="${id}" ${off[id]?"":"checked"} aria-label="Show ${esc(name)}"><span class="nm">${esc(name)}</span><span class="kd">${TL_KIND[k]}</span>
+      return `<div class="tl-it ${off[id]?"off":""}" data-it="${id}"><span class="grip" aria-hidden="true">⋮⋮</span><input type="checkbox" data-ithide="${id}" ${off[id]?"":"checked"} aria-label="Show ${esc(name)}"><span class="nm">${esc(name)}</span>${TL_KIND[k]?`<span class="kd">${TL_KIND[k]}</span>`:""}
         <button class="iconbtn" data-tlit="up" ${i?"":"disabled"} aria-label="Move ${esc(name)} up">▲</button><button class="iconbtn" data-tlit="down" ${i<mov.length-1?"":"disabled"} aria-label="Move ${esc(name)} down">▼</button></div>`; }).join("")}</div></div>`; }
 // move item `from` before or after `to` in the saved order
 function tlItemsMove(from,to,after){ const st={order:[...tlItems().order],off:{...tlItems().off}};
@@ -339,7 +339,7 @@ function tlItemsMove(from,to,after){ const st={order:[...tlItems().order],off:{.
 function tlItemsWire(d){ const L=d.querySelector("#tl-items-l"); if(!L) return;
   const cur=()=>({order:[...tlItems().order],off:{...tlItems().off}});
   const save=st=>{ tlItemsSave(st); renderDetail(); };
-  d.querySelector('[data-tlit="reset"]')?.addEventListener("click",e=>{ e.preventDefault(); save(null); toast("Bar items reset"); });
+  d.querySelector('[data-tlit="reset"]')?.addEventListener("click",e=>{ e.preventDefault(); save(null); toast("Live Stats Bar reset"); });
   for(const cb of L.querySelectorAll("[data-ithide]")) cb.onchange=()=>{ const st=cur(), id=cb.dataset.ithide; if(cb.checked) delete st.off[id]; else st.off[id]=true; save(st); };
   for(const row of L.querySelectorAll(".tl-it[data-it]")){ const id=row.dataset.it;
     for(const b of row.querySelectorAll("[data-tlit]")) b.onclick=e=>{ e.preventDefault(); const st=cur(), i=st.order.indexOf(id), j=b.dataset.tlit==="up"?i-1:i+1;

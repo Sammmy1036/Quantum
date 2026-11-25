@@ -1,10 +1,12 @@
-// Quantum UI: Jobs, daily and weekly goals for every role at once (api_jobs.py, server jobs.py).
+// Quantum UI: Jobs, daily goals for every role and weekly missions that mix them (api_jobs.py, server jobs.py).
 // One of several classic scripts sharing one global scope; index.html loads them in order.
 //
 // Every role (Cargo Hauler, Delivery Courier, Bounty Hunter, Mercenary, Salvager, Miner, Refueler, Trader) has 3 jobs a
-// day and 5 a week: do any, all or none of them. New at 08:00 Pacific (weekly: Mondays); 3 swaps a day. Progress is
-// counted from the aUEC balance changes Quantum sees through the game's telemetry: sent while this tab is open and
-// every few minutes in the background. The list on the left only picks which role's jobs are shown.
+// day. The week has 5 weekly missions that belong to no one role: each is 3 or 4 steps from different roles, so you
+// move between lines of work. Mark a preferred role and most missions (not all) have a step of it. New at 08:00
+// Pacific (missions: Mondays); 3 swaps a day. Progress is counted from the aUEC balance changes Quantum sees through
+// the game's telemetry: sent while this tab is open and every few minutes in the background. The list on the left
+// picks the Overview (missions and every role at a glance) or one role.
 "use strict";
 S.jb=S.jb||{data:null,busy:false,at:0,view:"all"};
 // The game's own delivery mission icon (pu_mobiapp_icon_mission_delivery): filled, in the section's colour (the <g>'s
@@ -17,16 +19,17 @@ function jbIc(k){
   const img=src=>src?`<i class="jb-img" style="-webkit-mask-image:url('${src}');mask-image:url('${src}')" aria-hidden="true"></i>`:"";
   const h={hauler:()=>off("hauler"),courier:()=>JB_COURIER,bounty:()=>img(typeof MI_KIND_ICON!=="undefined"&&MI_KIND_ICON.bounty),
     mercenary:()=>off("weapons"),salvager:()=>gi("salvageable"),miner:()=>off("miningLasers"),refueler:()=>gi("fuel_tanks"),
-    trader:()=>typeof SVC_COMMODITY!=="undefined"?SVC_COMMODITY:""}[k];
+    trader:()=>typeof SVC_COMMODITY!=="undefined"?SVC_COMMODITY:"",mix:()=>gi("missions")}[k];
   return `<span class="jb-ic">${(h&&h())||""}</span>`; }
 const jbLeft=t=>{ const s=Math.max(0,t-Date.now()/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60); return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m`; };
-const jbAll=d=>(d?.roles||[]).flatMap(r=>[...r.daily,...r.weekly]);
+const jbAll=d=>[...(d?.roles||[]).flatMap(r=>[...r.daily,...(r.weekly||[])]),...(d?.missions||[])];
+const jbRoleName=id=>(S.jb.data?.roles||[]).find(r=>r.id===id)?.name||id;
 async function jbLoad(sync){ if(S.jb.busy){ if(sync) S.jb.again=true; return; } S.jb.busy=true;
   let r; try{ r=await (sync?api().jobs_sync():api().jobs_state()); }catch(e){ r={ok:false,error:String(e)}; }
   S.jb.busy=false; S.jb.at=Date.now();
   const prev=S.jb.data; S.jb.data=r;
   if(prev?.ok&&r?.ok){ const was=new Set(jbAll(prev).filter(j=>j.done_at).map(j=>j.id));
-    for(const j of jbAll(r)) if(j.done_at&&!was.has(j.id)) toast(`Job done: ${j.name} · ${j.title}`); }
+    for(const j of jbAll(r)) if(j.done_at&&!was.has(j.id)) toast(j.role==="mix"?`Weekly mission done: ${j.name}`:`Job done: ${j.name} · ${j.title}`); }
   jbCount(); if(S.tab==="jobs") jbRender(); jbPinsRender(); if(S.tab==="profile"&&typeof renderProfile==="function") renderProfile();
   if(S.jb.again){ S.jb.again=false; setTimeout(()=>jbLoad(true),500); } }
 function jbCount(){ const d=S.jb.data, c=$("c-jobs"); if(!c) return; if(!d?.ok){ c.textContent=""; return; }
@@ -61,11 +64,30 @@ function jbCard(j,d){ const pct=Math.min(100,Math.round((j.progress||0)/j.target
     <div class="jb-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${j.target}" aria-valuenow="${j.progress||0}" aria-label="${esc(j.title)}"><i style="width:${pct}%"></i></div>
     <div class="jb-foot"><span>${j.metric==="big"?"Best so far ":j.metric==="streak"?"Best stretch ":j.metric==="bestday"?"Best day ":""}<b>${jbVal(j,j.progress||0)}</b> / ${jbVal(j,j.target)}${jbMoney(j)?" aUEC":""}</span><span class="spacer"></span>
       ${j.done_at?"":`<button class="btn small ghost" data-jbswap="${esc(j.id)}" ${d.swaps_left?"":"disabled"} title="${d.swaps_left?`Swap it for another job (${d.swaps_left} left today)`:"No swaps left today"}">Swap</button>`}</div></div>`; }
+// a weekly mission: its steps (each from a different role) as a checklist, done when every step is
+function jbMission(m,d,hl){ const steps=m.steps||[], n=steps.filter(s=>s.done).length, pct=Math.min(100,Math.round(n/(steps.length||1)*100));
+  const pin=jbIsPinned(m), full=!pin&&jbPins().length>=JB_PIN_MAX;
+  const st=s=>{ const p=Math.min(100,Math.round((s.progress||0)/s.target*100));
+    return `<li class="jb-step ${s.done?"done":""} ${s.role===d.pref?"pref":""} ${hl&&s.role===hl?"hl":""}">${jbIc(s.role)}<div class="jb-step-t"><span>${esc(s.title)}</span>
+      <div class="jb-step-m"><span class="muted">${esc(jbRoleName(s.role))}${s.role===d.pref?" ★":""}</span>${s.done?`<b class="jb-ok">✓</b>`:`<b>${jbVal(s,s.progress||0)} / ${jbVal(s,s.target)}${jbMoney(s)?" aUEC":""}</b>`}</div>
+      ${s.done?"":`<div class="jb-bar sm"><i style="width:${p}%"></i></div>`}</div></li>`; };
+  return `<div class="jb-card jb-mis ${m.done_at?"done":""}"><div class="jb-top"><span class="jb-kind">Weekly mission</span><b class="jb-name">${esc(m.name||"")}</b>${m.done_at?`<span class="jb-ok">✓ Done</span>`:""}
+      <button type="button" class="jb-pin ${pin?"on":""}" data-jbpin="${esc(jbPinKey(m))}" aria-pressed="${pin}" title="${pin?"Unpin it from the map":full?`You can pin ${JB_PIN_MAX} jobs: unpin one first`:"Pin it to the map (Home)"}">${JB_PIN_IC}</button></div>
+    <ul class="jb-steps">${steps.map(st).join("")}</ul>
+    <div class="jb-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${n}" aria-label="${esc(m.name||"Weekly mission")}"><i style="width:${pct}%"></i></div>
+    <div class="jb-foot"><span><b>${n}</b> / ${steps.length} Complete</span><span class="spacer"></span>
+      ${m.done_at?"":`<button class="btn small ghost" data-jbswap="${esc(m.id)}" ${d.swaps_left?"":"disabled"} title="${d.swaps_left?`Swap it for another mission (${d.swaps_left} left today)`:"No swaps left today"}">Swap</button>`}</div></div>`; }
+async function jbSetPref(role){ S.jb.prefBusy=true; jbRender(); let x;
+  try{ x=await api().jobs_prefer(role||""); }catch(e){ x={ok:false,error:String(e)}; }
+  S.jb.prefBusy=false;
+  if(!x?.ok){ jbRender(); return toast(x?.error||"Couldn't change that. Try again"); }
+  S.jb.data=x; jbRender(); jbPinsRender(); toast(role?`Preferred role: ${jbRoleName(role)}. Weekly missions will lean toward it`:"No preferred role: weekly missions are an even mix"); }
 // one role on the overview: its icon, how many are done, a pip per job, and the job closest to done
-function jbRow(r){ const all=[...r.daily,...r.weekly], open=all.filter(j=>!j.done_at).sort((a,b)=>(b.progress/b.target)-(a.progress/a.target)), next=open[0];
+function jbRow(r){ const all=[...r.daily,...(r.weekly||[])], open=all.filter(j=>!j.done_at).sort((a,b)=>(b.progress/b.target)-(a.progress/a.target)), next=open[0];
   const pip=j=>`<i class="${j.done_at?"on":j.progress?"part":""} ${j.kind}" title="${esc(`${j.kind==="daily"?"Daily":"Weekly"}: ${j.title}`)}"></i>`;
-  return `<button type="button" class="jb-row" data-jbview="${r.id}">${jbIc(r.id)}<span class="jb-row-n"><b>${esc(r.name)}</b><span class="muted">${next?esc(`Closest: ${next.title}`):"Everything done this week"}</span></span>
-    <span class="jb-pips" aria-label="${r.done} of ${r.total} done">${r.daily.map(pip).join("")}<span class="sep"></span>${r.weekly.map(pip).join("")}</span><b class="jb-row-c">${r.done}/${r.total}</b></button>`; }
+  const pref=S.jb.data?.pref===r.id, inm=r.in_missions?` · in ${r.in_missions} weekly mission${r.in_missions===1?"":"s"}`:"";
+  return `<button type="button" class="jb-row" data-jbview="${r.id}">${jbIc(r.id)}<span class="jb-row-n"><b>${esc(r.name)}${pref?` <span class="jb-star" title="Your preferred role">★</span>`:""}</b><span class="muted">${next?esc(`Closest: ${next.title}${inm}`):esc(`Today's dailies done${inm}`)}</span></span>
+    <span class="jb-pips" aria-label="${r.done} of ${r.total} done">${r.daily.map(pip).join("")}${(r.weekly||[]).length?`<span class="sep"></span>${r.weekly.map(pip).join("")}`:""}</span><b class="jb-row-c">${r.done}/${r.total}</b></button>`; }
 function jbRender(){ const P=$("jb-panel"), side=$("jb-side"), d=S.jb.data; if(!P) return;
   if(!d){ P.innerHTML=qLoader("Getting your jobs…"); if(side) side.innerHTML=""; return; }
   if(!d.ok){ const out=d.status==="signed_out";
@@ -73,28 +95,40 @@ function jbRender(){ const P=$("jb-panel"), side=$("jb-side"), d=S.jb.data; if(!
     if(side) side.innerHTML=""; return; }
   const view=d.roles.some(r=>r.id===S.jb.view)?S.jb.view:"all", done=jbAll(d).filter(j=>j.done_at).length;
   if(side) side.innerHTML=`<div class="jb-side-h">Jobs</div><div class="jb-roles">
-      <button type="button" class="jb-role ${view==="all"?"on":""}" data-jbview="all" aria-pressed="${view==="all"}"><span class="jb-ic">${typeof gameIcon==="function"?gameIcon("missions","jb-gi"):""}</span><span>Every role</span><b>${done}/${jbAll(d).length}</b></button>
-      ${d.roles.map(r=>`<button type="button" class="jb-role ${view===r.id?"on":""}" data-jbview="${r.id}" aria-pressed="${view===r.id}">${jbIc(r.id)}<span>${esc(r.name)}</span><b>${r.done}/${r.total}</b></button>`).join("")}</div>
+      <button type="button" class="jb-role ${view==="all"?"on":""}" data-jbview="all" aria-pressed="${view==="all"}"><span class="jb-ic">${typeof gameIcon==="function"?gameIcon("missions","jb-gi"):""}</span><span>Overview</span><b>${done}/${jbAll(d).length}</b></button>
+      <div class="jb-side-h" style="margin-top:10px">Daily jobs by role</div>
+      ${d.roles.map(r=>{ const pf=d.pref===r.id, can="pref" in d;
+        return `<div class="jb-rolew"><button type="button" class="jb-role ${view===r.id?"on":""}" data-jbview="${r.id}" aria-pressed="${view===r.id}">${jbIc(r.id)}<span>${esc(r.name)}</span><b>${r.done}/${r.total}</b></button>${can?`<button type="button" class="jb-pstar ${pf?"on":""}" data-jbprefset="${pf?"":r.id}" aria-pressed="${pf}" ${S.jb.prefBusy?"disabled":""} title="${pf?"Your preferred role: click to clear it":"Make this your preferred role and weekly missions will primarily focus on missions pertaining to this role."}" aria-label="${pf?"Clear preferred role":`Prefer ${esc(r.name)}`}">${pf?"★":"☆"}</button>`:""}</div>`; }).join("")}</div>
     <div class="jb-stats"><div><b>${d.points||0}</b><span>Job points</span></div><div><b>${d.done?.daily||0}</b><span>Dailies done</span></div><div><b>${d.done?.weekly||0}</b><span>Weeklies done</span></div></div>
-    <div class="muted" style="font-size:11.5px;line-height:1.5;margin-top:10px">Every role's jobs count at the same time: do whichever you like. Dailies are 1 point, weeklies 3.</div>`;
+    <div class="muted" style="font-size:11.5px;line-height:1.5;margin-top:10px">Daily Missions/Jobs count as 1 Job Point and Weekly Missions/Jobs count as 5 Job Points</div>`;
   const head=(icon,title)=>`<div class="mkp-head" style="grid-template-columns:1fr"><div class="hd-main"><div class="hd-title"><div><h2 class="jb-h2">${icon}${esc(title)}</h2>
-      <div class="sub">${d.swaps_left} of ${d.swaps_max} swaps left today · new dailies in ${jbLeft(d.daily_next)} · new weeklies in ${jbLeft(d.weekly_next)}${d.measured_at?` · progress from ${agoTs(d.measured_at)}`:""}</div></div>
+      <div class="sub">${d.swaps_left} of ${d.swaps_max} swaps left today · new dailies in ${jbLeft(d.daily_next)} · new weekly missions in ${jbLeft(d.weekly_next)}${d.measured_at?` · progress from ${agoTs(d.measured_at)}`:""}</div></div>
       <button class="btn small ghost" data-jbsync="1" ${S.jb.busy?"disabled":""}>${S.jb.busy?"Updating…":"Update progress"}</button></div></div></div>`;
-  const foot=`<div class="uex-credit" style="margin-top:18px">Progress counts the aUEC balance changes Quantum sees through the game's telemetry (Settings › Game telemetry), from 08:00 Pacific today or Monday. Each payout counts for one role at most. A contract counts by its kind of work in the game files (hauling, delivery, bounty, patrol…), never by its cargo, so hauling fuel isn't refuelling. A sale counts by the ship you sold from, landed or docked: a Prospector, MOLE or ROC is a Miner's, a Vulture or Reclaimer a Salvager's, a Starfarer a Refueler's (in flight too), anything else a Trader's. Money from a friend or a refund counts for nobody. Resets at ${esc(d.reset)}.</div>`;
-  if(view==="all"){ P.innerHTML=head(typeof gameIcon==="function"?gameIcon("missions","jb-gi"):"","Jobs")+jbTelHtml()+`<div class="jb-rows">${d.roles.map(jbRow).join("")}</div>`+jbBadgesHtml(d)+foot; return; }
+  const foot=`<div class="uex-credit" style="margin-top:18px">Progress counts the aUEC balance changes Quantum sees through the game's telemetry (Settings › Game telemetry), from 08:00 Pacific today or Monday. Each payout counts for one role at most. A contract counts by its kind of work in the game files (hauling, delivery, bounty, patrol…), never by its cargo, so hauling fuel isn't refuelling. A sale counts by the ship you sold from, landed or docked: a Prospector, MOLE or ROC is a Miner's, a Vulture or Reclaimer a Salvager's, a Starfarer a Refueler's (in flight too), anything else a Trader's. Money from a friend or a refund counts for nobody. A weekly mission's steps each count by their own role, from Monday's reset. Resets at ${esc(d.reset)}.</div>`;
+  const M=d.missions||[];
+  if(view==="all"){ const roles=d.pref?[...d.roles].sort((a,b)=>(b.id===d.pref)-(a.id===d.pref)):d.roles;
+    P.innerHTML=head(typeof gameIcon==="function"?gameIcon("missions","jb-gi"):"","Overview")+jbTelHtml()
+      +(M.length?`<div class="mk-h" style="display:flex;align-items:center;gap:10px">This week's missions<span class="mk-note">${d.missions_done||0} of ${M.length} done · steps from different roles</span></div>
+        <div class="jb-grid wide">${M.map(m=>jbMission(m,d)).join("")}</div>`:"")
+      +`<div class="mk-h" style="margin-top:${M.length?22:0}px">Today's dailies</div><div class="jb-rows">${roles.map(jbRow).join("")}</div>`+jbBadgesHtml(d)+foot; return; }
   const r=d.roles.find(x=>x.id===view);
-  const rb=(d.badges||[]).find(b=>b.role===r.id);
-  P.innerHTML=head(jbIc(r.id),`${r.name} jobs`)+jbTelHtml()+(rb?`<div class="jb-rbadge">${jbMedal(rb)}<div><b>${rb.tier?`${esc(rb.tier_name)} ${esc(r.name)}`:`No ${esc(r.name)} badge yet`}</b><span class="muted">${jbBadgeLine(rb)}</span></div></div>`:"")+`<div class="mk-h">Today</div><div class="jb-grid">${r.daily.map(j=>jbCard(j,d)).join("")}</div>
-    <div class="mk-h" style="margin-top:18px">This week</div><div class="jb-grid">${r.weekly.map(j=>jbCard(j,d)).join("")}</div>`+foot; }
+  const rb=(d.badges||[]).find(b=>b.role===r.id), pref=d.pref===r.id, mine=M.filter(m=>(m.steps||[]).some(s=>s.role===r.id));
+  const prefBtn="";
+  P.innerHTML=head(jbIc(r.id),`${r.name} jobs`)+jbTelHtml()+(rb||prefBtn?`<div class="jb-rbadge">${rb?jbMedal(rb):""}<div style="flex:1">${rb?`<b>${rb.tier?`${esc(rb.tier_name)} ${esc(r.name)}`:`No ${esc(r.name)} badge yet`}</b><span class="muted">${jbBadgeLine(rb)}</span>`:""}</div>${prefBtn}</div>`:"")
+    +`<div class="mk-h">Today</div><div class="jb-grid">${r.daily.map(j=>jbCard(j,d)).join("")}</div>`
+    +((r.weekly||[]).length?`<div class="mk-h" style="margin-top:18px">This week</div><div class="jb-grid">${r.weekly.map(j=>jbCard(j,d)).join("")}</div>`:"")
+    +("missions" in d?`<div class="mk-h" style="margin-top:18px">Weekly missions with a ${esc(r.name)} step</div>`
+      +(mine.length?`<div class="jb-grid wide">${mine.map(m=>jbMission(m,d,r.id)).join("")}</div>`:`<div class="muted" style="font-size:12.5px">None this week.${pref?"":" Make it your preferred role and most missions will have one."}</div>`):"")+foot; }
 document.addEventListener("click",async e=>{ if(!e.target.closest("#jb-panel,#jb-side")) return;
   const v=e.target.closest("[data-jbview]"); if(v){ S.jb.view=v.dataset.jbview; return jbRender(); }
   const pn=e.target.closest("[data-jbpin]"); if(pn) return jbTogglePin(pn.dataset.jbpin);
+  const ps=e.target.closest("[data-jbprefset]"); if(ps) return jbSetPref(ps.dataset.jbprefset);
   const bd=e.target.closest("[data-jbbadge]"); if(bd) return jbBadgeOpen(bd.dataset.jbbadge);
   const bs=e.target.closest("[data-jbbshow]"); if(bs){ bs.disabled=true; const x=await api().jobs_badges_show(bs.checked).catch(()=>null);
     if(!x?.ok){ bs.checked=!bs.checked; bs.disabled=false; return toast(x?.error||"Couldn't change that. Try again"); }
     S.jb.data=x; jbRender(); if(typeof renderProfile==="function") renderProfile(true); return toast(x.badges_shown?"Your badges show on your profile":"Your badges are hidden from your profile"); }
   const sw=e.target.closest("[data-jbswap]"); if(sw){ sw.disabled=true; const x=await api().jobs_reroll(sw.dataset.jbswap); if(!x.ok){ sw.disabled=false; return toast(x.error); }
-    S.jb.data=x; jbRender(); jbLoad(true); return toast(`New job. ${x.swaps_left} swap${x.swaps_left===1?"":"s"} left today`); }
+    S.jb.data=x; jbRender(); jbLoad(true); return toast(`${sw.dataset.jbswap.startsWith("mix-")?"New mission":"New job"}. ${x.swaps_left} swap${x.swaps_left===1?"":"s"} left today`); }
   const tb=e.target.closest("[data-jbtel]"); if(tb){ const a=tb.dataset.jbtel;
     if(a==="settings"){ select({kind:"settings"}); return setTimeout(()=>document.querySelector('[data-a="tlsetup"],[data-a="tlfix"],#s-tl,.tl-items')?.scrollIntoView({block:"center",behavior:"smooth"}),300); }
     S.jb.telBusy=true; jbRender(); let r;
@@ -137,13 +171,14 @@ function jbBadgesHtml(d){ const B=d.badges; if(!B?.length) return "";     // (a 
       return `<div class="jb-bcard ${b.tier?"":"locked"}" data-jbbadge="${b.role}" role="button" tabindex="0" title="See this badge and how to earn it">${jbMedal(b)}
         <b>${esc(b.name)}</b><span class="jb-btier t-${b.tier||"none"}">${b.tier?esc(b.tier_name):"Not earned yet"}</span>
         <div class="jb-bar sm"><i style="width:${pct}%"></i></div><span class="muted">${b.next_at?`${b.done} / ${b.next_at}`:`${b.done} · top tier`}</span></div>`; }).join("")}</div>
-    <div class="muted" style="font-size:11.5px;margin-top:8px">${T.map(t=>`${t.name} at ${t.at}`).join(" · ")} finished jobs of a role, dailies and weeklies alike. They never reset.</div>`; }
+    <div class="muted" style="font-size:11.5px;margin-top:8px">${T.map(t=>`${t.name} at ${t.at}`).join(" · ")} finished jobs of a role: its dailies, and each weekly mission with a step of it. They never reset.</div>`; }
 // earned ones, highest first (Profile)
 function jbEarned(d){ const r={diamond:0,gold:1,silver:2,bronze:3}; return (d?.badges||[]).filter(b=>b.tier).sort((a,b)=>r[a.tier]-r[b.tier]||b.done-a.done); }
 
 // =================================================================== pins on the map
-// Up to 3 jobs pinned to Home's map, in a small card you can drag anywhere on it. A pin is a role's daily or weekly
-// slot for that day or week: swapping the job keeps it pinned (same slot), the reset drops it. Kept on this PC.
+// Up to 3 jobs pinned to Home's map, in a small card you can drag anywhere on it. A pin is a role's daily slot for
+// that day, or a weekly mission's slot ("mix|weekly|n") for that week: swapping keeps it pinned (same slot), the reset
+// drops it. Kept on this PC.
 const JB_PIN_MAX=3;
 const JB_PIN_IC='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 4 4H6l4-4zM12 13v8"/></svg>';
 const jbLS=(k,v)=>{ try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)||"null"); localStorage.setItem(k,JSON.stringify(v)); }catch(_){ return null; } };
@@ -158,8 +193,9 @@ function jbTogglePin(k){ const d=S.jb.data; if(!d?.ok) return; let P=jbPins(); c
 // the jobs pinned now (gone ones dropped: a new day or week)
 function jbPinned(){ const d=S.jb.data; if(!d?.ok) return [];
   const P=jbPins(), out=[], keep=[];
-  for(const p of P){ const [role,kind,slot]=p.k.split("|"), r=d.roles.find(x=>x.id===role);
-    const j=r&&(r[kind]||[]).find(x=>String(x.slot)===slot);
+  for(const p of P){ const [role,kind,slot]=p.k.split("|");
+    const r=role==="mix"?{id:"all",name:"Weekly mission",mix:true}:d.roles.find(x=>x.id===role);
+    const j=role==="mix"?(d.missions||[]).find(x=>String(x.slot)===slot):r&&(r[kind]||[]).find(x=>String(x.slot)===slot);
     if(j&&p.from===jbPinFrom(d,kind)){ keep.push(p); out.push({j,r}); } }
   if(keep.length!==P.length) jbLS("q-jb-pins",keep);
   return out; }
@@ -172,9 +208,10 @@ function jbPinsRender(){ const wrap=$("mapwrap"); if(!wrap) return; let W=$("jb-
   W.innerHTML=`<div class="jbp-h" title="Drag to move"><span class="jbp-grip" aria-hidden="true">⋮⋮</span>${JB_PIN_IC}<b>Pinned jobs</b><span class="muted">${L.length}/${JB_PIN_MAX}</span><span class="spacer"></span>
       <button type="button" class="jbp-b" data-jbpmin="1" aria-label="${min?"Show":"Hide"} the jobs" title="${min?"Show":"Hide"} the jobs">${min?"▸":"▾"}</button></div>
     ${min?"":L.map(({j,r})=>{ const pct=Math.min(100,Math.round((j.progress||0)/j.target*100));
-      return `<div class="jbp-row ${j.done_at?"done":""}" data-jbpopen="${r.id}" role="button" tabindex="0" title="Open ${esc(r.name)} jobs">${jbIc(r.id)}<div class="jbp-t">
-          <div class="jbp-k"><span>${esc(r.name)} · ${j.kind==="daily"?"Daily":"Weekly"}</span>${j.done_at?`<b class="jb-ok">✓ Done</b>`:`<b>${jbVal(j,j.progress||0)} / ${jbVal(j,j.target)}</b>`}</div>
-          <div class="jbp-ti">${esc(j.title)}</div><div class="jb-bar sm"><i style="width:${pct}%"></i></div></div>
+      const next=r.mix&&(j.steps||[]).find(s=>!s.done);
+      return `<div class="jbp-row ${j.done_at?"done":""}" data-jbpopen="${r.id}" role="button" tabindex="0" title="${r.mix?esc(j.title):`Open ${esc(r.name)} jobs`}">${jbIc(r.mix?"mix":r.id)}<div class="jbp-t">
+          <div class="jbp-k"><span>${r.mix?`Weekly · ${esc(j.name)}`:`${esc(r.name)} · ${j.kind==="daily"?"Daily":"Weekly"}`}</span>${j.done_at?`<b class="jb-ok">✓ Done</b>`:r.mix?`<b>${j.progress||0} / ${j.target} Complete</b>`:`<b>${jbVal(j,j.progress||0)} / ${jbVal(j,j.target)}</b>`}</div>
+          <div class="jbp-ti">${esc(next?`Next: ${next.title}`:j.title)}</div><div class="jb-bar sm"><i style="width:${pct}%"></i></div></div>
         <button type="button" class="jbp-x" data-jbunpin="${esc(jbPinKey(j))}" aria-label="Unpin" title="Unpin">×</button></div>`; }).join("")}`;
   jbPinsPlace(W); }
 // where it sits: kept as a fraction of the map, so it stays put through window resizes (and always fully on the map)
@@ -227,8 +264,8 @@ function jbBadgeOpen(role){ const d=S.jb.data, b=(d?.badges||[]).find(x=>x.role=
         <span>${t.at} jobs</span><small>${got?"✓ Earned":cur?`${t.at-b.done} to go`:"Locked"}</small></div>`; }).join("")}</div>
     <div class="mk-h" style="margin-top:18px">How to earn it</div>
     <div class="jbb-how"><p>${esc(JB_EARN[role]||"Finish this role's jobs.")}</p>
-      <ul><li>Every finished job counts once: a daily or a weekly, whichever you finish.</li>
-        <li>Each role has 3 dailies (new at 08:00 Pacific) and 5 weeklies (new Mondays), so up to 22 a week.</li>
+      <ul><li>Every finished ${esc(b.name)} daily counts once. A weekly mission you finish counts once for every role it has a step of.</li>
+        <li>Each role has 3 dailies (new at 08:00 Pacific), and the week has 5 weekly missions (new Mondays).</li>
         <li>Badges never reset, and the next tier keeps counting from the jobs you've already finished.</li>
         <li>${d.badges_shown?"Your badges show on your profile.":"Your badges are hidden from your profile right now (Show on my profile, in Jobs)."}</li></ul></div>
     <div class="row" style="gap:8px;margin-top:16px;justify-content:flex-end"><button class="btn ghost" data-jbbx="1">Close</button><button class="btn primary" data-jbbgo="${esc(role)}">See ${esc(b.name)} jobs</button></div></div>`;

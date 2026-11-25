@@ -18,7 +18,6 @@ City3D.define({
   openView:{[PORT_NAME]:"port",[RIKER]:"port"},
   alt0:0,
   extent:60000,
-  note:"The game's own city layout; ground from ArcCorp's elevation map, fitted under the city.",
   weather:{                                // ArcCorp: a teal haze over a rose-grey city, no weather to speak of
     sky:{day:0xa9c6c2, dusk:0x6a5a66, night:0x0b0d12},
     zenith:{day:0x7da3a6, dusk:0x3c3448, night:0x05070b},

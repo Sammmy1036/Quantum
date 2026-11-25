@@ -122,6 +122,39 @@
     23467600025.8477,
     20198393968.158615
    ]
+  },
+  "Jump point: Nyx Gateway": {
+   "system": "Stanton",
+   "reporters": 1,
+   "at": 1795504320,
+   "community": true,
+   "pos": [
+    -62284313956.777336,
+    23467628480.865376,
+    20198400639.885975
+   ]
+  },
+  "Stanton Gateway Station (Nyx)": {
+   "system": "Nyx",
+   "reporters": 1,
+   "at": 1795504635,
+   "community": true,
+   "pos": [
+    -13499930499.941,
+    -23382703419.461216,
+    -37414.741145
+   ]
+  },
+  "Jump point: Stanton Gateway (Nyx)": {
+   "system": "Nyx",
+   "reporters": 1,
+   "at": 1795505329,
+   "community": true,
+   "pos": [
+    -13499925737.398808,
+    -23382661449.685436,
+    -6035.835389
+   ]
   }
  },
  "missing": [

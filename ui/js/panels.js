@@ -58,7 +58,8 @@ const SVC_SOLID={
 // The game's own marker for a service, when it has one. Pads and hangars come in sizes (the number is part of
 // the icon); without a size, or for an XL pad (the game has none), the drawn icon and its size badge stay.
 function svcGameKey(name,size){ const n=name.toLowerCase(), z={S:"s",M:"m",L:"l",XL:"xl"}[String(size||"").toUpperCase()];
-  if(/landing pad/.test(n)) return z?"pad_"+z:null;            // (XL: the game's own extra-large pad marker too)
+  if(/landing pad/.test(n)) return "landing_pad";              // the game's landing-pad service icon; its size (XS…XL) is the badge
+  if(/docking/.test(n)&&!/loading dock/.test(n)) return "docking_refuel";
   if(/hangar/.test(n)) return z?"hangar_"+z:null;
   if(/garage/.test(n)) return "garage";
   if(/freight elevator/.test(n)) return "freight_elevator";
@@ -67,6 +68,7 @@ function svcGameKey(name,size){ const n=name.toLowerCase(), z={S:"s",M:"m",L:"l"
   if(/rent|rental/.test(n)&&/vehicle|ship|rent a|rental/.test(n)) return "rent_vehicle";
   if(/(ship|vehicle) weapon/.test(n)) return "shop_vehicle_items";          // ship guns, missiles and their mounts
   if(/(ship|vehicle) (component|item|part)s?/.test(n)) return "player_vehicle";
+  if(/\b(buy|purchase|sell)\w* (ships?|vehicles?)\b|\b(ship|vehicle) (sales|dealer)/.test(n)) return "shop_vehicles";   // a vehicle dealer
   if(/weapon|gun ?shop|firearm|ammo/.test(n)) return "shop_weapons";
   if(/armou?r/.test(n)) return "shop_armor";
   if(/cloth|apparel|fashion|outfit/.test(n)) return "shop_clothes";
@@ -84,9 +86,9 @@ const SVC_ORDER=["landing pad","hangar","docking","loading dock","freight elevat
 function svcRank(n){ n=n.toLowerCase(); const i=SVC_ORDER.findIndex(k=>n.includes(k)); return i<0?99:i; }
 // A crate with a price tag: the Commodities tile (opens what the place's terminals buy and sell)
 const SVC_COMMODITY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5 11 4.5l8 4v9l-8 4-8-4z"/><path d="M3 8.5l8 4 8-4M11 12.5v9"/><path d="M15.5 13.5l5-2.5v3.2l-5 2.5z"/></svg>';
-// The largest pad at a place as the tile shows it (S/M/L/XL): your report, then Quantum users', then the game's data
+// The largest pad at a place as the tile shows it (XS/S/M/L/XL): your report, then Quantum users', then the game's data
 const padSize=place=>{ const L=place&&S.locMap[place]; if(!L) return null;
-  const p=L.pad&&L.pad!=="unknown"?L.pad:L.pad_shared||L.pad_auto; return {small:"S",medium:"M",large:"L",xl:"XL"}[String(p||"").toLowerCase()]||null; };
+  const p=L.pad&&L.pad!=="unknown"?L.pad:L.pad_shared||L.pad_auto; return {xs:"XS",xsmall:"XS","extra small":"XS",tiny:"XS",small:"S",medium:"M",large:"L",xl:"XL"}[String(p||"").toLowerCase()]||null; };
 // ---- Fuel prices on a place's card, drawn like a gas station's price sign. Nine looks to pick from in
 // Settings > Placards (stored in localStorage "q-fuel-style"); "7b", the pylon sign in glass, is the default.
 const FUEL_ICON={q:'<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1.926 4.506c.53-.923 1.707-1.2 3.575-.83.254-.808.6-1.454 1.015-1.915C6.954 1.254 7.44 1 7.992 1c1.084 0 1.915.9 2.514 2.675 1.845-.369 3.045-.092 3.575.83.53.923.162 2.1-1.084 3.507.577.645.969 1.268 1.153 1.845.208.622.185 1.176-.069 1.637-.392.646-1.107.992-2.19.992a6.2 6.2 0 0 1-1.362-.162C9.93 14.102 9.1 15 8.015 15c-.53 0-1.038-.254-1.476-.761-.415-.461-.76-1.107-1.015-1.937-.507.092-.968.16-1.383.16-1.084 0-1.822-.322-2.168-.99-.277-.462-.323-1.016-.093-1.638.185-.577.577-1.2 1.154-1.846-1.292-1.406-1.638-2.56-1.108-3.482m10.38 6.804c.391-.07.645-.185.76-.392q.174-.278-.069-.83c-.161-.393-.438-.808-.83-1.27-.277.278-.669.577-1.13.946-.046.508-.139.992-.23 1.454.576.115 1.083.138 1.498.092m-5.698.738c.185.576.416 1.015.67 1.36.253.3.484.462.691.462.23 0 .462-.162.715-.461.254-.323.485-.785.67-1.361l-1.385-.53zm-.392-1.43.07.3.3-.093zm3.46.3.07-.3-.185.115-.185.092zM6.424 5.29l.184-.115-.3-.093-.069.3zm2.952-.115.37.207-.07-.3zm.554 3.967v-2.26l-.946-.577c-.07-.046-.415-.208-.992-.53-.53.3-.876.484-.991.53l-.946.576a9 9 0 0 0-.07 1.13q0 .59.07 1.108c.438.3.761.484.946.6l.991.53zm1.2-1.338v.415l.253-.207zm1.867-1.868c.162-.37.185-.646.07-.854-.093-.184-.347-.323-.762-.369-.415-.069-.922-.046-1.499.07.092.46.162.945.23 1.476.439.3.808.622 1.131.922q.588-.657.83-1.245M8.684 2.638c-.253-.323-.484-.485-.715-.485-.207 0-.461.162-.692.485-.253.322-.484.76-.669 1.337l1.361.53 1.384-.53C9.17 3.4 8.938 2.96 8.684 2.638M3.68 11.31c.415.046.923.023 1.5-.093a9 9 0 0 1-.231-1.453c-.461-.346-.83-.668-1.153-.945-.392.461-.646.876-.808 1.268q-.242.554-.069.83c.116.208.37.324.761.393m.923-3.298.254.207-.023-.207.023-.208zm.576-3.206a6.4 6.4 0 0 0-1.06-.116c-.646 0-1.061.139-1.2.415-.115.185-.092.485.07.854.16.392.415.807.807 1.245.369-.323.76-.622 1.153-.922.023-.392.115-.877.23-1.476"/></svg>',
@@ -121,7 +123,7 @@ function servicesHtml(r,place){
   // A terminal amenity the wiki lists ("Commodity Terminal", "Trade") becomes the Commodities tile itself
   const isTrade=a=>/commodit|trade|trading/i.test(a)&&!/loading dock|freight/i.test(a);
   const tiles=placeAmenities(r.amenities,place).filter(a=>!(trade&&isTrade(a))).sort((a,b)=>svcRank(a)-svcRank(b)||a.localeCompare(b)).map(a=>{
-    const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|S|M|L)?[)]?$/i); const label=m?m[1]:a;
+    const m=a.match(/^(Landing Pad|Hangar) *[(]?(XL|XS|S|M|L)?[)]?$/i); const label=m?m[1]:a;
     if(m&&/^landing/i.test(m[1])){ const pz=padSize(place); if(pz) m[2]=pz; }
     const g=place&&shopGroupFor(a,place), gon=g&&S.stock?.kind==="shop"&&S.stock.place===place&&S.stock.group===g;
     const gk=svcGameKey(a,m?.[2]), sized=!!gk&&/^(pad|hangar)_/.test(gk);   // the game's pad / hangar icons carry their size
@@ -547,7 +549,7 @@ function renderDetail(){
           <span class="k">Size</span><select class="field" id="s-ccsize">${[["large","Large"],["medium","Medium (3/4)"],["small","Small (1/2)"]].map(([v,l])=>`<option value="${v}" ${(cc.size||"large")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Show again</span><select class="field" id="s-ccagain" title="The city is known as you fly in. Show the clock again when you get there">${[["seat","When I leave the pilot seat"],["hangar","When my hangar is assigned"],["both","Both"],["none","Never"]].map(([v,l])=>`<option value="${v}" ${(cc.again||"seat")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Clock</span><select class="field" id="s-cch24"><option value="1" ${cc.h24?"selected":""}>24-hour</option><option value="0" ${cc.h24?"":"selected"}>12-hour</option></select>
-          <span class="k">Show at</span><select class="field" id="s-ccwhere" data-cclook="where">${[["cities","Lorville, Area 18, New Babbage, Orison"],["all","Those and every other known location (outposts, settlements, Levski…)"]].map(([v,l])=>`<option value="${v}" ${(cc.where||"cities")===v?"selected":""}>${l}</option>`).join("")}</select>
+          <span class="k">Show at</span><select class="field" id="s-ccwhere" data-cclook="where">${[["cities","Main Cities"],["all","All Major Locations"]].map(([v,l])=>`<option value="${v}" ${(cc.where||"cities")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Layout</span><select class="field" id="s-ccstyle" data-cclook="style">${[["full","Name, time and planet line"],["compact","Name and time"],["time","Time only"]].map(([v,l])=>`<option value="${v}" ${(cc.style||"full")===v?"selected":""}>${l}</option>`).join("")}</select>
           <span class="k">Opacity</span><select class="field" id="s-ccop" data-cclook="opacity">${[100,85,70,55].map(v=>`<option value="${v}" ${(cc.opacity||100)===v?"selected":""}>${v}%</option>`).join("")}</select>
         </div>
