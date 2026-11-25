@@ -148,6 +148,20 @@ S.svcCache={};
 // place (S.picCache), so the card can be redrawn every tick without the picture flickering.
 S.picCache={};
 const PIC_TYPES=new Set(["city","station","outpost","jump","lpoint"]);
+// Can you breathe there: what the game told you while you were out on foot there, or the wiki's description.
+// Can you breathe there: what the game told you while you were out on foot there, the game files' gas mix, or the
+// wiki. Shown as a Breathability Index chip: Good (green), OK (orange: breathable but harmful over time), Bad (red:
+// toxic, too thin or none), "?" when nothing's known. On planet and moon cards, and on the cards of places on them
+// ("outside air": inside an outpost or city the air is the building's).
+const AIR_INDEX={yes:["Good","#57e39b"],high:["Good","#57e39b"],harmful:["OK","#ffb347"],thin:["Bad","#ff6b6b"],no:["Bad","#ff6b6b"]};
+function airChip(a){ const [t,c]=AIR_INDEX[a?.status]||["?","#9aa7bd"];
+  return `<span style="display:inline-block;min-width:38px;text-align:center;padding:1px 7px;border-radius:9px;font:700 11px 'Orbitron','Exo 2',sans-serif;letter-spacing:.04em;color:#05080f;background:${c};margin-right:6px">${t}</span>`; }
+function atmoLine(b, place){ const a=b?.atmo; if(!a||!a.label) return "";
+  const src=a.source==="game"?`Checked in game${a.at?" "+new Date(a.at*1000).toLocaleDateString():""}`:a.source==="files"?"From the game files":a.source==="wiki"?"Star Citizen Wiki":"";
+  const tip=[a.note,a.mix,src].filter(Boolean).join(" · ");
+  const sub=place?(a.note?`${esc(a.note)}`:""):[a.note,src].filter(Boolean).map(esc).join(" · ");
+  const mix=!place&&a.mix&&a.mix!==a.note?`<span class="muted" style="display:block;font-size:11.5px">${esc(a.mix)}</span>`:"";
+  return `<span class="k">${place?"Outside air":"Air"}</span><span title="${esc(tip)}">${airChip(a)}<b style="font-weight:600">${esc(a.label)}</b>${sub?`<span class="muted" style="display:block;font-size:11.5px">${sub}</span>`:""}${mix}</span>`; }
 function placePicKey(sel){ if(sel.kind==="body"){ const w=wikiFor(sel.name); return w?.url?"body:"+sel.name:null; }
   const L=S.locMap[sel.name]; if(!L||L.source==="user"||L.source==="mission"||!PIC_TYPES.has(L.type)) return null; return "loc:"+L.name; }
 function placePicHtml(key){ const p=key&&S.picCache[key]; if(!p?.url) return "";
@@ -644,6 +658,7 @@ function renderDetail(){
       <span class="k">Radius</span><span>${fmtDist(b.radius)}</span>
       ${b.period?`<span class="k">Day length</span><span>${b.period.toFixed(2)} h</span>`:""}
       <span class="k">POI</span><span>${n}</span>
+      ${atmoLine(b)}
       ${b.alignable?`<span class="k">Rotation</span><span>${b.calibrated?"Calibrated by you":"Community offset"}</span>`:""}
       ${b.kind==="asteroid"?`<span class="k">Landing</span><span>${S.locs.some(L=>L.body===b.name&&L.type==="station")?`At ${S.locs.filter(L=>L.body===b.name&&L.type==="station").map(L=>esc(L.name)).join(", ")} (station)`:"No landing zones"}</span>`:""}
       ${b.align_note?`<span class="k">Rotation</span><span>${esc(b.align_note)}</span>`:b.kind==="planet"&&!b.alignable?`<span class="k">Landing</span><span>Not accessible in game yet</span>`:""}
@@ -672,6 +687,7 @@ function renderDetail(){
         return `<div class="kv">${L.gate_to?`<span class="k">For the jump to</span><span><b>${esc(L.gate_to)}</b></span>`:""}
           ${other?`<span class="k">${L.station?"Station":"Gateway"}</span><span><a class="lnk" data-golink="${esc(other)}">${esc(other)}</a>${dk?` <span class="muted">· ${dk} away</span>`:""}</span>`:""}</div>`; })():""}
       <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
+        ${L.kind==="surface"&&L.body&&!isOrbital(L)?atmoLine(S.bodyMap[L.body],true):""}
         ${L.atLpoint?`<span class="k">Lagrange point</span><span>${esc(L.atLpoint)} <span class="muted">· the QT marker for this L-point</span></span>`:""}
         ${(()=>{ const lt=localTime(L,t); if(!lt) return "";
           return `<span class="k">Local time</span><span title="Worked out from ${esc(L.body)}'s rotation (one day = ${lt.period.toFixed(2)} real hours)${lt.calibrated?"":", using the community alignment"}"><span data-lt-row>${ltRow(lt)}</span></span>`; })()}

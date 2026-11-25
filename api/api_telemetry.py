@@ -10,6 +10,7 @@ moment it happens. Everything else still comes from Game.log and /showlocation."
 from qbase import *  # noqa: F401,F403
 from game import telemetry as telemetry_mod
 from game import session_stats as session_mod
+from game import deadreckon
 
 
 class TelemetryMixin:
@@ -26,10 +27,89 @@ class TelemetryMixin:
         # session stats and the earnings log, from every frame (game/session_stats.py)
         self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None),
                                               ctype_fn=self._contract_type)
-        self._tel.on_frame = self._sess.frame
+        self._tel.on_frame = self._tel_frame
         threading.Thread(target=self._stats_sync_loop, daemon=True, name="stats-sync").start()   # api_jobs.py
         self._tel.start()
         self._tel.set_enabled(bool(self._settings.get("telemetry_on", True)))
+
+    def _tel_frame(self, d, now):
+        """Every telemetry frame: session stats, and your estimated position between readings (deadreckon.py)."""
+        try:
+            self._sess.frame(d, now)
+        finally:
+            dr, qt = self._dr_objs()
+            dr.frame(d, now)
+            qt.frame(d, now)
+
+    def _dr_objs(self):
+        """The two position estimators. Not self._dr: that name is the datarunner submitter's (app.py)."""
+        if getattr(self, "_pos_dr", None) is None:
+            self._pos_dr, self._pos_qt = deadreckon.DeadReckoner(), deadreckon.QuantumTrack()
+        return self._pos_dr, self._pos_qt
+
+    def _position_estimate(self, info, p, psys, approx, t):
+        """For get_live's "player_est": where you probably are now, from telemetry since your last reading.
+        Flying over a planet or moon: dead reckoning from that reading. In a quantum jump: along the way to
+        its destination. None when there's nothing better than the reading itself."""
+        dr, qtk = self._dr_objs()
+        q = self._tracker.qt or {}
+        jumping = q.get("selected") and not q.get("arrived") and t - q["selected"] < 1800
+        if not jumping:
+            qtk.end()
+        # A new real reading on a planet or moon starts the dead reckoning again from it. So does landing at or taking
+        # off from a known place (the log says which, and when): flying out of Lorville is tracked from Lorville.
+        spot, spot_at, how = getattr(self, "_spot_now", None) or (None, 0, None)
+        if p and not approx and info.get("body") and info.get("local"):
+            key, at = (info["t"], info["body"]), info["t"]
+        elif p and approx and approx == spot and how in ("landed", "left") and info.get("body") and info.get("local"):
+            key, at = ("spot", spot, spot_at), spot_at
+        else:
+            key = at = None
+        if key:
+            if getattr(self, "_dr_fix", None) != key:
+                self._dr_fix = key
+                b = self._db.bodies[info["body"]]
+                dr.anchor(b.name, b.radius_m, tuple(info["local"]), at)
+        else:
+            if dr.body:
+                dr.drop()
+            self._dr_fix = None
+        if jumping and p and psys:
+            # from where you were when you started it: the dead-reckoned spot if you'd flown since the reading
+            if getattr(qtk, "_j", None) is None or qtk._j.get("key") != q["selected"]:
+                e0 = dr.estimate(t)
+                start = p
+                if e0 and info.get("body") == e0["body"]:
+                    start = self._db.bodies[e0["body"]].to_global(e0["local"], t)
+                qtk.begin(q["selected"], start, psys)
+            L = self._db.locations.get(q.get("place") or "")
+            if L is not None and L.system == psys:
+                e = qtk.estimate(self._db.global_pos(L, t), t)
+                if e:
+                    body = self._db.body_near(e["pos"], psys)
+                    out = {"how": "qt", "to": L.name, **e, "body": None}
+                    if body:
+                        loc = body.to_local(e["pos"], t)
+                        out.update(body=body.name, local=loc)
+                    return out
+            return None
+        e = dr.estimate(t)
+        if not e or not info.get("body") or e["body"] != info["body"]:
+            return None
+        b = self._db.bodies[e["body"]]
+        lat, lon, alt = b.lat_lon_alt(e["local"])
+        return {"how": "dr", "system": psys, "pos": b.to_global(e["local"], t), "lat": lat, "lon": lon, "alt": alt, **e}
+
+    def _estimate_beats_log(self, how, t):
+        """A place the log puts you at doesn't replace a live dead-reckoned position while telemetry still has you
+        flying. Coming in to Lorville the log names the city's zone and traffic control ("log") and switches to
+        its landing area ("landed") 10-15 km out, before you've touched down. Once telemetry says you've landed (or
+        stopped), or there's no telemetry, the log's place wins as before. A take-off ("left") and a quantum
+        arrival always do: the estimate starts again from there."""
+        if how not in ("log", "landed"):
+            return False
+        dr, _ = self._dr_objs()
+        return dr.estimate(t) is not None and t - (dr.flying_at or 0) < 5
 
     def _tel_port_found(self, port):
         """The game serves its telemetry on another port than the one set: use that one from now on."""

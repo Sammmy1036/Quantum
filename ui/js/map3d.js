@@ -769,17 +769,34 @@ function missionMarks(t){
 // A path through the route, sampled so surface legs follow the planet's curve.
 function legSamples(a,b,t){ // a,b: {g, body, local}
   if(a.body && a.body===b.body && a.local && b.local && S.bodyMap[a.body]){ const B=S.bodyMap[a.body], ra=Math.hypot(...a.local), rb=Math.hypot(...b.local), chord=d3(a.local,b.local);
-    const hump=Math.min(B.radius*0.004, chord*0.03)+30;   // keep the arc just above the ground
+    if(ra&&rb){ const hump=Math.min(B.radius*0.004, chord*0.03)+30;   // keep the arc just above the ground
     const n=Math.min(120,Math.max(12,Math.round(chord/B.radius*80))); const pts=[];
-    for(let i=0;i<=n;i++){ const f=i/n; const R=ra+(rb-ra)*f+hump*Math.sin(Math.PI*f); pts.push({g:toGlobal(B,slerpLocal(a.local,b.local,f,R),t),body:a.body}); } return pts; }
-  const pts=[]; for(let i=0;i<=24;i++){ const f=i/24; pts.push({g:[0,1,2].map(k=>a.g[k]+(b.g[k]-a.g[k])*f), body:null}); } return pts; }
+    for(let i=0;i<=n;i++){ const f=i/n; const R=ra+(rb-ra)*f+hump*Math.sin(Math.PI*f); pts.push({g:toGlobal(B,slerpLocal(a.local,b.local,f,R),t),body:a.body}); } return pts; } }
+  // Between two bodies (or a body and space): up from the ground to orbit, across, and down. A straight chord
+  // from one surface to another used to run through the planet it left (or the one it went to) when that
+  // place was on the far side, so the whole leg was hidden behind the globe and the stop looked unlinked.
+  const up=n=>{ const B=n.body&&n.local&&S.bodyMap[n.body]; if(!B) return null; const r=Math.hypot(...n.local); if(!r) return null;
+    const R=Math.max(r,(B.om||0)>B.radius?B.om:B.radius*1.45); return {B,r,R}; };
+  const ua=up(a), ub=up(b), pts=[];
+  const climb=(n,u,rev)=>{ const out=[]; for(let i=0;i<=8;i++){ const f=i/8, R=u.r+(u.R-u.r)*f; out.push({g:toGlobal(u.B,n.local.map(v=>v/u.r*R),t),body:n.body}); } return rev?out.reverse():out; };
+  const A=ua?climb(a,ua,false):[{g:a.g,body:null}], Bp=ub?climb(b,ub,true):[{g:b.g,body:null}];
+  const s=A[A.length-1].g, e=Bp[0].g; pts.push(...A);
+  for(let i=1;i<24;i++){ const f=i/24; pts.push({g:[0,1,2].map(k=>s[k]+(e[k]-s[k])*f), body:null}); }
+  pts.push(...Bp); return pts; }
 function nodeOf(name,t){ const L=S.locMap[name];
   if(!L){ const b=S.bodyMap?.[name]; return b&&b.center&&b.system===S.system?{g:b.center,body:null,local:null}:null; }      // a planet or moon (map marks)
   if(!L.pos||L.system!==S.system) return null; return {g:globalPos(L,t), body:L.kind==="surface"?L.body:null, local:L.kind==="surface"?L.pos:null}; }
 // On a planet you turn with it, so place the last reading by its ground position, not its old space position.
-function playerG(t){ const p=S.live?.player; if(!p) return null; return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
-function playerNode(){ const p=S.live?.player;
-  if(p&&p.system===S.system){ S.lastPN={sys:p.system, body:p.body, local:p.local, pos:p.pos, at:Date.now()}; return {g:playerG(now()), body:p.body, local:p.local}; }
+// Between readings the server estimates where you've got to from the game's telemetry (game/deadreckon.py):
+// flying over a planet from your heading, speed and altitude, or along a quantum jump. The map draws you there,
+// with a dashed ring the size of the error; calibrations and datarunner readings still use the real reading.
+function playerEst(){ const e=S.live?.player_est, p=S.live?.player; if(!e||!p||(e.system||p.system)!==p.system) return null; return e; }
+function playerG(t){ const p=S.live?.player; if(!p) return null; const e=playerEst();
+  if(e) return e.body&&e.local&&S.bodyMap[e.body] ? toGlobal(S.bodyMap[e.body],e.local,t) : e.pos;
+  return p.body&&p.local&&S.bodyMap[p.body] ? toGlobal(S.bodyMap[p.body],p.local,t) : p.pos; }
+function playerNode(){ const p=S.live?.player, e=playerEst();
+  if(p&&p.system===S.system){ const body=e?e.body:p.body, local=e?e.local:p.local;
+    S.lastPN={sys:p.system, body, local, pos:e?e.pos:p.pos, at:Date.now()}; return {g:playerG(now()), body, local, est:e}; }
   // Your position dropped out for a moment (or the log briefly named another system): keep the route and guide
   // lines drawn from where you were last seen, for up to 10 minutes, instead of losing them until the next reading.
   const L=S.lastPN; if(!L||L.sys!==S.system||S.live?.game_off||Date.now()-L.at>600000) return null;
@@ -797,6 +814,23 @@ function facingDir(pn,q){ const v=S.live?.telemetry?.vehicle; if(!v||v.heading==
   const h=v.heading*Math.PI/180, d=[N[0]*Math.cos(h)+E[0]*Math.sin(h),N[1]*Math.cos(h)+E[1]*Math.sin(h),N[2]*Math.cos(h)+E[2]*Math.sin(h)];
   const k=Math.max(r*0.002,50), q2=proj(toGlobal(B,[p[0]+d[0]*k,p[1]+d[1]*k,p[2]+d[2]*k],now())); if(!q2) return;
   let dx=q2[0]-q[0], dy=q2[1]-q[1]; const l=Math.hypot(dx,dy); if(l<0.01) return null; return {dx:dx/l,dy:dy/l}; }
+// Out in space there's no compass heading, so the ship is turned the way you're going instead: in a quantum jump,
+// at its destination; otherwise along the way you've moved between your last two positions (readings or estimates)
+// over the last 10 minutes. Null when neither is known (the icon then points up).
+function travelDir(pn,q){ const t=now(), sd=(g)=>{ const q2=g&&proj(g); if(!q2) return null; let dx=q2[0]-q[0], dy=q2[1]-q[1]; const l=Math.hypot(dx,dy);
+    return l>0.5?{dx:dx/l,dy:dy/l}:null; };
+  const tv=S.live?.travel, e=S.live?.player_est, to=(e&&e.how==="qt"&&e.to)||(tv&&tv.state==="jumping"&&tv.to);
+  if(to){ const nd=nodeOf(to,t); const d=nd&&sd(nd.g); if(d) return d; }
+  const tr=S.youTrail; if(tr&&tr.prev&&Date.now()-tr.at<600000){ const q0=proj(tr.prev), q1=proj(pn.g); if(q0&&q1){ let dx=q1[0]-q0[0], dy=q1[1]-q0[1]; const l=Math.hypot(dx,dy);
+      if(l>0.5) return {dx:dx/l,dy:dy/l}; } }
+  return null; }
+// Remembers where you were before your latest position (more than 1 km away), for travelDir. In the body's own frame
+// when you're on or near one (so its spin isn't taken for movement); otherwise in space.
+function trackYou(pn){ if(!pn||pn.stale) return; const tr=S.youTrail||(S.youTrail={cur:null,prev:null,at:0}), cur=tr.cur;
+  const here={g:pn.g, body:pn.body, local:pn.local};
+  const moved=!cur?Infinity:(cur.body&&cur.body===here.body&&cur.local&&here.local)?d3(cur.local,here.local):(!cur.body&&!here.body?d3(cur.g,here.g):Infinity);
+  if(moved>1000){ if(cur&&moved!==Infinity){ tr.prev=cur; tr.at=Date.now(); } else if(cur){ tr.prev=null; } tr.cur=here; }
+  if(tr.prev&&tr.prev.body&&tr.prev.local&&S.bodyMap[tr.prev.body]) tr.prev={...tr.prev, g:toGlobal(S.bodyMap[tr.prev.body],tr.prev.local,now())}; }
 function facingArrow(pn,q){ const f=facingDir(pn,q); if(!f) return; const {dx,dy}=f;
   const L=30, tx=q[0]+dx*L, ty=q[1]+dy*L, nx=-dy, ny=dx;
   ctx.save(); ctx.lineCap="round"; ctx.strokeStyle="rgba(5,8,15,.85)"; ctx.lineWidth=5; ctx.beginPath(); ctx.moveTo(q[0]+dx*7,q[1]+dy*7); ctx.lineTo(tx-dx*6,ty-dy*6); ctx.stroke();
@@ -807,7 +841,7 @@ const YOU_SHIP_PX=30;
 function drawYouShip(pn,q){ const v=S.live?.telemetry?.vehicle; if(!v||pn.stale||typeof shipIconKey!=="function") return false;
   const k=shipIconKey(v.class||v.name)||shipIconKey(v.name); if(!k) return false;
   const px=YOU_SHIP_PX, cv=gameIconCanvas("ship:"+k,"#7fe7ff",px*(window.devicePixelRatio||1)); if(!cv) return false;      // (still loading: the dot this frame)
-  const f=facingDir(pn,q), a=f?Math.atan2(f.dy,f.dx):-Math.PI/2;                                                       // the icons point right (+x)
+  const f=facingDir(pn,q)||travelDir(pn,q), a=f?Math.atan2(f.dy,f.dx):-Math.PI/2;                                      // the icons point right (+x)
   ctx.save(); ctx.translate(q[0],q[1]); ctx.rotate(a); ctx.shadowColor="rgba(2,5,12,.95)"; ctx.shadowBlur=5;
   ctx.drawImage(cv,-px/2,-px/2,px,px); ctx.shadowBlur=0; ctx.drawImage(cv,-px/2,-px/2,px,px); ctx.restore(); return true; }
 function strokePath(samples,{color,width,glow,dash=null,offset=0,alpha=1}){
@@ -917,15 +951,17 @@ function drawOverlay(t){
     S.picks.push({kind:"loc",name:n,x:q[0],y:q[1],r:11,depth:q[2]}); labelBoxes.push([q[0]-bw/2,q[1]-11,q[0]+bw/2,q[1]+11]);
     label(n,q[0]+bw/2+4,q[1]+4,{color:"#bcd9ff",font:"600 12.5px 'Inter',sans-serif",force:i===0}); });
   // ---- player
-  const pn=playerNode();
+  const pn=playerNode(); trackYou(pn);
   if(pn){ const q=proj(pn.g); if(q&&visible(pn.g,pn.body)){ const ph=(performance.now()/1400)%1;
     ctx.strokeStyle=`rgba(127,231,255,${.55*(1-ph)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q[0],q[1],7+ph*18,0,7); ctx.stroke();
     if(S.live.player?.approx||pn.stale){ ctx.save(); ctx.setLineDash([3,3]); ctx.strokeStyle="#7fe7ff"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(q[0],q[1],12,0,7); ctx.stroke(); ctx.restore(); }
+    if(pn.est&&pn.est.err_m){ const e=pn.est, D=d3(camW,pn.g), px=Math.max(12,Math.min(220,e.err_m/Math.max(D,1)*f));   // the estimate's error, to scale
+      ctx.save(); ctx.setLineDash([2,5]); ctx.strokeStyle="rgba(127,231,255,.55)"; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(q[0],q[1],px,0,7); ctx.stroke(); ctx.restore(); }
     // In a ship Quantum has an icon for (shipicons.js): that ship instead of the dot, its nose turned to its heading
     // (straight up when there's no heading). Otherwise the dot, with the heading arrow.
     if(!drawYouShip(pn,q)){ facingArrow(pn,q);
       ctx.fillStyle="#7fe7ff"; ctx.beginPath(); ctx.arc(q[0],q[1],5.5,0,7); ctx.fill(); ctx.strokeStyle="#05080f"; ctx.lineWidth=2; ctx.stroke(); }
-    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label(pn.stale?"You (last seen)":"You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
+    labelBoxes.push([q[0]-10,q[1]-10,q[0]+10,q[1]+10]); label(pn.stale?"You (last seen)":pn.est?(pn.est.how==="qt"?`You · quantum ${Math.round((pn.est.progress||0)*100)}%`:"You (estimated)"):"You",q[0]+10,q[1]-8,{color:"#7fe7ff",font:"700 12px 'Exo 2',sans-serif",force:true});
     // Ships that just streamed in near you (profile.js contactsNear): a red ring round you and their names to
     // the left. The log never says where they are, only that they're within streaming range.
     const ct=typeof contactsNear==="function"?contactsNear():[];

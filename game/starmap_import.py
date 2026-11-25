@@ -212,8 +212,45 @@ def apply_extra(db, snap, keep=None):
                                           qt=p.get("qt", True), category="station", created=time.time())
             have[(_key(name), system)] = name
             changed += 1
+        # The game files say which body a place is on. The community data can have the same place twice under
+        # one name, once on the right body and once on a wrong or old one: "JumpTown" on Daymar (where it is,
+        # no quantum marker in that data) and "Jumptown" on Yela (nothing there). Matching by name alone took
+        # the Yela copy, so the marker went to the wrong one and the Daymar one said "No quantum marker".
+        # Now a site is matched on its own body first; same-named community copies on other bodies, where the
+        # game files have no place of that name, are taken off the map (routes follow via db.merged).
+        all_names = {}
+        for n, L in db.locations.items():
+            if L.system == system:
+                all_names.setdefault(_key(n), []).append(n)
+        site_bodies = {}
+        for p in s.get("sites", []):
+            site_bodies.setdefault(_key(p["name"]), set()).add(_body_for(db, p.get("body"), system))
+        merged = {}
         for p in s.get("sites", []):
             name = p["name"]
+            body = _body_for(db, p.get("body"), system)
+            names = [n for n in all_names.get(_key(name), []) if n in db.locations]
+            if body and len(site_bodies.get(_key(name), ())) == 1:
+                here = [n for n in names if db.locations[n].body == body]
+                stale = [n for n in names if n not in here and db.locations[n].source == "db"
+                         and db.locations[n].kind == "surface" and db.locations[n].body not in site_bodies[_key(name)]
+                         and not (keep.get(n) and keep[n].get("system") == system)]
+                if here and stale:
+                    cur = db.locations[here[0]]
+                    for n in stale:
+                        db.locations.pop(n)
+                        merged[n] = cur.name
+                        changed += 1
+                    if cur.name != name and name not in db.locations and cur.source == "db":
+                        old = cur.name                       # "JumpTown" -> the game's own spelling, "Jumptown"
+                        db.locations.pop(old)
+                        cur.name = name
+                        db.locations[name] = cur
+                        merged[old] = name
+                        merged = {k: (name if v == old else v) for k, v in merged.items()}
+                    have[(_key(name), system)] = cur.name
+                elif here:
+                    have[(_key(name), system)] = here[0]
             # A /showlocation for a place that isn't on the map yet used to keep it off the map entirely (nothing
             # else adds it): add it from the game files, and the measured spot is put on it afterwards
             # (App._apply_place_fixes), so the reading still wins.
@@ -237,6 +274,9 @@ def apply_extra(db, snap, keep=None):
                                           created=time.time())
             have[(_key(name), system)] = name
             changed += 1
+        merged = {k: v for k, v in merged.items() if k != v}
+        if merged:
+            db.merged = {**getattr(db, "merged", {}), **merged}
     return changed
 
 

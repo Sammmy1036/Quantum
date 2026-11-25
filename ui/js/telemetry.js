@@ -427,6 +427,9 @@ function tlDrTick(){ const pl=S.live?.player, v=tlLive()?.vehicle, now=performan
   const R=Math.hypot(...pl.local)-(pl.alt||0); if(!(R>1000)) { S.tl.dr=null; return; }
   let d=S.tl.dr;
   if(!d||d.fix!==pl.fix_t||d.body!==pl.body){ d=S.tl.dr={fix:pl.fix_t,body:pl.body,lat:pl.lat,lon:pl.lon,R,at:now,moved:0,since:Date.now()}; return; }
+  // The server's estimate (the same one the map shows) wins when there's a newer one: it integrates every
+  // telemetry frame and the game's altitude; this only carries it on between polls.
+  const e=S.live?.player_est; if(e&&e.how==="dr"&&e.body===d.body&&e.lat!=null&&e.moved_m!==d.srvMoved){ d.srvMoved=e.moved_m; d.lat=e.lat; d.lon=e.lon; d.moved=e.moved_m; }
   const dt=Math.min((now-d.at)/1000,2); d.at=now;
   if(v&&v.flight_data!==false&&!v.landed&&v.heading!=null&&(v.speed||0)>0.5){ const step=v.speed*dt;
     [d.lat,d.lon]=tlStep(d.lat,d.lon,v.heading,step,R); d.moved+=step; } }

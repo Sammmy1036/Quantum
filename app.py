@@ -165,6 +165,7 @@ class Api(api_contracts.ContractsMixin,
         self._store = pledgestore.Store(HERE / "uex_cache")  # the RSI pledge store's gear and packs (pledge-only items)
         self._renamed.update(getattr(self._db, "merged", {}))   # places listed twice, merged (Port Tressler)
         self._renamed.update(self._apply_uex_stations(offline=True))
+        self._renamed.update(getattr(self._db, "merged", {}))   # and any the game files' sites took off (Jumptown on Yela)
         ren = self._renamed
         for st in self._settings.get("route_tasks") or []:
             st["place"] = ren.get(st.get("place"), st.get("place"))

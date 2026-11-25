@@ -1,0 +1,520 @@
+{
+ "%doc": "Built by tools/build_atmospheres.py from the game's DataCore records. Quantum shows it on planet cards; a reading taken in game (telemetry) still wins. breathable null: not answered.",
+ "generated": 1795595576.968975,
+ "bodies": {
+  "Delamar": {
+   "breathable": null,
+   "how": "no records for its code"
+  },
+  "Nyx I": {
+   "breathable": null,
+   "how": "no records for its code"
+  },
+  "Nyx II": {
+   "breathable": null,
+   "how": "no records for its code"
+  },
+  "Nyx III": {
+   "breathable": null,
+   "how": "no records for its code"
+  },
+  "Adir": {
+   "pressure_raw": 0.05,
+   "temp_raw": 202.15,
+   "gases": {
+    "CO2": 0.9789,
+    "N2": 0.0105,
+    "H2": 0.0105
+   },
+   "temp_c": -71,
+   "pressure_atm": 0.05,
+   "status": "thin",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [
+    "CO2"
+   ],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.050 atm, too little oxygen"
+  },
+  "Bloom": {
+   "pressure_raw": 0.99,
+   "temp_raw": 285.15,
+   "gases": {
+    "CO2": 0.68,
+    "N2": 0.23,
+    "O2": 0.09
+   },
+   "temp_c": 12,
+   "pressure_atm": 0.99,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.089,
+   "toxic": [
+    "CO2"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.089 atm (needs 0.16), at 0.990 atm, toxic: CO2 0.6732 atm"
+  },
+  "Fairo": {
+   "pressure_raw": 1.78,
+   "temp_raw": 287.15,
+   "gases": {
+    "CO2": 0.8879,
+    "SO2": 0.0374,
+    "H2": 0.0093,
+    "O2": 0.0654
+   },
+   "temp_c": 14,
+   "pressure_atm": 1.78,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.116,
+   "toxic": [
+    "CO2",
+    "SO2"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.116 atm (needs 0.16), at 1.780 atm, toxic: CO2 1.5804 atm, SO2 0.0665 atm"
+  },
+  "Fuego": {
+   "pressure_raw": 0.61,
+   "temp_raw": 279.15,
+   "gases": {
+    "H2": 0.98,
+    "NH3": 0.02
+   },
+   "temp_c": 6,
+   "pressure_atm": 0.61,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [
+    "NH3"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.610 atm, toxic: NH3 0.0122 atm"
+  },
+  "Ignis": {
+   "pressure_raw": 0.5,
+   "temp_raw": 270.0,
+   "gases": {
+    "CO2": 0.4638,
+    "N2": 0.0193,
+    "O2": 0.5169
+   },
+   "temp_c": -3,
+   "pressure_atm": 0.5,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.258,
+   "toxic": [
+    "CO2"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.258 atm (needs 0.16), at 0.500 atm, toxic: CO2 0.2319 atm"
+  },
+  "Monox": {
+   "pressure_raw": 0.91,
+   "temp_raw": 367.5,
+   "gases": {
+    "CO2": 0.0202,
+    "N2": 0.7975,
+    "O2": 0.1817,
+    "CO": 0.0006
+   },
+   "temp_c": 94,
+   "pressure_atm": 0.91,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.165,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.165 atm (needs 0.16), at 0.910 atm"
+  },
+  "Pyro1": {
+   "pressure_raw": 2.62,
+   "temp_raw": 499.0,
+   "gases": {
+    "CO2": 0.9548,
+    "N2": 0.0452
+   },
+   "temp_c": 226,
+   "pressure_atm": 2.62,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [
+    "CO2"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 2.620 atm, toxic: CO2 2.5015 atm"
+  },
+  "Pyro4": {
+   "pressure_raw": 0.51,
+   "temp_raw": 325.0,
+   "gases": {
+    "N2": 0.6831,
+    "CH4": 0.0211,
+    "O2": 0.2958
+   },
+   "temp_c": 52,
+   "pressure_atm": 0.51,
+   "status": "harmful",
+   "breathable": true,
+   "o2_atm": 0.151,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.151 atm (needs 0.16), at 0.510 atm, low oxygen"
+  },
+  "Pyro5": {
+   "pressure_raw": 3.0,
+   "temp_raw": 350.0,
+   "gases": {
+    "H2": 0.7374,
+    "He": 0.2626
+   },
+   "temp_c": 77,
+   "pressure_atm": 3.0,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 3.000 atm, too little oxygen"
+  },
+  "Terminus": {
+   "pressure_raw": 1.13,
+   "temp_raw": 140.0,
+   "gases": {
+    "N2": 0.81,
+    "O2": 0.13,
+    "CH4": 0.04,
+    "CO2": 0.01,
+    "Ar": 0.01
+   },
+   "temp_c": -133,
+   "pressure_atm": 1.13,
+   "status": "harmful",
+   "breathable": true,
+   "o2_atm": 0.147,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.147 atm (needs 0.16), at 1.130 atm, low oxygen"
+  },
+  "Vatra": {
+   "pressure_raw": 2.84,
+   "temp_raw": 187.15,
+   "gases": {
+    "N2": 0.93,
+    "CH4": 0.06,
+    "H2": 0.01
+   },
+   "temp_c": -86,
+   "pressure_atm": 2.84,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 2.840 atm, too little oxygen"
+  },
+  "Vuur": {
+   "pressure_raw": 1.57,
+   "temp_raw": 301.15,
+   "gases": {
+    "CO2": 0.98,
+    "N2": 0.02
+   },
+   "temp_c": 28,
+   "pressure_atm": 1.57,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [
+    "CO2"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 1.570 atm, toxic: CO2 1.5386 atm"
+  },
+  "Aberdeen": {
+   "pressure_raw": 1.45,
+   "temp_raw": 523.0,
+   "gases": {
+    "SO2": 0.898,
+    "SO": 0.093,
+    "NaCl": 0.009
+   },
+   "temp_c": 250,
+   "pressure_atm": 1.45,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [
+    "SO2",
+    "SO"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 1.450 atm, toxic: SO2 1.3021 atm, SO 0.1349 atm"
+  },
+  "ArcCorp": {
+   "pressure_raw": 0.9,
+   "temp_raw": 303.0,
+   "gases": {
+    "N2": 0.7808,
+    "O2": 0.2095,
+    "Ar": 0.0093,
+    "CO2": 0.0004
+   },
+   "temp_c": 30,
+   "pressure_atm": 0.9,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.189,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.189 atm (needs 0.16), at 0.900 atm (EarthAtmosphere's mix: none of its own)"
+  },
+  "Arial": {
+   "pressure_raw": 0.9,
+   "temp_raw": 498.15,
+   "gases": {
+    "N2": 0.977,
+    "CH4": 0.0177,
+    "H2": 0.0053
+   },
+   "temp_c": 225,
+   "pressure_atm": 0.9,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.900 atm, too little oxygen"
+  },
+  "Calliope": {
+   "pressure_raw": 0.8,
+   "temp_raw": 223.15,
+   "gases": {
+    "O2": 0.998,
+    "H2O2": 0.002
+   },
+   "temp_c": -50,
+   "pressure_atm": 0.8,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.798,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.798 atm (needs 0.16), at 0.800 atm"
+  },
+  "Cellin": {
+   "pressure_raw": 0.2,
+   "temp_raw": 298.0,
+   "gases": {
+    "SO2": 0.9,
+    "SO": 0.07,
+    "O2": 0.03
+   },
+   "temp_c": 25,
+   "pressure_atm": 0.2,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.006,
+   "toxic": [
+    "SO2",
+    "SO"
+   ],
+   "harmful_gases": [],
+   "how": "oxygen 0.006 atm (needs 0.16), at 0.200 atm, toxic: SO2 0.1800 atm, SO 0.0140 atm"
+  },
+  "Clio": {
+   "pressure_raw": 0.7,
+   "temp_raw": 248.85,
+   "gases": {
+    "N2": 0.992,
+    "O2": 0.008
+   },
+   "temp_c": -24,
+   "pressure_atm": 0.7,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.006,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.006 atm (needs 0.16), at 0.700 atm, too little oxygen"
+  },
+  "Crusader": {
+   "pressure_raw": 3.0,
+   "temp_raw": 350.0,
+   "gases": {
+    "N2": 0.7808,
+    "O2": 0.2095,
+    "Ar": 0.0093,
+    "CO2": 0.0004
+   },
+   "temp_c": 77,
+   "pressure_atm": 3.0,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.628,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.628 atm (needs 0.16), at 3.000 atm (EarthAtmosphere's mix: none of its own)"
+  },
+  "Daymar": {
+   "pressure_raw": 0.6,
+   "temp_raw": 433.0,
+   "gases": {
+    "N2": 0.9839,
+    "CH4": 0.0141,
+    "H2": 0.002
+   },
+   "temp_c": 160,
+   "pressure_atm": 0.6,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.600 atm, too little oxygen"
+  },
+  "Euterpe": {
+   "pressure_raw": 0.8,
+   "temp_raw": 200.0,
+   "gases": {
+    "O2": 0.998,
+    "H2O2": 0.002
+   },
+   "temp_c": -73,
+   "pressure_atm": 0.8,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.798,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.798 atm (needs 0.16), at 0.800 atm"
+  },
+  "Hurston": {
+   "pressure_raw": 0.9,
+   "temp_raw": 323.15,
+   "gases": {
+    "N2": 0.7816,
+    "O2": 0.2104,
+    "CO2": 0.0008,
+    "CO": 0.007,
+    "SO2": 0.0002
+   },
+   "temp_c": 50,
+   "pressure_atm": 0.9,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.189,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.189 atm (needs 0.16), at 0.900 atm"
+  },
+  "Ita": {
+   "pressure_raw": 0.15,
+   "temp_raw": 283.15,
+   "gases": {
+    "N2": 0.9855,
+    "CH4": 0.014,
+    "CO": 0.0005
+   },
+   "temp_c": 10,
+   "pressure_atm": 0.15,
+   "status": "thin",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.150 atm, too little oxygen"
+  },
+  "Lyria": {
+   "pressure_raw": 0.1,
+   "temp_raw": 268.15,
+   "gases": {
+    "O2": 0.977,
+    "H2O2": 0.0153,
+    "NH3": 0.0077
+   },
+   "temp_c": -5,
+   "pressure_atm": 0.1,
+   "status": "thin",
+   "breathable": false,
+   "o2_atm": 0.098,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.098 atm (needs 0.16), at 0.100 atm, too little oxygen"
+  },
+  "Magda": {
+   "pressure_raw": 0.35,
+   "temp_raw": 313.15,
+   "gases": {
+    "N2": 0.9806,
+    "CH4": 0.0152,
+    "H2": 0.0021,
+    "CO2": 0.0021
+   },
+   "temp_c": 40,
+   "pressure_atm": 0.35,
+   "status": "no",
+   "breathable": false,
+   "o2_atm": 0.0,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.000 atm (needs 0.16), at 0.350 atm, too little oxygen"
+  },
+  "Wala": {
+   "pressure_raw": 0.1,
+   "temp_raw": 270.0,
+   "gases": {
+    "N2": 0.7736,
+    "O2": 0.2112,
+    "H2O2": 0.0152
+   },
+   "temp_c": -3,
+   "pressure_atm": 0.1,
+   "status": "thin",
+   "breathable": false,
+   "o2_atm": 0.021,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.021 atm (needs 0.16), at 0.100 atm, too little oxygen"
+  },
+  "Yela": {
+   "pressure_raw": 0.2,
+   "temp_raw": 250.0,
+   "gases": {
+    "O2": 1.0
+   },
+   "temp_c": -23,
+   "pressure_atm": 0.2,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.2,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.200 atm (needs 0.16), at 0.200 atm"
+  },
+  "microTech": {
+   "pressure_raw": 1.1,
+   "temp_raw": 266.0,
+   "gases": {
+    "N2": 0.7808,
+    "O2": 0.2095,
+    "Ar": 0.0093,
+    "CO2": 0.0004
+   },
+   "temp_c": -7,
+   "pressure_atm": 1.1,
+   "status": "yes",
+   "breathable": true,
+   "o2_atm": 0.23,
+   "toxic": [],
+   "harmful_gases": [],
+   "how": "oxygen 0.230 atm (needs 0.16), at 1.100 atm (EarthAtmosphere's mix: none of its own)"
+  }
+ }
+}

@@ -36,7 +36,8 @@ class MapMixin:
                               "alignable": can_align(b) and b.name not in unreleased,
                               "align_note": NO_ALIGN.get(b.name) or (f"Not in the LIVE game yet: comes with {unreleased[b.name]}"
                                                                     if b.name in unreleased else None),
-                              "parent": parent.name if parent and b.kind != "star" else None})
+                              "parent": parent.name if parent and b.kind != "star" else None,
+                              "atmo": self._atmo_store().view(b)})       # can you breathe there (card line)
             hidden_keys = self._hidden_keys()
             unverified = gateways.unverified(self._learned_places())     # "Check its position" jobs
             fix_orig = getattr(self, "_fix_orig", {})
@@ -149,7 +150,10 @@ class MapMixin:
             # The log knows where you are and that's newer than your last /showlocation show you at
             # that place (approximate) until a real reading comes in. Keeps the route line drawn.
             spot, spot_at, how = self._log_spot(cur) if game_on else (None, 0, None)
-            if spot and (not p or spot_at > self._player_t):
+            self._spot_now = (spot, spot_at, how)
+            # Entering a city's zone or talking to its traffic control happens 10-15 km out: while telemetry still has
+            # you flying (a live dead-reckoned estimate), that's where you are, not on the spaceport already.
+            if spot and (not p or spot_at > self._player_t) and not self._estimate_beats_log(how, t):
                 L = self._db.locations[spot]
                 p, psys, ptime, approx = self._db.global_pos(L, t), L.system, t, L.name
             # The log says you're in another system since then (you went through a gateway): you're at
@@ -205,6 +209,17 @@ class MapMixin:
                     lat, lon, alt = body.lat_lon_alt(local)
                     info.update(body=body.name, lat=lat, lon=lon, alt=alt, local=local)
                 live["player"] = info
+                try:
+                    live["player_est"] = self._position_estimate(info, p, psys, approx, t)
+                except Exception as e:
+                    print("position estimate:", e, flush=True)
+                # Out on foot with telemetry on: remember whether the air there is breathable (Atmosphere.learn).
+                try:
+                    tel = live.get("telemetry") or {}
+                    if info.get("age", 1e9) < 180 and self._atmo_store().learn(self._db, info, tel.get("actor"), tel.get("age")):
+                        self._static_version += 1             # the planet's card shows it
+                except Exception as e:
+                    print("atmosphere:", e, flush=True)
             tc = ptime if p else t   # evaluate at the moment of the reading (or now, for a logged arrival)
             live["legs"] = self._db.route_length(p, psys, names, tc)
             live["no_qt"] = self._no_qt_stops(names, p, psys, tc)
@@ -566,6 +581,14 @@ class MapMixin:
         names = [st["place"] for st in self._stops()]
         legs = self._db.route_length(start if self._player else None, ssys, names, now)
         return names, legs
+
+    def _atmo_store(self):
+        a = getattr(self, "_atmo", None)
+        if a is None:
+            from planner.atmosphere import Atmosphere
+            a = self._atmo = Atmosphere(HERE / "atmosphere.json",
+                                        files=(RES / "atmosphere_bodies.json", HERE / "atmosphere_bodies.json"))
+        return a
 
     # ------------------------------------------------------------ route
     def add_stops(self, names, repeat=False):
@@ -1144,6 +1167,16 @@ class MapMixin:
             hist = self._cal_file().get("history", [])
             out = []
             unreleased = self._unreleased_bodies()
+            # Lined up for THIS game build? The same test the Data > Jobs alignment list uses (agreed on the server
+            # for this build, or lined up by you in it), so Settings and Jobs never disagree. The page reads
+            # aligned_now; without it every body ever aligned (an older build, or the shipped map data) showed a
+            # tick here while Jobs still listed it as needing alignment.
+            build = str(self._game_build() or "")
+            srv = getattr(self, "_align_server", None) or {}
+            agreed = srv.get("agreed") or {} if str(srv.get("build")) == build else None
+            mine_build = {n for n, v in (self._settings.get("cal_build") or {}).items() if str(v) == build}
+            mine_build |= {e["body"] for e in hist if str(e.get("build")) == build
+                           and (str(e.get("kind", "")).startswith("auto-") or e.get("kind") == "manual")}
             for b in sorted(self._db.bodies.values(), key=lambda b: (b.system, b.kind != "planet", b.name)):
                 if not can_align(b) or b.name in unreleased:     # stars, asteroids, unlandable, not on LIVE yet
                     continue
@@ -1154,7 +1187,9 @@ class MapMixin:
                             "at": b.calibrated_at, "place": b.calibrated_place, "events": len(h),
                             "checks": len(checks), "sessions": len({e["session"] for e in h if e["session"]}),
                             "worst_check": max((abs(e["residual_deg"]) for e in checks), default=None),
-                            "last": h[-1] if h else None})
+                            "last": h[-1] if h else None,
+                            "aligned_now": (None if not build or (agreed is None and b.name not in mine_build)
+                                            else b.name in mine_build or b.name in (agreed or {}))})
             return {"bodies": out, "build": self._tracker.build, "version": self._game_version_label(self._tracker.build),
                     "file": str(CAL_PATH)}
 

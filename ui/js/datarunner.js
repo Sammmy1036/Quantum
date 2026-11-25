@@ -388,6 +388,9 @@ async function drLoadClaims(){ try{ const r=await api().dr_claims(); S.drClaims=
 async function drAccept(job){
   const mine=drMyJobIds(); if(!mine.includes(job)&&mine.length>=DR_MAX_JOBS){ toast(`You have ${DR_MAX_JOBS} jobs on the go. Finish or let go of one first`); return null; }
   const r=await api().dr_claim(job); if(!r.ok){ toast(r.error); await drLoadClaims(); return null; }
+  // Taken again after letting it go: forget the "just finished" mark Let go left on it, or drSyncHeld took it
+  // straight back out of Your jobs (and let it go on the server again) the moment it was accepted.
+  if(S.drDone) delete S.drDone[job];
   const u=r.until?r.until*1000:Date.now()+CLAIM_MIN*60000; if(S.drHeld?.[job]) S.drHeld[job].until=u; return u; }
 // Letting go (or finishing) drops the job here at once: the claims list loaded earlier still shows it as yours
 // until it's fetched again, and drSyncHeld would otherwise put it straight back into "Your jobs".

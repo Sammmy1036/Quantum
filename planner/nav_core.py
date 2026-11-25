@@ -99,12 +99,31 @@ NO_LANDING = {"Nyx I", "Nyx II", "Nyx III"}
 # Places the data files as cities that are really stations (Levski is built into Delamar).
 # Places taken out of the game that older map data still lists. Removed from the map on load (yours,
 # a waypoint you saved under the same name, is left alone).
-REMOVED_PLACES = {"port olisar"}      # removed from the game in Alpha 3.20.0 (Sept 2023)
+REMOVED_PLACES = {"port olisar",     # removed from the game in Alpha 3.20.0 (Sept 2023)
+                  # Spawn points of the old hijacked-Reclaimer mission, plotted by the community years ago.
+                  # They're mission spawns in orbit (100-400 km up), not places, and the importer's name
+                  # clash fix gave them " (Cellin)"-style names; starnav even typed the Cellin one a city.
+                  "reclaimer hijack spawn point", "reclaimer hijack mission spawn",
+                  # Craters on Magda the community plotted in 2020/2021 (one already marked "(old)"); not in
+                  # the Star Citizen Wiki's list of Magda's locations.
+                  "hhl 2020 - crater", "hhl 2021 - civilian crater",
+                  # Invictus Launch Week 2952 (May 2022) at Orison's Vision Center: a one-off event.
+                  "fleet week 2022 event halls",
+                  "emperean park"}    # misspelt copy of Empyrean Park, on the very same spot
+# Like REMOVED_PLACES, but only on one body, for names too generic to drop everywhere: the manufacturer
+# halls of that 2952 event, and Dunlow Derby, which the data puts at Crusader's centre (no real position).
+REMOVED_ON = {"Crusader": {"main hall", "crusader-tumbril-krueger", "anvil", "aegis", "rsi", "dunlow derby"}}
+# Mission scaffolding the community data picked up: escort markups and asteroids of old escort missions,
+# and a raw object container. Never real places.
+_JUNK_PLACE = re.compile(r"^(escort mission markup|escort asteroid|objectcontainer-)\s*\d*", re.I)
 # Places the game moved to another body, by plain name -> the body they're on now. The community data still
 # lists the old spot under the plain name and calls the real, current one "<name> (old Location)" (it has it
 # the wrong way round): Paradise Cove moved from Lyria to Wala for Jumptown 2.1, and the Wala one is the one
 # with the quantum marker. The current one gets the plain name; the stale copy on the old body goes.
-MOVED_PLACES = {"paradise cove": "Wala"}
+MOVED_PLACES = {"paradise cove": "Wala",
+                # Raven's Roost moved from Calliope to microTech in Alpha 3.22. The data lists the old Calliope
+                # spot under the plain name and the real one as "Raven's Roost (microTech)".
+                "raven's roost": "microTech"}
 _OLD_TAG = re.compile(r"\s*\((?:old|former|previous)\s+location\)\s*$", re.I)
 STATION_NAMES = {"levski", "grim hex", "grimhex"}   # data calls them landing zones; they're stations
 
@@ -140,7 +159,11 @@ def normalize(db) -> bool:
                 b.rotation_offset_deg = b.community_offset_deg
             b.calibrated, b.calibrated_at, b.calibrated_place, b.calibration_quality = False, 0.0, "", ""
             changed = True
-    for name in [n for n, l in db.locations.items() if n.split(" (")[0].lower() in REMOVED_PLACES and l.source == "db"]:
+    def _gone(n, l):
+        base = re.sub(r"\s*\(old\)$", "", n.lower()).split(" (")[0]
+        return (base in REMOVED_PLACES or base in REMOVED_ON.get(l.body or "", ())
+                or bool(_JUNK_PLACE.match(n)))
+    for name in [n for n, l in db.locations.items() if l.source == "db" and _gone(n, l)]:
         db.locations.pop(name)
         changed = True
     for loc in db.locations.values():
@@ -159,11 +182,17 @@ def fix_moved_places(db) -> dict:
     name is left alone. Returns {old name: new name} (also kept in db.merged, so routes follow)."""
     out = {}
     for plain_l, body in MOVED_PLACES.items():
+        tag = f" ({body.lower()})"                       # "Raven's Roost (microTech)" is the current one too
+        def _plain(n):
+            n = _OLD_TAG.sub("", n).lower()
+            return n[:-len(tag)] if n.endswith(tag) else n
         cur = next((l for l in db.locations.values() if l.source == "db" and l.body == body
-                    and _OLD_TAG.sub("", l.name).lower() == plain_l), None)
+                    and _plain(l.name) == plain_l), None)
         if cur is None:
             continue
         plain = _OLD_TAG.sub("", cur.name)
+        if plain.lower().endswith(tag):
+            plain = plain[:-len(tag)]
         stale = db.locations.get(plain)
         if stale is cur:
             continue
