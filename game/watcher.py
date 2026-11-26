@@ -32,7 +32,9 @@ def _seq_reader():
 def log_error(where):
     try:
         with ERROR_LOG.open("a", encoding="utf-8") as f:
-            f.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')} {where}\n{traceback.format_exc()}\n")
+            tb = traceback.format_exc()
+            tb = "" if tb.strip() == "NoneType: None" else tb       # a note, not an error: no empty traceback
+            f.write(f"--- {time.strftime('%Y-%m-%d %H:%M:%S')} {where}\n{tb}\n")
     except OSError:
         pass
 

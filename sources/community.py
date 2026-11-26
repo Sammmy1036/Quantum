@@ -447,6 +447,39 @@ class Community:
             self.last_error = str(e)
             return None
 
+    def post_breath(self, entry, on_done=None):
+        """Share whether the air was breathable where you stood on a planet or moon (the game's own telemetry
+        flag), in the background. on_done(True) once the server has an answer for it, on_done(False) when it
+        couldn't be reached, so the caller keeps it and sends it again later."""
+        if not self.url or not entry.get("username") or not entry.get("build"):
+            on_done and on_done(False)
+            return
+
+        def send():
+            try:
+                r = self._req("/v1/breathability", entry, timeout=15)
+            except Exception as e:
+                self.last_error = str(e)
+                on_done and on_done(False)
+                return
+            st = (r or {}).get("status")
+            retry = st in (None, "sign_in_needed", "slow_down", "try_later", "requests_limit_reached") or str(st).startswith("http_5")
+            on_done and on_done(not retry)
+        threading.Thread(target=send, daemon=True).start()
+
+    def breathability(self):
+        """{agreed: {body: {breathable, build, reporters, at}}, waiting: {body: people}}, or None if unreachable."""
+        if not self.url:
+            return None
+        try:
+            r = self._req("/v1/breathability", timeout=8)
+            if r.get("status") != "ok":
+                return None
+            return {"agreed": r.get("bodies") or {}, "waiting": r.get("waiting") or {}}
+        except Exception as e:
+            self.last_error = str(e)
+            return None
+
     def post_pad(self, name, pad, username=None):
         """Report a place's landing pad size, in the background."""
         if not self.url:

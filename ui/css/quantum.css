@@ -221,10 +221,10 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .stk-card .bd{padding:8px 10px;min-width:0;display:flex;flex-direction:column;gap:5px}
 .stk-card .nm{display:flex;gap:6px;align-items:baseline;min-width:0}.stk-card .nm b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stk-card .nm span{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stk-px{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stk-px{display:grid;grid-template-columns:1fr 1fr;gap:8px}.stk-px.one{grid-template-columns:1fr}
 .stk-px>div{min-width:0}.stk-px .lab{display:block;font:600 9.5px var(--text);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .stk-px b{display:block;font:400 15px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
-.stk-px b small{font:600 10.5px "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
+.stk-px b small{font:600 max(9px,.7em) "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
 .stk-px .buy b{color:#57e39b}.stk-px .sell b{color:#7fc8ff}.stk-px .none{color:var(--dim);font-size:12px;line-height:22px}
 .stk-px i{display:block;font-style:normal;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stk-px i.a0{color:#57e39b}.stk-px i.a2{color:#f2c14e}.stk-px i.a3{color:#ff8a5c}
@@ -234,10 +234,10 @@ body.trd-open .ov.hud,body.trd-open .ov.topright,body.trd-open .ov.help,body.trd
 .stk-card.shop .ph{background:linear-gradient(135deg,#0c1629,#122038)}.stk-card.shop .ph img{object-fit:contain;padding:4px}
 .stk-card .cat{font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stk-card .key{font-size:11.5px;color:#9fe0b4;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stk-card .pr{display:flex;align-items:baseline;gap:8px;margin-top:auto}
-.stk-card .pr b{font:400 15px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;color:#57e39b;white-space:nowrap}
-.stk-card .pr b small{font:600 10.5px "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
-.stk-card .pr i{font-style:normal;font-size:11px;color:var(--ink-2)}.stk-card .pr i.a0{color:#57e39b}.stk-card .pr i.a2{color:#f2c14e}.stk-card .pr i.a3{color:#ff8a5c}
+.stk-card .pr{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin-top:auto;min-width:0}
+.stk-card .pr b{font:400 15px "Michroma","Exo 2",system-ui,sans-serif;letter-spacing:.02em;color:#57e39b;white-space:nowrap;max-width:100%;overflow:hidden}
+.stk-card .pr b small{font:600 max(9px,.7em) "Exo 2",system-ui,sans-serif;color:var(--ink-2);margin-left:3px}
+.stk-card .pr i{font-style:normal;font-size:11px;color:var(--ink-2);white-space:nowrap}.stk-card .pr i.a0{color:#57e39b}.stk-card .pr i.a2{color:#f2c14e}.stk-card .pr i.a3{color:#ff8a5c}
 .stk-card.shop.rent .ph img{object-fit:cover;padding:0}.stk-card.shop.rent{grid-template-columns:128px minmax(0,1fr)}
 .stk-card.nolink{cursor:default}.stk-card.nolink:hover{transform:none;border-color:var(--line)}
 /* A place's Hospital / Clinic window: the hospital, your check-ins there (Game.log) and its pharmacy */
@@ -1056,6 +1056,12 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 @media (max-width:700px){.hd-hero{grid-template-columns:1fr}.hd-hero>div{padding:8px 0}.hd-hero>div+div{border-left:0;border-top:1px solid var(--line-2)}.hd-read{grid-template-columns:1fr}}
 /* Vehicle page breakdown in the same quiet style: no boxes, a label, rows split by hairlines */
 .vd-flat{gap:6px 32px}
+/* Gear, consumable, component and vehicle pages: the sections share the full width (two sections fill it, not two of three columns),
+   and the action buttons wrap onto a new line rather than running off the edge when the window is narrow */
+.vd-grid.gr-fill{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.vd-grid.vd-shop.gr-fill{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+/* A full-width section (grid-column:1/-1) keeps every auto-fit column alive, so the two beside it would still
+   leave a gap: such sections sit below the grid instead (the component page's "Fit to a ship in My Fleet") */
+.gr-acts{flex-wrap:wrap}.gr-acts>*{flex:0 0 auto}
 .vd-flat .vd-sec{border:0;border-radius:0;background:none;padding:0;margin-bottom:18px}
 .vd-flat .mk-h{margin:0 0 4px;padding-bottom:6px;font-size:10.5px;letter-spacing:.13em;color:var(--dim);border-bottom:1px solid var(--line-2)}
 .vd-flat .vd-row{padding:6px 0;font-size:12.5px;font-variant-numeric:tabular-nums}
@@ -1073,7 +1079,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 #fl-panel .sg .mk-h{margin:0;padding-bottom:7px;border-bottom:1px solid var(--line-2);font-size:10.5px;letter-spacing:.13em;color:var(--dim)}
 #fl-panel .slot-grid,#fl-panel .sg.many .slot-grid,#fl-panel .sg.open .slot-grid{grid-template-columns:1fr;gap:0;margin:0}
 #fl-panel .slot{border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;box-shadow:none;padding:9px 0;gap:0}
-#fl-panel .slot .top{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;gap:10px;align-items:center}
+#fl-panel .slot .top{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto 40px auto;gap:10px;align-items:center}
 #fl-panel .slot .sz{background:none;color:#9cc8ff;border:1px solid rgba(75,141,255,.45);padding:2px 5px;min-width:28px;text-align:center}
 #fl-panel .slot .gr{background:none;color:var(--ink-2);padding:2px 0;min-width:12px;text-align:center}
 #fl-panel .slot .nm b{font-weight:600}
@@ -1088,7 +1094,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 #fl-panel .slot:hover{background:linear-gradient(90deg,transparent,rgba(75,141,255,.05),transparent)}
 #fl-panel .slot.open{background:none}
 #fl-panel .slot .opts{margin-top:10px}
-@media (max-width:560px){#fl-panel .slot-groups{columns:1}#fl-panel .slot .top{grid-template-columns:auto auto minmax(0,1fr) auto}#fl-panel .slot .acts{grid-column:1/-1;justify-content:flex-end}}
+@media (max-width:560px){#fl-panel .slot-groups{columns:1}#fl-panel .slot .top{grid-template-columns:auto auto minmax(0,1fr) auto 40px}#fl-panel .slot .acts{grid-column:1/-1;justify-content:flex-end}}
 .fl-logo{flex:0 0 34px;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center}
 #fl-out .vh>.hd{grid-template-columns:auto 1fr auto;align-items:center}
 .fl-logo .brand-ic{width:22px;height:22px;background:#9cc8ff}.fl-logo b{font-size:14px;color:var(--ink-2)}
@@ -1313,7 +1319,7 @@ button.hd-logo:focus-visible{outline:2px solid var(--you);outline-offset:4px;bor
 .pf-flat.pf-one{grid-template-columns:minmax(0,820px)}
 .pf-flat .vd-row{align-items:center}
 .pf-bar{height:6px;border-radius:999px;background:var(--panel-3);overflow:hidden;margin:8px 0 2px}.pf-bar i{display:block;height:100%;background:var(--brand-grad)}
-.gr-desc{color:var(--ink-2);font-size:13.5px;line-height:1.6;margin:0 2px 16px;max-width:900px}
+.gr-desc{color:var(--ink-2);font-size:13.5px;line-height:1.6;margin:0 2px 16px}
 .gr-piece .w a{cursor:pointer}
 .gr-places{margin:0 0 6px 14px;border-left:2px solid var(--line,rgba(140,196,255,.18));padding-left:10px}
 .gr-place .w{font-size:13px}.gr-place .w a,.cart-open{cursor:pointer}
@@ -2896,6 +2902,8 @@ body.trd-open .jb-pins{visibility:hidden}
 .tl-sess-hist{margin-top:10px}.tl-sess-hist summary{cursor:pointer;font-size:12.5px;padding:6px 0}
 .tl-sess-sync{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:12px}
 /* ==== Button styles (Settings > Window > Button style): written by gen_bs.py (kept outside the repo) ====
+   The cut corners' edge is drawn as a 1.5px band just inside the cut (centred on it, half was clipped away and
+   the corner looked open).
    body[data-bs] picks one for the whole app (none: the look above); .bs-pv[data-bs] is a preview in Settings, which
    the app's own choice never reaches. The map's Stanton/Pyro/Nyx switcher and Start Launcher keep their own look. */
 body[data-bs="a"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn) {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:11px}
@@ -2903,7 +2911,7 @@ body[data-bs="a"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="a"] 
 body[data-bs="a"] .tab:not(.bs-pv *),.bs-pv[data-bs="a"] .tab {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10.5px}
 body[data-bs="a"] .tab .count:not(.bs-pv *),.bs-pv[data-bs="a"] .tab .count {font-family:var(--text);letter-spacing:0}
 body[data-bs="a"] .fchip:not(.bs-pv *),.bs-pv[data-bs="a"] .fchip {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10px}
-body[data-bs="a"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn) {--c:7px;--e:#3b5578;--f:linear-gradient(180deg,#1b2a42,#131f33);border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c));background:linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 0 0/var(--c) var(--c) no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 100% 100%/var(--c) var(--c) no-repeat border-box,var(--f);color:#dbe8ff;box-shadow:none}
+body[data-bs="a"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn) {--c:7px;--e:#3b5578;--f:linear-gradient(180deg,#1b2a42,#131f33);border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c));background:linear-gradient(to bottom right,transparent 50%,var(--e) 50%,var(--e) calc(50% + 1.5px),transparent calc(50% + 1.5px)) 0 0/var(--c) var(--c) no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 100%/var(--c) var(--c) no-repeat border-box,var(--f);color:#dbe8ff;box-shadow:none}
 body[data-bs="a"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn).small {--c:5px}
 body[data-bs="a"] .btn:not(.launch-btn):hover:not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn):hover {--e:#6a9ad6}
 body[data-bs="a"] .btn:not(.launch-btn).ghost:not(.bs-pv *),.bs-pv[data-bs="a"] .btn:not(.launch-btn).ghost {--f:transparent}
@@ -2921,7 +2929,7 @@ body[data-bs="b"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="b"] 
 body[data-bs="b"] .tab:not(.bs-pv *),.bs-pv[data-bs="b"] .tab {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10.5px}
 body[data-bs="b"] .tab .count:not(.bs-pv *),.bs-pv[data-bs="b"] .tab .count {font-family:var(--text);letter-spacing:0}
 body[data-bs="b"] .fchip:not(.bs-pv *),.bs-pv[data-bs="b"] .fchip {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10px}
-body[data-bs="b"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="b"] .btn:not(.launch-btn) {--c:8px;--e:#4aa8ff;--f:#0b1a2c;border:1.5px solid var(--e);border-radius:6px;clip-path:polygon(0 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%);background:linear-gradient(to bottom right,transparent calc(50% - .9px),var(--e) calc(50% - .9px),var(--e) calc(50% + .9px),transparent calc(50% + .9px)) 100% 100%/var(--c) var(--c) no-repeat border-box,var(--f);color:#eaf3ff;box-shadow:none}
+body[data-bs="b"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="b"] .btn:not(.launch-btn) {--c:8px;--e:#4aa8ff;--f:#0b1a2c;border:1.5px solid var(--e);border-radius:6px;clip-path:polygon(0 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%);background:linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 100%/var(--c) var(--c) no-repeat border-box,var(--f);color:#eaf3ff;box-shadow:none}
 body[data-bs="b"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="b"] .btn:not(.launch-btn).small {--c:6px}
 body[data-bs="b"] .btn:not(.launch-btn):hover:not(.bs-pv *),.bs-pv[data-bs="b"] .btn:not(.launch-btn):hover {--e:#8fd0ff;--f:#10253d}
 body[data-bs="b"] .btn:not(.launch-btn).ghost:not(.bs-pv *),.bs-pv[data-bs="b"] .btn:not(.launch-btn).ghost {--e:#2f4a6c;--f:transparent;color:var(--ink-2)}
@@ -2941,7 +2949,7 @@ body[data-bs="c"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="c"] 
 body[data-bs="c"] .tab:not(.bs-pv *),.bs-pv[data-bs="c"] .tab {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10.5px}
 body[data-bs="c"] .tab .count:not(.bs-pv *),.bs-pv[data-bs="c"] .tab .count {font-family:var(--text);letter-spacing:0}
 body[data-bs="c"] .fchip:not(.bs-pv *),.bs-pv[data-bs="c"] .fchip {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10px}
-body[data-bs="c"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn) {--s:8px;--e:#2f4766;--f:#16243a;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 100% 0/var(--s) 100% no-repeat border-box,var(--f);color:#dbe8ff;padding-inline:16px;box-shadow:none}
+body[data-bs="c"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn) {--s:8px;--e:#2f4766;--f:#16243a;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent 50%,var(--e) 50%,var(--e) calc(50% + 1.5px),transparent calc(50% + 1.5px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 0/var(--s) 100% no-repeat border-box,var(--f);color:#dbe8ff;padding-inline:16px;box-shadow:none}
 body[data-bs="c"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn).small {--s:6px;padding-inline:12px}
 body[data-bs="c"] .btn:not(.launch-btn):hover:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn):hover {--e:#6a9ad6}
 body[data-bs="c"] .btn:not(.launch-btn).ghost:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn).ghost {--f:transparent}
@@ -2950,10 +2958,10 @@ body[data-bs="c"] .btn:not(.launch-btn).danger:not(.bs-pv *),.bs-pv[data-bs="c"]
 body[data-bs="c"] .btn:not(.launch-btn).primary:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn).primary {--e:transparent;--f:linear-gradient(90deg,#1f6fe0,#3d9bff);color:#fff;font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:11px}
 body[data-bs="c"] .btn:not(.launch-btn).primary.small:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn).primary.small {font-size:9.5px}
 body[data-bs="c"] .btn:not(.launch-btn).primary:hover:not(.bs-pv *),.bs-pv[data-bs="c"] .btn:not(.launch-btn).primary:hover {filter:brightness(1.1)}
-body[data-bs="c"] .tab:not(.bs-pv *),.bs-pv[data-bs="c"] .tab {--s:7px;--e:#22344f;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 100% 0/var(--s) 100% no-repeat border-box,#101a2c;color:var(--ink-2);padding-inline:15px}
+body[data-bs="c"] .tab:not(.bs-pv *),.bs-pv[data-bs="c"] .tab {--s:7px;--e:#22344f;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent 50%,var(--e) 50%,var(--e) calc(50% + 1.5px),transparent calc(50% + 1.5px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 0/var(--s) 100% no-repeat border-box,#101a2c;color:var(--ink-2);padding-inline:15px}
 body[data-bs="c"] .tab[aria-selected=true]:not(.bs-pv *),.bs-pv[data-bs="c"] .tab[aria-selected=true] {--e:transparent;background:linear-gradient(90deg,#1f6fe0,#3d9bff);color:#fff}
-body[data-bs="c"] .fchip:not(.bs-pv *),.bs-pv[data-bs="c"] .fchip {--s:6px;--e:#233650;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 100% 0/var(--s) 100% no-repeat border-box,transparent;padding-inline:13px}
-body[data-bs="c"] .fchip[aria-pressed=true]:not(.bs-pv *),.bs-pv[data-bs="c"] .fchip[aria-pressed=true] {--e:#4a6fa0;background:linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - .8px),var(--e) calc(50% - .8px),var(--e) calc(50% + .8px),transparent calc(50% + .8px)) 100% 0/var(--s) 100% no-repeat border-box,#223552;color:#fff}
+body[data-bs="c"] .fchip:not(.bs-pv *),.bs-pv[data-bs="c"] .fchip {--s:6px;--e:#233650;border:1px solid var(--e);border-radius:0;clip-path:polygon(var(--s) 0,100% 0,calc(100% - var(--s)) 100%,0 100%);background:linear-gradient(to bottom right,transparent 50%,var(--e) 50%,var(--e) calc(50% + 1.5px),transparent calc(50% + 1.5px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 0/var(--s) 100% no-repeat border-box,transparent;padding-inline:13px}
+body[data-bs="c"] .fchip[aria-pressed=true]:not(.bs-pv *),.bs-pv[data-bs="c"] .fchip[aria-pressed=true] {--e:#4a6fa0;background:linear-gradient(to bottom right,transparent 50%,var(--e) 50%,var(--e) calc(50% + 1.5px),transparent calc(50% + 1.5px)) 0 0/var(--s) 100% no-repeat border-box,linear-gradient(to bottom right,transparent calc(50% - 1.5px),var(--e) calc(50% - 1.5px),var(--e) 50%,transparent 50%) 100% 0/var(--s) 100% no-repeat border-box,#223552;color:#fff}
 body[data-bs="d"] .btn:not(.launch-btn):not(.bs-pv *),.bs-pv[data-bs="d"] .btn:not(.launch-btn) {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:11px}
 body[data-bs="d"] .btn:not(.launch-btn).small:not(.bs-pv *),.bs-pv[data-bs="d"] .btn:not(.launch-btn).small {font-size:9.5px}
 body[data-bs="d"] .tab:not(.bs-pv *),.bs-pv[data-bs="d"] .tab {font-family:Orbitron,var(--display);font-weight:700;letter-spacing:.07em;text-transform:uppercase;font-size:10.5px}
@@ -2982,3 +2990,32 @@ body[data-bs="d"] .fchip[aria-pressed=true]:not(.bs-pv *),.bs-pv[data-bs="d"] .f
 body[data-bs] .tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab:not(.off-group){font-size:clamp(8px,2.9cqi,10.5px);letter-spacing:clamp(.01em,.22cqi,.07em);
   padding:6px clamp(4px,1.8cqi,12px)}
 .tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab .count{padding:1px clamp(4px,1.4cqi,7px)}
+
+/* My Fleet: each category of parts sits in its own semi-transparent box with cut corners, like the Launcher
+   button. The outer .sg is the 1px edge (its background shows through the 1px padding), .sg-in the box itself.
+   Up to 3 columns of boxes at least 440 px wide (so a wide window gets 3 compact boxes, not 2 very wide ones),
+   16 px apart both ways; the label is a small title inside the box rather than a shaded strip. */
+#fl-panel .slot-groups{columns:3 440px;column-gap:16px}
+#fl-panel .sg{--ch:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+  background:rgba(150,170,210,.22);clip-path:var(--ch);padding:1px;margin:0 0 16px}
+#fl-panel .sg-in{clip-path:var(--ch);background:#0b111d;padding:12px 16px 4px}
+#fl-panel .sg .mk-h.sg-h{margin:0;padding:0 0 2px;background:none;border:0;gap:8px;color:#9aa7bd}
+#fl-panel .sg-n{color:var(--dim);font-weight:500;text-transform:none;letter-spacing:0}
+#fl-panel .sg .slot{padding:10px 0;border-bottom:1px solid rgba(150,170,210,.12)}
+#fl-panel .sg .slot:last-child{border-bottom:0}
+#fl-panel .sg-qty{justify-self:center;font:700 11px "Exo 2",system-ui,sans-serif;color:#c9d3e3;background:rgba(150,170,210,.14);border:1px solid transparent;border-radius:999px;padding:2px 8px;cursor:pointer}
+#fl-panel .sg-qty:hover{border-color:rgba(160,180,220,.5)}
+#fl-panel .sg-qty.less{padding:1px 7px}
+/* Datarunner: while the "Does this match the kiosk?" review is open, its own Submit Report is the one to press,
+   so the footer's Review report button hides */
+#dr-panel:has(.dr-sheet) #dr-go{display:none}
+/* Settings > Navigation Guide Overlay: the three looks, as pictures to pick from */
+.nav-looks{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.nav-look{flex:1 1 140px;min-height:90px;display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid var(--line-2);border-radius:8px;background:#1b2430;cursor:pointer}
+.nav-look img{max-width:100%;max-height:150px}
+.nav-look.on{border-color:#4aa8ff;box-shadow:0 0 0 1px #4aa8ff inset}
+/* Overlay placement boxes (Settings): the dotted centre lines an overlay snaps to while you drag it */
+.cc-scr .snap-line{position:absolute;pointer-events:none;z-index:2}
+.cc-scr .snap-vx{left:50%;top:0;bottom:0;border-left:1.5px dashed #6fc2ff;transform:translateX(-.75px)}
+.cc-scr .snap-hy{top:50%;left:0;right:0;border-top:1.5px dashed #6fc2ff;transform:translateY(-.75px)}
+

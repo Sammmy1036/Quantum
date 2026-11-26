@@ -690,6 +690,7 @@ const V3=new THREE.Vector3();
 function proj(p){ V3.set(p[0]-O[0],p[1]-O[1],p[2]-O[2]).applyMatrix4(camera.matrixWorldInverse); if(V3.z>-camera.near) return null;
   const depth=-V3.z; V3.applyMatrix4(camera.projectionMatrix); return [(V3.x+1)/2*W,(1-V3.y)/2*H,depth]; }
 let occluders=[], camW=[0,0,0];
+const SPACEPORT_SHOW_M=350e3;   // spaceport icons appear once the camera is this close
 function prepOcclusion(){ camW=[camera.position.x+O[0],camera.position.y+O[1],camera.position.z+O[2]]; occluders=[];
   const f=H/2/Math.tan(camera.fov*Math.PI/360);
   for(const o of sysObjs){ const b=o.b; const d=d3(camW,b.center); const pr=b.radius/Math.max(d,1)*f; o.pr=pr; if(pr>1.5) occluders.push(b); } }
@@ -926,6 +927,8 @@ function drawOverlay(t){
     let bodyPx=Infinity; if(L.kind==="surface"){ const o=sysObjs.find(o=>o.b.name===L.body); bodyPx=o?o.pr:0; if(bodyPx < (isWp?6:L.type==="om"?14:70) && !special) continue; }
     const g=globalPos(L,t), q=proj(g); if(!q||q[0]<-40||q[0]>W+40||q[1]<-40||q[1]>H+40) continue;
     if(city3dDown() && !special && L.kind==="space" && q[2]>5e5) continue;   // in the 3D city, far stations don't fill its sky
+    // A city's spaceport sits right beside it: from afar its icon covers the city's, so it shows only within 350 km
+    if(!special && L.kind==="surface" && /spaceport/i.test(L.name) && Math.hypot(g[0]-camW[0],g[1]-camW[1],g[2]-camW[2])>SPACEPORT_SHOW_M) continue;
     if(!visible(g, L.kind==="surface"?L.body:null)) continue;
     drawn.push({L,q,bodyPx,isWp}); }
   for(const d of drawn){ const {L,q,isWp}=d; if(isWp) continue; const col=TYPES[L.type]?.color||"#aab", gi=locIcon(L);

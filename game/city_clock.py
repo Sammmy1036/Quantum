@@ -98,6 +98,8 @@ def render(info, font_dir, scale=1.0, h24=True, color="blue", style="full"):
 
 
 class CityClock:
+    WCLASS, WTITLE, THREAD = "QuantumCityClock", "Quantum city clock", "city-clock"   # each overlay its own window
+
     def __init__(self, font_dir):
         self.font_dir = str(font_dir)
         self.position, self.h24, self.size = "top", True, "large"
@@ -113,9 +115,7 @@ class CityClock:
         with self._lock:
             self._want = dict(info)
             if look:
-                self.look = {"color": look.get("color") if look.get("color") in COLORS else "blue",
-                             "style": look.get("style") if look.get("style") in STYLES else "full",
-                             "opacity": look.get("opacity") if look.get("opacity") in OPACITIES else 100}
+                self._set_look(look)
             if position in POSITIONS:
                 self.position = position
             if h24 is not None:
@@ -125,12 +125,25 @@ class CityClock:
             if xy:
                 self.xy = (min(1.0, max(0.0, float(xy[0]))), min(1.0, max(0.0, float(xy[1]))))
         if self._thread is None:
-            self._thread = threading.Thread(target=self._run, daemon=True, name="city-clock")
+            self._thread = threading.Thread(target=self._run, daemon=True, name=self.THREAD)
             self._thread.start()
 
     def hide(self):
         with self._lock:
             self._want = None
+
+    # what's drawn: a subclass (the navigation guide) draws its own picture in the same kind of window
+    def _key(self, want, scale, h24, look):
+        return (want.get("city"), want.get("body"), clock_text(want["hours"], h24), part_of_day(want["hours"]), round(scale, 2),
+                h24, look["color"], look["style"])
+
+    def _render(self, want, scale, h24, look):
+        return render(want, self.font_dir, scale, h24, look["color"], look["style"])
+
+    def _set_look(self, look):
+        self.look = {"color": look.get("color") if look.get("color") in COLORS else "blue",
+                     "style": look.get("style") if look.get("style") in STYLES else "full",
+                     "opacity": look.get("opacity") if look.get("opacity") in OPACITIES else 100}
 
     # ------------------------------------------------------------ window thread (Windows only)
     def _run(self):
@@ -203,10 +216,10 @@ class CityClock:
         proc = WNDPROC(lambda h, m, w, l: u32.DefWindowProcW(h, m, w, l))
         self._proc = proc                                   # keep the callback alive
         hinst = k32.GetModuleHandleW(None)
-        wc = WNDCLASSW(lpfnWndProc=proc, hInstance=hinst, lpszClassName="QuantumCityClock")
+        wc = WNDCLASSW(lpfnWndProc=proc, hInstance=hinst, lpszClassName=self.WCLASS)
         u32.RegisterClassW(ctypes.byref(wc))
         EX = 0x00080000 | 0x00000020 | 0x00000008 | 0x00000080 | 0x08000000   # LAYERED TRANSPARENT TOPMOST TOOLWINDOW NOACTIVATE
-        hwnd = u32.CreateWindowExW(EX, "QuantumCityClock", "Quantum city clock", 0x80000000,   # WS_POPUP
+        hwnd = u32.CreateWindowExW(EX, self.WCLASS, self.WTITLE, 0x80000000,   # WS_POPUP
                                    0, 0, 1, 1, None, None, hinst, None)
         if not hwnd:
             raise OSError("CreateWindowExW failed")
@@ -243,11 +256,9 @@ class CityClock:
                 u32.GetWindowRect(game or fg, ctypes.byref(rc))
                 gw, gh = max(640, rc.right - rc.left), max(360, rc.bottom - rc.top)
                 scale = gh / 1080.0 * sz
-                text = clock_text(want["hours"], h24)
-                new_key = (want.get("city"), want.get("body"), text, part_of_day(want["hours"]), round(scale, 2), h24,
-                           look["color"], look["style"])
+                new_key = self._key(want, scale, h24, look)
                 if new_key != key:                         # redraw only when what it says changes
-                    img = render(want, self.font_dir, scale, h24, look["color"], look["style"])
+                    img = self._render(want, scale, h24, look)
                     size = img.size
                     bih = BITMAPINFOHEADER(biSize=ctypes.sizeof(BITMAPINFOHEADER), biWidth=size[0], biHeight=-size[1],
                                            biPlanes=1, biBitCount=32, biCompression=0)

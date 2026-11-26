@@ -1,6 +1,6 @@
 {
  "%doc": "Built by tools/build_atmospheres.py from the game's DataCore records. Quantum shows it on planet cards; a reading taken in game (telemetry) still wins. breathable null: not answered.",
- "generated": 1795595576.968975,
+ "generated": 1795623017.684481,
  "bodies": {
   "Delamar": {
    "breathable": null,
@@ -31,11 +31,12 @@
    "status": "thin",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [
     "CO2"
    ],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.050 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.05 atm, CO2 at 29% of full effect, below the game's critical pressure (0.15)"
   },
   "Bloom": {
    "pressure_raw": 0.99,
@@ -50,11 +51,12 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.089,
+   "quality": 0.445,
    "toxic": [
     "CO2"
    ],
    "harmful_gases": [],
-   "how": "oxygen 0.089 atm (needs 0.16), at 0.990 atm, toxic: CO2 0.6732 atm"
+   "how": "oxygen 0.089 atm = air quality 44%, pressure 0.99 atm, CO2 at 396% of full effect, critical: CO2"
   },
   "Fairo": {
    "pressure_raw": 1.78,
@@ -70,12 +72,12 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.116,
+   "quality": 0.582,
    "toxic": [
-    "CO2",
-    "SO2"
+    "CO2"
    ],
    "harmful_gases": [],
-   "how": "oxygen 0.116 atm (needs 0.16), at 1.780 atm, toxic: CO2 1.5804 atm, SO2 0.0665 atm"
+   "how": "oxygen 0.116 atm = air quality 58%, pressure 1.78 atm, CO2 at 930% of full effect, critical: CO2"
   },
   "Fuego": {
    "pressure_raw": 0.61,
@@ -89,11 +91,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
-   "toxic": [
-    "NH3"
-   ],
+   "quality": 0.0,
+   "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.610 atm, toxic: NH3 0.0122 atm"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.61 atm, critical air quality (under 75%)"
   },
   "Ignis": {
    "pressure_raw": 0.5,
@@ -108,11 +109,12 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.258,
+   "quality": 1.0,
    "toxic": [
     "CO2"
    ],
    "harmful_gases": [],
-   "how": "oxygen 0.258 atm (needs 0.16), at 0.500 atm, toxic: CO2 0.2319 atm"
+   "how": "oxygen 0.258 atm = air quality 100%, pressure 0.50 atm, CO2 at 136% of full effect, critical: CO2"
   },
   "Monox": {
    "pressure_raw": 0.91,
@@ -125,12 +127,13 @@
    },
    "temp_c": 94,
    "pressure_atm": 0.91,
-   "status": "yes",
+   "status": "harmful",
    "breathable": true,
    "o2_atm": 0.165,
+   "quality": 0.827,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.165 atm (needs 0.16), at 0.910 atm"
+   "how": "oxygen 0.165 atm = air quality 82%, pressure 0.91 atm, CO2 at 11% of full effect, HUD warning: air quality under 95%"
   },
   "Pyro1": {
    "pressure_raw": 2.62,
@@ -144,11 +147,12 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [
     "CO2"
    ],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 2.620 atm, toxic: CO2 2.5015 atm"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 2.62 atm, CO2 at 1471% of full effect, critical: CO2"
   },
   "Pyro4": {
    "pressure_raw": 0.51,
@@ -163,9 +167,10 @@
    "status": "harmful",
    "breathable": true,
    "o2_atm": 0.151,
+   "quality": 0.754,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.151 atm (needs 0.16), at 0.510 atm, low oxygen"
+   "how": "oxygen 0.151 atm = air quality 75%, pressure 0.51 atm, HUD warning: air quality under 95%"
   },
   "Pyro5": {
    "pressure_raw": 3.0,
@@ -179,9 +184,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 3.000 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 3.00 atm, critical air quality (under 75%)"
   },
   "Terminus": {
    "pressure_raw": 1.13,
@@ -195,12 +201,13 @@
    },
    "temp_c": -133,
    "pressure_atm": 1.13,
-   "status": "harmful",
-   "breathable": true,
+   "status": "no",
+   "breathable": false,
    "o2_atm": 0.147,
+   "quality": 0.734,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.147 atm (needs 0.16), at 1.130 atm, low oxygen"
+   "how": "oxygen 0.147 atm = air quality 73%, pressure 1.13 atm, CO2 at 7% of full effect, critical air quality (under 75%)"
   },
   "Vatra": {
    "pressure_raw": 2.84,
@@ -215,9 +222,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 2.840 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 2.84 atm, critical air quality (under 75%)"
   },
   "Vuur": {
    "pressure_raw": 1.57,
@@ -231,11 +239,12 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [
     "CO2"
    ],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 1.570 atm, toxic: CO2 1.5386 atm"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 1.57 atm, CO2 at 905% of full effect, critical: CO2"
   },
   "Aberdeen": {
    "pressure_raw": 1.45,
@@ -250,12 +259,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
-   "toxic": [
-    "SO2",
-    "SO"
-   ],
+   "quality": 0.0,
+   "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 1.450 atm, toxic: SO2 1.3021 atm, SO 0.1349 atm"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 1.45 atm, critical air quality (under 75%)"
   },
   "ArcCorp": {
    "pressure_raw": 0.9,
@@ -268,12 +275,13 @@
    },
    "temp_c": 30,
    "pressure_atm": 0.9,
-   "status": "yes",
+   "status": "harmful",
    "breathable": true,
    "o2_atm": 0.189,
+   "quality": 0.943,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.189 atm (needs 0.16), at 0.900 atm (EarthAtmosphere's mix: none of its own)"
+   "how": "oxygen 0.189 atm = air quality 94%, pressure 0.90 atm, HUD warning: air quality under 95% (EarthAtmosphere's mix: none of its own)"
   },
   "Arial": {
    "pressure_raw": 0.9,
@@ -288,9 +296,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.900 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.90 atm, critical air quality (under 75%)"
   },
   "Calliope": {
    "pressure_raw": 0.8,
@@ -304,9 +313,10 @@
    "status": "yes",
    "breathable": true,
    "o2_atm": 0.798,
+   "quality": 1.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.798 atm (needs 0.16), at 0.800 atm"
+   "how": "oxygen 0.798 atm = air quality 100%, pressure 0.80 atm"
   },
   "Cellin": {
    "pressure_raw": 0.2,
@@ -321,12 +331,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.006,
-   "toxic": [
-    "SO2",
-    "SO"
-   ],
+   "quality": 0.03,
+   "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.006 atm (needs 0.16), at 0.200 atm, toxic: SO2 0.1800 atm, SO 0.0140 atm"
+   "how": "oxygen 0.006 atm = air quality 3%, pressure 0.20 atm, critical air quality (under 75%)"
   },
   "Clio": {
    "pressure_raw": 0.7,
@@ -340,9 +348,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.006,
+   "quality": 0.028,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.006 atm (needs 0.16), at 0.700 atm, too little oxygen"
+   "how": "oxygen 0.006 atm = air quality 2%, pressure 0.70 atm, critical air quality (under 75%)"
   },
   "Crusader": {
    "pressure_raw": 3.0,
@@ -358,9 +367,10 @@
    "status": "yes",
    "breathable": true,
    "o2_atm": 0.628,
+   "quality": 1.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.628 atm (needs 0.16), at 3.000 atm (EarthAtmosphere's mix: none of its own)"
+   "how": "oxygen 0.628 atm = air quality 100%, pressure 3.00 atm (EarthAtmosphere's mix: none of its own)"
   },
   "Daymar": {
    "pressure_raw": 0.6,
@@ -375,9 +385,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.600 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.60 atm, critical air quality (under 75%)"
   },
   "Euterpe": {
    "pressure_raw": 0.8,
@@ -391,9 +402,10 @@
    "status": "yes",
    "breathable": true,
    "o2_atm": 0.798,
+   "quality": 1.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.798 atm (needs 0.16), at 0.800 atm"
+   "how": "oxygen 0.798 atm = air quality 100%, pressure 0.80 atm"
   },
   "Hurston": {
    "pressure_raw": 0.9,
@@ -407,12 +419,13 @@
    },
    "temp_c": 50,
    "pressure_atm": 0.9,
-   "status": "yes",
+   "status": "harmful",
    "breathable": true,
    "o2_atm": 0.189,
+   "quality": 0.947,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.189 atm (needs 0.16), at 0.900 atm"
+   "how": "oxygen 0.189 atm = air quality 94%, pressure 0.90 atm, CO at 21% of full effect, HUD warning: air quality under 95%"
   },
   "Ita": {
    "pressure_raw": 0.15,
@@ -424,12 +437,13 @@
    },
    "temp_c": 10,
    "pressure_atm": 0.15,
-   "status": "thin",
+   "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.150 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.15 atm, critical air quality (under 75%)"
   },
   "Lyria": {
    "pressure_raw": 0.1,
@@ -444,9 +458,10 @@
    "status": "thin",
    "breathable": false,
    "o2_atm": 0.098,
+   "quality": 0.489,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.098 atm (needs 0.16), at 0.100 atm, too little oxygen"
+   "how": "oxygen 0.098 atm = air quality 48%, pressure 0.10 atm, below the game's critical pressure (0.15)"
   },
   "Magda": {
    "pressure_raw": 0.35,
@@ -462,9 +477,10 @@
    "status": "no",
    "breathable": false,
    "o2_atm": 0.0,
+   "quality": 0.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.000 atm (needs 0.16), at 0.350 atm, too little oxygen"
+   "how": "oxygen 0.000 atm = air quality 0%, pressure 0.35 atm, critical air quality (under 75%)"
   },
   "Wala": {
    "pressure_raw": 0.1,
@@ -479,9 +495,10 @@
    "status": "thin",
    "breathable": false,
    "o2_atm": 0.021,
+   "quality": 0.106,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.021 atm (needs 0.16), at 0.100 atm, too little oxygen"
+   "how": "oxygen 0.021 atm = air quality 10%, pressure 0.10 atm, below the game's critical pressure (0.15)"
   },
   "Yela": {
    "pressure_raw": 0.2,
@@ -491,12 +508,13 @@
    },
    "temp_c": -23,
    "pressure_atm": 0.2,
-   "status": "yes",
+   "status": "harmful",
    "breathable": true,
    "o2_atm": 0.2,
+   "quality": 1.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.200 atm (needs 0.16), at 0.200 atm"
+   "how": "oxygen 0.200 atm = air quality 100%, pressure 0.20 atm, HUD warning: pressure under 0.23"
   },
   "microTech": {
    "pressure_raw": 1.1,
@@ -512,9 +530,10 @@
    "status": "yes",
    "breathable": true,
    "o2_atm": 0.23,
+   "quality": 1.0,
    "toxic": [],
    "harmful_gases": [],
-   "how": "oxygen 0.230 atm (needs 0.16), at 1.100 atm (EarthAtmosphere's mix: none of its own)"
+   "how": "oxygen 0.230 atm = air quality 100%, pressure 1.10 atm (EarthAtmosphere's mix: none of its own)"
   }
  }
 }

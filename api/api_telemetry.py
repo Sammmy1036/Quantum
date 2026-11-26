@@ -170,11 +170,6 @@ class TelemetryMixin:
         """Spawn, death, downed, seat changes the moment the game sends them: shown as a note by the page."""
         n = (getattr(self, "_tel_note", None) or {}).get("n", 0) + 1
         self._tel_note = {"n": n, "type": name, "at": at}
-        if name in ("dead", "downed"):
-            try:
-                watcher_mod.log_error(f"telemetry: {name}")
-            except Exception:
-                pass
 
     def _tel_live(self):
         """For get_live: None while it's off (nothing changes on the page), else the reader's state."""

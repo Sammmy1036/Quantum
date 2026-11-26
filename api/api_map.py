@@ -189,6 +189,7 @@ class MapMixin:
                     "where": self._tracker.where,
                     "social": self._social_badge(),
                     "city_clock": {**self._clock_cfg(), "available": city_clock.AVAILABLE, "in_city": self._clock_city},
+                    "nav_overlay": self._nav_view(),
                     "travel": self._travel_view(cur, t) if game_on else None,
                     "contacts": self._tracker.contacts_view() if game_on and self._settings.get("contacts_on", True) else [],
                     # the Onyx Facility you're in, from the location the game logs when you land there
@@ -218,6 +219,7 @@ class MapMixin:
                     tel = live.get("telemetry") or {}
                     if info.get("age", 1e9) < 180 and self._atmo_store().learn(self._db, info, tel.get("actor"), tel.get("age")):
                         self._static_version += 1             # the planet's card shows it
+                        self._queue_breath(info["body"])      # and everyone's, once others agree (Quantum server)
                 except Exception as e:
                     print("atmosphere:", e, flush=True)
             tc = ptime if p else t   # evaluate at the moment of the reading (or now, for a logged arrival)
@@ -590,6 +592,54 @@ class MapMixin:
                                         files=(RES / "atmosphere_bodies.json", HERE / "atmosphere_bodies.json"))
         return a
 
+    # ---- breathability, crowd-sourced like alignments (planner/atmosphere.py, server /v1/breathability)
+    def _queue_breath(self, body):
+        """A new reading of a body's air (Atmosphere.learn): keep it until the server has it, then send it."""
+        s = self._atmo_store().seen.get(body)
+        build = self._game_build()
+        b = self._db.bodies.get(body)
+        if not s or not build or not b:
+            return
+        entry = {"body": body, "system": b.system, "build": str(build), "breathable": bool(s["breathable"]),
+                 "pressure": s.get("pressure"), "temp": s.get("temp"), "alt": s.get("alt_m")}
+        self._settings.setdefault("breath_unsent", {})[body] = entry
+        self._save_settings()
+        self._send_breath(entry)
+
+    def _send_breath(self, entry):
+        user = self._dr_cfg().get("username") or (self._dr_cfg().get("uex_user") or {}).get("username")
+        if not user or not self._community.url:
+            return                                          # sent once you've signed in
+
+        def done(answered):
+            waiting = self._settings.get("breath_unsent") or {}
+            if answered and waiting.get(entry["body"]) is entry:
+                waiting.pop(entry["body"], None)
+                self._save_settings()
+        self._community.post_breath(dict(entry, username=user.lower()), on_done=done)
+
+    def _resend_breath(self):
+        """Readings the server hasn't got yet (only this game build's: an older one could be out of date)."""
+        build = self._game_build()
+        waiting = self._settings.get("breath_unsent") or {}
+        stale = [k for k, e in waiting.items() if build and str(e.get("build")) != str(build)]
+        for k in stale:
+            waiting.pop(k, None)
+        if stale:
+            self._save_settings()
+        for e in list(waiting.values()):
+            self._send_breath(e)
+
+    def _sync_breath_once(self):
+        """What everyone's readings agree on, from the Quantum server: the cards' confirmed answers."""
+        r = self._community.breathability()
+        if r is None:
+            return
+        a = self._atmo_store()
+        if a.set_community(r["agreed"], r["waiting"]):
+            with self._lock:
+                self._static_version += 1
+
     # ------------------------------------------------------------ route
     def add_stops(self, names, repeat=False):
         """Add places to the end of the route. With repeat, a place already in the route is added again
@@ -712,6 +762,12 @@ class MapMixin:
             out[n] = {"approach": [{k: a.get(k) for k in ("name", "ground", "straight", "heading", "orbit")}
                                    for a in g.get("approach", [])[:2]],
                       "closer": g.get("ground") is not None and bool(g.get("approach")) and g["ground"] < g["approach"][0]["ground"]}
+            try:                                         # over its planet or moon already: from where you are now
+                here = self._nav_from_here(loc, time.time())
+                if here:
+                    out[n]["here"] = here
+            except Exception as e:
+                print("nav from here:", e, flush=True)
         return out
 
     def plan_route(self, include_contracts=True):

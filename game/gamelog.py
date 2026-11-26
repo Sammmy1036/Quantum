@@ -2010,7 +2010,25 @@ class ContractTracker(threading.Thread):
         gone = self._misses >= 3 and now - getattr(self, "_run_seen", 0) >= 6
         self.game_running = bool(logs) or (self.proc_seen and not gone and not (quit_logged and self._misses >= 1))
         self.proc_seen = self.proc_seen or self.game_running   # the process check works on this PC
-        running = [p for p in logs if os.path.isfile(p)]
+        # Only a Game.log the running game is actually writing. Patching the PTU, the launcher can start the PTU's
+        # StarCitizen.exe (fetching its shader cache) without playing: its folder still holds the log of your last
+        # PTU session, and reading that put you back where you'd left off there (in Nyx, with its gateway added to
+        # your route). A channel's log counts once it's been written since Quantum first saw that game running.
+        first = getattr(self, "_proc_first", None)
+        if first is None:
+            first = self._proc_first = {}
+        live = {os.path.normcase(p) for p in logs}
+        for k in [k for k in first if k not in live]:
+            del first[k]
+        for p in logs:
+            first.setdefault(os.path.normcase(p), now)
+
+        def fresh(p):
+            try:
+                return os.path.getmtime(p) >= first.get(os.path.normcase(p), now) - 10
+            except OSError:
+                return False
+        running = [p for p in logs if os.path.isfile(p) and (fresh(p) or (self.log_path and os.path.normcase(p) == os.path.normcase(self.log_path)))]
         if running and (not self.log_path or os.path.normcase(self.log_path) not in map(os.path.normcase, running)):
             self.log_path, self.log_note = running[0], "Found Game.log next to the running Star Citizen"
             return

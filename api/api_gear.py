@@ -215,6 +215,11 @@ class GearMixin:
                 self._sync_places_once()
             except Exception as e:
                 print("place sync:", e, flush=True)
+            try:
+                self._resend_breath()                          # air readings the server didn't get yet
+                self._sync_breath_once()                       # and what everyone's readings agree on
+            except Exception as e:
+                print("breathability sync:", e, flush=True)
             time.sleep(self.PLACES_SYNC_EVERY)
 
     GAME_CHANNELS = ("EPTU", "PTU", "TECH-PREVIEW", "HOTFIX", "LIVE")

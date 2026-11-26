@@ -124,7 +124,7 @@ function renderDrSend(){ const el=$("dr-send"); if(!el||!S.dr) return; const rdy
   const goneOnly=n>0&&rdy.every(x=>x.state==="gone");
   el.innerHTML=`<span class="chip y">✓ ${esc(d.pf.terminal||"Terminal")}</span>
     <span class="chip ${shots?"y":"n"}" ${shots?"":`data-act="shoot"`} title="${shots?"":goneOnly?"UEX still needs a screenshot for a Not sold here report: take one of this kiosk's list, which shows the item isn't on it":"UEX needs a screenshot of the kiosk"}">${shots?`✓ ${shots} screenshot${shots>1?"s":""}`:`${IC_CAM} Screenshot Required`}</span>
-    ${n?`<span class="chip y">✓ ${n} row${n===1?"":"s"} ready</span><button class="btn primary go" id="dr-go">Submit Report</button>`:""}`; }
+    ${n?`<span class="chip y">✓ ${n} row${n===1?"":"s"} ready</span><button class="btn primary go" id="dr-go" title="Check the report against the kiosk before it goes to UEX">Review report</button>`:""}`; }
 
 // ---- editing
 function drCooling(i){ const x=S.dr.rows[i], c=S.dr.pf.cooldown?.[`${x.id_commodity}:${x.side}`];

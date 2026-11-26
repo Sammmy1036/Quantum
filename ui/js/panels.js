@@ -148,20 +148,24 @@ S.svcCache={};
 // place (S.picCache), so the card can be redrawn every tick without the picture flickering.
 S.picCache={};
 const PIC_TYPES=new Set(["city","station","outpost","jump","lpoint"]);
-// Can you breathe there: what the game told you while you were out on foot there, or the wiki's description.
-// Can you breathe there: what the game told you while you were out on foot there, the game files' gas mix, or the
-// wiki. Shown as a Breathability Index chip: Good (green), OK (orange: breathable but harmful over time), Bad (red:
-// toxic, too thin or none), "?" when nothing's known. On planet and moon cards, and on the cards of places on them
-// ("outside air": inside an outpost or city the air is the building's).
+// Can you breathe there, as the game itself says: your own reading there (telemetry, on foot outside), the
+// Quantum server's (enough players' readings agree), or a body confirmed by hand. Shown as a Breathability
+// Index chip: Good (green), OK (orange: breathable, the HUD warns), Bad (red: you can't breathe it). Nothing is
+// shown on any card (planet, moon or place) until it's confirmed; place cards show the outdoor conditions (inside
+// an outpost or city the air is the building's). Atmosphere Properties (gas mix, pressure, temperature) too.
 const AIR_INDEX={yes:["Good","#57e39b"],high:["Good","#57e39b"],harmful:["OK","#ffb347"],thin:["Bad","#ff6b6b"],no:["Bad","#ff6b6b"]};
-function airChip(a){ const [t,c]=AIR_INDEX[a?.status]||["?","#9aa7bd"];
+function airChip(a){ const [t,c]=(a?.confirmed&&AIR_INDEX[a.status])||["?","#9aa7bd"];
   return `<span style="display:inline-block;min-width:38px;text-align:center;padding:1px 7px;border-radius:9px;font:700 11px 'Orbitron','Exo 2',sans-serif;letter-spacing:.04em;color:#05080f;background:${c};margin-right:6px">${t}</span>`; }
 function atmoLine(b, place){ const a=b?.atmo; if(!a||!a.label) return "";
-  const src=a.source==="game"?`Checked in game${a.at?" "+new Date(a.at*1000).toLocaleDateString():""}`:a.source==="files"?"From the game files":a.source==="wiki"?"Star Citizen Wiki":"";
-  const tip=[a.note,a.mix,src].filter(Boolean).join(" · ");
-  const sub=place?(a.note?`${esc(a.note)}`:""):[a.note,src].filter(Boolean).map(esc).join(" · ");
-  const mix=!place&&a.mix&&a.mix!==a.note?`<span class="muted" style="display:block;font-size:11.5px">${esc(a.mix)}</span>`:"";
-  return `<span class="k">${place?"Outside air":"Air"}</span><span title="${esc(tip)}">${airChip(a)}<b style="font-weight:600">${esc(a.label)}</b>${sub?`<span class="muted" style="display:block;font-size:11.5px">${sub}</span>`:""}${mix}</span>`; }
+  if(!a.confirmed) return "";                                         // shown only once it is confirmed
+  const sub=[a.note,!place?a.mix:""].filter(Boolean).map(x=>`<span class="muted" style="display:block;font-size:11.5px">${esc(x)}</span>`).join("");
+  return `<span class="k">Atmospheric Conditions</span><span>${airChip(a)}<b style="font-weight:600">${esc(a.label)}</b>${sub}</span>${atmoProps(a)}`; }
+// Atmosphere Properties: the gas mix with percentages, pressure and temperature. Only with a confirmed answer.
+function atmoProps(a){ const p=a?.confirmed&&a.props; if(!p) return "";
+  const pct=v=>v<0.1?"<0.1":(v>=10?Math.round(v):v.toFixed(1).replace(/\.0$/,""));
+  const rows=(p.gases||[]).map(([n,v])=>`<span style="display:flex;justify-content:space-between;gap:12px"><span>${esc(n)}</span><span class="muted">${pct(v)}%</span></span>`).join("");
+  const extra=[p.pressure_atm!=null?`${p.pressure_atm.toFixed(2)} atm`:"",p.temp_c!=null?`${p.temp_c} °C`:""].filter(Boolean).join(" · ");
+  return `<span class="k">Atmosphere Properties</span><span>${rows}${extra?`<span class="muted" style="display:block;font-size:11.5px;margin-top:2px">${esc(extra)}</span>`:""}</span>`; }
 function placePicKey(sel){ if(sel.kind==="body"){ const w=wikiFor(sel.name); return w?.url?"body:"+sel.name:null; }
   const L=S.locMap[sel.name]; if(!L||L.source==="user"||L.source==="mission"||!PIC_TYPES.has(L.type)) return null; return "loc:"+L.name; }
 function placePicHtml(key){ const p=key&&S.picCache[key]; if(!p?.url) return "";
@@ -267,6 +271,7 @@ async function settingsAction(a,e){
       S.bk=await api().backup_status(); renderDetail(); return; }
     if(a==="drsecretclear"){ const r=await api().dr_set_secret(""); S.drHasSecret=r.has_secret; S.drSecretDraft=""; toast("Datarunner secret key removed"); renderDetail(); drRefreshAfterKey(); return; }
     if(a==="uexclear"){ await api().set_uex_token(""); S.bk=undefined; S.uexDraft=""; S.uexStat=null; toast("UEX token removed"); await poll(); renderDetail(); return; }
+    if(a==="navpreview"){ const r=await api().preview_nav_overlay(); toast(r.ok?"Click into Star Citizen: the guide shows for 15 seconds, turning":"Couldn't show it"); return; }
     if(a==="ccpreview"){ const r=await api().preview_city_clock(S.live?.city_clock?.in_city||"New Babbage"); toast(r.ok?"Click into Star Citizen now: the clock shows for 15 seconds":r.error); return; }
     if(a==="testkey"){ await api().test_autoloc(5); toast("Click into Star Citizen now. Sending in 5 seconds"); setTimeout(()=>{ poll().then(renderDetail); },7000); }
 }
@@ -285,9 +290,9 @@ async function toggleStock(place){ if(S.stock?.place===place&&S.stock.kind==="co
 function closeStock(){ S.stock=null; const P=$("stk-panel"); if(P){ P.classList.remove("show"); P.innerHTML=""; } }
 // UEX's commodity list (kind and picture name for each), as the Commodities tab has it
 async function stockCommodities(){ if(S.mk) return; try{ const c=await api().uex_commodities(); if(c.ok&&!S.mk){ S.mk=c.items; S.mkByName=Object.fromEntries(c.items.map(x=>[x.name.toLowerCase(),x])); } }catch(e){} }
-function stockPrice(x,side){ if(!x) return `<div><span class="lab">${side==="buy"?"You buy":"You sell"}</span><span class="none">—</span></div>`; const a=drAge(x.at);
+function stockPrice(x,side){ if(!x) return `<div><span class="lab">${side==="buy"?"Buy":"Sell"}</span><span class="none">—</span></div>`; const a=drAge(x.at);
   return `<div class="${side}" title="${esc([x.status_name&&`Stock: ${x.status_name}`,x.community?"Reported by a Quantum datarunner, newer than UEX's":"",x.at?`Reported ${agoTs(x.at)}`:"No report time"].filter(Boolean).join(" · "))}">
-    <span class="lab">${side==="buy"?"You buy":"You sell"}</span><b>${Math.round(x.price).toLocaleString()}<small>aUEC</small></b>
+    <span class="lab">${side==="buy"?"Buy":"Sell"}</span><b>${Math.round(x.price).toLocaleString()}<small>aUEC</small></b>
     <i>${x.scu!=null?`${Number(x.scu).toLocaleString()} SCU`:esc(x.status_name||"")}</i><i class="${a.c}">${x.community?"⚡ ":""}${x.at?agoTs(x.at):"age unknown"}</i></div>`; }
 function stockRender(){ const P=$("stk-panel"), st=S.stock; if(!P) return; if(!st){ return closeStock(); }
   if(st.kind==="shop") return shopRender();
@@ -308,11 +313,11 @@ function stockRender(){ const P=$("stk-panel"), st=S.stock; if(!P) return; if(!s
   const card=i=>{ const c=info(i);
     return `<div class="stk-card" data-mkopen="${esc(i.name)}" title="Open ${esc(i.name)} in Commodities: every place that trades it"><div class="ph" data-pic="${esc(c?.wiki||i.name)}">${phCard("commodity")}</div>
       <div class="bd"><div class="nm"><b>${esc(i.name)}</b>${c?.kind?`<span>${esc(c.kind)}</span>`:""}${c?.illegal?`<span style="color:#ffb454">illegal</span>`:""}</div>
-        <div class="stk-px">${stockPrice(i.buy,"buy")}${stockPrice(i.sell,"sell")}</div></div></div>`; };
+        <div class="stk-px${st.side==="all"?"":" one"}">${st.side!=="sell"?stockPrice(i.buy,"buy"):""}${st.side!=="buy"?stockPrice(i.sell,"sell"):""}</div></div></div>`; };
   P.innerHTML=head+statBlock([{label:"For sale here",value:String(nBuy)},{label:"Bought here",value:String(nSell)},{label:"Newest report",value:newest?agoTs(newest):"None"}],
       oldest<Infinity&&newest&&newest-oldest>86400?[{label:"Oldest price here",value:agoTs(oldest)}]:[])
     +`<div class="stk-tools"><input class="search" data-stkq="1" placeholder="Search commodities here" value="${esc(st.q)}" autocomplete="off" spellcheck="false">
-      <div class="stk-seg">${[["all","All"],["buy","You can buy"],["sell","You can sell"]].map(([k,t])=>`<button data-stkside="${k}" class="${st.side===k?"on":""}">${t}</button>`).join("")}</div>
+      <div class="stk-seg">${[["all","All"],["buy","Buy"],["sell","Sell"]].map(([k,t])=>`<button data-stkside="${k}" class="${st.side===k?"on":""}">${t}</button>`).join("")}</div>
       <select class="field" data-stksort="1">${[["name","A–Z"],["buy","Cheapest to buy"],["sell","Best to sell"],["fresh","Most recently reported"]].map(([v,t])=>`<option value="${v}" ${st.sort===v?"selected":""}>${t}</option>`).join("")}</select></div>`
     +r.terminals.map(t=>{ const rows=t.rows.filter(keep).sort(by), a=drAge(t.updated);
       return `<div class="stk-th"><b>${esc(t.name)}</b>${t.updated?`<span class="${a.c}" style="${a.c==="a0"?"color:#57e39b":a.c==="a2"?"color:#f2c14e":a.c==="a3"?"color:#ff8a5c":""}">updated ${esc(agoTs(t.updated))}</span>`:`<span>no reports yet</span>`}
@@ -320,7 +325,13 @@ function stockRender(){ const P=$("stk-panel"), st=S.stock; if(!P) return; if(!s
         ${rows.length?`<div class="stk-grid">${rows.map(card).join("")}</div>`:`<div class="muted" style="font-size:13px;padding:2px">${q?"Nothing here matches.":st.side==="buy"?"Nothing for sale at this terminal.":st.side==="sell"?"This terminal doesn't buy anything.":"No prices on UEX for this terminal yet."}</div>`}`; }).join("")
     +`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a>${all.some(i=>i.buy?.community||i.sell?.community)?" (⚡ newer reports from Quantum datarunners)":""} and can be off; check the terminal before you buy. Age colours: green under a day, yellow up to 3 days, orange older. Click a commodity for every place that trades it.</div>`;
   stockWire(P); fillPictures(P); }
+// A price too wide for its column (big prices side by side in All, big ship prices) shrinks until it fits, "aUEC"
+// included. On shop cards the report age moves under the price when there isn't room beside it.
+function fitPrices(P){ for(const b of P.querySelectorAll(".stk-px b, .stk-card .pr b")){ b.style.fontSize="";
+    let px=parseFloat(getComputedStyle(b).fontSize)||15; while(b.scrollWidth>b.clientWidth+0.5&&px>9){ px-=0.5; b.style.fontSize=px+"px"; } } }
+window.addEventListener("resize",()=>{ const P=$("stk-panel"); if(P?.classList.contains("show")) fitPrices(P); });
 function stockWire(P){
+  requestAnimationFrame(()=>fitPrices(P));
   P.onclick=e=>{ const x=e.target.closest("[data-ext]"); if(x) api().open_url(x.dataset.ext); };
   P.querySelector("[data-stkclose]")?.addEventListener("click",()=>{ closeStock(); renderDetail(); });
   for(const b of P.querySelectorAll("[data-stkside]")) b.onclick=()=>{ S.stock.side=S.stockSide=b.dataset.stkside; stockRender(); };
@@ -410,6 +421,7 @@ function shopRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="sh
     +`<div class="uex-credit" style="margin-top:18px">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the shop before you buy. Age colours: green under a day, yellow up to 3 days, orange older. ${st.group==="rentals"?" Rental prices are for one day.":""} Click an item for its full page.</div>`;
   shopWire(P); fillGearPictures(P); fillPictures(P); }
 function shopWire(P){
+  requestAnimationFrame(()=>fitPrices(P));
   P.onclick=e=>{ const x=e.target.closest("[data-ext]"); if(x) return api().open_url(x.dataset.ext);
     const gg=e.target.closest("[data-shopgear]"); if(gg){ const [tab,id]=gg.dataset.shopgear.split("|"); const t=document.querySelector(`.tab[data-tab="${tab}"]`); if(!t) return; t.click();
       setTimeout(()=>{ const st=grState(tab); if(tab==="armor") st.view="items"; if(st.data) grOpenItem(tab,id,null); },250); return; }
@@ -518,7 +530,8 @@ function renderDetail(){
         <label class="row" style="gap:8px;margin-top:8px;cursor:pointer"><input type="checkbox" id="s-clearlog" ${lg.clear_on_start?"checked":""}> Clear Game.log when Quantum starts</label>
         ${cl?`<div class="muted" style="font-size:12px;margin-top:4px">${cl.ok?`Cleared at startup (${(cl.bytes/1048576).toFixed(1)} MB).`:`Not cleared at startup: ${esc(cl.reason)}.`}</div>`:""}</div>
       ${typeof tlSettingsHtml==="function"?tlSettingsHtml():""}
-      ${inSys.length?`<div class="sub">Alignment</div>
+      ${navSettingsHtml()}
+      ${inSys.length&&done<inSys.length?`<div class="sub">Alignment</div>
       <div class="note row" style="margin:4px 0 12px"><span class="dot ${done?"on":""}"></span><span><b>${done}</b> of ${inSys.length} aligned in ${esc(S.system)}${done<inSys.length&&inSys.some(b=>b.calibrated&&b.aligned_now===false)?` <span class="muted">· the rest are from before the last game update</span>`:""}</span><span class="spacer"></span><button class="btn small ghost" data-a="openalign">Open</button></div>`:""}
       <div class="sub">Quantum API</div>
       <div class="note" style="margin:4px 0 12px">
@@ -568,7 +581,7 @@ function renderDetail(){
           <span class="k">Opacity</span><select class="field" id="s-ccop" data-cclook="opacity">${[100,85,70,55].map(v=>`<option value="${v}" ${(cc.opacity||100)===v?"selected":""}>${v}%</option>`).join("")}</select>
         </div>
         <div class="cc-colors" role="radiogroup" aria-label="Clock colour">${[["blue","#50b4ff"],["amber","#ff9628"],["green","#28d278"],["white","#e6ebf2"],["red","#f03c3c"],["purple","#965aff"]].map(([k,c])=>`<button type="button" class="cc-sw${(cc.color||"blue")===k?" on":""}" data-cccolor="${k}" style="--sw:${c}" role="radio" aria-checked="${(cc.color||"blue")===k}" title="${k[0].toUpperCase()+k.slice(1)}"></button>`).join("")}<span class="muted" style="font-size:12px;margin-left:6px">Colour</span></div>
-        <div class="cc-place"><div class="muted" style="font-size:12px;margin:2px 0 6px">${cc.position==="custom"?"Drag the clock to where you want it on your screen.":"Where it shows on your screen. Drag it to place it yourself."}</div>
+        <div class="cc-place"><div class="muted" style="font-size:12px;margin:2px 0 6px">${cc.position==="custom"?"Drag the clock to where you want it on your screen. It snaps to the centre line (hold Alt to place it freely).":"Where it shows on your screen. Drag it to place it yourself: it snaps to the centre line."}</div>
           <div class="cc-scr" id="cc-scr"><img id="cc-drag" alt="Location clock" draggable="false" hidden></div></div>
         <div class="row" style="gap:6px;margin-top:8px"><span class="spacer"></span><button class="btn small ghost" data-a="ccpreview" ${cc.available?"":"disabled"}>Preview in game</button></div>
         <div class="muted" style="font-size:12px;margin-top:6px">${cc.available?"The location clock overlay displays the name of the location and local time at the location when you land or spawn at certain locations.":"The location clock overlay only works on Windows."}</div></div>`; })()}
@@ -621,6 +634,7 @@ function renderDetail(){
     for(const el of d.querySelectorAll("[data-cclook]")) el.onchange=()=>ccLook({[el.dataset.cclook]:el.dataset.cclook==="opacity"?+el.value:el.value});
     for(const b of d.querySelectorAll("[data-cccolor]")) b.onclick=()=>ccLook({color:b.dataset.cccolor});
     ccPlacer();
+    navSettingsWire(d);
     for(const b of d.querySelectorAll("[data-bspick]")){ const pick=()=>{ if(btnStyle()===b.dataset.bspick) return; setBtnStyle(b.dataset.bspick); renderDetail(); };
       b.onclick=pick; b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); } }; }
     for(const b of d.querySelectorAll("[data-winstyle]")) b.onclick=async()=>{ if(S.winStyle?.style===b.dataset.winstyle) return;

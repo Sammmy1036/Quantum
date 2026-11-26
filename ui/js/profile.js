@@ -208,6 +208,17 @@ function afkHtml(a){ const f=a.afk||{}, keys=["","F5","F6","F7","F8","F9","F10",
     <label class="row" style="gap:8px;margin-top:6px;cursor:pointer;font-size:12.5px"><input type="checkbox" id="s-afkfocus" ${f.focus?"checked":""}> Switch to Star Citizen if not in focus.</label>
     <div class="muted" style="font-size:11.5px;margin-top:4px">Use Anti-AFK feature at your own risk.</div></div>`; }
 // ---- Location clock: drag it to a custom spot on a picture of the game window (saved as fractions of it)
+// Dragging an overlay in its Settings screen box: within SNAP of the middle (across, or down) it snaps there and a
+// dotted centre line shows, so it's easy to put it dead centre at the top, say. Hold Alt to place it freely.
+const SNAP=0.025;
+function snapPos(box,pos,alt){ let gx=null, gy=null;
+  if(!alt&&Math.abs(pos.x-0.5)<SNAP){ pos.x=0.5; gx=true; }
+  if(!alt&&pos.cy!=null&&Math.abs(pos.cy-0.5)<SNAP){ pos.y+=0.5-pos.cy; gy=true; }
+  for(const [cls,on] of [["vx",gx],["hy",gy]]){ let g=box.querySelector(".snap-"+cls);
+    if(on&&!g){ g=document.createElement("i"); g.className="snap-line snap-"+cls; box.appendChild(g); }
+    if(g) g.hidden=!on; }
+  return pos; }
+function snapClear(box){ for(const g of box.querySelectorAll(".snap-line")) g.hidden=true; }
 async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.city_clock; if(!box||!img||!cc) return;
   const key=`${cc.size}|${cc.h24}|${cc.color}|${cc.style}`;
   if(!S.ccImg||S.ccImg.key!==key){ const r=await api().city_clock_image(cc.in_city||"New Babbage").catch(()=>null); if(!r?.ok) return; S.ccImg={...r,key}; }
@@ -228,17 +239,72 @@ async function ccPlacer(){ const box=$("cc-scr"), img=$("cc-drag"), cc=S.live?.c
   img.src=im.image; img.hidden=false; place();
   img.onpointerdown=e=>{ e.preventDefault(); S.ccDrag=true; box.classList.add("drag");
     const r=box.getBoundingClientRect(), ox=e.clientX-(r.left+parseFloat(img.style.left)+w()/2), oy=e.clientY-(r.top+parseFloat(img.style.top));
-    const move=ev=>{ pos={x:Math.min(1,Math.max(0,(ev.clientX-ox-r.left)/r.width)),y:Math.min(1,Math.max(0,(ev.clientY-oy-r.top)/r.height))}; place(); };
+    const move=ev=>{ pos={x:Math.min(1,Math.max(0,(ev.clientX-ox-r.left)/r.width)),y:Math.min(1,Math.max(0,(ev.clientY-oy-r.top)/r.height))};
+      pos.cy=pos.y+h()/2/H(); pos=snapPos(box,pos,ev.altKey); delete pos.cy; place(); };
     const up=async()=>{ window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up);
-      box.classList.remove("drag");
+      box.classList.remove("drag"); snapClear(box);
       // keep it to where the whole clock fits, and save that
-      pos={x:(parseFloat(img.style.left)+w()/2)/W(), y:parseFloat(img.style.top)/H()};
+      pos={x:pos.x===0.5?0.5:(parseFloat(img.style.left)+w()/2)/W(), y:parseFloat(img.style.top)/H()};
       S.ccPos=pos; S.ccDrag=false;
       const wasPreset=cc.position!=="custom";
       await api().set_city_clock(null,"custom",null,null,null,+pos.x.toFixed(4),+pos.y.toFixed(4));
       if(S.live?.city_clock) Object.assign(S.live.city_clock,pos,{position:"custom"});
       toast(wasPreset?"Clock position saved: Position is now Custom":"Clock position saved");
       if(wasPreset){ if($("s-ccpos")) $("s-ccpos").value="custom"; renderDetail(); } };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); };
+  img.ondragstart=e=>e.preventDefault(); }
+// ---- Settings > Navigation Guide Overlay (under Game telemetry): its look, colour, size and where it sits on your
+// screen (drag it, as the location clock). The pictures come from the app (nav_overlay.py) and are kept, so saving
+// a choice redraws the settings with them already in place (fetching them again each time made them flicker).
+const NAV_LOOKS=[["arrow","Arrow"],["compass","Compass ring"],["tape","Heading tape"]];
+function navSettingsHtml(){ const nv=S.live?.nav_overlay; if(!nv) return "";
+  const img=k=>S.navImg?.imgs[k]?.image||"";     // the last pictures until new ones (another colour) arrive: no blank flash
+  const sel=(k,opts,v)=>`<select class="field" data-nav="${k}">${opts.map(([o,l])=>`<option value="${o}" ${String(v)===String(o)?"selected":""}>${l}</option>`).join("")}</select>`;
+  return `<div class="sub">Navigation Guide Overlay</div>
+    <div class="note" style="margin:4px 0 12px">
+      <div class="muted" style="font-size:12px;line-height:1.5;margin-bottom:10px">${nv.available?"Choose the design of your Navigation Overlay that appears in game while navigating within an atmosphere. Utilizes the Game Telemetry to determine estimated Heading, Altitude, and Speed.":"The navigation guide overlay only works on Windows."}</div>
+      <div class="setgrid">
+        <span class="k">Show guide</span>${sel("on",[["1","On, while flying to a place"],["0","Off"]],nv.on?"1":"0")}
+        <span class="k">Look</span>${sel("style",NAV_LOOKS,nv.style)}
+        <span class="k">Position</span>${sel("position",[["top","Top"],["upper","Upper third"],["center","Center"],["bottom","Lower third"],["top-right","Upper right"],["bottom-right","Lower right"],["custom","Custom (drag to place)"]],nv.position)}
+        <span class="k">Size</span>${sel("size",[["large","Large"],["medium","Medium (3/4)"],["small","Small (1/2)"]],nv.size)}
+        <span class="k">Opacity</span>${sel("opacity",[100,85,70,55].map(v=>[v,v+"%"]),nv.opacity)}
+      </div>
+      <div class="cc-colors" role="radiogroup" aria-label="Guide colour">${[["blue","#50b4ff"],["amber","#ff9628"],["green","#28d278"],["white","#e6ebf2"],["red","#f03c3c"],["purple","#965aff"]].map(([k,c])=>`<button type="button" class="cc-sw${nv.color===k?" on":""}" data-navcolor="${k}" style="--sw:${c}" role="radio" aria-checked="${nv.color===k}" title="${k[0].toUpperCase()+k.slice(1)}"></button>`).join("")}</div>
+      <div class="nav-looks">${NAV_LOOKS.map(([k,l])=>`<button type="button" class="nav-look${nv.style===k?" on":""}" data-navlook="${k}" aria-pressed="${nv.style===k}" title="${l}"><img alt="${l}" data-navimg="${k}" ${img(k)?`src="${img(k)}"`:""}></button>`).join("")}</div>
+      <div class="cc-place"><div class="muted" style="font-size:12px;margin:8px 0 6px">${nv.position==="custom"?"Drag the guide to where you want it on your screen. It snaps to the centre line (hold Alt to place it freely).":"Where it shows on your screen. Drag it to place it yourself: it snaps to the centre line."}</div>
+        <div class="cc-scr" id="nav-scr"><img id="nav-drag" alt="Navigation guide" draggable="false" hidden></div></div>
+      <div class="row" style="gap:6px;margin-top:8px"><span class="spacer"></span><button class="btn small ghost" data-a="navpreview" ${nv.available?"":"disabled"}>Preview in game</button></div></div>`; }
+function navSettingsWire(d){ const nv=S.live?.nav_overlay; if(!nv) return;
+  const save=async(prefs,msg)=>{ Object.assign(S.live.nav_overlay,prefs); renderDetail(); await api().set_nav_overlay(prefs); toast(msg||"Saved"); poll(); };
+  for(const el of d.querySelectorAll("[data-nav]")) el.onchange=()=>{ const k=el.dataset.nav; if(k==="position") S.navPos=null;
+    save({[k]:k==="on"?el.value==="1":k==="opacity"?+el.value:el.value}); };
+  for(const b of d.querySelectorAll("[data-navcolor]")) b.onclick=()=>{ if(nv.color!==b.dataset.navcolor) save({color:b.dataset.navcolor}); };
+  for(const b of d.querySelectorAll("[data-navlook]")) b.onclick=()=>{ if(nv.style!==b.dataset.navlook) save({style:b.dataset.navlook}); };
+  navPlacer(d); }
+async function navPlacer(d){ const nv=S.live?.nav_overlay; if(!nv) return; const key=nv.color+nv.size;
+  if(S.navImg?.key!==key){ const imgs={}; for(const [k] of NAV_LOOKS){ const r=await api().nav_overlay_image(k).catch(()=>null); if(r?.ok) imgs[k]=r; }
+    S.navImg={key,imgs}; for(const im of document.querySelectorAll("[data-navimg]")){ const r=imgs[im.dataset.navimg]; if(r) im.src=r.image; } }
+  const box=$("nav-scr"), img=$("nav-drag"), im=S.navImg.imgs[nv.style]; if(!box||!img||!im) return;
+  // the settings pictures are 0.8 of the guide's size at 1080p: back to full size on the 1920-wide screen drawn here
+  const W=()=>box.clientWidth, H=()=>box.clientHeight, w=()=>im.w/0.8*W()/1920, h=()=>im.h/0.8*W()/1920;
+  const preset=()=>{ const ww=w(), hh=h(), Wd=W(), Hd=H(), m=Hd*0.03, cx=x=>(x+ww/2)/Wd;
+    switch(nv.position){ case "upper": return {x:0.5,y:0.20}; case "bottom": return {x:0.5,y:0.72}; case "center": return {x:0.5,y:(Hd-hh)/2/Hd};
+      case "top-right": return {x:cx(Wd-ww-m),y:0.07}; case "bottom-right": return {x:cx(Wd-ww-m),y:(Hd-hh-Hd*0.12)/Hd}; default: return {x:0.5,y:0.07}; } };
+  let pos=nv.position==="custom"?(S.navPos||{x:nv.x??0.5,y:nv.y??0.62}):preset();
+  const place=()=>{ const ww=w(), hh=h(); img.style.width=ww+"px";
+    img.style.left=Math.max(0,Math.min(W()-ww,pos.x*W()-ww/2))+"px"; img.style.top=Math.max(0,Math.min(H()-hh,pos.y*H()))+"px"; };
+  img.src=im.image; img.hidden=false; place();
+  img.onpointerdown=e=>{ e.preventDefault(); box.classList.add("drag");
+    const r=box.getBoundingClientRect(), ox=e.clientX-(r.left+parseFloat(img.style.left)+w()/2), oy=e.clientY-(r.top+parseFloat(img.style.top));
+    const move=ev=>{ pos={x:Math.min(1,Math.max(0,(ev.clientX-ox-r.left)/r.width)),y:Math.min(1,Math.max(0,(ev.clientY-oy-r.top)/r.height))};
+      pos.cy=pos.y+h()/2/H(); pos=snapPos(box,pos,ev.altKey); delete pos.cy; place(); };
+    const up=async()=>{ window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); box.classList.remove("drag"); snapClear(box);
+      pos={x:pos.x===0.5?0.5:(parseFloat(img.style.left)+w()/2)/W(), y:parseFloat(img.style.top)/H()}; S.navPos=pos;
+      const was=nv.position!=="custom";
+      await api().set_nav_overlay({position:"custom",x:+pos.x.toFixed(4),y:+pos.y.toFixed(4)});
+      Object.assign(S.live.nav_overlay,pos,{position:"custom"});
+      toast(was?"Guide position saved: Position is now Custom":"Guide position saved"); if(was) renderDetail(); };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); };
   img.ondragstart=e=>e.preventDefault(); }
 // ---- Profile privacy: who can open your profile, and whether it shows your datarunner stats
@@ -523,6 +589,9 @@ const isGateStop=roles=>(roles||[]).some(r=>r.kind==="gate"||r.kind==="gate-in")
 // With a contract for it the game gives it a marker; without, quantum to the nearest marker and fly the rest.
 function noQtHint(n){ const q=S.live?.no_qt?.[n]; if(!q) return "";
   if(q.contract) return `<div class="qt-hint" style="font-size:11.5px;color:#9fe0b4;margin-top:2px">Your contract gives it a quantum marker</div>`;
+  // Over its planet or moon already (dead reckoning from your /showlocation): from where you are, updating as you fly
+  const h=q.here; if(h){ const turn=h.turn==null?"":Math.abs(h.turn)<3?" · straight ahead":` · turn ${Math.abs(Math.round(h.turn))}° ${h.turn>0?"right":"left"}`;
+    return `<div class="qt-hint" style="font-size:11.5px;color:#9fe0b4;margin-top:2px" title="From your position${h.how==="dr"?`, estimated from your last /showlocation (± ${fmtDist(h.err)})`:" (your last /showlocation)"}">No quantum marker: fly <b>${fmtDist(h.ground)}</b> heading <b>${Math.round(h.heading)}°</b> from here${turn}</div>`; }
   const a=q.approach?.[0]; if(!a) return `<div class="qt-hint" style="font-size:11.5px;color:#ffb46b;margin-top:2px">No quantum marker: fly there</div>`;
   const fly=a.ground!=null?`${a.orbit?"descend and ":""}fly ${fmtDist(a.ground)}${a.heading!=null?` heading ${Math.round(a.heading)}°`:""}`:`fly ${fmtDist(a.straight)}`;
   return `<div class="qt-hint" style="font-size:11.5px;color:#ffb46b;margin-top:2px" title="The game only gives it a quantum marker while you have a contract there">No quantum marker: ${q.closer?"you're closer than any marker, fly straight there":`quantum to <b>${esc(a.name)}</b>, then ${fly}`}</div>`; }
@@ -537,7 +606,7 @@ function renderRoute(){
   el.innerHTML=route.map((n,i)=>{ const L=S.locMap[n]||{}; const leg=live.legs[i]; const jump=i>0&&L.system!==S.locMap[route[i-1]]?.system;
     const back=route.indexOf(n)<i?'<span class="role back">Return visit</span>':"";
     return `<li class="stop" draggable="true" data-i="${i}"><div class="num">${i+1}</div>
-      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span>${padOf(L)!=="unknown"?`<span>pad: ${esc(padLabel(padOf(L)))}</span>`:""}</div>${noQtHint(n)}</div>
+      <div style="min-width:0"><div class="name" title="${esc(n)}">${esc(n)}</div><div class="meta"><span>${back}${roleTags(live.stop_roles?.[i])}${esc(L.body||L.system||"")}</span></div>${noQtHint(n)}</div>
       <div class="row"><div class="leg ${jump?"jump":""}">${jump?"jump to "+esc(L.system)+(leg!=null?" · "+fmtDist(leg):""):leg!=null?fmtDist(leg):""}</div>${isGateStop(live.stop_roles?.[i])?`<span class="x" title="Added by Quantum: the route jumps to another system here" style="opacity:.35;cursor:default">⇄</span>`:`<button class="x" aria-label="Remove stop ${i+1}">×</button>`}</div></li>`; }).join("");
   for(const li of el.children){ const i=+li.dataset.i, n=route[i];
     li.querySelector(".name").onclick=()=>{ select({kind:"loc",name:n}); focusLoc(n); };
@@ -679,7 +748,7 @@ const RS_RANK={city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,fie
 function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
   return {kind:"loc",name:L.name,via,sc,r:L.source==="user"?-0.5:(RS_RANK[L.type]??4),sys:L.system,
     type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type,
-    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}${padOf(L)!=="unknown"?" · pad: "+padLabel(padOf(L)):""}`}; }
+    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`}; }
 function rsCandidates(q){
   q=q.trim().toLowerCase(); if(!q) return [];
   const score0=(x,q)=>{ if(x===q) return 0; if(x.startsWith(q)) return 1;

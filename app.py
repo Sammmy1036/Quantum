@@ -29,7 +29,8 @@ from api import (
     api_jobs,
     api_wishlist,
     api_calendar,
-    api_telemetry)
+    api_telemetry,
+    api_navguide)
 from sources import netcache
 from game import gamefiles
 
@@ -41,6 +42,7 @@ class Api(api_contracts.ContractsMixin,
           api_wishlist.WishlistMixin,
           api_calendar.CalendarMixin,
           api_telemetry.TelemetryMixin,
+          api_navguide.NavGuideMixin,
           api_shopping.ShoppingMixin,
           api_fleet.FleetMixin,
           api_catalog.CatalogMixin,
@@ -247,6 +249,8 @@ class Api(api_contracts.ContractsMixin,
         self._clock = city_clock.CityClock(RES / "ui" / "fonts")
         self._clock_city, self._clock_since, self._clock_seat = None, 0.0, None
         threading.Thread(target=self._city_clock_loop, daemon=True).start()
+        # Navigation guide: an arrow over the game towards where you're going (Settings > Navigation Guide Overlay)
+        threading.Thread(target=self._nav_guide_loop, daemon=True).start()
         # Pickups and drop-offs the log only puts "inside a station": the wiki's list of places for that contract
         self._obj_suggest, self._wiki_tried = {}, {}
         threading.Thread(target=self._wiki_place_loop, daemon=True).start()

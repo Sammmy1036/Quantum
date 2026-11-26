@@ -34,6 +34,7 @@ class AccountMixin:
             self._settings.pop("trust_key", None)
             self._save_settings()
             threading.Thread(target=self._resend_alignments, daemon=True).start()   # ones made before signing in
+            threading.Thread(target=self._resend_breath, daemon=True).start()        # and air readings
         elif r.get("status") == "account_required":
             self._sender._event("Quantum server: sign in to a Quantum account (Profile) to send reports and pictures")
         else:

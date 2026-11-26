@@ -4,7 +4,10 @@
 // =================================================================== trade data (UEX)
 const money=n=>n==null?"–":`${Math.round(n).toLocaleString()} aUEC`;
 const shortMoney=n=>Math.abs(n)>=1e6?`${(n/1e6).toFixed(2)}M`:Math.abs(n)>=1e4?`${Math.round(n/1e3)}k`:Math.round(n).toLocaleString();
-const agoTs=ts=>{ if(!ts) return ""; const a=Math.max(0,Date.now()/1000-ts); return a<3600?`${Math.max(1,Math.round(a/60))} min ago`:a<172800?`${Math.round(a/3600)} h ago`:`${Math.round(a/86400)} d ago`; };
+// A report time as seconds since 1970; some feeds give milliseconds or a date string instead (that was "NaN d ago").
+const tsSec=ts=>{ if(ts==null||ts==="") return null; let n=typeof ts==="number"?ts:Number(ts); if(!Number.isFinite(n)){ n=Date.parse(ts)/1000; }
+  if(!Number.isFinite(n)||n<=0) return null; return n>1e12?n/1000:n; };
+const agoTs=ts=>{ ts=tsSec(ts); if(!ts) return ""; const a=Math.max(0,Date.now()/1000-ts); return a<3600?`${Math.max(1,Math.round(a/60))} min ago`:a<172800?`${Math.round(a/3600)} h ago`:`${Math.round(a/86400)} d ago`; };
 const uexCredit=at=>`<div class="uex-credit">Prices are reported by players at <a data-ext="https://uexcorp.space">UEX</a> and can be off; check the terminal before you buy.${at?` Fetched ${agoTs(at)}.`:""}</div>`;
 const needToken=`<div class="empty"><strong>Connect UEX first</strong>Add your free UEX access token in your profile to see prices and trade runs.<br><br><button class="btn small" data-act="opensettings">Open your profile</button></div>`;
 // Status is fetched when Settings opens or the token changes, not on every refresh of the panel.
@@ -684,7 +687,7 @@ function vehSpots(list,kind){
   return toggle+rows.map(({x,d})=>`<div class="mk-row"><div class="w">${x.place?`<a data-open="${esc(x.place)}">${esc(x.where)}</a>`:esc(x.where)}</div>
     <div class="p ${x.price===cheap?"best":""}">${money(x.price)}${kind==="rent"?`<small class="muted" style="font-weight:500"> /day</small>`:""}</div>
     ${x.place?`<button class="iconbtn" data-add="${esc(x.place)}" title="Add to route">+</button>`:`<span></span>`}
-    <div class="m">${x.shop&&x.shop!==x.where?`${esc(x.shop)} · `:""}${esc(x.system||"")}${d!=null?` · ${fmtDist(d)} away`:""}${x.updated?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
+    <div class="m">${x.shop&&x.shop!==x.where?`${esc(x.shop)} · `:""}${esc(x.system||"")}${d!=null?` · ${fmtDist(d)} away`:""}${agoTs(x.updated)?` · ${agoTs(x.updated)}`:""}</div></div>`).join(""); }
 // The toggle re-draws whichever page is open (each one rebuilds its lists from the same data)
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-spotsort]"); if(!b) return; e.preventDefault(); e.stopPropagation();
   S.spotSort=b.dataset.spotsort; try{ localStorage.setItem("spotSort",S.spotSort); }catch(_){}
@@ -865,8 +868,8 @@ function vehSpecHtml(d,mod){
   const n=x=>x==null||x===""?null:Math.round(x).toLocaleString();
   const sec=(title,rows)=>{ rows=rows.filter(r=>r[1]!=null&&r[1]!==""&&r[1]!==0&&r[1]!=="0"); return rows.length?`<div class="vd-sec"><div class="mk-h">${title}</div>${rows.map(r=>`<div class="vd-row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>`:""; };
   const crew=vehCrew(d);
-  return `${d.description?`<div class="desc" style="margin:0 0 14px">${wikiDesc(d.description)}</div>`:""}
-    <div class="vd-grid vd-flat">
+  return `${d.description?`<div class="desc" style="margin:0 0 14px;max-width:none">${wikiDesc(d.description)}</div>`:""}
+    <div class="vd-grid vd-flat gr-fill">
       ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
       ${sec("Cargo & storage",[["Cargo grid",d.scu?`${Number(d.scu).toLocaleString()} SCU`:null],["Refinery",d.refinery?`${d.refinery} refining reactors`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
       ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
@@ -895,7 +898,7 @@ async function renderVehicleDetail(id){
             {label:"Crew size",value:crew||"–"},{label:"SCU capacity",value:scu?`${Number(scu).toLocaleString()} SCU`:"None"}],
           [{label:"Beds",value:d.beds||null},{label:"Medical beds",value:d.medical_beds||null},{label:"Landing pad",value:d.pad||null}])}
         ${M?`<div class="lv-row" style="margin-top:12px">${modPicker(M,mod.id,"data-vdmod")}<span class="muted" style="font-size:12px">${mod.concept?`<span style="color:#f2c14e">Concept · not in game yet.</span> `:""}${esc(mod.notes||"")}</span></div>`:""}
-        <div class="row" style="gap:8px;margin-top:12px">${wishBtn({kind:"ship",name:v.full,uex_id:v.id,maker:v.maker||null,photo:typeof v.photo==="string"&&v.photo.startsWith("https://")?v.photo:null},"Add to wish list")}${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
+        <div class="row gr-acts" style="gap:8px;margin-top:12px">${wishBtn({kind:"ship",name:v.full,uex_id:v.id,maker:v.maker||null,photo:typeof v.photo==="string"&&v.photo.startsWith("https://")?v.photo:null},"Add to wish list")}${v.store?`<button class="btn ghost" data-ext="${esc(v.store)}">RSI page</button>`:""}</div></div></div>
     ${M?`<div class="vd-sec vd-mods"><div class="mk-h">Modules</div><table class="mod-t"><thead><tr><th>Module</th><th class="num">Cargo</th><th class="num">Medical beds</th><th class="num">Refinery</th><th>Status</th></tr></thead><tbody>
       ${M.modules.map(m=>`<tr class="${m.id===mod.id?"on":""}" data-vdmod="${esc(m.id)}" title="Show ${esc(v.full)} with this module"><td><b>${esc(m.name)}</b><small>${esc(m.full||"")}</small></td>
         <td class="num">${m.scu?`${Number(m.scu).toLocaleString()} SCU`:"–"}${m.module_scu?`<small>${m.module_scu} in the module</small>`:""}</td>
@@ -905,7 +908,7 @@ async function renderVehicleDetail(id){
       <div class="muted" style="font-size:11.5px;margin-top:8px">Click a module to see the ship with it. Modules are swapped at a port; in My Fleet each loadout can have its own.</div></div>`:""}
     ${vehSpecHtml(d,mod)}
     <div id="vd-extra"></div>
-    <div class="vd-grid vd-shop vd-flat"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">${gameIcon("rent_vehicle","mk-gi")}Rent</div>${vehSpots(v.rent,"rent")}</div></div>
+    <div class="vd-grid vd-shop vd-flat gr-fill"><div class="vd-sec"><div class="mk-h">Buy</div>${vehSpots(v.buy,"buy")}</div><div class="vd-sec"><div class="mk-h">${gameIcon("rent_vehicle","mk-gi")}Rent</div>${vehSpots(v.rent,"rent")}</div></div>
     <div class="uex-credit">${d.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki); ":"The Star Citizen Wiki has no record for this vehicle. "}roles and prices from UEX.</div>
     <div id="vd-compare"></div>`;
   vehExtras(v); if(typeof cmpVeh==="function") cmpVeh(v); }
@@ -934,7 +937,7 @@ async function vehExtras(v){ const box=()=>S.vehDetail===String(v.id)?$("vd-extr
       ${carries.length&&rides.length?`<div class="mk-h" style="margin-top:12px">Rides in</div><div class="res-chips">${rides.map(link).join("")}</div>`:""}
       <div class="muted" style="font-size:11.5px;margin-top:8px">${carries.length?"Docks on it or rides in its garage, as the ship comes.":"Docks on or rides in these ships, as they come."}</div></div>`);
   const fh=await vehFitsHtml(v); if(!box()) return; if(fh) out.push(fh);
-  const b=box(); if(b) b.innerHTML=out.length?`<div class="vd-grid vd-flat">${out.join("")}</div>`:"";
+  const b=box(); if(b) b.innerHTML=out.length?`<div class="vd-grid vd-flat gr-fill">${out.join("")}</div>`:"";
   b?.querySelectorAll("[data-vfmore]").forEach(x=>x.onclick=()=>{ S.vfMore=(S.vfMore||new Set()); S.vfMore.add(x.dataset.vfmore); vehExtras(v); }); }
 // ---- What fits inside (vehicle_fits.json, from citizen-starter-guide.com: worked out from real dimensions) and,
 // for a small ship or vehicle, the ships it fits inside. Ship names are matched word by word (maker left out), the
@@ -1224,11 +1227,11 @@ async function renderComponentDetail(id){
             {label:"Price",value:i.buy[0]?money(i.buy[0].price):"Not in shops"}],
           [{label:"Sold at",value:i.buy.length?plural(i.buy.length,"shop"):null},...(()=>{ const k=(CP_KEY[S.cpCat?.slot]||[])[0], f=CP_STATS.find(x=>x[0]===k);
             return f&&st[k]!=null?[{label:f[1],value:f[2](st[k])}]:[]; })()])}
-        <div class="row" style="gap:8px;margin-top:12px">${i.buy.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null},"Add to cart"):""}${wishBtn({kind:"component",name:i.name,uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null,maker:gm.maker||i.maker||null})}${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
+        <div class="row gr-acts" style="gap:8px;margin-top:12px">${i.buy.length?cartBtn({name:i.name,kind:"component",uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null},"Add to cart"):""}${wishBtn({kind:"component",name:i.name,uuid:i.uuid||null,uex_id:typeof i.id==="number"?i.id:null,maker:gm.maker||i.maker||null})}${i.wiki?`<button class="btn ghost" data-ext="${esc(i.wiki)}">Wiki</button>`:""}${i.store?`<button class="btn ghost" data-ext="${esc(i.store)}">RSI page</button>`:""}</div></div></div>
     ${typeof i.note==="string"&&i.note?`<div class="unknown" style="margin-bottom:12px">${esc(i.note)}</div>`:""}
-    <div class="vd-grid vd-flat">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
-      <div class="vd-sec"><div class="mk-h">${i.buy.length?"Where to buy":"How to get it"}</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div id="cpd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div>
-      <div class="vd-sec cp-fit" id="cpd-fit"><div class="mk-h">Fit to a ship in My Fleet</div><div class="muted" style="font-size:13px">Checking your ships…</div></div></div>
+    <div class="vd-grid vd-flat gr-fill">${rows?`<div class="vd-sec"><div class="mk-h">Stats</div>${rows}</div>`:`<div class="vd-sec"><div class="mk-h">Stats</div><div class="muted" style="font-size:13px;padding:6px 0">No game-file numbers for this one.</div></div>`}
+      <div class="vd-sec"><div class="mk-h">${i.buy.length?"Where to buy":"How to get it"}</div>${i.buy.length?vehSpots(i.buy,"buy"):`<div id="cpd-get"><div class="muted" style="font-size:13px;padding:6px 0">Looking up how to get it…</div></div>`}</div></div>
+    <div class="vd-flat"><div class="vd-sec cp-fit" id="cpd-fit"><div class="mk-h">Fit to a ship in My Fleet</div><div class="muted" style="font-size:13px">Checking your ships…</div></div></div>
     <div class="uex-credit">${i.game?"Numbers from the game files; ":""}prices from UEX; picture from the Star Citizen Wiki; ship slots from the Star Citizen Wiki.</div>`;
   g.scrollTop=0; renderCpFit(i); if(!i.buy.length) cpObtain(i,gm,id);
   const img=await api().wiki_image(i.wiki||i.name); if(String(S.cpDetail)!==String(id)) return;
@@ -1378,6 +1381,24 @@ function powerPanel(r){
     <div class="pwr-foot muted">Click a bar to change a system's power; click its top lit block to lower it. Cooling
       <input class="field" id="fl-cool" type="number" min="0" max="100" value="${P.cooling}" style="width:58px;padding:2px 6px;margin:0 4px">%
       ${P.cooling_auto?"(worked out)":`<a data-coolauto="1" style="cursor:pointer;text-decoration:underline">work it out</a>`}</div></div>`; }
+// The ship's parts by category (power plants, coolers, shields, quantum drive, ...), each in its own semi-transparent
+// box with cut corners like the Launcher button: up to 3 columns of boxes about 440-650 px wide, 16 px apart. Identical
+// parts (same part, size and grade, e.g. 16 Arrester IIIs) share one row with a count: Change on it swaps them all
+// at once, and the count opens them one by one.
+function slotGroupsHtml(r,groups,card){ S.flExp=S.flExp||{};
+  // a fixed reading order, so like parts sit together whatever the number of columns
+  const ORD=["PowerPlant","Cooler","Shield","QuantumDrive","JumpDrive","Radar","FlightController","WeaponGun","WeaponMining","Missile"], ix=t=>{ const i=ORD.indexOf(t); return i<0?ORD.length:i; };
+  const ents=Object.entries(groups).map((e,i)=>[e,i]).sort((a,b)=>ix(a[0][1][0].type)-ix(b[0][1][0].type)||a[1]-b[1]).map(x=>x[0]);
+  return `<div class="slot-groups">${ents.map(([label,list])=>{ const t=list[0].type;
+    const open=list.some(sl=>sl.port===S.flSlot);
+    const ms=t==="Missile"&&r.missiles, msTxt=ms?` · ${Object.entries(ms.by_size).sort((a,b)=>b[0]-a[0]).map(([z,n])=>`${n} × S${z}`).join(", ")}${ms.loaded<ms.slots?` · ${ms.slots-ms.loaded} empty`:""}`:"";
+    // identical parts share a row (unless opened one by one, or one of them is being changed on its own)
+    const runs=[]; for(const sl of list){ const key=[label,sl.size,sl.fitted?sl.fitted_grade:sl.stock?.grade,sl.fitted||sl.stock?.name||"",!!sl.fitted].join("|");
+      const run=runs.find(x=>x.key===key); if(run) run.push(sl); else { const n=[sl]; n.key=key; runs.push(n); } }
+    const rows=runs.map(run=>{ const solo=S.flSlot&&run.some(sl=>sl.port===S.flSlot)&&!(S.flGroup&&S.flGroup[0]===run[0].port);
+      if(run.length>1&&!S.flExp[run.key]&&!solo) return card(run[0],run);
+      return run.map((sl,i)=>card(sl,run.length>1&&i===0?{key:run.key,split:true}:null)).join(""); }).join("");
+    return `<div class="sg ${open?"open":""}"><div class="sg-in"><div class="mk-h sg-h">${slotIcon(t)}${esc(label)}s <span class="sg-n">${list.length}${esc(msTxt)}</span></div><div class="slot-grid">${rows}</div></div></div>`; }).join("")}</div>`; }
 async function renderShip(uid){
   if(!S.flLoad||S.flLoad.uid!==uid) $("fl-panel").innerHTML=qLoader("Loading the ship's components…");
   const r=await api().fleet_loadout(uid); if(S.flSel!==uid) return;
@@ -1405,14 +1426,16 @@ async function renderShip(uid){
     [{label:"Beds",value:vd.beds||null},{label:"Medical beds",value:vd.medical_beds||null},
      ...SHIP_STATS.filter(([k])=>st[k]!=null&&st[k]!==""&&st[k]!==0).map(statOf)]):"";
   const groups={}; for(const sl of r.slots) (groups[sl.label]=groups[sl.label]||[]).push(sl);
-  const card=sl=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
+  const card=(sl,grp)=>{ const k=KEY_FOR[sl.type], stats=sl.fitted?(sl.fitted_stats||{}):(sl.stock?.stats||{}), grade=sl.fitted?sl.fitted_grade:sl.stock?.grade,
       maker=sl.fitted?sl.fitted_maker:sl.stock?.maker, val=k&&stats[k], stockVal=k&&sl.stock?.stats?.[k], open=S.flSlot===sl.port;
     // One row per slot: size and grade, the part and its maker, its key number, and Change
+    const many=grp&&grp.length>1, ports=many?esc(JSON.stringify(grp.map(x=>x.port))):"";
     return `<div class="slot ${sl.fitted?"fit":""} ${open?"open":""}">
       <div class="top"><span class="sz" title="Size ${esc(sl.size??"?")}">S${esc(sl.size??"?")}</span><span class="gr" title="${grade?`Grade ${esc(grade)}`:"No grade"}">${esc(grade||"–")}</span>
-        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${sl.rack_name?` · on ${esc(sl.rack_name)}`:sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.type==="Shield"?shRegen(stats):""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
+        <div class="nm"><b title="${esc(sl.fitted||sl.stock?.name||"")}">${esc(sl.fitted||sl.stock?.name||"Empty")}</b><span>${esc(maker||"")}${many?"":sl.rack_name?` · on ${esc(sl.rack_name)}`:sl.where?` · ${esc(sl.where)}`:""}${stats.em!=null?` · EM ${fmtBig(stats.em)}`:""}${qdTimes(stats)}${sl.type==="Shield"?shRegen(stats):""}${sl.fitted?` · <em class="swap">swapped from ${esc(sl.stock?.name||"none")}</em>`:""}</span></div>
         ${val?`<div class="val"><b>${ITEM_STAT[k][1](val,stats)}${sl.fitted&&stockVal&&k!=="missiles"?deltaTxt(val-stockVal,ITEM_STAT[k][1]):""}</b><span>${ITEM_STAT[k][0]}</span></div>`:`<div class="val"></div>`}
-        <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}" title="Put the stock part back">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}" data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}">${open?"Close":"Change"}</button></div></div>
+        ${many?`<button class="sg-qty" data-flexp="${esc(grp.key)}" title="${grp.length} identical ${esc(sl.label||"part")}s: show them one by one">×${grp.length}</button>`:grp?.split?`<button class="sg-qty less" data-flexp="${esc(grp.key)}" title="Show these as one row again">▴</button>`:`<span></span>`}
+        <div class="acts">${sl.fitted&&!String(sl.fitted).endsWith(" (stock)")?cartBtn({name:sl.fitted,kind:"component",source:r.ship.full}):""}${sl.fitted?`<button class="btn small ghost" data-flreset="${esc(sl.port)}"${many?` data-flports="${ports}"`:""} title="Put the stock part back${many?` in all ${grp.length}`:""}">Stock</button>`:""}<button class="btn small ${open?"primary":"ghost"}" data-flswap="${esc(sl.port)}"${many?` data-flports="${ports}"`:""} data-type="${esc(sl.type)}" data-size="${esc(sl.size??"")}" title="${many?`Change all ${grp.length} at once (or press ×${grp.length} to change them one by one)`:""}">${open?"Close":"Change"}</button></div></div>
       ${open?`<div class="opts" id="fl-opts">Loading components…</div>`:""}</div>`; };
   // The loadout picker, paint and module sit under the picture (they change what it shows); the ship's
   // name, numbers and power stay on the right
@@ -1433,9 +1456,7 @@ async function renderShip(uid){
           <button class="btn small ${S.flRec?.uid===uid?"primary":"ghost"}" data-flrec="${S.flRec?.uid===uid?"close":"open"}" title="The best parts for a role (Combat, Stealth, Long range, Balanced), shown before you change anything">✦ Recommended</button></div>`:""}</div></div>
     ${r.power?.pips_gen&&S.flPowerOpen?powerPanel(r):""}
     ${S.flRec?.uid===uid?recPanel(r):""}
-    <div class="slot-groups">${Object.entries(groups).map(([label,list])=>{ const wide=list.some(sl=>sl.port===S.flSlot)?"open":list.length>2?"many":"";
-      const ms=list[0].type==="Missile"&&r.missiles, msTxt=ms?` · ${Object.entries(ms.by_size).sort((a,b)=>b[0]-a[0]).map(([z,n])=>`${n} × S${z}`).join(", ")}${ms.loaded<ms.slots?` · ${ms.slots-ms.loaded} empty`:""}`:"";
-      return `<div class="sg ${wide}"><div class="mk-h sg-h">${slotIcon(list[0].type)}${esc(label)}s <span class="muted" style="text-transform:none;letter-spacing:0">${list.length}${esc(msTxt)}</span></div><div class="slot-grid">${list.map(card).join("")}</div></div>`; }).join("")}</div>
+    ${slotGroupsHtml(r,groups,card)}
     ${bare&&vd?`<div class="fl-spec">${vehSpecHtml(vd,null)}</div><div class="muted" style="font-size:12px;margin:4px 2px 10px">This vehicle has no components to change out.</div>`:""}
     <div class="uex-credit">${bare&&vd?`${vd.wiki?"Specs from the Star Citizen Wiki (api.star-citizen.wiki)":"The Star Citizen Wiki has no record for this vehicle"}; roles from UEX.`:`EM and IR are Quantum's estimates from each part's signature and how much power it gets. Data: game files${r.game_data?` (${esc(String(r.game_data).slice(0,10))})`:""}, Star Citizen Wiki, UEX.`}</div>`;
   if(S.flSlot){ const b=$("fl-panel").querySelector(`[data-flswap="${CSS.escape(S.flSlot)}"]`); if(b) loadSlotOptions(b.dataset.type,b.dataset.size);
@@ -1682,7 +1703,9 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-flrecapply]")){ const R=S.flRec; const x=await api().fleet_recommend(S.flSel,R.role,true); if(!x.ok) return toast(x.error);
     toast(`Saved as "${x.name}" and showing it`); S.flRec=null; S.flLoad=null; return renderShip(S.flSel); }
   const rt=e.target.closest("[data-flretry]"); if(rt) return loadSlotOptions(rt.dataset.type,rt.dataset.size);
-  const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
+  const ex=e.target.closest("[data-flexp]"); if(ex){ S.flExp=S.flExp||{}; S.flExp[ex.dataset.flexp]=!S.flExp[ex.dataset.flexp]; return renderShip(S.flSel); }
+  const sw=e.target.closest("[data-flswap]"); if(sw){ S.flSlot=S.flSlot===sw.dataset.flswap?null:sw.dataset.flswap; S.flGroup=S.flSlot&&sw.dataset.flports?JSON.parse(sw.dataset.flports):null;
+    S.flOpts=null; S.flQuery=""; S.flCmp=null; S.flScroll=!!S.flSlot; return renderShip(S.flSel); }
   const lo=e.target.closest("[data-lo]"); if(lo) return loadoutAct(lo);
   const ll=e.target.closest("[data-flload]"); if(ll){ if(ll.dataset.flload===S.flLoad?.loadouts?.active) return;
     const r=await api().fleet_loadout_switch(S.flSel,ll.dataset.flload); if(!r.ok) return toast(r.error); S.flSlot=null; S.flOpts=null; S.flLoMode=null; return renderShip(S.flSel); }
@@ -1693,7 +1716,9 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   const fill=e.target.closest("[data-flfill]"); if(fill){ const sl=S.flLoad?.slots.find(x=>x.port===S.flSlot); if(!sl?.rack) return;
     const r=await api().fleet_fill_rack(S.flSel,sl.rack,fill.dataset.flfill,fill.dataset.uuid||null); if(!r.ok) return toast(r.error);
     toast(`Fitted ${fill.dataset.flfill} × ${r.count}`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
-  const fit=e.target.closest("[data-flfit]"); if(fit){ await api().fleet_set_slot(S.flSel,S.flSlot,fit.dataset.flfit,fit.dataset.uuid||null); toast(`Fitted ${fit.dataset.flfit}`); S.flSlot=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
+  const fit=e.target.closest("[data-flfit]"); if(fit){ const ports=S.flGroup&&S.flGroup[0]===S.flSlot?S.flGroup:[S.flSlot];
+    for(const p of ports){ const x=await api().fleet_set_slot(S.flSel,p,fit.dataset.flfit,fit.dataset.uuid||null); if(x&&x.ok===false){ toast(x.error); break; } }
+    toast(ports.length>1?`Fitted ${fit.dataset.flfit} × ${ports.length}`:`Fitted ${fit.dataset.flfit}`); S.flSlot=null; S.flGroup=null; S.flOpts=null; S.flCmp=null; return renderFleet(); }
   const cm=e.target.closest("[data-flcmp]"); if(cm&&!e.target.closest("a,[data-open]")){ S.flCmp=S.flCmp===cm.dataset.flcmp&&!e.target.closest("button")?null:cm.dataset.flcmp; return renderSlotOptions(); }
   const po=e.target.closest("[data-poff]"); if(po) return toast(po.dataset.poff==="q"?"The quantum drive only takes power in NAV mode. Switch to Travel · NAV first.":"Weapons and shields take no power in NAV mode. Switch to Combat · SCM first.");
   const pip=e.target.closest("[data-ppip]"); if(pip){ const sl=[...S.flLoad.slots,...(S.flLoad.fixed||[])].find(x=>x.port===pip.dataset.ppip), n=+pip.dataset.n;
@@ -1707,7 +1732,7 @@ $("fl-panel").onclick=async e=>{ if(await tradeClick(e)) return;
   if(e.target.closest("[data-coolauto]")){ await api().fleet_set_power(S.flSel,null,null,"auto"); return renderShip(S.flSel); }
   if(e.target.closest("[data-flshop]")){ const r=await api().shop_add_loadout(S.flSel); if(!r.ok) return toast(r.error); setCartCount(r.left);
     toast(`${plural(r.added,"part")} added to your cart · ${plural(r.left,"item")} in it. Open Cart to see the route`); return; }
-  const rs=e.target.closest("[data-flreset]"); if(rs){ await api().fleet_set_slot(S.flSel,rs.dataset.flreset,null); return renderFleet(); } };
+  const rs=e.target.closest("[data-flreset]"); if(rs){ for(const p of rs.dataset.flports?JSON.parse(rs.dataset.flports):[rs.dataset.flreset]) await api().fleet_set_slot(S.flSel,p,null); return renderFleet(); } };
 
 // ---- Trade routes: details panel, and your own runs tracked start to finish
 const TRADE_DISCLAIMER=`<div class="disclaim"><b>Estimates only.</b> Profits and ROI come from prices other players reported to UEX; prices and stock change all the time. Check the terminal before you buy.</div>`;
