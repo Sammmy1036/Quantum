@@ -44,7 +44,7 @@ class MapMixin:
             fix_mine = {n for n, e in gateways.load_learned(PLACES_PATH).items() if e.get("fix")}
             locs = [{"name": l.name, "kind": l.kind, "pos": l.pos, "body": l.body, "pad": l.pad,
                      "notes": l.notes, "source": l.source, "system": l.system, "qt": l.qt,
-                     "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category),
+                     "pinned": l.pinned, "created": l.created, "type": classify(l.name, l.category), "icon": l.icon,
                      # "to" only on the jump points themselves, so the UI doesn't treat the gateway
                      # station as a wormhole; the station gets "gate_to" and its jump point's name.
                      "to": gateways.leads_to(l.name) if l.name in gateways.JUMP_POINTS
@@ -153,7 +153,12 @@ class MapMixin:
             self._spot_now = (spot, spot_at, how)
             # Entering a city's zone or talking to its traffic control happens 10-15 km out: while telemetry still has
             # you flying (a live dead-reckoned estimate), that's where you are, not on the spaceport already.
-            if spot and (not p or spot_at > self._player_t) and not self._estimate_beats_log(how, t):
+            # Once the log's place has taken over for this arrival it keeps it: hovering and setting down, telemetry's
+            # speed goes over and under the "flying" mark, and you flipped between the place and your last
+            # /showlocation many km back, the map zooming in and out on every flip as it re-framed you.
+            won = getattr(self, "_spot_won", None) == (spot, spot_at)
+            if spot and (not p or spot_at > self._player_t) and (won or not self._estimate_beats_log(how, t)):
+                self._spot_won = (spot, spot_at)
                 L = self._db.locations[spot]
                 p, psys, ptime, approx = self._db.global_pos(L, t), L.system, t, L.name
             # The log says you're in another system since then (you went through a gateway): you're at
@@ -622,7 +627,9 @@ class MapMixin:
         """Readings the server hasn't got yet (only this game build's: an older one could be out of date)."""
         build = self._game_build()
         waiting = self._settings.get("breath_unsent") or {}
-        stale = [k for k, e in waiting.items() if build and str(e.get("build")) != str(build)]
+        from planner.atmosphere import CONFIRMED
+        stale = [k for k, e in waiting.items() if (build and str(e.get("build")) != str(build))
+                 or (k in CONFIRMED and bool(e.get("breathable")) != CONFIRMED[k])]     # a glitch reading: not sent
         for k in stale:
             waiting.pop(k, None)
         if stale:
@@ -798,14 +805,15 @@ class MapMixin:
                                  if self._db.locations[a].system != self._db.locations[b].system)}
 
     # ------------------------------------------------------------ waypoints & places
-    def save_waypoint(self, name, notes="", pinned=True, pad="unknown"):
+    def save_waypoint(self, name, notes="", pinned=True, pad="unknown", icon=""):
         with self._lock:
             name = (name or "").strip()
             if not name:
                 return {"ok": False, "error": "Give the waypoint a name"}
             if not self._player:
                 return {"ok": False, "error": "No position yet. Type /showlocation in game chat first"}
-            loc = self._db.capture(name, self._player, self._player_t, self._player_sys, pad, notes, pinned)
+            loc = self._db.capture(name, self._player, self._player_t, self._player_sys, pad, notes, pinned,
+                                   str(icon or "")[:80])
             self._db_changed()
             return {"ok": True, "name": loc.name, "body": loc.body}
 

@@ -1,12 +1,5 @@
 {
  "bodies": {
-  "Hurston": {
-   "breathable": false,
-   "at": 1795651812.9701002,
-   "pressure": 0.0,
-   "temp": 21.0,
-   "alt_m": 856
-  },
   "Ita": {
    "breathable": false,
    "at": 1795637561.1499057,
@@ -112,12 +105,6 @@
    "build": "13220821",
    "reporters": 1,
    "at": 1795649896
-  },
-  "Hurston": {
-   "breathable": false,
-   "build": "13220821",
-   "reporters": 1,
-   "at": 1795651813
   }
  }
 }

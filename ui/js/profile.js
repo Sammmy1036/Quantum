@@ -1133,13 +1133,14 @@ function renderCapture(){ const p=S.live?.player, el=$("cap-pos");
 function renderWaypoints(force){
   const t=now(); const wps=S.locs.filter(L=>L.source==="user").sort((a,b)=>(b.pinned-a.pinned)||(b.created-a.created));
   $("c-wp").textContent=wps.length;
-  const key=JSON.stringify([wps.map(w=>[w.name,w.pinned,w.body]),S.live?.guide?.name,S.editing,Math.round((S.live?.player?.t||0))]);
+  const key=JSON.stringify([wps.map(w=>[w.name,w.pinned,w.body,w.icon]),S.live?.guide?.name,S.editing,Math.round((S.live?.player?.t||0))]);
   if(!force && key===S.wpKey) return; S.wpKey=key;
   const guide=S.live?.guide?.name;
   $("wp-list").innerHTML = wps.length ? wps.map(L=>{ const from=distFromYou(globalPos(L,t),L.system);
     const where=L.body?`${L.body}${L.system!==S.system?" · "+L.system:""}`:`Space, ${L.system}`;
     const nameHtml = S.editing===L.name ? `<input class="field rename" value="${esc(L.name)}" data-old="${esc(L.name)}">` : `<div class="n" title="${esc(L.name)}">${esc(L.name)}</div>`;
     return `<div class="wp" data-name="${esc(L.name)}"><button class="star ${L.pinned?"on":""}" title="${L.pinned?"Unpin from map":"Pin on map"}" aria-label="Pin">${L.pinned?"★":"☆"}</button>
+      <button class="wp-ic" data-a="icon" title="Change its icon" aria-label="Change its icon">${iconImg(L.icon||"game:nav_destination","#9dff7a","")}</button>
       <div style="min-width:0">${nameHtml}<div class="m">${esc(where)}${from!=null?` · ${fmtDist(from)} away`:""}${L.notes?` · ${esc(L.notes)}`:""}</div></div>
       <div class="acts">${guide===L.name?`<button class="btn small" data-a="unguide">Stop</button>`:`<button class="btn small go" data-a="guide">Guide</button>`}
         <button class="iconbtn" data-a="route" title="Add to route">+</button><button class="iconbtn" data-a="share" title="Share with friends" style="color:var(--ink-2)">⇪</button><button class="iconbtn" data-a="rename" title="Rename" style="color:var(--ink-2)">✎</button></div></div>`; }).join("")
@@ -1151,16 +1152,19 @@ function renderWaypoints(force){
 $("wp-list").onclick=async e=>{ const row=e.target.closest(".wp"); if(!row) return; const n=row.dataset.name, L=S.locMap[n];
   if(e.target.classList.contains("star")){ await api().set_pinned(n,!L.pinned); await poll(); return; }
   if(e.target.classList.contains("n")){ select({kind:"loc",name:n}); focusLoc(n,true); return; }
-  const a=e.target.dataset?.a; if(!a) return;
+  const a=e.target.closest("[data-a]")?.dataset.a; if(!a) return;
   if(a==="guide"){ await api().set_guide(n); await poll(); select({kind:"loc",name:n}); setFollow(true); followNow(); toast(`Guiding you to ${n}`); }
   if(a==="unguide"){ await api().set_guide(null); await poll(); }
   if(a==="route") addStops([n]);
   if(a==="rename"){ S.editing=n; renderWaypoints(true); }
-  if(a==="share") wpShareFriends(e.target,n); };
+  if(a==="share") wpShareFriends(e.target,n);
+  if(a==="icon") wpChangeIcon(n); };
+async function wpChangeIcon(n){ const L=S.locMap[n]; if(!L) return; const id=await pickIcon(L.icon||""); if(id===null) return;
+  await api().update_location(n,null,null,id); L.icon=id; await poll(); renderWaypoints(true); toast(id?"Icon changed":"Back to the standard pin"); }
 // Right-click a waypoint: a small menu with Delete (asks once), Rename and Add to route
 function wpMenu(e,n){ e.preventDefault(); document.querySelector(".wp-ctx")?.remove();
   const m=document.createElement("div"); m.className="wp-ctx"; m.setAttribute("role","menu");
-  m.innerHTML=`<div class="h">${esc(n)}</div><button data-m="route">Add to route</button><button data-m="share">Share with friends</button><button data-m="rename">Rename</button><button data-m="delete" class="danger">Delete waypoint</button>`;
+  m.innerHTML=`<div class="h">${esc(n)}</div><button data-m="route">Add to route</button><button data-m="share">Share with friends</button><button data-m="rename">Rename</button><button data-m="icon">Change icon</button><button data-m="delete" class="danger">Delete waypoint</button>`;
   document.body.appendChild(m); const r=m.getBoundingClientRect();
   m.style.left=Math.min(e.clientX,innerWidth-r.width-6)+"px"; m.style.top=Math.min(e.clientY,innerHeight-r.height-6)+"px";
   const close=()=>{ m.remove(); removeEventListener("mousedown",away,true); removeEventListener("keydown",esc_,true); };
@@ -1169,12 +1173,17 @@ function wpMenu(e,n){ e.preventDefault(); document.querySelector(".wp-ctx")?.rem
   m.onclick=async ev=>{ const b=ev.target.closest("button"); if(!b) return; const k=b.dataset.m;
     if(k==="route"){ close(); addStops([n]); }
     if(k==="rename"){ close(); S.editing=n; renderWaypoints(true); }
+    if(k==="icon"){ close(); wpChangeIcon(n); }
     if(k==="share"){ close(); const row=document.querySelector(`.wp[data-name="${CSS.escape(n)}"]`); wpShareFriends(row||document.body,n); }
     if(k==="delete"){ if(b.dataset.arm!=="1"){ b.dataset.arm="1"; b.textContent="Sure? Click again to delete"; return; }
       close(); const r=await api().delete_location(n); if(r&&r.ok===false) return toast(r.error||"Couldn't delete it");
       if(S.selected?.kind==="loc"&&S.selected.name===n) select(null); await poll(); renderWaypoints(true); toast(`Deleted ${n}`); } }; }
 $("wp-list").addEventListener("contextmenu",e=>{ const row=e.target.closest(".wp"); if(!row||e.target.closest("input")) return; wpMenu(e,row.dataset.name); });
-$("btn-wp-save").onclick=async()=>{ const r=await api().save_waypoint($("wp-name").value,$("wp-notes").value,true);
+// the icon a new waypoint gets: the standard pin until you pick another (it stays picked for the next one)
+const wpIconBtn=()=>{ const b=$("wp-icon"); if(b) b.innerHTML=iconImg(S.wpIcon||"game:nav_destination","#9dff7a",""); };
+if($("wp-icon")){ $("wp-icon").onclick=async()=>{ const id=await pickIcon(S.wpIcon||""); if(id===null) return; S.wpIcon=id; wpIconBtn(); };
+  setTimeout(wpIconBtn,0); }
+$("btn-wp-save").onclick=async()=>{ const r=await api().save_waypoint($("wp-name").value,$("wp-notes").value,true,"unknown",S.wpIcon||"");
   if(!r.ok) return toast(r.error); toast(`Saved ${r.name}${r.body?" on "+r.body:""}`); $("wp-name").value=""; $("wp-notes").value=""; await poll(); renderWaypoints(true); };
 $("wp-name").onkeydown=e=>{ if(e.key==="Enter") $("btn-wp-save").click(); };
 

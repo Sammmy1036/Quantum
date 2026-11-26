@@ -941,7 +941,8 @@ function drawOverlay(t){
     S.picks.push({kind:"mission",name:m.o.location||m.o.label,x:q[0],y:q[1]-15,r:10,mission:m,depth:q[2]}); labelBoxes.push([q[0]-8,q[1]-25,q[0]+8,q[1]]); }
   // ---- waypoints (flags)
   for(const d of drawn){ if(!d.isWp) continue; const {L,q}=d; const wc=L.source==="mission"?"#ff5fa8":"#9dff7a", wz=L.name===guide?.name?24:19;   // the game's destination pin, its tip on the spot
-    if(!drawGameIcon(ctx,L.source==="mission"?"objective":"nav_destination",q[0],q[1]-wz/2,wz,wc)) flag(q[0],q[1],wc,L.name===guide?.name);
+    if(L.icon&&L.source==="user"){ if(!drawGameIcon(ctx,L.icon,q[0],q[1]-wz/2,wz,wc)) flag(q[0],q[1],wc,L.name===guide?.name); }   // its own icon, picked when saved
+    else if(!drawGameIcon(ctx,L.source==="mission"?"objective":"nav_destination",q[0],q[1]-wz/2,wz,wc)) flag(q[0],q[1],wc,L.name===guide?.name);
     S.picks.push({kind:"loc",name:L.name,x:q[0]+4,y:q[1]-12,r:12,depth:q[2]}); labelBoxes.push([q[0]-2,q[1]-20,q[0]+14,q[1]]); }
   // ---- route waypoint numbers
   const seen=new Set();
@@ -1119,10 +1120,15 @@ function attachToGround(){ if(S.focus.kind!=="point") return; const t=viewT(); l
 function grabGlobe(dx,dy){
   const sb=surfaceBodyOf(S.focus), B=S.bodyMap[sb]; if(!B) return; const t=viewT();
   const G=S.cam.target, C=B.center, R0=Math.max(d3(G,C),B.radius*0.5);
-  const k=Math.min(S.cam.dist,B.radius*3)*2*Math.tan(camera.fov*Math.PI/360)/H;   // metres per pixel at the ground
+  // How far the ground turns per pixel comes from how far the camera is from the planet itself (the size of a
+  // pixel on the ground facing you), not from the view's centre: that centre can sit off the ground the
+  // camera sees (on ArcCorp from a few Mm out it did), and the globe then spun many times faster than the mouse.
+  const cw=[O[0]+camera.position.x,O[1]+camera.position.y,O[2]+camera.position.z], hgt=Math.max(d3(cw,C)-B.radius,B.radius*0.02);
+  const px=Math.min(hgt,B.radius*3)*2*Math.tan(camera.fov*Math.PI/360)/H;         // metres per pixel on the ground
+  const k=px*R0/B.radius;                                                         // the same turn at the centre's height
   const rt=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0), up=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
   let mv=[-(rt.x*dx-up.x*dy)*k, -(rt.y*dx-up.y*dy)*k, -(rt.z*dx-up.z*dy)*k];
-  const L=Math.hypot(...mv), cap=R0*0.3; if(L>cap) mv=mv.map(v=>v*cap/L);           // no wild jumps
+  const L=Math.hypot(...mv), cap=R0*0.15; if(L>cap) mv=mv.map(v=>v*cap/L);          // no wild jumps
   const dir=norm3([G[0]+mv[0]-C[0],G[1]+mv[1]-C[1],G[2]+mv[2]-C[2]]);
   S.anim=null; S.focus={kind:"local",body:sb,pos:toLocal(B,[C[0]+dir[0]*R0,C[1]+dir[1]*R0,C[2]+dir[2]*R0],t)};
 }

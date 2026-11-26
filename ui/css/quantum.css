@@ -3018,4 +3018,21 @@ body[data-bs] .tabs:has(.tab[data-tab="route"]:not(.off-group)) .tab:not(.off-gr
 .cc-scr .snap-line{position:absolute;pointer-events:none;z-index:2}
 .cc-scr .snap-vx{left:50%;top:0;bottom:0;border-left:1.5px dashed #6fc2ff;transform:translateX(-.75px)}
 .cc-scr .snap-hy{top:50%;left:0;right:0;border-top:1.5px dashed #6fc2ff;transform:translateY(-.75px)}
+/* Waypoints' own icons: the button beside each one (and beside the name when saving), and the icon picker */
+.wp-ic{flex:none;width:28px;height:28px;padding:3px;border:1px solid var(--line-2);border-radius:6px;background:rgba(157,255,122,.06);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.wp-ic img{width:100%;height:100%;object-fit:contain}.wp-ic.big{width:34px;height:34px;margin-right:6px}
+.wp-ic:hover{border-color:#9dff7a}
+.wp{align-items:center}
+.icp-wrap{position:fixed;inset:0;z-index:9000;background:rgba(2,6,14,.6);display:flex;align-items:center;justify-content:center}
+.icp{width:min(760px,92vw);max-height:80vh;display:flex;flex-direction:column;background:#0b1220;border:1px solid var(--line-2);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.icp-top{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line-2)}
+.icp-top input{flex:1}.icp-top .close{background:none;border:0;color:var(--ink-2);font-size:20px;cursor:pointer}
+.icp-body{overflow:auto;padding:6px 14px 14px}
+.icp-set{font:700 10.5px "Exo 2",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);margin:12px 0 6px}
+.icp-set span{color:var(--dim);letter-spacing:0}
+.icp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.icp-i{aspect-ratio:1;padding:7px;border:1px solid transparent;border-radius:8px;background:rgba(150,170,210,.06);cursor:pointer}
+.icp-i img{width:100%;height:100%;object-fit:contain}
+.icp-i:hover{border-color:rgba(160,180,220,.5)}.icp-i.on{border-color:#4aa8ff;box-shadow:0 0 0 1px #4aa8ff inset}
+.ic-img{width:16px;height:16px;object-fit:contain;vertical-align:-3px}
 

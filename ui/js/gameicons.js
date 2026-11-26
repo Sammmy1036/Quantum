@@ -63,7 +63,8 @@ const GAME_COLOR={
 function gameIcon(k,cls=""){ const g=GAME_ICONS[k]; if(g) return `<svg class="gi ofc ${cls}" viewBox="${g[0]}" aria-hidden="true">${g[1]}</svg>`;
   const c=GAME_COLOR[k]; return c?`<svg class="gi gi-color ${cls}" viewBox="${c[0]}" aria-hidden="true">${c[1]}</svg>`:""; }
 // "ship:<key>": a ship's own icon (shipicons.js), drawn like the rest
-const gameIconUrl=(k,color="#fff")=>{ const g=GAME_ICONS[k]||GAME_COLOR[k]||(String(k).startsWith("ship:")&&typeof SHIP_ICONS!=="undefined"?SHIP_ICONS[k.slice(5)]:null); if(!g) return null;
+const gameIconUrl=(k,color="#fff")=>{ if(String(k).includes(":")&&!String(k).startsWith("ship:")&&typeof iconUrl==="function") return iconUrl(k,color);   // any app icon (iconlib.js): a waypoint's own
+  const g=GAME_ICONS[k]||GAME_COLOR[k]||(String(k).startsWith("ship:")&&typeof SHIP_ICONS!=="undefined"?SHIP_ICONS[k.slice(5)]:null); if(!g) return null;
   return "data:image/svg+xml,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="${g[0]}"${GAME_COLOR[k]?"":` fill="${color}"`}>${g[1]}</svg>`); };
 // The symbol a place gets on the map and its card: by name first (spaceports, Wikelo's emporiums), then by kind.
 // null: the map's own drawing for that kind (Lagrange points).
@@ -79,7 +80,7 @@ function gameIconCanvas(k,color,px){ px=Math.max(8,Math.round(px)); const key=k+
   if(_giOut.has(key)) return _giOut.get(key);
   let s=_giSrc.get(k);
   if(!s){ const url=gameIconUrl(k); if(!url){ _giOut.set(key,null); return null; }
-    s={img:new Image(),ok:null,tint:!GAME_COLOR[k]}; _giSrc.set(k,s);
+    s={img:new Image(),ok:null,tint:!GAME_COLOR[k]&&!(typeof iconById==="function"&&iconById(k)?.mode==="own")}; _giSrc.set(k,s);
     s.img.onload=()=>{ s.ok=true; }; s.img.onerror=()=>{ s.ok=false; }; s.img.src=url; }
   if(s.ok===null) return null;                                          // still loading: try again next frame
   if(!s.ok){ _giOut.set(key,null); return null; }

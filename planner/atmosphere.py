@@ -83,6 +83,8 @@ CONFIRMED = {"Hurston": True, "Bloom": True, "ArcCorp": True}   # ArcCorp: Area1
 
 STALE_S = 15          # a telemetry reading older than this isn't "now"
 AWAY_M = 1500         # this far from every known place on the body, you're outside, not in a building
+HOLD_S = 8            # the same answer this long, on foot, before it counts: spawning, a lift or a loading
+                      # screen can say "not breathable" for a moment (Lorville once came out Not breathable)
 
 
 class Atmosphere:
@@ -105,6 +107,13 @@ class Atmosphere:
             self.community = d.get("community", {}) or {}
         except Exception:
             self.seen = {}
+        self._pend = None                                 # (body, answer, since): a reading not held long enough yet
+        # A reading that says a hand-confirmed body is the opposite (Hurston "not breathable") was a glitch: drop it
+        bad = [b for b, r in self.seen.items() if b in CONFIRMED and bool(r.get("breathable")) != CONFIRMED[b]]
+        for b in bad:
+            del self.seen[b]
+        if bad:
+            self._save()
 
     def _save(self):
         try:
@@ -136,13 +145,20 @@ class Atmosphere:
             return False
         from planner.nav_core import dist
         ok = bool(actor["breathable"])
+        now = time.time()
+        if not self._pend or self._pend[0] != body or self._pend[1] != ok or now - self._pend[3] > STALE_S:
+            self._pend = [body, ok, now, now]             # a new answer: it has to hold for HOLD_S first
+            return False
+        self._pend[3] = now
+        if now - self._pend[2] < HOLD_S:
+            return False
+        near = any(l.body == body and l.kind == "surface" and l.pos is not None and dist(tuple(l.pos), tuple(local)) < AWAY_M
+                   for l in db.locations.values())
         # By a building you may be inside it, breathing its air: a "breathable" reading there could be the room's.
-        # "Not breathable" can't be a room's, so it counts anywhere you're on foot (outside an outpost, say).
-        if ok:
-            near = any(l.body == body and l.kind == "surface" and l.pos is not None and dist(tuple(l.pos), tuple(local)) < AWAY_M
-                       for l in db.locations.values())
-            if near:
-                return False
+        # "Not breathable" can't be a room's, so it counts anywhere you're on foot (outside an outpost, say), except
+        # against a body players have confirmed breathable by hand: by a city that's a glitch, not the air.
+        if near and (ok or CONFIRMED.get(body) is True):
+            return False
         b = db.bodies[body]
         alt = (sum(c * c for c in local) ** 0.5) - b.radius_m
         if alt > b.radius_m * 0.5:

@@ -117,7 +117,7 @@
       <div class="capture">
         <h4>Save this spot</h4>
         <div class="pos" id="cap-pos">Type <b>/showlocation</b> in game chat, then save.</div>
-        <div class="row" style="margin-bottom:6px"><input class="field" id="wp-name" placeholder="Name, like “Quantanium rock”" style="flex:1"></div>
+        <div class="row" style="margin-bottom:6px"><button type="button" class="wp-ic big" id="wp-icon" title="Choose its icon" aria-label="Choose its icon"></button><input class="field" id="wp-name" placeholder="Name, like “Quantanium rock”" style="flex:1"></div>
         <div class="row"><input class="field" id="wp-notes" placeholder="Notes (optional)" style="flex:1"><button class="btn primary" id="btn-wp-save">Save</button></div>
       </div>
       <div id="wp-list"></div>
@@ -318,6 +318,7 @@
 <script src="js/missions.js"></script>
 <script src="js/jobs.js"></script>
 <script src="js/onyx.js"></script>
+<script src="js/iconlib.js"></script>
 <script src="js/main.js"></script>
 <!-- The self-running feature tour, for screen recording: Ctrl+Shift+D, or launch with --demo -->
 <!-- 3D cities (optional). city3d-core.js is the shared engine and goes first; then one file per city.

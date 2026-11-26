@@ -8,7 +8,12 @@ async function poll(){
   const pl=live.player, step=pl?.body?Math.max(5000,(S.bodyMap?.[pl.body]?.radius||1e6)*0.15):2e7;
   const moved=pl?(pl.local||pl.pos||[]).map(v=>Math.round(v/step)).join(","):"";
   const fk=JSON.stringify([pl?.fix_t, pl?.approx, pl?.system, pl?.body, live.travel?.state, live.travel?.place, live.route?.[0], live.guide?.name, (live.route?.length||live.guide)?moved:""]);
-  if(fk!==S.followKey){ const first=S.followKey===undefined; S.followKey=fk; if(!first && S.follow && live.player) setTimeout(followNow,50); }
+  // At most once every 8 s unless it's a fresh /showlocation: if something flips back and forth (where the log puts
+  // you while you hover over a landing spot), the map doesn't keep zooming in and out with it.
+  if(fk!==S.followKey){ const first=S.followKey===undefined, fresh=pl?.fix_t!==S.followFix; S.followKey=fk; S.followFix=pl?.fix_t;
+    if(!first && S.follow && live.player){ const wait=fresh?0:8000-(performance.now()-(S.followAt||0));
+      clearTimeout(S.followT);                    // held back: the latest one still happens once the 8 s are up
+      S.followT=setTimeout(()=>{ S.followAt=performance.now(); if(S.follow&&S.live?.player) followNow(); },Math.max(50,wait)); } }
   // A fresh /showlocation while the Contracts tab is open recentres the map on you (and your next stop, if
   // there's a route), even when follow is off: it's how you check where you are against your objectives.
   { const fx=live.player?.fix_t||null; if(fx!==S.fixSeen){ const first=S.fixSeen===undefined; S.fixSeen=fx;
@@ -43,6 +48,7 @@ async function poll(){
   { const dj=live.datarunner?.job, js=live.datarunner?.job_state;      // a screenshot from the hotkey
     if(dj&&dj!==S.drJobSeen&&!S.drWaiting&&(js==="done"||js==="error")){ S.drJobSeen=dj;
       if(js==="error") api().dr_job().then(j=>toast(j.error||"The screenshot failed")); } }
+  try{ navIconSync(live); }catch(_){}                                   // the guide over the game: the icon of where it points
   fmSync(live);                                                         // Friend Map: its count, and the list while open
   // A price alert went off (api_watch.py): a note, and the watchlist and the tab's count catch up
   if(live.watch){ const wn=live.watch.note; if(wn&&wn.n!==S.paNoteN){ if(S.paNoteN!==undefined) toastLong(wn.text); S.paNoteN=wn.n; qForget("watch");

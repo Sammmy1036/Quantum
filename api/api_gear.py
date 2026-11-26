@@ -496,7 +496,7 @@ class GearMixin:
         self._db_changed()
         return {"ok": True, "name": name}
 
-    def update_location(self, name, pad=None, notes=None):
+    def update_location(self, name, pad=None, notes=None, icon=None):
         with self._lock:
             loc = self._db.locations.get(name)
             if not loc:
@@ -509,6 +509,8 @@ class GearMixin:
                     self._community.post_pad(name, pad, self._dr_cfg().get("username"))
             if notes is not None:
                 loc.notes = notes
+            if icon is not None and loc.source == "user":         # a waypoint's own icon ("" = the standard pin)
+                loc.icon = str(icon)[:80]
             self._db.save()
             self._static_version += 1
             if loc.source == "user":

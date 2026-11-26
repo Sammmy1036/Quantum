@@ -400,6 +400,7 @@ class Location:
     pinned: bool = False
     category: str = ""
     created: float = 0.0
+    icon: str = ""            # a waypoint's own icon, picked when saving it (ui/js/iconlib.js ids, e.g. "game:cave")
 
 
 @dataclass
@@ -541,7 +542,7 @@ class NavDB:
         return hint if hint in SYSTEMS else (inside[0] if inside else "Stanton")
 
     def capture(self, name: str, pos: Vec, t: float, system: str, pad="unknown", notes="",
-                pinned=False) -> Location:
+                pinned=False, icon="") -> Location:
         """Save a /showlocation position. Inside a body's zone it is stored body-local,
         so it stays glued to the ground as the planet turns."""
         name = self.unique_name(name)
@@ -552,6 +553,7 @@ class NavDB:
         else:
             loc = Location(name, "space", pos, None, pad, notes, "user", system, pinned=pinned,
                            created=time.time())
+        loc.icon = icon or ""
         self.locations[name] = loc
         self.save()
         return loc

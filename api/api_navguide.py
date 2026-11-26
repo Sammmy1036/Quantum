@@ -15,6 +15,9 @@ from planner.nav_core import great_circle
 
 NAV_FIX_S = 120          # a /showlocation this recent still counts as where you are (landed, or barely moved)
 NAV_ARRIVED_M = 150      # this close: you're there, the guide goes away
+ATMO_FRAC = 0.1          # in the air: lower than a tenth of the planet's radius above it (the game's atmospheres
+                         # end about there: Daymar ~30 km, Hurston and microTech ~100 km). Higher up, at an orbital
+                         # marker or just out of a quantum jump, you're still in space and the guide waits
 
 
 class NavGuideMixin:
@@ -43,9 +46,16 @@ class NavGuideMixin:
         tlat, tlon, talt = b.lat_lon_alt(tlocal)
         ground, heading = great_circle(plat, plon, tlat, tlon, b.radius_m)
         out = {"ground": round(ground), "heading": round(heading % 360, 1), "climb": round(talt - palt), "err": err, "how": how,
-               "ship": None, "turn": None}
+               "ship": None, "turn": None, "alt": round(palt), "in_air": palt < b.radius_m * ATMO_FRAC}
         tel = getattr(self, "_tel", None)
         v = (tel.state().get("vehicle") or {}) if tel is not None and tel.enabled else {}
+        # The game only sends your altitude once you're in a planet's atmosphere (none out in space): that, and
+        # only that, says you're in the air. The height rule above is for when telemetry has nothing to say.
+        out["tel_alt"] = v.get("altitude") if v.get("flight_data") else None
+        if out["tel_alt"] is not None or v.get("radar_alt") is not None:
+            out["in_air"] = bool(out["tel_alt"]) or bool(v.get("radar_alt"))
+        elif v.get("flight_data"):
+            out["in_air"] = False
         if v.get("heading") is not None and v.get("flight_data"):
             out["ship"] = round(float(v["heading"]) % 360, 1)
             out["turn"] = round(((heading - out["ship"] + 540) % 360) - 180, 1)     # + right, - left
@@ -79,8 +89,32 @@ class NavGuideMixin:
         return c
 
     def _nav_view(self):
-        """For get_live: the settings, whether it can work here, and whether it's showing."""
-        return {**self._nav_cfg(), "available": nav_overlay.AVAILABLE, "showing": bool(getattr(self, "_nav_showing", False))}
+        """For get_live: the settings, whether it can work here, whether it's showing, and where it points (the
+        page draws that place's icon and hands it over: nav_overlay_icon)."""
+        L = self._nav_target()
+        return {**self._nav_cfg(), "available": nav_overlay.AVAILABLE, "showing": bool(getattr(self, "_nav_showing", False)),
+                "target": L.name if L is not None else None, "has_icon": bool(L is not None and L.name in self._nav_icons_())}
+
+    def _nav_icons_(self):
+        if not hasattr(self, "_nav_icons"):
+            self._nav_icons = {}
+        return self._nav_icons
+
+    def nav_overlay_icon(self, name, data_url):
+        """The icon of the place the guide points to (its map symbol, or a waypoint's own), drawn white by the page
+        (the app's icons are SVG in the page): the guide shows it in its colour on the tape, ring or by the name."""
+        try:
+            import io
+            from PIL import Image
+            raw = base64.b64decode(str(data_url).split(",", 1)[1])
+            img = Image.open(io.BytesIO(raw)).convert("RGBA")
+            icons = self._nav_icons_()
+            if len(icons) > 40:
+                icons.clear()
+            icons[str(name)] = img
+            return {"ok": True}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def set_nav_overlay(self, prefs):
         """Settings > Navigation Guide Overlay: on/off, look (arrow / compass / tape), colour, size, position, opacity."""
@@ -155,10 +189,10 @@ class NavGuideMixin:
                     with self._lock:
                         L = self._nav_target()
                         nav = self._nav_from_here(L, now) if L is not None else None
-                    # only flying (a heading from the ship), over the place's planet or moon, and not there yet
-                    if nav and nav["turn"] is not None and nav["ground"] > NAV_ARRIVED_M:
+                    # only flying (a heading from the ship), in the air over the place's planet or moon, and not there yet
+                    if nav and nav["turn"] is not None and nav["in_air"] and nav["ground"] > NAV_ARRIVED_M:
                         info = {"name": L.name, "dist": nav["ground"], "turn": nav["turn"], "heading": nav["heading"],
-                                "ship": nav["ship"]}
+                                "ship": nav["ship"], "icon": self._nav_icons_().get(L.name)}
                 if info:
                     self._nav_guide.show(info, c["position"], None, c["size"], (c["x"], c["y"]), look)
                 else:
@@ -171,4 +205,4 @@ class NavGuideMixin:
                 except Exception:
                     pass
                 time.sleep(2)
-            time.sleep(0.2)
+            time.sleep(0.1)                               # new readings 10 times a second; the window eases between them

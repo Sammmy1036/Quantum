@@ -99,6 +99,7 @@ def render(info, font_dir, scale=1.0, h24=True, color="blue", style="full"):
 
 class CityClock:
     WCLASS, WTITLE, THREAD = "QuantumCityClock", "Quantum city clock", "city-clock"   # each overlay its own window
+    FRAME_S = 0.25           # how often a steady picture is looked at again (the guide turns with you: faster)
 
     def __init__(self, font_dir):
         self.font_dir = str(font_dir)
@@ -133,6 +134,9 @@ class CityClock:
             self._want = None
 
     # what's drawn: a subclass (the navigation guide) draws its own picture in the same kind of window
+    def _tick(self, want, dt):
+        return want                                        # the guide eases its arrow between readings here
+
     def _key(self, want, scale, h24, look):
         return (want.get("city"), want.get("body"), clock_text(want["hours"], h24), part_of_day(want["hours"]), round(scale, 2),
                 h24, look["color"], look["style"])
@@ -239,6 +243,7 @@ class CityClock:
             dt, last = now - last, now
             with self._lock:
                 want, position, h24, sz, xy, look = self._want, self.position, self.h24, SIZES.get(self.size, 1.0), self.xy, dict(self.look)
+            want = self._tick(want, dt)
             game = overlay._find_game()
             fg = u32.GetForegroundWindow()
             visible = bool(want and game and fg == game)
@@ -300,4 +305,4 @@ class CityClock:
                 last_top = now
                 if not (u32.GetWindowLongW(hwnd, -20) & 0x00000008):         # GWL_EXSTYLE, WS_EX_TOPMOST
                     u32.SetWindowPos(hwnd, wintypes.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0010)
-            time.sleep(1 / 30 if 0 < alpha < 255 else 0.25)
+            time.sleep(1 / 30 if 0 < alpha < 255 else self.FRAME_S)
