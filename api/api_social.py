@@ -10,8 +10,10 @@ WP_TOKEN = re.compile(r"\[qwp1:([A-Za-z0-9_-]{8,1800})\]")
 
 class SocialMixin:
     # ------------------------------------------------------------ social: friends and messages
-    # Signed in to a Quantum account, the app checks in with the server (GET /v1/social/state) every 20 s, or
-    # every 4 s while the Social section is open. That check-in is also what shows you online to your friends.
+    # Signed in to a Quantum account, the app checks in with the server (GET /v1/social/state) every SO_IDLE s
+    # (45; was 20), or every 4 s while the Social section is open. That check-in is also what shows you online to
+    # your friends, so the server's online window has to be longer than SO_IDLE (with room for one missed check-in).
+    SO_IDLE = 45
     def _social_call(self, path, body=None, timeout=10):
         return self._community.social(self._account_token(), path, body, timeout)
 
@@ -26,7 +28,7 @@ class SocialMixin:
                     so.update(state=None, top=None)
             except Exception:
                 watcher_mod.log_error("social")
-            so["wake"].wait(4 if fast else 20)
+            so["wake"].wait(4 if fast else self.SO_IDLE)
             so["wake"].clear()
 
     def _social_tick(self):

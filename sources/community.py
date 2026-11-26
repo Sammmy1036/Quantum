@@ -46,11 +46,14 @@ class Community:
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 out = json.loads(r.read().decode("utf-8"))
+            self.last_reply = time.time()            # the server answered: no separate health check needed for a while
         except urllib.error.HTTPError as e:
             try:
                 out = json.loads(e.read().decode("utf-8"))
             except Exception:
                 return {"status": f"http_{e.code}"}
+            if e.code < 500:
+                self.last_reply = time.time()
         if sess and isinstance(out, dict) and out.get("status") == "sign_in_needed":
             self._on_signed_out()                              # the server forgot this sign-in: get a new one
         if isinstance(out, dict) and out.get("status") == "unofficial_client":

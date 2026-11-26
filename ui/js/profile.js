@@ -744,11 +744,13 @@ const RS={items:[],on:0,type:null,more:0};
 const ROMAN={i:1,ii:2,iii:3,iv:4,v:5,vi:6,vii:7,viii:8,ix:9,x:10};
 const numerals=s=>s.replace(/([a-z]) (viii|vii|iii|ii|iv|vi|ix|i|v|x)(?![a-z0-9])/g,(m,a,r)=>`${a} ${ROMAN[r]}`);
 const rsMode=()=>$("rsearch").value.trim()?"search":"browse";
+// Lagrange points have no chip of their own: they're listed under Mining & clouds (their asteroid fields)
+const rsTypeIs=(L,t)=>L.type===t||(t==="field"&&L.type==="lpoint");
 const RS_RANK={city:0,station:1,outpost:2,jump:2,cave:3,wreck:3,poi:4,comm:4,field:5,lpoint:5,om:6};
 function rsLocItem(L,sc,{via=null,lp=null,onBody=false}={}){
   return {kind:"loc",name:L.name,via,sc,r:L.source==="user"?-0.5:(RS_RANK[L.type]??4),sys:L.system,
     type:L.source==="user"?"wp":L.source==="mission"?"mission":L.type,
-    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`}; }
+    sub:`${L.unplaced?"Position not known yet · ":""}${lp?"At "+lp+" · ":""}${L.mergedInto?"QT via "+L.mergedInto+" · ":""}${via?"Has "+via+" · ":""}${L.source==="user"?"Your waypoint":L.source==="mission"?"Contract stop":TYPES[L.type]?.one||"Place"} · ${L.body||"Space"}${L.system!==S.system?", "+L.system:""}`}; }
 function rsCandidates(q){
   q=q.trim().toLowerCase(); if(!q) return [];
   const score0=(x,q)=>{ if(x===q) return 0; if(x.startsWith(q)) return 1;
@@ -760,9 +762,13 @@ function rsCandidates(q){
   const score=n=>{ const x=n.toLowerCase(); return Math.min(score0(x,q), qn!==q||/\d/.test(q)?score0(numerals(x),qn):9); };
   const out=[];
   if(!RS.type) for(const b of S.bodies){ if(b.kind==="star") continue; const sc=score(b.name); if(sc<9) out.push({kind:"body",name:b.name,sub:`${kindLabel(b)} · ${b.system}`,sc,r:-1,sys:b.system}); }
-  for(const L of S.locs){ if(L.mergedInto) continue;                                  // found as its station
-    if(RS.type&&L.type!==RS.type) continue; if(L.type==="om"&&!q.startsWith("om")&&RS.type!=="om") continue;
-    let sc=score(L.name), lp=null, onBody=false; if(L.atLpoint){ const s2=score(L.atLpoint); if(s2<sc){ sc=s2; lp=L.atLpoint; } }
+  // A Lagrange point folded into its station (L.mergedInto) is still its own result: it's the asteroid field and
+  // gas pockets around the station (mining), so "HUR-L2" lists HUR-L2 itself as well as the station there
+  for(const L of S.locs){
+    if(RS.type&&!rsTypeIs(L,RS.type)) continue; if(L.type==="om"&&!q.startsWith("om")&&RS.type!=="om") continue;
+    let sc=score(L.name), lp=null, onBody=false;
+    if(L.type==="lpoint"&&/^P\d-L\d$/.test(L.name)) sc=Math.min(sc,score(L.name.replace(/^P/,"PYR")));   // "PYR6-L2" finds P6-L2 (the wiki's name)
+    if(L.atLpoint){ const s2=score(L.atLpoint); if(s2<sc){ sc=s2; lp=L.atLpoint; } }
     // "commodity"/"trading" still finds places whose freight elevator or loading dock is their trade point
     let via=null; if(sc>=9&&q.length>=3&&L.amen){ via=L.amen.find(a=>a.toLowerCase().includes(q))
       ||("commodity trading".includes(q)||q.startsWith("commod")?L.amen.find(a=>/freight elevator|loading dock/i.test(a)):null); if(via) sc=4; }
@@ -774,7 +780,7 @@ function rsCandidates(q){
 }
 // Browse: every place in the system you're looking at (orbital markers only under their own chip)
 function rsBrowse(){
-  return S.locs.filter(L=>L.source==="db"&&!L.mergedInto&&L.system===S.system&&(RS.type?L.type===RS.type:L.type!=="om"))
+  return S.locs.filter(L=>L.source==="db"&&L.system===S.system&&(RS.type?rsTypeIs(L,RS.type):L.type!=="om"))
     .map(L=>rsLocItem(L,0)).sort((a,b)=>a.r-b.r||a.name.localeCompare(b.name)); }
 // ---- Search by what you need: "refinery", "clinic", "hungry", "rent", "armor", "missiles", "fuel", "hydrogen"…
 // lists the places that have it, nearest to you first, above the usual name matches. What a place has comes

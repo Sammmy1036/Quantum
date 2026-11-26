@@ -125,7 +125,8 @@ document.addEventListener("change",async e=>{
 async function wlOpenListing(id){ S.wlFrom={tab:"pm-items"}; const t=document.querySelector('.tab[data-tab="pm-items"]'); if(!t) return; t.click(); pmOpen(id); }
 // "← Back to wish list" on the page you opened from it (a ship, part, piece of gear or Market listing)
 function wlBackBtn(tab,small){ return (S.wlFrom&&S.wlFrom.tab===tab?`<button class="btn ${small?"small ":""}primary" data-wlback="1">← Back to wish list</button>`:"")
-  +(typeof upBackBtn==="function"?upBackBtn(tab,small):""); }        // (and back to someone's profile card)
+  +(typeof upBackBtn==="function"?upBackBtn(tab,small):"")          // (and back to someone's profile card)
+  +(typeof bpBackBtn==="function"?bpBackBtn(tab,small):""); }        // (and back to the blueprint that needs it)
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-wlback]"); if(!b) return; e.stopPropagation(); e.preventDefault();
   S.wlFrom=null; document.querySelector('.tab[data-tab="wishlist"]')?.click(); },true);
 // Going somewhere yourself (a tab or the rail) forgets it; Quantum's own clicks (opening from the list) don't

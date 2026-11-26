@@ -162,6 +162,8 @@ class Api(api_contracts.ContractsMixin,
         self._files = gamefiles.GameFiles(HERE / "asset_cache" / "data", HERE, RES)
         self._missions.files = self._files.contracts
         self._gear.files = self._files.gear
+        self._gear.bp_files = self._files.blueprints
+        self._gear.contracts = self._files.contracts
         self._wikiapi.files = self._files.vehicles
         self._wikiapi.part_info = lambda uid: self._game.find(uid, None, None)
         self._store = pledgestore.Store(HERE / "uex_cache")  # the RSI pledge store's gear and packs (pledge-only items)

@@ -96,7 +96,7 @@ async function renderMarketPanel(){
   // A raw resource (an ore, a gem, something harvested) is about where to find it and how to gather it:
   // that comes first. A processed commodity is about trading: buy and sell first, where it comes from after.
   const rawFirst=!!(c.raw||(c.harvestable&&!r.buy.length)||(c.mineral&&!r.buy.length&&!r.sell.length));
-  $("mk-panel").innerHTML=`<button class="btn" data-act="mkall" style="margin-bottom:14px">← All commodities</button>
+  $("mk-panel").innerHTML=`<div class="row" style="gap:8px;margin-bottom:14px">${typeof bpBackBtn==="function"?bpBackBtn("market"):""}<button class="btn" data-act="mkall">← All commodities</button></div>
     <div class="mkp-head"><div class="mkp-img" id="mkp-img">${qPic()}</div>
     <div class="hd-main"><div class="hd-title"><div><h2>${esc(c.name)}</h2><div class="sub">${esc(c.kind||"Commodity")}${c.raw?" · raw":""}${c.mineral?" · mineral":""}${c.harvestable?" · harvestable":""}${c.illegal?' · <span style="color:#ffb454">illegal</span>':""}${c.volatile?" · volatile in quantum":""}</div></div></div>
       ${(()=>{ const sp=r.buy[0]&&r.sell[0]?r.sell[0].price-r.buy[0].price:null, ab=avg(r.buy,"price"), av=avg(r.sell,"price");
@@ -157,11 +157,13 @@ document.addEventListener("click",e=>{ const a=e.target.closest("[data-vhopen]")
   document.querySelector('.tab[data-tab="vehicles"]')?.click();
   setTimeout(async()=>{ for(let k=0;k<40&&!S.veh;k++) await new Promise(r=>setTimeout(r,250)); if(!S.veh) return; S.vehDetail=String(id); renderVehicles(); },80); });
 // Open a commodity's page from anywhere (a resource a ship can mine, say)
-document.addEventListener("click",async e=>{ const a=e.target.closest("[data-mkopen]"); if(!a) return; const k=resKey(a.dataset.mkopen);
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-mkopen]"); if(a) mkOpen(a.dataset.mkopen); });
+// Opens Trade › Commodities on a commodity by name ("Agricium", "Quantanium (Raw)"): true when UEX lists it
+async function mkOpen(name){ const k=resKey(name);
   document.querySelector('.tab[data-tab="market"]')?.click();
-  for(let i=0;i<40&&!S.mk;i++) await new Promise(r=>setTimeout(r,250)); if(!S.mk) return;
-  const c=S.mk.find(x=>resKey(x.name)===k)||S.mk.find(x=>squash(x.name).startsWith(k)); if(!c) return toast(`${a.dataset.mkopen} isn't in UEX's commodity list`);
-  $("mk-search").value=c.name; S.mkSel=c; renderMarket(); });
+  for(let i=0;i<40&&!S.mk;i++) await new Promise(r=>setTimeout(r,250)); if(!S.mk) return false;
+  const c=S.mk.find(x=>resKey(x.name)===k)||S.mk.find(x=>squash(x.name).startsWith(k)); if(!c){ toast(`${name} isn't in UEX's commodity list`); return false; }
+  $("mk-search").value=c.name; S.mkSel=c; $("mk-panel").scrollTop=0; renderMarket(); return true; }
 async function mkSources(c){
   const box=()=>S.mkData?.c===c?$("mkp-src"):null;
   if(!S.mkSrc) S.mkSrc={};
@@ -182,6 +184,9 @@ async function mkSources(c){
         <div class="src-meta">${esc(b.system)}${b.caves?" · in caves":""}</div></div>`; }).join("")}</div>`:""}`; return; }
   const t=now()+(S.timeShift||0);
   // how far each place is from you (its own spot, or the planet's surface), so the list can go nearest first
+  // A Lagrange point is folded into the station built there (no QT marker of its own): the card's name opens the
+  // L-point (the field itself, on the map), while + and the distance use the station you quantum to
+  for(const x of r.sources){ const m=x.place&&!x.via&&S.locMap[x.place]?.mergedInto; if(m&&S.locMap[m]){ x.lp=x.place; x.via=m; x.place=m; } }
   for(const x of r.sources){ const Lc=x.place&&S.locMap[x.place], B=x.body&&S.bodyMap[x.body];
     let d=null; try{ d=Lc?.pos?distFromYou(globalPos(Lc,t),Lc.system):B?((v=>v==null?null:Math.max(0,v-B.radius))(distFromYou(B.center,B.system))):null; }catch(_){ d=null; }
     x.dist=d; }
@@ -194,12 +199,12 @@ async function mkSources(c){
   const col=m=>MK_METHOD_COLOR[m]||"var(--route-2)";
   const card=x=>{ const m=(x.methods||[])[0], inRoute=x.place&&S.live?.route?.includes(x.place);
     return `<div class="src-card" style="--c:${col(m)}">
-      <div class="src-top"><div class="src-nm">${x.place?`<a data-open="${esc(x.place)}">${esc(x.display||x.name)}</a>`:esc(x.display||x.name)}</div>
+      <div class="src-top"><div class="src-nm">${x.place?`<a data-open="${esc(x.lp||x.place)}">${esc(x.display||x.name)}</a>`:esc(x.display||x.name)}</div>
         <b class="src-pct" title="How likely a deposit here is this">${pct(x)}</b>
         ${x.place?`<button class="iconbtn ${inRoute?"added":""}" data-add="${esc(x.place)}" title="${inRoute?"In your route":`Add ${esc(x.place)} to your route`}">${inRoute?"✓":"+"}</button>`:""}</div>
       <div class="src-bar" aria-hidden="true"><i style="width:${Math.max(3,Math.round((x.chance||0)/top*100))}%"></i></div>
-      <div class="src-meta">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:""].filter(Boolean).join(" · "))}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}
-        ${x.body||x.place?`<a class="src-map" data-showbody="${esc(x.body||x.place)}" title="Show it on the map">Map</a>`:""}</div>
+      <div class="src-meta">${esc([x.type,x.parent&&x.parent!==x.system?`near ${x.parent}`:"",x.via?`QT to ${x.via}`:""].filter(Boolean).join(" · "))}${x.dist!=null?` · ${fmtDist(x.dist)} away`:""}
+        ${x.body||x.place?`<a class="src-map" data-showbody="${esc(x.body||x.lp||x.place)}" title="Show it on the map">Map</a>`:""}</div>
       <div class="src-tags">${(x.methods||[]).map(mm=>`<span><i style="background:${col(mm)}"></i>${esc(mm)}</span>`).join("")}${x.quality?`<span>Quality ${x.quality[0]}–${x.quality[1]}</span>`:""}</div></div>`; };
   // grouped by system (yours first), nearest or most likely first inside each
   const groups=[]; for(const x of L){ const k=x.system||"Elsewhere"; let g=groups.find(g=>g.k===k); if(!g) groups.push(g={k,L:[]}); g.L.push(x); }
@@ -218,7 +223,7 @@ async function mkSources(c){
     ${methods.length?`<div class="src-legend">${methods.map(m=>`<span><i style="background:${col(m)}"></i>${esc(m)}</span>`).join("")}</div>`:""}
     ${groups.map(g=>`<div class="src-sys">${esc(g.k)}<span>${plural(counts[g.k]||g.L.length,"place")}</span></div><div class="src-grid">${g.L.map(card).join("")}</div>`).join("")}`; }
 function mkSourceMap(){ const d=S.mkData, r=d&&S.mkSrc?.[d.c.name]; if(!r?.sources) return;
-  const marks={}; for(const x of r.sources){ const n=x.body||x.place; if(!n||marks[n]) continue;
+  const marks={}; for(const x of r.sources){ const n=x.body||x.lp||x.place; if(!n||marks[n]) continue;
     if(!S.locMap[n]&&!S.bodyMap[n]) continue;
     marks[n]={name:n,label:`${(x.methods||[]).join(", ")||"Found here"}${x.chance?` · ${Math.round(x.chance*100)}%`:""}`,color:MK_METHOD_COLOR[(x.methods||[])[0]]||"#7fd3ff"}; }
   const list=Object.values(marks); if(!list.length) return toast("None of these places are on Quantum's map yet");
@@ -860,6 +865,10 @@ $("vh-gallery").onclick=async e=>{ if(e.target.closest("[data-act=vhfrom]")) ret
 const modPicker=(M,cur,attr)=>`<span class="lo-lab">Module</span><div class="seg-mini mod-seg">${M.modules.map(m=>
   `<button ${attr}="${esc(m.id)}" class="${m.id===cur?"on":""}" title="${esc(`${m.full||m.name}${m.concept?" (concept, not in the game yet)":""}${m.notes?`: ${m.notes}`:""}`)}">${esc(m.name)}${m.concept?`<small class="mod-c">concept</small>`:""}</button>`).join("")}</div>`;
 const modTiers=m=>m?.medical_tiers?Object.entries(m.medical_tiers).sort((a,b)=>a[0]-b[0]).map(([t,n])=>`${n} × T${t}`).join(", "):"";
+// How far away you can die and still regenerate in a ship's medical bed, by the bed's tier (Star Citizen Wiki,
+// MedBed / Clinic pages, player-owned beds since 4.3.1). Tier 1's 750,000,000 km reaches across any system.
+const MED_RESPAWN_KM={1:750000000,2:8000,3:50};
+const medRespawn=t=>{ const km=MED_RESPAWN_KM[t]; return km==null?null:t===1?"Anywhere in the system":`Up to ${km.toLocaleString()} km`; };
 const modBeds=m=>m?.medical_beds?`${m.medical_beds}${modTiers(m)?` (${modTiers(m)})`:""}`:null;
 // A vehicle's specs (description, then crew, cargo, size, flight, quantum, defence, weapons, insurance): its
 // page in Vehicles, and My Fleet for vehicles with no parts to change (the ATLS, rovers), so theirs isn't empty
@@ -870,7 +879,7 @@ function vehSpecHtml(d,mod){
   const crew=vehCrew(d);
   return `${d.description?`<div class="desc" style="margin:0 0 14px;max-width:none">${wikiDesc(d.description)}</div>`:""}
     <div class="vd-grid vd-flat gr-fill">
-      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
+      ${sec("Crew & living",[["Crew",crew],["Seats",d.seats],["Jump seats",d.jump_seats],["Beds",d.beds],["Medical beds",mod?modBeds(mod):d.medical_beds],["Medical tier",d.medical_tier?`Tier ${d.medical_tier}`:null],["Respawn range",d.medical_tier?medRespawn(d.medical_tier):null],["Ejection seats",d.ejection],["Escape pods",d.escape_pods]])}
       ${sec("Cargo & storage",[["Cargo grid",d.scu?`${Number(d.scu).toLocaleString()} SCU`:null],["Refinery",d.refinery?`${d.refinery} refining reactors`:null],["Ore",d.ore?`${d.ore} SCU`:null],["Personal storage",d.storage_scu?`${d.storage_scu} SCU`:null],["Weapon lockers",d.lockers?`${d.lockers} slots`:null],["Landing pad",d.pad]])}
       ${sec("Size",[["Length",d.length&&`${d.length} m`],["Beam",d.beam&&`${d.beam} m`],["Height",d.height&&`${d.height} m`],["Mass",d.mass&&`${n(d.mass)} kg`],["Size class",d.size_class]])}
       ${sec("Flight",[["SCM",d.scm&&`${d.scm} m/s`],["Boost",d.boost&&`${d.boost} m/s`],["Max",d.max&&`${d.max} m/s`],["Pitch / yaw / roll",d.pitch&&`${d.pitch} / ${d.yaw} / ${d.roll} °/s`],["Hydrogen fuel",d.h_fuel&&`${d.h_fuel} SCU`]])}

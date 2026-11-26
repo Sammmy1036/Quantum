@@ -4,6 +4,8 @@ build_game_data.py) and served from the Quantum server's assets (data/*.json, se
     contracts_data.json   mission board entries: title, description, giver, type, reward, cargo, reputation
     gear_data.json        personal weapons, armor, clothing, consumables, gadgets
     vehicles_data.json    player ships and ground vehicles: insurance, cargo, speeds, stock parts
+    blueprints_data.json  crafting blueprints: product, craft time, ingredients, reward pools and the contracts
+                          that unlock them (build_blueprints.py)
 
 These come first; the Star Citizen Wiki only adds what the game files don't have (shop prices,
 pictures, the places a contract can send you). When the wiki can't be reached, what's here still works.
@@ -16,7 +18,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-NAMES = ("contracts_data.json", "gear_data.json", "vehicles_data.json")
+NAMES = ("contracts_data.json", "gear_data.json", "vehicles_data.json", "blueprints_data.json")
 
 
 def _norm(s):
@@ -234,6 +236,17 @@ class Vehicles(DataFile):
             if len(words) > 1:
                 by.setdefault(_norm(" ".join(words[1:])), uid)
         self._by = by
+        carry = {}                                       # part uuid -> the vehicles that come with it fitted
+        for v in items.values():
+            for p in v.get("parts") or []:
+                u = str(p.get("uuid") or "").lower()
+                if u and v.get("name"):
+                    carry.setdefault(u, set()).add(v["name"].strip())
+        self._carry = {u: sorted(n) for u, n in carry.items()}
+
+    def fitted_with(self, part_uuid):
+        """The vehicles whose stock loadout has this part (by the part's uuid), or None when the data has none."""
+        return self._carry.get(str(part_uuid or "").lower()) if self.items else None
 
     def find(self, uuid=None, name=None, class_name=None):
         if uuid and uuid in self.items:
@@ -304,16 +317,63 @@ def merge_vehicle(game, wiki):
     return out
 
 
+# ---------------------------------------------------------------- blueprints
+class Blueprints(DataFile):
+    """Crafting blueprints (build_blueprints.py), handed out in the shape sources/gear.py's trim_blueprint
+    gives the wiki's, so the Blueprints tab and blueprint pages read them unchanged."""
+
+    def _index(self, items):
+        self._list = None
+        self._by_out = {str(b.get("out_uuid") or "").lower(): uid for uid, b in items.items() if b.get("out_uuid")}
+
+    @staticmethod
+    def _ing(i):
+        return {"name": i.get("name"), "kind": i.get("kind"), "scu": i.get("scu"), "qty": i.get("qty"), "uuid": i.get("uuid")}
+
+    def trimmed(self, uid, b):
+        return {"uuid": uid, "key": b.get("key"), "name": b.get("name"), "out_uuid": b.get("out_uuid"),
+                "out_type": b.get("out_type"), "category": b.get("category") or "Other", "sub_type": b.get("out_subtype"),
+                "grade": b.get("grade"), "time": b.get("time"), "time_label": b.get("time_label"),
+                "default": bool(b.get("default")), "missions": len(b.get("unlocks") or []),
+                "ingredients": [self._ing(i) for i in b.get("ingredients") or [] if i.get("name")],
+                "returns": [self._ing(i) for i in b.get("returns") or [] if i.get("name")],
+                "web_url": None, "item_url": None, "version": None, "source": "game"}
+
+    def listing(self):
+        """Every blueprint, trimmed (made once per file)."""
+        if self._list is None:
+            L = [self.trimmed(uid, b) for uid, b in self.items.items() if b.get("name")]
+            L.sort(key=lambda x: x["name"].lower())
+            self._list = L
+        return self._list
+
+    def detail(self, uid, contracts=None):
+        """One blueprint with the contracts that unlock it, in gear.Gear.blueprint()'s shape. contracts: the
+        Contracts file, for each contract's title (the code is what the mission pages are found by)."""
+        b = self.items.get(uid) or self.items.get(self._by_out.get(str(uid or "").lower(), ""))
+        if not b:
+            return None
+        out = self.trimmed(uid if uid in self.items else self._by_out[str(uid).lower()], b)
+        unlocks = []
+        for u in b.get("unlocks") or []:
+            c = contracts.find(u.get("code"))[1] if contracts and u.get("code") else None
+            unlocks.append({"title": (c or {}).get("title") or u.get("code"), "scope": None, "chance": u.get("chance"),
+                            "web_url": None, "code": u.get("code"), "ref": None})
+        out["unlocks"] = unlocks
+        return out
+
+
 class GameFiles:
-    """The three files together. dirs: where copies may be, newest first is not needed (newest wins)."""
+    """The data files together. dirs: where copies may be, newest first is not needed (newest wins)."""
 
     def __init__(self, *dirs):
         p = lambda name: [Path(d) / name for d in dirs]
         self.contracts = Contracts(*p("contracts_data.json"))
         self.gear = Gear(*p("gear_data.json"))
         self.vehicles = Vehicles(*p("vehicles_data.json"))
+        self.blueprints = Blueprints(*p("blueprints_data.json"))
 
     def update_from(self, name, path):
         f = {"contracts_data.json": self.contracts, "gear_data.json": self.gear,
-             "vehicles_data.json": self.vehicles}.get(name)
+             "vehicles_data.json": self.vehicles, "blueprints_data.json": self.blueprints}.get(name)
         return bool(f and f.update_from(path))

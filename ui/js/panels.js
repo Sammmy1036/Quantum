@@ -134,7 +134,11 @@ function servicesHtml(r,place){
     +(trade?commodityTile(on):"");
   // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
   // opened is kept, so the card can redraw every tick without folding it back up
-  const full=r.description||"", long=full.length>260, open=long&&(S.descOpen?.has(place)||S.descFit===place&&!S.descShut?.has(place));
+  // A Lagrange point's wiki text also tells of the R&R stop built in it ("…a convenient R&R rest stop is available
+  // for refueling and repairs"): that's the station's, which has its own card (Station here), so it's left off
+  const isLp=S.locMap[place]?.type==="lpoint";
+  const full=(isLp?String(r.description||"").replace(/\s*Beside being home to a collection of asteroids, a convenient R&R rest stop[^.]*\./i," It's home to a collection of asteroids.")
+      .replace(/[^.]*\bR&R\b[^.]*\.\s*/g,"").trim():r.description)||"", long=full.length>260, open=long&&(S.descOpen?.has(place)||S.descFit===place&&!S.descShut?.has(place));
   const desc=!full?"":!long||open?esc(full)+(long?` <a class="desc-more" data-desc="less">Less</a>`:"")
     :esc(full.slice(0,full.lastIndexOf(" ",250)>180?full.lastIndexOf(" ",250):250).replace(/[\s,;:.]+$/,""))+`… <a class="desc-more" data-desc="more">More</a>`;
   return `<div class="svc">${r.jurisdiction?`<div class="jur">Jurisdiction <b>${esc(r.jurisdiction)}</b></div>`:""}
@@ -167,7 +171,11 @@ function atmoProps(a){ const p=a?.confirmed&&a.props; if(!p) return "";
   const extra=[p.pressure_atm!=null?`${p.pressure_atm.toFixed(2)} atm`:"",p.temp_c!=null?`${p.temp_c} °C`:""].filter(Boolean).join(" · ");
   return `<span class="k">Atmosphere Properties</span><span>${rows}${extra?`<span class="muted" style="display:block;font-size:11.5px;margin-top:2px">${esc(extra)}</span>`:""}</span>`; }
 function placePicKey(sel){ if(sel.kind==="body"){ const w=wikiFor(sel.name); return w?.url?"body:"+sel.name:null; }
-  const L=S.locMap[sel.name]; if(!L||L.source==="user"||L.source==="mission"||!PIC_TYPES.has(L.type)) return null; return "loc:"+L.name; }
+  const L=S.locMap[sel.name]; if(!L||L.source==="user"||L.source==="mission"||!PIC_TYPES.has(L.type)) return null;
+  // An L-point with a station: the wiki sends its name to the station's page ("HUR-L1" -> HUR-L1 Green Glade
+  // Station), so the photo would be the station's. No photo rather than the wrong one
+  if(L.type==="lpoint"&&L.mergedInto) return null;
+  return "loc:"+L.name; }
 function placePicHtml(key){ const p=key&&S.picCache[key]; if(!p?.url) return "";
   return `<div class="dpic"><img src="${esc(p.url)}" alt="" referrerpolicy="no-referrer" class="in">${p.page?`<a class="dpic-cr" data-url="${esc(p.page)}" title="Photo from the Star Citizen Wiki (CC BY-SA 4.0)">Star Citizen Wiki</a>`:""}</div>`; }
 async function fillPlacePic(sel){ const key=placePicKey(sel); if(!key||key in S.picCache) return;
@@ -702,7 +710,9 @@ function renderDetail(){
           ${other?`<span class="k">${L.station?"Station":"Gateway"}</span><span><a class="lnk" data-golink="${esc(other)}">${esc(other)}</a>${dk?` <span class="muted">· ${dk} away</span>`:""}</span>`:""}</div>`; })():""}
       <div class="kv">${from!=null?`<span class="k">From you</span><span>${fmtDist(from)}</span>`:""}
         ${L.kind==="surface"&&L.body&&!isOrbital(L)?atmoLine(S.bodyMap[L.body],true):""}
-        ${L.atLpoint?`<span class="k">Lagrange point</span><span>${esc(L.atLpoint)} <span class="muted">· the QT marker for this L-point</span></span>`:""}
+        ${L.atLpoint?`<span class="k">Lagrange point</span><span>${S.locMap[L.atLpoint]?`<a class="lnk" data-golink="${esc(L.atLpoint)}">${esc(L.atLpoint)}</a>`:esc(L.atLpoint)} <span class="muted">· the QT marker for this L-point</span></span>`:""}
+        ${L.mergedInto&&S.locMap[L.mergedInto]?(()=>{ const O=S.locMap[L.mergedInto], dk=O.pos&&L.pos?fmtDist(d3(globalPos(O,t),g)):null;
+          return `<span class="k">Station here</span><span><a class="lnk" data-golink="${esc(O.name)}">${esc(O.name)}</a>${dk?` <span class="muted">· ${dk} from the centre</span>`:""}<br><span class="muted">The L-point has no QT marker of its own: quantum to the station, then fly out to its asteroids and gas pockets.</span></span>`; })():""}
         ${(()=>{ const lt=localTime(L,t); if(!lt) return "";
           return `<span class="k">Local time</span><span title="Worked out from ${esc(L.body)}'s rotation (one day = ${lt.period.toFixed(2)} real hours)${lt.calibrated?"":", using the community alignment"}"><span data-lt-row>${ltRow(lt)}</span></span>`; })()}
         ${ll?`<span class="k">Lat, lon</span><span>${ll}</span>`:""}

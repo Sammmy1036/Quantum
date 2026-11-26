@@ -1000,7 +1000,7 @@ class CatalogMixin:
 
     # Approved pictures are checked for every PHOTOS_SYNC_EVERY; when the set changes, photos_version goes
     # up in the live state and the page swaps in the new pictures, without restarting Quantum.
-    PHOTOS_SYNC_EVERY = 120
+    PHOTOS_SYNC_EVERY = 300          # 5 min (was 2): a newly approved picture shows within that; your own at once
 
     def _photos_changed(self):
         sig = hash((tuple(sorted(self._community.photos(fresh=True).items())),

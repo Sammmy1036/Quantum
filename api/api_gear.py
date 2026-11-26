@@ -164,6 +164,13 @@ class GearMixin:
         staying "offline" until it's restarted."""
         time.sleep(5)
         while True:
+            # While it's up, any other answer from the server in the last SERVER_CHECK_UP (the social check-in, a
+            # price fetch...) already says so: /v1/health is only asked when nothing else has been
+            if getattr(self, "_server_ok", None) and self._community.url and \
+                    time.time() - getattr(self._community, "last_reply", 0) < self.SERVER_CHECK_UP:
+                self._server_checked = time.time()
+                time.sleep(self.SERVER_CHECK_UP)
+                continue
             try:
                 h = self._community.health() if self._community.url else {"ok": False, "error": "off"}
             except Exception as e:
@@ -898,7 +905,9 @@ class GearMixin:
         if kind == "component":
             # a ship part: the ships that come with it fitted (strip it from one: a wreck, a derelict, a ship you
             # disabled, or one you own or rent), and loot only from the places where ship wrecks are
-            out["ships"] = self._ships_fitted((rec or {}).get("vehicles") or [])
+            # the game data's stock loadouts (vehicles_data.json) first, else the wiki's list
+            mine = self._files.vehicles.fitted_with(uuid) if uuid and getattr(self, "_files", None) else None
+            out["ships"] = self._ships_fitted(mine or (rec or {}).get("vehicles") or [])
             out["loot"] = [g for g in out.get("loot") or [] if g["label"].startswith("Derelict")]
             out["lootable"] = bool((rec or {}).get("lootable"))
         return out

@@ -961,6 +961,11 @@ class MapMixin:
             om = f"OM-1 ({body})"
             return (om if om in self._db.locations else None), body
         place = idx.get((k, system)) or idx.get((k, None)) or idx.get((k + "station", system))
+        if not place:
+            # Pyro's Lagrange points: the wiki says "PYR6 L2", the map data "P6-L2"
+            m = re.fullmatch(r"pyr(\d)(l\d)", k)
+            if m:
+                place = idx.get((f"p{m.group(1)}{m.group(2)}", None))
         return place, None
 
     def _place_rows(self, group):
@@ -1140,7 +1145,19 @@ class MapMixin:
             p, b = self._named_place(x["name"], x.get("system"))
             if not p and not b and x.get("parent"):               # an asteroid field or cave by its planet
                 p, b = self._named_place(x["parent"], x.get("system"))
-            rows.append(dict(x, place=p, body=b))
+            row = dict(x, place=p, body=b)
+            # The wiki says "Stanton System"; the map and the panel say "Stanton" (and "near Stanton" says nothing)
+            sys_ = re.sub(r"\s+System$", "", str(x.get("system") or "")) or None
+            row["system"] = sys_
+            if row.get("parent") and re.sub(r"\s+System$", "", str(row["parent"])) == sys_:
+                row["parent"] = None
+            # "HUR L2" is the asteroid field in the Lagrange point, not the station there (HUR-L2 Faithful Dream
+            # Station): say so, so the two aren't mixed up
+            L = self._db.locations.get(p) if p else None
+            if L is not None and getattr(L, "category", "") == "lpoint":
+                row["display"] = f"{p} asteroid field"
+                row["type"] = "Lagrange point asteroids"
+            rows.append(row)
         return {"ok": True, "found": True, "from": r.get("from"), "sources": rows, "web_url": r.get("web_url")}
 
     # ------------------------------------------------------------ calibration sharing

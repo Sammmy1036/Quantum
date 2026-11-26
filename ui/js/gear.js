@@ -72,7 +72,7 @@ const GEAR={
     key:i=>[i.time_label||"",i.ingredients?.length?plural(i.ingredients.length,"ingredient"):""].filter(Boolean).join(" · "),
     sorts:[["name","A–Z"],["time","Quickest to craft"],["ings","Fewest ingredients"]],
     hero:i=>[{label:"Craft time",value:i.time_label||(i.time?`${Math.round(i.time/60)} min`:null)},{label:"Ingredients",value:i.ingredients?.length??null},
-      {label:"Grade",value:i.grade||null},{label:"How you get it",value:i.default?"Known":"Missions"}],
+      {label:"Grade",value:i.grade||null},{label:"How you get it",value:i.default?"Known":i.source==="game"&&!i.missions?"Unknown":"Missions"}],
     rows:[]},
   // The newer tabs: one way of showing them; what each has to say comes from the wiki's own numbers and rows
   gadgets:{title:"Gadgets",noun:"gadget",ph:"Name, maker or kind, like “multi-tool”, “cutter” or “Greycat”",
@@ -201,7 +201,10 @@ function grRender(kind){ const st=grState(kind), G=GEAR[kind], list=$(`gr-list-$
   $(`gr-reset-${kind}`).hidden=!any;
   const n=sets?sets.length:L.length, all=sets?null:st.data.items.length;
   $(`gr-count-${kind}`).textContent=sets?`${plural(n,"set")} · ${plural(L.length,"piece")} match`:`${n.toLocaleString()} of ${all.toLocaleString()} ${G.noun}s · click one for its page`;
-  $(`gr-credit-${kind}`).innerHTML=`From the <a data-ext="https://api.star-citizen.wiki">Star Citizen Wiki</a>${kind!=="blueprints"?", prices from UEX":""}.${st.data.at?` Fetched ${agoTs(st.data.at)}.`:""}${st.data.stale?" Couldn't refresh: showing the last copy.":""} <a data-grfresh="1" style="cursor:pointer;text-decoration:underline">Refresh</a>`;
+  // Blueprints from Quantum's own game data (blueprints_data.json) say so; their pictures are still the wiki's
+  const own=kind==="blueprints"&&st.data.items?.[0]?.source==="game";
+  $(`gr-credit-${kind}`).innerHTML=`${own?`From the game files (Quantum's own data); pictures from the <a data-ext="https://starcitizen.tools">Star Citizen Wiki</a>.${st.data.at?` Built ${agoTs(st.data.at)}.`:""}`
+    :`From the <a data-ext="https://api.star-citizen.wiki">Star Citizen Wiki</a>${kind!=="blueprints"?", prices from UEX":""}.${st.data.at?` Fetched ${agoTs(st.data.at)}.`:""}`}${st.data.stale?" Couldn't refresh: showing the last copy.":""} <a data-grfresh="1" style="cursor:pointer;text-decoration:underline">Refresh</a>`;
   const row=(i,attr)=>`<div class="vh ${st.sel===(i.uuid||i.name)?"hl":""}"><div class="hd" ${attr}><div><div class="nm">${esc(i.name)}</div>
       <div class="mk">${esc([kind==="blueprints"?i.category:i.maker,kind==="armor"&&!sets?i.slot:"",kind==="weapons"||GR_ITEM[kind]?i.kind:"",GR_ITEM[kind]?"":i.weight||""].filter(Boolean).join(" · "))}</div></div>
       <div class="pr">${kind==="blueprints"?esc(i.time_label||""):grPrice(i)!=null?money(grPrice(i)):`<span class="noshop">Not in shops</span>`}</div></div></div>`;
@@ -358,26 +361,64 @@ document.addEventListener("click",e=>{ const m=e.target.closest("[data-mapsearch
 function grDesc(d){ if(!d) return ""; const parts=String(d).replace(/\\n/g,"\n").split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);
   const prose=parts.filter(x=>!/^[A-Za-z ]{2,30}:\s/.test(x)); return (prose.length?prose.join(" "):"").replace(/\s+/g," ").trim(); }
 async function grBlueprint(i,back){ const g=$("gr-panel"), st=grState("blueprints");
-  const ing=x=>`<div class="mk-row"><div class="w">${esc(x.name)}<div class="m">${x.kind==="resource"||(!x.kind&&x.scu!=null)?"Resource":"Item"}</div></div><div class="p">${x.scu!=null?`${nf(x.scu)} SCU`:x.qty!=null?`× ${x.qty}`:""}</div><span></span></div>`;
+  const ing=(x,n,from)=>`<div class="mk-row"><div class="w"><a data-bping="${from}:${n}" title="Open ${esc(x.name)}: where to get it">${esc(x.name)}</a><div class="m">${bpIsRes(x)?"Resource":"Item"}</div></div><div class="p">${x.scu!=null?`${nf(x.scu)} SCU`:x.qty!=null?`× ${x.qty}`:""}</div><span></span></div>`;
   const draw=d=>{ const og=d?.out_game;
     g.innerHTML=`${back}<div class="mkp-head"><div class="mkp-img" id="grd-img">${qPic()}</div>
       <div class="hd-main"><div class="hd-title"><div><h2>${esc(i.name)}</h2><div class="sub">Blueprint · ${esc(i.category)}${i.version?` · ${esc(i.version)}`:""}</div></div></div>
         ${statBlock(GEAR.blueprints.hero(i),[])}
         <div class="row" style="gap:8px;margin-top:12px">${i.web_url?`<button class="btn ghost" data-ext="${esc(i.web_url)}">Wiki</button>`:""}${i.out_tab==="components"?`<button class="btn ghost" data-grcomp="${esc(i.name)}">Find in Components</button>`:""}</div></div></div>
       <div class="vd-grid vd-flat bp-grid">
-        <div class="vd-sec"><div class="mk-h">Ingredients</div>${i.ingredients.length?i.ingredients.map(ing).join(""):`<div class="muted" style="font-size:13px">None listed.</div>`}
-          ${i.returns?.length?`<div class="mk-h" style="margin-top:14px">Dismantling gives back</div>${i.returns.map(ing).join("")}`:""}</div>
+        <div class="vd-sec"><div class="mk-h">Ingredients</div>${i.ingredients.length?i.ingredients.map((x,n)=>ing(x,n,"ing")).join(""):`<div class="muted" style="font-size:13px">None listed.</div>`}
+          ${i.returns?.length?`<div class="mk-h" style="margin-top:14px">Dismantling gives back</div>${i.returns.map((x,n)=>ing(x,n,"ret")).join("")}`:""}</div>
         <div class="vd-sec"><div class="mk-h">How you get it</div>
           ${i.default?`<div class="muted" style="font-size:13px;line-height:1.5;padding:4px 0">Every player knows this blueprint from the start.</div>`:""}
           ${!d?`<div class="muted" style="font-size:13px">Looking up the missions…</div>`:d.unlocks?.length?d.unlocks.map(m=>`<div class="mk-row"><div class="w"><a data-grmission="${esc(JSON.stringify({ref:m.ref||null,code:m.code||null,title:m.raw_title||m.title}))}" title="What this mission is, where it's offered and what it pays">${esc(m.title)}</a><div class="m">${esc(m.scope||"")}</div></div><div class="p">${m.chance!=null&&m.chance<1?`${Math.round(m.chance*100)}% chance`:""}</div><span></span></div>
             ${(m.places||[]).length?`<div class="gr-places">${m.places.map(grPlaceRow).join("")}${m.places_more?`<div class="muted" style="font-size:12px;padding:2px 0 6px 14px">+${m.places_more} more: open the mission to see them all</div>`:""}</div>`:""}`).join("")
-            :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}</div>
+            :!i.default?`<div class="muted" style="font-size:13px;line-height:1.5">${i.source==="game"?"No contract in the game files hands out this blueprint yet, so it may not be obtainable this patch."
+              :i.missions?`${plural(i.missions,"mission")} unlock it, but the wiki doesn't list which yet.`:"The wiki doesn't say how to unlock it yet."}</div>`:""}</div>
           ${og?.stats&&rows0(og.stats)?`<div class="vd-sec"><div class="mk-h">What it makes</div>${CP_STATS.filter(([k])=>og.stats[k]!=null&&og.stats[k]!==0&&og.stats[k]!=="").map(([k,lab,f])=>`<div class="vd-row"><span>${lab}</span><b>${esc(f(og.stats[k]))}</b></div>`).join("")}</div>`:""}</div>
-      <div class="uex-credit">From the Star Citizen Wiki's crafting data.</div>`;
+      <div class="uex-credit">${i.source==="game"?`Blueprint Data is hosted from Quantum's own database. Pictures provided by <a data-ext="https://starcitizen.tools">Star Citizen Wiki</a> (CC BY-SA).`:"From the Star Citizen Wiki's crafting data."}</div>`;
     api().gear_image(i.name).then(img=>{ if(st.sel!==(i.uuid||i.name)) return; const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",i.name,true); }); };
   draw(null);
   const r=await api().blueprint_detail(i.uuid); if(st.sel!==(i.uuid||i.name)) return;
   draw(r.ok?r.blueprint:{unlocks:[]}); }
+// ---- A blueprint's ingredients are links: an item another blueprint makes opens that blueprint, an item from
+// Gear opens its Gear page, and a resource (ore, gem, harvestable) opens its commodity in Trade, with Where to
+// find it. Each of those pages gets "← Back to <blueprint> blueprint" (S.bpTrail is the way back, newest last,
+// so a blueprint opened from a blueprint goes back one step at a time). Going somewhere yourself forgets it.
+S.bpTrail=S.bpTrail||[];
+const bpIsRes=x=>x.kind==="resource"||(!x.kind&&x.scu!=null);
+const BP_GEAR_TABS=["weapons","attachments","armor","clothing","gadgets","consumables","utility"];
+function bpForget(){ S.bpTrail=[]; S.bpOpen=null; }
+function bpBackBtn(tab,small){ const t=S.bpTrail, f=t[t.length-1];
+  return f&&S.bpOpen?.tab===tab?`<button class="btn ${small?"small ":""}primary" data-bpback="1">← Back to ${esc(f.name)} blueprint</button>`:""; }
+async function bpOpenBlueprint(uuid){ document.querySelector('.tab[data-tab="blueprints"]')?.click();
+  for(let k=0;k<40&&!grState("blueprints").data?.items;k++) await new Promise(r=>setTimeout(r,250));
+  const bs=grState("blueprints"); bs.mission=null; bs.sel=uuid; grRender("blueprints"); $("gr-panel").scrollTop=0; }
+async function bpOpenIngredient(ref){ const bs=grState("blueprints"), [from,n]=String(ref).split(":");
+  const cur=(bs.data?.items||[]).find(x=>(x.uuid||x.name)===bs.sel); if(!cur) return;
+  const x=(from==="ret"?cur.returns:cur.ingredients)?.[+n]; if(!x) return;
+  const here={uuid:cur.uuid||cur.name,name:cur.name}, go=tab=>{ S.bpTrail.push(here); S.bpOpen={tab}; };
+  const nm=squash(x.name), uid=String(x.uuid||"").toLowerCase(), same=i=>(uid&&String(i.uuid||"").toLowerCase()===uid)||squash(i.name)===nm;
+  if(bpIsRes(x)){ go("market"); if(!await mkOpen(x.name)){ S.bpTrail.pop(); S.bpOpen=S.bpTrail.length?{tab:"blueprints"}:null; } return; }
+  // an item: another blueprint that makes it first (craft it yourself), then its page in Gear
+  const bp=(bs.data?.items||[]).find(b=>b!==cur&&((uid&&String(b.out_uuid||"").toLowerCase()===uid)||squash(b.name)===nm));
+  if(bp){ go("blueprints"); return bpOpenBlueprint(bp.uuid||bp.name); }
+  toast(`Looking for ${x.name}…`);
+  const lists=await Promise.all(BP_GEAR_TABS.map(k=>glData(k).catch(()=>[])));
+  for(let j=0;j<BP_GEAR_TABS.length;j++){ const k=BP_GEAR_TABS[j], it=(lists[j]||[]).find(same); if(!it) continue;
+    go(k); document.querySelector(`.tab[data-tab="${k}"]`)?.click();
+    for(let w=0;w<40&&!grState(k).data?.items;w++) await new Promise(r=>setTimeout(r,250));
+    const st=grState(k); st.view="items"; st.mission=null; st.sel=it.uuid||it.name; grRender(k); $("gr-panel").scrollTop=0; return; }
+  // Not gear: gems and other minerals the game files keep as items (Hadanite, Dolivine...) are commodities in
+  // Trade. Asked of the commodity list first when it's loaded, so the tab only changes when there's a page to show
+  const k=resKey(x.name), inMk=L=>L.some(c=>resKey(c.name)===k||squash(c.name).startsWith(k));
+  if(!S.mk||inMk(S.mk)){ go("market"); if(await mkOpen(x.name)) return; S.bpTrail.pop(); S.bpOpen=S.bpTrail.length?{tab:"blueprints"}:null; return; }
+  toast(`${x.name} isn't in Quantum's Gear lists or UEX's commodities, and no blueprint makes it`); }
+// Back: the blueprint this page was opened from (works from Gear, Trade › Commodities and other blueprints)
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-bpback]"); if(!b) return; e.stopPropagation(); e.preventDefault();
+  const f=S.bpTrail.pop(); S.bpOpen=S.bpTrail.length?{tab:"blueprints"}:null; if(f) bpOpenBlueprint(f.uuid); },true);
+document.addEventListener("click",e=>{ if(e.isTrusted&&e.target.closest("#tabs .tab,#rail [data-group]")&&S.bpTrail.length) bpForget(); },true);
 // A mission's own page (from a blueprint's How you get it): what it pays, the briefing, where it's offered and
 // where it sends you (each place one click from the route), what it needs first and the blueprints it can give.
 // Back goes to the mission before it, then to the blueprint.
@@ -445,6 +486,7 @@ $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
   const gp=e.target.closest("[data-grpa]"); if(gp){ const u=(S.paItems||[]).find(x=>String(x.id)===gp.dataset.grpa); if(u) paNewItem(u); return; }
   const ga=e.target.closest("[data-gladd]"); if(ga){ const it=(st.data?.items||[]).find(x=>(x.uuid||x.name)===ga.dataset.gladd); if(it) glAddMenu(e,kind,it); return; }
   if(e.target.closest("[data-grretry]")) return grLoad(kind);
+  const bi=e.target.closest("[data-bping]"); if(bi&&kind==="blueprints") return bpOpenIngredient(bi.dataset.bping);
   const gm=e.target.closest("[data-grmission]"); if(gm){ let x; try{ x=JSON.parse(gm.dataset.grmission); }catch(_){ return; } return grOpenMission(kind,x); }
   if(e.target.closest("[data-grmback]")){ st.mission=st.mission?.prev||null; $("gr-panel").scrollTop=0; return st.mission?grMission(kind):grDetail(kind); }
   if(e.target.closest("[data-grmretry]")){ if(st.mission) st.mission.data=null; return grMission(kind); }
@@ -452,7 +494,7 @@ $("gr-panel").addEventListener("click",async e=>{ if(await tradeClick(e)) return
     for(let k=0;k<40&&!grState("blueprints").data?.items;k++) await new Promise(r=>setTimeout(r,250));
     const bs=grState("blueprints"); bs.mission=null; bs.sel=id; grRender("blueprints"); $("gr-panel").scrollTop=0; return; }
   const gb=e.target.closest("[data-grbp]"); if(gb&&kind==="blueprints"){ st.mission=null; st.sel=gb.dataset.grbp; grRender(kind); $("gr-panel").scrollTop=0; return; }
-  if(e.target.closest("[data-grback]")){ st.sel=null; st.mission=null; grRender(kind); return; }
+  if(e.target.closest("[data-grback]")){ if(S.bpOpen?.tab===kind) bpForget(); st.sel=null; st.mission=null; grRender(kind); return; }
   const gc=e.target.closest("[data-grcomp]"); if(gc){ document.querySelector('.tab[data-tab="components"]')?.click(); setTimeout(()=>{ renderCpHome(); const q=$("cp-home-q"); if(q){ q.value=gc.dataset.grcomp; renderCpHome(); } },300); return; }
   if(e.target.closest("[data-grshop]")){ const i=st.data.items.find(x=>(x.uuid||x.name)===st.sel); if(!i) return;
     const r=await api().shop_add([{name:i.name,kind:GR_CART[kind],uuid:i.uuid,class_name:i.class_name}]); toast(r.ok?`${i.name} added to your shopping list`:r.error); return; }

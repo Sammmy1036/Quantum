@@ -13,7 +13,8 @@ How it works:
   - What's sent: system, the planet or moon you're on or near, your position (the same numbers /showlocation gives),
     and the name of the place you're at. Nothing about your route, contracts or cargo.
   - Their positions come back every few seconds while the Friend Map is open, every 10 s while "Show on the main map"
-    is on, and not at all otherwise.
+    is on (every 30 s while Star Citizen isn't running here, every 60 s while no friend is sharing), and not at all
+    otherwise.
 
 Kept in settings.json under "friend_map": {"share": "off" | "friends" | "friends_orgs", "on_map": true}.
 """
@@ -24,6 +25,8 @@ FM_KEEPALIVE = 60          # s: send at least this often while sharing (the serv
 FM_MOVE_M = 250            # m moved since the last send: send now
 FM_FETCH_FOCUS = 3         # s between fetches while the Friend Map is open
 FM_FETCH_MAP = 10          # s between fetches while friends show on the main map
+FM_FETCH_QUIET = 60        # s between them instead when no friend is sharing (nobody to show) ...
+FM_FETCH_NOGAME = 30       # ... or when Star Citizen isn't running here (you're not flying to them)
 FM_STALE_ME = 15 * 60      # s: a /showlocation older than this (and no newer log spot) isn't shared any more
 
 
@@ -180,7 +183,13 @@ class FriendMapMixin:
             if fm["people"]:
                 fm["people"] = []
             return
-        if now - fm["got_at"] < (FM_FETCH_FOCUS if focus else FM_FETCH_MAP) - 0.5:
+        every = FM_FETCH_FOCUS if focus else FM_FETCH_MAP
+        if not focus:
+            if not fm["people"]:
+                every = FM_FETCH_QUIET
+            elif os.name == "nt" and not self._game_on():
+                every = FM_FETCH_NOGAME
+        if now - fm["got_at"] < every - 0.5:
             return
         r = self._social_call("locations", timeout=8)
         if r.get("status") == "ok":

@@ -551,10 +551,14 @@ class Gear:
     def __init__(self, cache_dir):
         self.dir = Path(cache_dir)
         self.files = None              # gamefiles.Gear: Quantum's own data from the game files (set by the app)
+        self.bp_files = None           # gamefiles.Blueprints: crafting blueprints from the game files (set by the app)
+        self.contracts = None          # gamefiles.Contracts: unlocking contracts' titles (set by the app)
 
     def _game_list(self, kind):
         """This tab from Quantum's own game data, in the same shape as the wiki's (no prices or pictures)."""
-        if not self.files or kind == "blueprints":
+        if kind == "blueprints":
+            return self.bp_files.listing() if self.bp_files else []
+        if not self.files:
             return []
         return self.files.trimmed(kind, TRIM[kind], skip=_skip, dedupe=dedupe if kind != "blueprints" else None, junk=JUNK)
 
@@ -623,6 +627,9 @@ class Gear:
         threading.Thread(target=run, daemon=True).start()
 
     def _items(self, kind, max_pages=60, fresh=False):
+        # Blueprints from Quantum's own game data (blueprints_data.json) when the server has it: the wiki isn't asked
+        if kind == "blueprints" and self.bp_files:
+            return {"items": self.bp_files.listing(), "at": self.bp_files.at, "stale": False, "source": "game"}
         f = self._file(self.FILE_OF.get(kind, kind))
         if not f.exists() and not fresh:
             leg = self._legacy(kind)
@@ -716,7 +723,12 @@ class Gear:
         return out
 
     def blueprint(self, uuid):
-        """One blueprint's full record: its unlocking missions too. Cached for a week."""
+        """One blueprint's full record: its unlocking missions too. From the game data when it has it, else
+        the wiki's (cached for a week)."""
+        if self.bp_files:
+            mine = self.bp_files.detail(str(uuid or ""), self.contracts)
+            if mine:
+                return mine
         f = self._file(f"bp2_{uuid}")                 # bp2: unlocks carry the mission's ref (opened in Quantum)
         if f.exists() and time.time() - f.stat().st_mtime < 7 * DAY:
             try:
@@ -745,11 +757,13 @@ class Gear:
                 return json.loads(f.read_text(encoding="utf-8"))
             except Exception:
                 pass
+        # The game data's own slots first (build_attachments.py): the wiki is only asked for a weapon it lacks
+        g = (self.files.items.get(uuid) or {}) if self.files else {}
+        out = weapon_ports({"ports": g.get("ports") or []}) if g.get("ports") else []
+        if out:
+            return out
         d = _get(f"{API}/items/{urllib.parse.quote(uuid)}?include=ports").get("data") or {}
         out = weapon_ports(d)
-        if not out and self.files:                  # the game files know the weapon's ports
-            g = self.files.items.get(uuid) or {}
-            out = weapon_ports({"ports": g.get("ports") or []})
         self.dir.mkdir(exist_ok=True)
         f.write_text(json.dumps(out), encoding="utf-8")
         return out
