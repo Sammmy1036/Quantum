@@ -131,13 +131,19 @@ class DatarunnerMixin:
             self._dr_job.update(kw)
 
     def _dr_run_job(self, from_button):
+        with self._lock:
+            full = len(self._dr_shots) >= datarunner.MAX_SHOTS
+        if full:                                          # never drop an earlier one to make room: say so instead
+            self._dr_log(f"not taken: {datarunner.MAX_SHOTS} screenshots already")
+            return self._set_job(state="error", error=f"You have {datarunner.MAX_SHOTS} screenshots, the most for one "
+                                 "terminal. Send those reports first (or remove some), then take more.")
         try:
             shot = self._dr_take_shot(from_button)
         except Exception as e:                            
             self._dr_log(f"failed ({e})")
             return self._set_job(state="error", error=str(e))
         with self._lock:
-            self._dr_shots = (self._dr_shots + [shot])[-datarunner.MAX_SHOTS:]
+            self._dr_shots = self._dr_shots + [shot]
             self._dr_seq += 1
             index = len(self._dr_shots) - 1
         rx, ry = getattr(shot, "rect", (0, 0, 0, 0))[:2]

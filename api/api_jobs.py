@@ -16,7 +16,8 @@ from qbase import *  # noqa: F401,F403
 
 JOBS_SEND_MAX = 3000            # balance changes sent at most (a busy week)
 STATS_EVERY = 5 * 60            # s between syncs while something changed (and once at start)
-STATS_ENTRY_KEYS = ("t", "delta", "balance", "label", "kind", "what", "ship", "session", "code", "ctype", "giver", "pos", "src")
+STATS_ENTRY_KEYS = ("t", "delta", "balance", "label", "kind", "what", "ship", "session", "code", "ctype", "giver", "pos", "src",
+                    "sold")
 
 
 class JobsMixin:
@@ -69,7 +70,8 @@ class JobsMixin:
         since = (last.get("weekly_from") or 0) - 60
         sess = getattr(self, "_sess", None)
         log = list(getattr(sess, "log", None) or []) if sess else []
-        ents = [{k: e[k] for k in ("t", "delta", "kind", "label", "what", "ship", "code", "ctype", "giver", "pos", "src", "session")
+        ents = [{k: e[k] for k in ("t", "delta", "kind", "label", "what", "ship", "code", "ctype", "giver", "pos", "src", "session",
+                                   "sold")
                 if k in e}
                 for e in log if (e.get("t") or 0) >= since and (e.get("delta") or 0) > 0][-JOBS_SEND_MAX:]
         for e in ents:

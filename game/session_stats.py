@@ -16,6 +16,9 @@ What Jobs needs to tell these apart is written with each rise (the server's jobs
     bigger than a contract ever pays isn't its payout (a sale made just after handing it in, say)
   any other rise: the ship you were in (ship), and whether you were flying, landed or on foot then (pos); a rise
     that gives back exactly what you spent in the last 15 minutes is marked as a refund (src)
+  a sale at a terminal (Game.log logs what you sold, the tracker's "sales"): what it was (sold: "ore", "salvage",
+    "cargo"), which decides the job before the ship does: refined ore sold on foot in Lorville, an hour after you
+    parked the Prospector, is still a Miner's sale
 """
 import json
 import threading
@@ -31,6 +34,7 @@ CONTRACT_WINDOW = (-600, 60)    # s around a contract's completion that a balanc
 RECHECK_S = 120                 # s a plain rise waits for Game.log to say a contract completed (then it's that contract's)
 PAY_OVER, PAY_SLACK = 3, 10_000   # a rise over 3 × a contract's top payout (+10k) isn't that contract's payout
 REFUND_S = 15 * 60              # s: a rise that gives back exactly what you spent this long before is a refund
+SALE_WINDOW = (-120, 10)        # s around a rise that the Sell press it pays for can be (the money comes a moment later)
 
 
 def _session():
@@ -40,10 +44,12 @@ def _session():
 
 
 class SessionStats:
-    def __init__(self, path, tracker_fn=None, ctype_fn=None):
+    def __init__(self, path, tracker_fn=None, ctype_fn=None, kind_fn=None):
         self.path = Path(path)
         self.tracker_fn = tracker_fn            # fn() -> the Game.log tracker (contracts, tel_log), or None
         self.ctype_fn = ctype_fn                # fn(code, name) -> {type, giver, reward, reward_max} from the mission data, or None
+        self.kind_fn = kind_fn                  # fn() -> {commodity uuid: "ore" | "salvage" | "other"} (the wiki), or None
+        self._sold = set()                      # sales (their log time) already matched to a rise
         self._info = {}                         # contract id -> that, looked up once
         self._pos = None                        # flying / landed / foot, from the last frame
         self.lock = threading.Lock()
@@ -134,6 +140,9 @@ class SessionStats:
             self._credit(e, c, s)
         elif delta > 0:
             e["pos"] = self._pos or ""                 # where you were: terminals sell on the ground or at a station (Jobs)
+            sold = self._sale_for(delta, now, tr)
+            if sold:
+                e["sold"] = sold                       # what you sold: decides the job (the server's jobs.py)
             if self._refund(delta, now):
                 e["src"] = "refund"                    # exactly what you spent a moment ago, back: nobody's job
         ship, seen = self._ship
@@ -161,6 +170,41 @@ class SessionStats:
             e["what"] = what                           # the cargo: shown, never used to pick the job
         self._credited.add(c.id)
         s["contracts"] += 1
+
+    def _sale_for(self, delta, now, tr):
+        """The sale a balance rise pays for, from the Sell presses Game.log logged just before: "ore", "salvage" or
+        "cargo" (anything else, and anything you'd bought: a trade), or None. One sale's amount, or several sold
+        together arriving as one rise. A sale to a refinery logs no amount: a rise just after one is ore."""
+        sales = list(getattr(tr, "sales", None) or []) if tr else []
+        near = [x for x in sales if x.get("how") in ("sell", "refinery") and x.get("at") not in self._sold
+                and SALE_WINDOW[0] <= (x.get("at") or 0) - now <= SALE_WINDOW[1]]
+        if not near:
+            return None
+        tol = lambda a: max(2.0, 0.01 * a)
+        hit = next(([x] for x in reversed(near) if x.get("amount") and abs(x["amount"] - delta) <= tol(x["amount"])), None)
+        if hit is None:
+            priced = [x for x in near if x.get("amount")]
+            if priced and abs(sum(x["amount"] for x in priced) - delta) <= tol(delta):
+                hit = priced
+            else:
+                ref = [x for x in near if x.get("how") == "refinery"]
+                hit = ref[-1:] if ref else None
+        if not hit:
+            return None
+        for x in hit:
+            self._sold.add(x.get("at"))
+        if hit[0].get("how") == "refinery":
+            return "ore"
+        bought = {x.get("guid") for x in sales if x.get("how") == "buy"}
+        try:
+            kinds = (self.kind_fn() if self.kind_fn else None) or {}
+        except Exception:
+            kinds = {}
+        out = []
+        for x in hit:
+            g = str(x.get("guid") or "").lower()
+            out.append("cargo" if g in bought else {"ore": "ore", "salvage": "salvage"}.get(kinds.get(g), "cargo"))
+        return max(set(out), key=out.count)
 
     def _refund(self, delta, now):
         """Did you spend exactly this much in the last few minutes (and not get it back already)?"""

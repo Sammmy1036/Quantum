@@ -685,6 +685,59 @@ class Gear:
         f.write_text(json.dumps(res), encoding="utf-8")
         return self._with_game(res, kind)
 
+    ORE_GROUPS = ("mineral", "minerals", "metal", "metals", "nonmetal", "nonmetals", "gem", "gems", "ore", "halogen", "halogens")
+    SALVAGE_WORDS = re.compile(r"(?i)recycled material|construction material|\brmc\b|scrap")
+
+    def commodity_kinds(self, refresh=False):
+        """{commodity uuid (the game's resourceGUID): "ore" | "salvage" | "other"}, from the Star Citizen Wiki's
+        commodities (the game files): an ore or mineral (raw, or refined from one) is "ore", recycled material and
+        construction materials "salvage". Cached for a day; the last copy is used if the wiki can't be reached."""
+        f = self._file("commodity_kinds")
+        old = None
+        if f.exists():
+            try:
+                old = json.loads(f.read_text(encoding="utf-8"))
+                if not refresh and time.time() - f.stat().st_mtime < DAY:
+                    return old
+            except Exception:
+                old = None
+        out, refined_of_ore, page = {}, set(), 1
+        try:
+            while page <= 30:
+                r = _get(f"{API}/commodities?" + urllib.parse.urlencode({"page[number]": page, "page[size]": 200}))
+                for c in r.get("data") or []:
+                    u = str(c.get("uuid") or "").lower()
+                    if not u:
+                        continue
+                    groups = [str(g).lower() for g in (c.get("commodity_groups") or [])]
+                    name = f"{c.get('name') or ''} {c.get('display_name') or ''}"
+                    mined = bool(c.get("is_mineable") or c.get("has_ship_mineables") or c.get("has_ground_vehicle_mineables")
+                                 or c.get("has_fps_mineables"))
+                    if c.get("has_salvage") or self.SALVAGE_WORDS.search(name) or "salvage" in groups:
+                        out[u] = "salvage"
+                    # mined, a raw mineral / metal / gem group, or refined from something raw (Ouratite from Raw Ouratite)
+                    elif mined or any(g in self.ORE_GROUPS or g.startswith("raw_") for g in groups) \
+                            or any(isinstance(rv, dict) and rv.get("uuid") for rv in (c.get("raw_versions") or [])):
+                        out[u] = "ore"
+                        rv = (c.get("refined_version") or {}).get("uuid") if isinstance(c.get("refined_version"), dict) else None
+                        if mined and rv:
+                            refined_of_ore.add(str(rv).lower())       # refined from an ore: still the miner's
+                    else:
+                        out.setdefault(u, "other")
+                last = (r.get("meta") or {}).get("last_page") or page
+                if page >= last or not r.get("data"):
+                    break
+                page += 1
+        except Exception:
+            return old or {}
+        for u in refined_of_ore:
+            if out.get(u) != "salvage":
+                out[u] = "ore"
+        if out:
+            self.dir.mkdir(exist_ok=True)
+            f.write_text(json.dumps(out), encoding="utf-8")
+        return out or old or {}
+
     def commodity_sources(self, name):
         """Where a commodity is mined or harvested, from the wiki's resource data: {name, from, sources,
         web_url}. A refined commodity (Laranite) uses its ore's places, with "from" naming the ore.

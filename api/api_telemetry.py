@@ -26,7 +26,19 @@ class TelemetryMixin:
         self._tel.may_discover = spawned_a_while
         # session stats and the earnings log, from every frame (game/session_stats.py)
         self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None),
-                                              ctype_fn=self._contract_type)
+                                              ctype_fn=self._contract_type, kind_fn=lambda: getattr(self, "_cm_kinds", None))
+        # what each commodity is (ore, salvage…), for telling a Miner's sale from a Trader's: from the wiki, fetched
+        # in the background (a sale is never held up by it), again daily
+        def kinds_loop():
+            while True:
+                try:
+                    k = self._gear.commodity_kinds()
+                    if k:
+                        self._cm_kinds = k
+                except Exception:
+                    pass
+                time.sleep(6 * 3600)
+        threading.Thread(target=kinds_loop, daemon=True, name="commodity-kinds").start()
         self._tel.on_frame = self._tel_frame
         threading.Thread(target=self._auto_showloc_loop, daemon=True, name="auto-showlocation").start()
         threading.Thread(target=self._stats_sync_loop, daemon=True, name="stats-sync").start()   # api_jobs.py

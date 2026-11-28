@@ -32,7 +32,8 @@ SUBMIT_URL = "https://api.uexcorp.uk/2.0/data_submit"
 MAX_ROWS = 500
 MAX_SHOT = 10 * 1024 * 1024                  # UEX: screenshot up to 10 MB
 SHOT_BUDGET = 9 * 1024 * 1024                # stay under it with room to spare
-MAX_SHOTS = 8                                # one report each: enough for a long kiosk list
+MAX_SHOTS = 30                               # one report each: 8 wasn't enough for a big terminal (80+ items is
+                                             # 10-12 screens of a kiosk list), and the extras were dropped unsaid
 CONTAINER_SIZES = {1, 2, 4, 8, 16, 24, 32}
 DUPLICATE_WINDOW = 300                       # UEX rejects the same item at the same terminal within 5 min
 STATUS = {1: "Out of stock", 2: "Very Low Inventory", 3: "Low Inventory", 4: "Medium Inventory", 5: "High Inventory",

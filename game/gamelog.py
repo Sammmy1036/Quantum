@@ -101,6 +101,17 @@ RE_JURISDICTION = re.compile(r"Entered (.+?) Jurisdiction")
 RE_MEDICAL = re.compile(r"(?i)\b(regenerat\w*|imprint\w*|check(?:ed|ing)?[- ]?in|patient|hospital|clinic|med ?bed|"
                         r"medical (?:bed|bay|room|treatment|care)|treatment|admitted|discharged|"
                         r"(?:room|bed|ward)\s*(?:no\.?|number|#)?\s*\d+)\b")
+# Selling at a terminal: the game logs what you sold and where the moment you press Sell (the money comes a moment
+# later, through the telemetry). Jobs use it to tell an ore sale from a cargo or salvage sale by what was sold, not
+# by the ship you last flew (you sell refined ore on foot, long after you've parked the Prospector).
+#   a commodity sold:        "Sending SShopCommoditySellRequest - playerId[..] shopId[..] shopName[..] ... amount[27568.0]
+#                             resourceGUID[<uuid>]"   (the amount is the aUEC you get)
+#   one bought:              "Sending SShopCommodityBuyRequest ..." (cargo you bought is a trade when you sell it)
+#   ore sold to a refinery:  "...OnSellToRefineryPressed", then "Sending SShopRefineryRequest ... shopName[..]" (no amount);
+#                             "RefineryTransactionResponse Error ... type[Selling]" right after means it didn't go through
+RE_SELL_COMMODITY = re.compile(r"SShopCommodity(Sell|Buy)Request - playerId\[(\d+)\] shopId\[\d+\] shopName\[([^\]]*)\]"
+                               r".*?amount\[([\d.]+)\]\s*resourceGUID\[([0-9A-Fa-f-]{36})\]")
+RE_SELL_REFINERY = re.compile(r"SShopRefineryRequest - playerId\[(\d+)\] shopId\[\d+\] shopName\[([^\]]*)\]")
 RE_MED_ROOM = re.compile(r"(?i)\b(room|bed|ward)\s*(?:no\.?|number|#)?\s*:?\s*([A-Z]?\d+[A-Z]?)\b")
 # What you personally are doing, from lines that name you or come from your own terminals:
 RE_CHARACTER = re.compile(r"geid (\d+) - accountId \d+ - name (\S+) - state STATE_CURRENT")
@@ -468,6 +479,9 @@ class ContractTracker(threading.Thread):
         self.tel_log = None        # this session: did the game start its telemetry server? (telemetry.py)
         self.contacts = []         # ships that streamed in near you: {"id", "code", "name", "threat", "at", "safe"}
         self.qt = {}               # current/last jump: {"dest", "ship", "start", "selected", "arrived", "place"}
+        self.sales = []            # what you sold or bought at terminals (newest last): {"at", "how" (sell | buy | refinery),
+                                   # "shop", "amount", "guid"}; session_stats matches a sale to the money (Jobs)
+        self._refinery_sell_at = 0.0
         self.build = ""            # game build number, e.g. "12660092" (calibrations are tagged with it)
         self.build_log = None      # the Game.log that build was read from (LIVE's or a test channel's)
         self._build_read = False   # read from this log yet (it's read again for every new game session)
@@ -1416,6 +1430,8 @@ class ContractTracker(threading.Thread):
         # build number, and that's how Quantum knows the game changed (planet alignment starts over, and so
         # on). Before, the first build ever seen was kept for good, so an update went unnoticed.
         # In the game world or not: <Join PU> when you load in, the main menu ("Frontend") when you leave it
+        if "SShopCommodity" in line or "Refinery" in line:
+            self._sale_line(line)                     # a sale at a terminal (Jobs); the line goes on to the others
         if "<Join PU>" in line or ('gamerules="SC_Default"' in line and not self.in_pu):
             self.in_pu, self.pu_at = True, log_time(line) or time.time()
         elif "Requesting game mode Frontend" in line:
@@ -1651,6 +1667,23 @@ class ContractTracker(threading.Thread):
                             "near": q.get("place"), "jump": q["dest"]}
                 return True
         return False
+
+    def _sale_line(self, line):
+        """Note a commodity sold (or bought) at a terminal, or ore sold to a refinery (see RE_SELL_COMMODITY)."""
+        ts = log_time(line) or time.time()
+        mine = lambda pid: not self.player_geid or pid == str(self.player_geid)
+        if m := RE_SELL_COMMODITY.search(line):
+            if mine(m.group(2)):
+                self.sales = (self.sales + [{"at": ts, "how": m.group(1).lower(), "shop": m.group(3),
+                                             "amount": float(m.group(4)), "guid": m.group(5).lower()}])[-80:]
+        elif "OnSellToRefineryPressed" in line:
+            self._refinery_sell_at = ts
+        elif (m := RE_SELL_REFINERY.search(line)) and mine(m.group(1)) and 0 <= ts - self._refinery_sell_at < 15:
+            self._refinery_sell_at = 0.0
+            self.sales = (self.sales + [{"at": ts, "how": "refinery", "shop": m.group(2), "amount": None, "guid": None}])[-80:]
+        elif "RefineryTransactionResponse" in line and "Error" in line and "Selling" in line:
+            if self.sales and self.sales[-1]["how"] == "refinery" and 0 <= ts - self.sales[-1]["at"] < 10:
+                self.sales.pop()                          # that refinery sale didn't go through
 
     def _resolve_loc(self, landing, loc):
         """A location id -> place. A city's landing-zone id covers the whole city (spaceport, shops,
