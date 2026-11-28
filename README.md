@@ -4,7 +4,7 @@
 
 # Quantum
 
-**A free Star Citizen companion for Windows** with a live 3D map, route planner, contract tracker, live ship and player stats, trade and fleet tools, daily jobs, player marketplace, org tools, friends management, messaging, and patch update information all in one app.
+**Star Citizen companion app for Windows** with a live 3D map, route planner, contract tracker, live ship and player stats, trade and fleet tools, daily jobs, player marketplace, org tools, friends management, messaging, and patch update information all in one app.
 
 <p align="center">
   <a href="https://quantumsc.org/media/Quantum-Demo.mp4">▶ Watch the demo</a><br><br>
