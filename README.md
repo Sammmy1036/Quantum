@@ -8,7 +8,6 @@
 
 <p align="center">
   <a href="https://quantumsc.org/media/Quantum-Demo.mp4">▶ Watch the demo</a><br><br>
-  <a href="images/Home.png"><img src="images/Home.png" width="820" alt="Quantum's Home page with the Area 18 card open over the 3D city"></a>
 </p>
 
 <table>
