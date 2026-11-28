@@ -91,7 +91,15 @@ class MapMixin:
         if cur.get("dead"):
             return None, 0, None
         if cur.get("landing") and cur.get("place") in locs:
-            return cur["place"], cur["at"], "landed"
+            place = cur["place"]
+            # A city's landing zone is one id for the whole city, hangars included. Flying in, you set down in a
+            # hangar at its spaceport (Teasa, some 8 km from Lorville's centre), so that's where the map puts you;
+            # spawning in a hab you're in the city itself.
+            if not cur.get("spawned"):
+                port = next((sp for sp, v in SPACEPORTS.items() if v[0] == place and sp in locs), None)
+                if port:
+                    place = port
+            return place, cur["at"], "landed"
         if cur.get("jump"):
             return (cur["near"], cur["at"], "jump") if cur.get("near") in locs else (None, 0, None)
         q = self._tracker.qt or {}
@@ -160,7 +168,10 @@ class MapMixin:
             if spot and (not p or spot_at > self._player_t) and (won or not self._estimate_beats_log(how, t)):
                 self._spot_won = (spot, spot_at)
                 L = self._db.locations[spot]
-                p, psys, ptime, approx = self._db.global_pos(L, t), L.system, t, L.name
+                # A quantum jump to a city or outpost ends well above it (some 30 km over Lorville), not on it: put
+                # you there, and the dead reckoning flies you down from it (api_telemetry._position_estimate)
+                pos = self._db.qt_arrival_pos(L, t) if how == "jump" else self._db.global_pos(L, t)
+                p, psys, ptime, approx = pos, L.system, t, L.name
             # The log says you're in another system since then (you went through a gateway): you're at
             # the gateway on this side until a /showlocation says otherwise.
             w = self._tracker.where or {}
@@ -205,10 +216,12 @@ class MapMixin:
                     "telemetry": self._tel_live() if game_on else None}
             if p:
                 body = self._db.body_near(p, psys)
+                spot_how = how
                 how = getattr(self, "_sys_how", None) or ("log", "", None)
                 info = {"pos": p, "t": ptime, "age": t - (spot_at if approx else ptime), "system": psys, "body": None,
                         "sys_how": how[0], "sys_from": how[1], "sys_at": how[2],
-                        "approx": approx, "approx_how": how if approx else None,
+                        # how the log put you there ("landed", "jump", "left", "log"): the status line words it
+                        "approx": approx, "approx_how": spot_how if approx else None,
                         "fix_t": self._player_t}      # when your last /showlocation came in (t moves with log spots)
                 if body:
                     local = body.to_local(p, ptime)
@@ -245,7 +258,7 @@ class MapMixin:
                 live["guide"] = self._db.guidance(self._db.locations[self._guide], p, psys, tc)
             self._try_autocal()   # also when the log event arrives after the reading
             w = self._tracker.where or {}
-            live["autoloc"] = self._sender.status()
+            live["autoloc"] = {**self._sender.status(), "auto": self._auto_loc_cfg()}
             up = self._update
             if up and up.get("available") and up.get("version") != self._settings.get("skip_update"):
                 live["update"] = {"version": up["version"], "stage": self._updater.progress().get("stage")}

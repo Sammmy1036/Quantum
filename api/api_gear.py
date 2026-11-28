@@ -569,6 +569,7 @@ class GearMixin:
     def set_guide(self, name):
         with self._lock:
             self._guide = name if name in self._db.locations else None
+            self._guide_since = time.time()      # a hangar request after this ends the guide (api_navguide.py)
             self._save_settings()
             return {"ok": True}
 

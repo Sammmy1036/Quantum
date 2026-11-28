@@ -60,13 +60,14 @@ class DeadReckoner:
         self._a = None
         self.flying_at = 0.0        # when the last telemetry frame had you flying (not landed, moving)
 
-    def anchor(self, body_name: str, radius_m: float, local: Vec, t: float):
-        """A new real reading on a planet or moon: start again from it."""
+    def anchor(self, body_name: str, radius_m: float, local: Vec, t: float, abs_alt: bool = False):
+        """A new real reading on a planet or moon: start again from it. abs_alt: the height of `local` is only a
+        guess (a quantum arrival above a city), so the first altitude the telemetry gives replaces it."""
         r = _norm(local)
         with self._lock:
             self._a = None if r <= 0 else {
                 "body": body_name, "R": radius_m, "u": _unit(local), "r0": r, "r": r, "t": t,
-                "alt0": None, "last": None, "moved": 0.0, "gap_err": 0.0, "frames": 0}
+                "alt0": None, "last": None, "moved": 0.0, "gap_err": 0.0, "frames": 0, "abs": abs_alt}
 
     def drop(self):
         with self._lock:
@@ -90,10 +91,15 @@ class DeadReckoner:
             speed, vs, alt = float(v["speed"]), float(v.get("vspeed") or 0.0), v.get("altitude")
             self.flying_at = now if (not v.get("landed") and speed > 3) else 0.0   # for "is the log's landing real?"
             if speed > ATMO_MAX_SPEED:
+                if a.get("abs") and now - a["t"] < 30:   # still slowing down out of the jump it starts from
+                    a["last"] = None
+                    return
                 self._a = None                            # quantum, or out in space: this estimate is over
                 return
             if a["alt0"] is None and alt is not None:
                 a["alt0"] = float(alt)                    # the game's altitude when the reading was taken
+                if a.get("abs"):                          # a guessed height: the game's own altitude is better
+                    a["r0"] = a["r"] = max(a["R"] * 0.9, a["R"] + float(alt))
             if a["last"] is None:
                 a["last"] = now
                 return

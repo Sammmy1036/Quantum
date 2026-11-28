@@ -361,7 +361,7 @@ class DatarunnerMixin:
             terms = self._dr_terminals()
             places = self._uex.place_map(self._db.locations)
             spot, _, how = self._log_spot(self._tracker.cur or {}) if self._game_on() else (None, 0, None)
-            here = {i for i, p in places.items() if p and p == spot and i in terms}
+            here = {i for i, p in places.items() if p and spot and p in place_group(spot) and i in terms}   # Lorville = Teasa Spaceport
             tid = int(id_terminal) if id_terminal else (min(here) if here else None)
             self._dr_terminal = tid
             listing = sorted(({"id": i, "name": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
@@ -1387,7 +1387,7 @@ class DatarunnerMixin:
                 # offer "Map it too" instead of nothing
                 place = places.get(tid) or unplaced.get(services._key(uex.place_name(t)))
                 jobs.append({"id": tid, "name": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
-                             "place": place, "here": bool(spot and place == spot), "dist": self._dist_from_you(place),
+                             "place": place, "here": bool(spot and place in place_group(spot)), "dist": self._dist_from_you(place),
                              "rows": len(ages), "stale": sum(1 for a in ages if a >= 3),
                              # oldest / median: real ages in days; None when no price there was ever reported
                              "oldest": round(known[-1], 1) if known else None,

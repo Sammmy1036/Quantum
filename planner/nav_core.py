@@ -503,6 +503,24 @@ class NavDB:
             return self.bodies[loc.body].to_global(loc.pos, t)
         return loc.pos
 
+    # How far above a surface place a quantum jump to it drops you. The game never takes you down to the city or
+    # outpost itself: a jump to Lorville ends some 30 km above it, and you fly the rest. Planets with air stop you
+    # higher (above the weather) than airless moons do. Approximate: the dead reckoning and the next /showlocation
+    # put you right from there.
+    QT_ARRIVAL_ALT_M = {"planet": 30_000.0, "moon": 15_000.0}
+
+    def qt_arrival_pos(self, loc: Location, t: float) -> Vec:
+        """Where a quantum jump to `loc` ends: straight above it for a place on a planet or moon (the
+        QT_ARRIVAL_ALT_M above), the place itself for anything out in space."""
+        if loc.kind == "surface" and loc.body in self.bodies:
+            b = self.bodies[loc.body]
+            r = norm(loc.pos)
+            if r > 0:
+                up = self.QT_ARRIVAL_ALT_M.get(b.kind, 15_000.0)
+                k = (max(r, b.radius_m) + up) / r
+                return b.to_global((loc.pos[0] * k, loc.pos[1] * k, loc.pos[2] * k), t)
+        return self.global_pos(loc, t)
+
     def body_near(self, pos: Vec, system: str | None = None) -> Body | None:
         """The planet/moon whose rotating zone contains pos (3x OM radius, else 1.5x radius)."""
         best, best_d = None, float("inf")

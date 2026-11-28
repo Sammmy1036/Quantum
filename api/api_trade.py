@@ -136,7 +136,9 @@ class TradeMixin:
                 if r["id_commodity"] != id_commodity or not t:
                     continue
                 place = places.get(r["id_terminal"])
-                base = {"terminal": t.get("name"), "where": uex.where(t), "system": t.get("star_system_name"),
+                # shop: the terminal to use there, without the place's own name ("TDD - Trade and Development Division")
+                base = {"terminal": t.get("name"), "shop": self._shop_name(t.get("name"), uex.where(t)),
+                        "where": uex.where(t), "system": t.get("star_system_name"),
                         "place": place, "dist": self._dist_from_you(place), "updated": r.get("date_modified"),
                         "max_box": t.get("max_container_size"), "containers": r.get("container_sizes")}
                 if r.get("price_buy"):

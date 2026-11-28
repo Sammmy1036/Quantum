@@ -129,7 +129,7 @@ function servicesHtml(r,place){
     const gk=svcGameKey(a,m?.[2]), sized=!!gk&&/^(pad|hangar)_/.test(gk);   // the game's pad / hangar icons carry their size
     // Hospital / Clinic: always opens its own window (the hospital itself, your check-ins there, the pharmacy)
     if(place&&HOSP_RX.test(a)){ const hon=S.stock?.kind==="hospital"&&S.stock.place===place;
-      return `<div class="svc-tile click${hon?" on":""}" data-hosp="1" title="${esc(a)}: the ${/clinic/i.test(a)?"clinic":"hospital"} here, your check-ins and what its pharmacy sells">${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }
+      return `<div class="svc-tile click${hon?" on":""}" data-hosp="1" title="${esc(a)}: the ${/clinic/i.test(a)?"clinic":"hospital"} here and what its pharmacy sells">${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }
     return `<div class="svc-tile${g?" click":""}${gon?" on":""}" ${g?`data-shop="${g}" title="${esc(a)}: see what's sold here"`:`title="${esc(a)}"`}>${m?.[2]&&!sized?`<span class="sz">${esc(m[2].toUpperCase())}</span>`:""}${gk?gameIcon(gk):svcIcon(a)}<div class="bar"></div><div class="l">${esc(label)}</div></div>`; }).join("")
     +(trade?commodityTile(on):"");
   // A long description is cut short with "More" to read it all ("Less" folds it again); which places you've
@@ -406,7 +406,7 @@ function shopRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=="sh
   const by={name:(a,b)=>a.name.localeCompare(b.name),cheap:(a,b)=>a.price-b.price||a.name.localeCompare(b.name),dear:(a,b)=>b.price-a.price||a.name.localeCompare(b.name),
     fresh:(a,b)=>(b.at||0)-(a.at||0)||a.name.localeCompare(b.name)}[st.sort]||((a,b)=>a.name.localeCompare(b.name));
   // A vehicle for rent: its picture, maker, cargo and crew, the price per day, and its page in Vehicles
-  const rentCard=i=>{ const a=drAge(i.at), facts=[i.scu?`${Number(i.scu).toLocaleString()} SCU`:"",i.crew?`crew ${i.crew}`:"",i.pad?`${padLabel(i.pad)} pad`:""].filter(Boolean).join(" · ");
+  const rentCard=i=>{ const a=drAge(i.at), facts=[i.scu?`${Number(i.scu).toLocaleString()} SCU`:"",i.crew?`crew ${(typeof crewText==="function"&&crewText(i.crew))||i.crew}`:"",i.pad?`${padLabel(i.pad)} pad`:""].filter(Boolean).join(" · ");
     return `<div class="stk-card shop rent" data-vhopen="${esc(i.vid)}" title="Open the ${esc(i.name)} in Vehicles"><div class="ph">${i.photo?`<img src="${esc(i.photo)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:phCard("vehicle")}</div>
       <div class="bd"><div class="nm"><b>${esc(i.name)}</b></div><div class="cat">${esc([i.maker,i.category].filter(Boolean).join(" · "))}</div>${facts?`<div class="key">${esc(facts)}</div>`:""}
         <div class="pr"><b>${Math.round(i.price).toLocaleString()}<small>${i.per==="day"?"aUEC / day":"aUEC"}</small></b><i class="${a.c}" title="${i.at?`Price reported ${agoTs(i.at)}`:"No report time"}">${i.at?agoTs(i.at):"age unknown"}</i></div></div></div>`; };
@@ -465,8 +465,10 @@ function hospitalRender(){ const P=$("stk-panel"), st=S.stock; if(!P||st?.kind!=
     ||`<div class="muted" style="font-size:13px;padding:2px">The game data doesn't name the ${what.toLowerCase()} here.</div>`;
   // your check-ins here, from Game.log
   const V=info.visits||[];
-  const visits=`<div class="stk-th"><b>Your visits here</b><span>from your Game.log</span></div>`+(V.length?`<div class="hosp-log">${V.map(v=>`<div class="hosp-v">${v.room?`<span class="hosp-room">${esc(v.room)}</span>`:""}<span class="hosp-t">${esc(v.text)}</span><i>${esc(agoTs(v.at))}</i></div>`).join("")}</div>`
-    :`<div class="muted" style="font-size:13px;padding:2px 2px 4px">Nothing logged here yet. Check in at the Patient Check-In console and what the game writes to Game.log about it (your room or bed, an imprint set) shows up here.</div>`);
+  // Only shown once there's something: the current game build writes nothing to Game.log for checking in, the room
+  // or bed you're given, or setting your imprint (no notification, no location change), so for now it's empty for
+  // everyone. The log reader still looks for those lines (gamelog.RE_MEDICAL) in case a patch starts logging them.
+  const visits=V.length?`<div class="stk-th"><b>Your visits here</b><span>from your Game.log</span></div><div class="hosp-log">${V.map(v=>`<div class="hosp-v">${v.room?`<span class="hosp-room">${esc(v.room)}</span>`:""}<span class="hosp-t">${esc(v.text)}</span><i>${esc(agoTs(v.at))}</i></div>`).join("")}</div>`:"";
   // the pharmacy
   const sh=st.shop, meds=sh?.ok?(sh.shops||[]).map(s=>({...s,items:s.items.filter(i=>i.group==="medical")})).filter(s=>s.items.length):[];
   const medCard=i=>{ const m=shopGear(i), a=drAge(i.at), img=m?.g?.image, link=m?`data-shopgear="${esc(m.tab)}|${esc(m.g.uuid||m.g.name)}" title="Open ${esc(i.name)} in Consumables"`:"";
@@ -603,6 +605,10 @@ function renderDetail(){
         <span class="k">Open chat with</span><select class="field" id="s-chat"><option value="enter" ${a.open_chat!=="none"?"selected":""}>Enter (default)</option><option value="none" ${a.open_chat==="none"?"selected":""}>Nothing, chat is already open</option></select>
         <span class="k" title="Your game key that shows / hides the chat window. Quantum won't type /showlocation while you've hidden chat">Game's chat show/hide key</span><select class="field" id="s-chatkey">${keys.map(k=>`<option value="${k}" ${k===(a.chat_key??"F12")?"selected":""} ${k&&(k===a.hotkey||k===a.loc_hotkey||k===a.shot_hotkey)?"disabled":""}>${k?k+(k==="F12"?" (game default)":""):"Off, don't check"}${k&&(k===a.hotkey||k===a.loc_hotkey||k===a.shot_hotkey)?" (used)":""}</option>`).join("")}</select>
       </div>
+      <div class="muted" style="font-size:12px;margin:12px 0 6px">Automatic /showlocation</div>
+      <label class="row" style="gap:8px;cursor:pointer"><input type="checkbox" id="s-autoqt" ${a.auto?.after_qt?"checked":""}> After a quantum jump ends</label>
+      <label class="row" style="gap:8px;cursor:pointer;margin-top:4px"><input type="checkbox" id="s-autoatmo" ${a.auto?.atmo?"checked":""}> When I enter a planet's or moon's atmosphere</label>
+      <div class="muted" style="font-size:12px;margin-top:4px">Quantum types /showlocation for you once, about a second after the jump ends, or once the game starts reporting your altitude and heading (needs Game telemetry on), so the map follows you without a key press. Only while Star Citizen is the focused window and chat isn't hidden.</div>
       ${a.loc_hotkey&&a.chat_key?`<div class="muted" style="font-size:12px;margin-top:6px">Chat in game: <b>${a.chat_hidden?"hidden":"showing"}</b>. While it's hidden, ${esc(a.loc_hotkey)} won't type (your letters would trigger key bindings). Out of step? Press ${esc(a.loc_hotkey)} twice to send anyway.</div>`:""}
       <div class="muted" style="font-size:12px;margin-top:8px">The game still sees your hotkeys, so pick keys that aren't bound in game.</div>
       ${afkHtml(a)}</div>
@@ -630,6 +636,8 @@ function renderDetail(){
       await api().set_autoloc($("s-hotkey").value, 0, $("s-chat").value, $("s-lochotkey").value, $("s-chatkey").value);
       await poll(); renderStatus(); renderDetail(); toast("Saved"); };
     for(const id of ["s-hotkey","s-lochotkey","s-chat","s-chatkey"]) $(id).onchange=save;
+    const autoSave=async()=>{ await api().set_auto_showloc($("s-autoqt").checked,$("s-autoatmo").checked); await poll(); toast("Saved"); };
+    for(const id of ["s-autoqt","s-autoatmo"]) if($(id)) $(id).onchange=autoSave;
     const afkSave=async(on)=>{ const st=await api().set_antiafk($("s-afkkey").value,$("s-afkact").value,$("s-afkfocus").checked,on); await poll(); renderDetail();
       if(on!==undefined) toast(st.afk.on?"Anti-AFK on: a harmless input every 1 to 4 minutes while Star Citizen is open":"Anti-AFK off"); };
     for(const id of ["s-afkkey","s-afkact","s-afkfocus"]) if($(id)) $(id).onchange=()=>afkSave();

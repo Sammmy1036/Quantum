@@ -428,7 +428,17 @@ class CoreMixin:
         anchor = self._db.locations.get(anchor_name) if anchor_name else None
         if anchor and anchor.body != body.name:
             anchor = None
-        cands = []
+        # Landed or docked at a known place on this planet (the log says so: in a hangar at Teasa Spaceport, say)
+        # and the reading is near it: the map's in line, so there's nothing to offer. Readings in a hangar are often
+        # a few km from the spaceport's own spot (its position is only approximate), and a cave or outpost at the
+        # same latitude and height elsewhere then "matched" instead: Hurston Cave N34 for a reading in Teasa.
+        cur = self._tracker.cur or {}
+        landed = self._db.locations.get(cur.get("place") or "") if cur.get("landing") else None
+        for L in (landed, anchor):
+            if L is not None and L.body == body.name and L.kind == "surface" and L.pos is not None \
+                    and dist(L.pos, local) < 30_000:
+                return None
+        cands, near_any = [], False
         for loc in self._db.locations.values():
             if loc.source != "db" or loc.kind != "surface" or loc.body != body.name:
                 continue
@@ -448,11 +458,14 @@ class CoreMixin:
             if off < 25_000:
                 # A few km could just mean you're parked near the place; a wrong rotation angle puts
                 # you tens to hundreds of km out, so only offer the fix for that.
+                near_any = True
                 continue
             near_anchor = bool(anchor and dist(loc.pos, anchor.pos) < 150_000)
             cands.append({"name": loc.name, "off": off, "near_log": near_anchor, "score": score,
                           "type": loc.category or ""})
-        if not cands:
+        # a known place matches right where the map has you (within 25 km): the map is in line, and any other
+        # match further away is just a place at the same latitude and height
+        if not cands or near_any:
             return None
         cands.sort(key=lambda c: (not c["near_log"], c["score"]))
         if cands[0]["near_log"]:

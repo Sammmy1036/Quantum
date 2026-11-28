@@ -5,6 +5,23 @@ Module-level names come from qbase.py."""
 from qbase import *  # noqa: F401,F403
 
 
+def _crew_range(lo, hi, uex=None):
+    """A ship's crew as {crew_min, crew_max}, smallest first. The wiki and UEX don't always agree on order
+    (some records have min and max swapped, and UEX's "crew" is a "4,2"-style list), so every number is
+    gathered and sorted: a 2-4 crew ship always reads 2-4, never 4-2."""
+    nums = []
+    for x in (lo, hi):
+        if x is not None and str(x).strip():
+            nums += [int(n) for n in re.findall(r"\d+", str(x))]
+    if not nums and uex:
+        nums = [int(n) for n in re.findall(r"\d+", str(uex))]
+    nums = [n for n in nums if n > 0]
+    if not nums:
+        return {"crew_min": None, "crew_max": None}
+    a, b = min(nums), max(nums)
+    return {"crew_min": a, "crew_max": b if b != a else None}
+
+
 class CatalogMixin:
     # ---- What a place's shops sell (armor, clothing, weapons, ship weapons and parts, food, medical…), for the
     # windows the service tiles on a place's card open. From UEX's item prices at every terminal (one cached
@@ -231,7 +248,8 @@ class CatalogMixin:
                         continue
                     place = places.get(r["id_terminal"])
                     spots.setdefault(r.get("id_vehicle"), {"buy": [], "rent": []})[kind].append({
-                        "where": uex.where(t), "place": place, "system": t.get("star_system_name"),
+                        "where": uex.where(t), "shop": self._shop_name(t.get("name"), uex.where(t)),   # the ship shop there
+                        "place": place, "system": t.get("star_system_name"),
                         "price": price, "dist": self._dist_from_you(place), "updated": r.get("date_modified")})
             add("buy", self._uex.get("vehicles_purchases_prices_all")[0], ("price_buy",))
             add("rent", self._uex.get("vehicles_rentals_prices_all")[0], ("price_rent", "price", "price_buy"))
@@ -421,9 +439,20 @@ class CatalogMixin:
 
     COMPONENT_HINTS = ("vehicle", "ship", "cooler", "power plant", "quantum drive", "shield generator", "missile",
                        "turret", "mining laser", "mining module", "gadget", "salvage", "tractor", "radar", "bomb",
-                       "jump module", "jump drive")
+                       "jump module", "jump drive", "life support", "fuel nozzle", "fuel tank", "scraper", "docking",
+                       "towing", "emp", "interdiction", "rocket pod")
     COMPONENT_SKIP = ("clothing", "armor", "undersuit", "jumpsuit", "helmet", "personal", "fps", "food", "drink",
-                      "medical", "tool", "decoration", "flair", "paint", "livery", "utility")
+                      "medical", "tool", "decoration", "flair", "paint", "livery")
+    # UEX's "Utility" section mixes ship parts (tractor and salvage beams, fuel nozzles and pods) with things that
+    # aren't (hand-held gadgets, containers, fabricators): those few are left out by name
+    COMPONENT_SKIP_NAMES = ("gadgets", "fabricator")
+    # Categories taken whatever their name says: UEX keeps mining ships' ore pods in Utility's "Container" (its other
+    # containers are dropped from it, ONLY_NAMES), so it's listed as Ore Pods. Miscellaneous's "Container" isn't.
+    COMPONENT_TAKE = (("utility", "container"),)
+    # UEX's names, as the game (and players) call them
+    COMPONENT_LABELS = {"external fuel tanks": "Fuel Pods", "salvage beams": "Salvage Heads", "scraper beams": "Scraper Modules",
+                        "life support generator": "Life Support", "fuel nozzle": "Fuel Nozzles", "mining laser heads": "Mining Lasers",
+                        "container": "Ore Pods"}
 
     # Categories UEX lists that hold no ship components (whole ships are on the Vehicles tab)
     COMPONENT_EMPTY = ("vehicle",)
@@ -435,15 +464,50 @@ class CatalogMixin:
     WIKI_KINDS = (("mining laser", "WeaponMining", None),
                   ("flight blade", "FlightController", r"_blade_(spd|hnd)$|_flight_blade_(spd|hnd)$"),
                   ("cooler", "Cooler", None), ("power plant", "PowerPlant", None), ("radar", "Radar", None),
-                  ("quantum drive", "QuantumDrive", None), ("shield", "Shield", None))
-    WIKI_ONLY = {"WeaponMining": ("Mining Lasers", "Mining"), "FlightController": ("Flight Blades", "Systems")}
+                  ("quantum drive", "QuantumDrive", None), ("shield", "Shield", None),
+                  ("life support", "LifeSupportGenerator", None),
+                  ("emp", "EMP", None),
+                  ("interdiction", "QuantumInterdictionGenerator", None), ("qed", "QuantumInterdictionGenerator", None),
+                  ("towing", "TowingBeam", None),
+                  # the wiki files the big S3 tractor beams under SalvageHead: they're listed with the tractor beams
+                  ("tractor", "TractorBeam", None),
+                  ("salvage", "SalvageHead", r"^Salvage_Head"),
+                  ("scraper", "SalvageModifier", r"Scraper"),
+                  ("fuel pod", "ExternalFuelTank", r"^FuelPod_(?!AI)"), ("fuel tank", "ExternalFuelTank", r"^FuelPod_(?!AI)"),
+                  ("rocket pod", "WeaponGun", r"^RPOD_"),
+                  # ore pods are cargo containers in the game files (Ship.Container.Cargo): the mining ones only
+                  ("ore pod", "Container", r"^Cargo_(Ship|GroundVehicle)Mining_Pod_(?!Template)"),
+                  ("container", "Container", r"^Cargo_(Ship|GroundVehicle)Mining_Pod_(?!Template)"))
+    # Kinds UEX has no category for get one of their own, filled from the wiki (game files)
+    WIKI_ONLY = {"WeaponMining": ("Mining Lasers", "Mining"), "FlightController": ("Flight Blades", "Systems"),
+                 "LifeSupportGenerator": ("Life Support", "Systems"),
+                 "EMP": ("EMP Generators", "Vehicle Weapons"),
+                 "QuantumInterdictionGenerator": ("Quantum Enforcement Devices (QED)", "Utility"),
+                 "WeaponGun": ("Rocket Pods", "Vehicle Weapons"),
+                 "TowingBeam": ("Towing Beams", "Utility"), "TractorBeam": ("Tractor Beams", "Utility"),
+                 "SalvageHead": ("Salvage Heads", "Salvage"), "SalvageModifier": ("Scraper Modules", "Salvage"),
+                 "ExternalFuelTank": ("Fuel Pods", "Utility"), "Container": ("Ore Pods", "Mining")}
+    # Extra wiki kinds merged into one category: the S3 tractor beams the wiki files as salvage heads go with the
+    # tractor beams, and the ReadyGrip Tractor Module (a salvage head's tractor attachment) with the salvage heads
+    WIKI_EXTRA = {"TractorBeam": (("SalvageHead", r"TractorBeam"),), "SalvageHead": (("SalvageModifier", r"Tractor"),)}
+    # Category words that always mean one wiki kind, even where the word "module" or "rack" would rule it out
+    WIKI_FIRST = ("ore pod", "scraper", "rocket pod", "emp", "interdiction", "qed", "towing", "tractor", "salvage", "fuel pod",
+                  "fuel tank", "life support")
 
     @classmethod
     def _wiki_kind(cls, category_name):
         nm = (category_name or "").lower()
+        for words, t, test in cls.WIKI_KINDS:
+            if words in cls.WIKI_FIRST and re.search(r"\b" + re.escape(words), nm):
+                return t, test
         if any(k in nm for k in ("rack", "turret", "module", "gadget", "mount")) and "mining laser" not in nm:
             return None
         return next(((t, test) for words, t, test in cls.WIKI_KINDS if words in nm), None)
+
+    @classmethod
+    def _wiki_kind_of(cls, wtype):
+        """A wiki-only category's kind ("wiki:EMP" -> ("EMP", None))."""
+        return next(((w, t) for _, w, t in cls.WIKI_KINDS if w == wtype), (wtype, None))
 
     @staticmethod
     def _blade_ship(class_name):
@@ -484,7 +548,8 @@ class CatalogMixin:
                     t = terms.get(p.get("terminal_id"))
                     place = places.get(p.get("terminal_id"))
                     buy.append({"where": uex.where(t) if t else (p.get("where") or p.get("terminal") or ""),
-                                "shop": p.get("terminal"), "place": place, "system": p.get("system"),
+                                "shop": self._shop_name(p.get("terminal"), uex.where(t) if t else (p.get("where") or "")),
+                                "place": place, "system": p.get("system"),
                                 "price": p["price"], "dist": self._dist_from_you(place), "updated": p.get("updated")})
                 buy.sort(key=lambda x: x["price"])
             size = d.get("size")
@@ -503,13 +568,20 @@ class CatalogMixin:
                         "extra": d.get("stats") or []})
         return out
 
-    def _with_wiki_parts(self, rows, category_name, cat_id=None, index=False):
+    def _wiki_parts_all(self, wtype, test=None):
+        """A kind's wiki parts, with the extra ones the wiki files elsewhere (WIKI_EXTRA)."""
+        out = self._wiki_parts(wtype, test)
+        for et, etest in self.WIKI_EXTRA.get(wtype, ()):
+            out += self._wiki_parts(et, etest)
+        return out
+
+    def _with_wiki_parts(self, rows, category_name, cat_id=None, index=False, kind=None):
         """UEX's parts for a category plus the wiki's ones UEX doesn't have (matched by uuid or name)."""
-        kind = self._wiki_kind(category_name)
+        kind = kind or self._wiki_kind(category_name)
         if not kind:
             return rows
         have = {(r.get("uuid") or "").lower() for r in rows} | {(r.get("name") or "").lower() for r in rows}
-        for w in self._wiki_parts(*kind):
+        for w in self._wiki_parts_all(*kind):
             if (w.get("uuid") or "").lower() in have or w["name"].lower() in have:
                 continue
             have.add(w["name"].lower())
@@ -687,24 +759,71 @@ class CatalogMixin:
                   "neutron", "cooler", "shield", "generator", "power", "plant", "quantum", "drive", "radar", "s1",
                   "s2", "s3", "s4", "s5", "s6", "s7", "s8", "the"}
 
-    def uex_component_categories(self):
-        """Ship upgrade categories: coolers, power plants, quantum drives, shields, weapons, mining…"""
+    def uex_component_categories(self, include_empty=False):
+        """Ship upgrade categories: coolers, power plants, quantum drives, shields, weapons, mining… Categories
+        the last full look (uex_component_index) found nothing in (UEX's Fuel Nozzles, so far) are left out until
+        something is listed under them; include_empty lists them anyway (the index itself, to look again)."""
         def run():
             rows, _ = self._uex.get("categories")
             items = [c for c in rows if (c.get("type") or "item") == "item"]
             def txt(c):
                 return f"{c.get('section') or ''} {c.get('name') or ''}".lower()
-            pick = [c for c in items if any(h in txt(c) for h in self.COMPONENT_HINTS)
+            def hint(c):
+                t = txt(c)
+                return any(re.search(r"\b" + re.escape(h), t) for h in self.COMPONENT_HINTS)
+            take = lambda c: (str(c.get("section") or "").strip().lower(), str(c.get("name") or "").strip().lower()) in self.COMPONENT_TAKE
+            pick = [c for c in items if (hint(c) or take(c))
                     and not any(k in txt(c) for k in self.COMPONENT_SKIP)
+                    and ((c.get("name") or "").strip().lower() not in self.COMPONENT_SKIP_NAMES or take(c))
                     and (c.get("name") or "").strip().lower().rstrip("s") not in self.COMPONENT_EMPTY] or items
-            out = [{"id": c["id"], "name": c.get("name"), "section": c.get("section") or "Other",
+            out = [{"id": c["id"], "name": self.COMPONENT_LABELS.get((c.get("name") or "").strip().lower(), c.get("name")),
+                    "uex_name": c.get("name"), "section": c.get("section") or "Other",
                     "slot": self._slot_type_for(c.get("name"))} for c in pick]
             for wtype, (label, section) in self.WIKI_ONLY.items():      # kinds UEX has no category for
-                if not any((self._wiki_kind(c["name"]) or (None,))[0] == wtype for c in out):
+                if not any((self._wiki_kind(c.get("uex_name") or c["name"]) or (None,))[0] == wtype for c in out):
                     out.append({"id": f"wiki:{wtype}", "name": label, "section": section, "slot": None, "wiki": True})
             out.sort(key=lambda c: (c["section"], c["name"] or ""))
+            if not include_empty:
+                if not self._cp_empty_ids() and not getattr(self, "_cp_index_started", False):
+                    # nothing looked at yet (a first start, or the website after a restart): look in the background,
+                    # so the next time the list is asked for, the empty categories are gone
+                    self._cp_index_started = True
+                    threading.Thread(target=self.uex_component_index, daemon=True, name="cp-index").start()
+                empty = {str(x) for x in self._cp_empty_ids()}
+                out = [c for c in out if str(c["id"]) not in empty]
             return {"ok": True, "items": out}
         return self._uex_call(run)
+
+    # Parts a category lists that belong in another (category words, words in the part's name): UEX files the
+    # ReadyGrip Tractor Module, a salvage head's tractor attachment, under Scraper Beams. It's shown with the
+    # salvage heads instead (WIKI_EXTRA).
+    MISFILED = (("scraper", r"(?i)\btractor\b"),)
+    # Categories that keep only some of what UEX files there: of Utility's containers, the mining ore pods
+    ONLY_NAMES = (("container", r"(?i)\bore\s*pods?\b"),)
+
+    def _cp_empty_ids(self):
+        """Component categories the last full look found empty (kept in settings, or in memory without them)."""
+        st = getattr(self, "_settings", None)
+        return list((st.get("cp_empty") if isinstance(st, dict) else None) or getattr(self, "_cp_empty_mem", []) or [])
+
+    def _cp_empty_save(self, ids):
+        st = getattr(self, "_settings", None)
+        if isinstance(st, dict):
+            st["cp_empty"] = ids
+            self._save_settings()
+        else:
+            self._cp_empty_mem = ids
+
+    @classmethod
+    def _drop_misfiled(cls, category_name, rows):
+        nm = (category_name or "").lower()
+        for words, rx in cls.MISFILED:
+            if words in nm:
+                rows = [r for r in rows if not re.search(rx, str(r.get("name") or ""))]
+        for words, rx in cls.ONLY_NAMES:
+            if words in nm:
+                rows = [r for r in rows if re.search(rx, str(r.get("name") or ""))]
+        return rows
 
     # Ship guns by how they fire, for the Components tab: (id, label, words in the name). Checked in this
     # order, so "Distortion Repeater" is a distortion weapon and "Scattergun" isn't a plain gun.
@@ -738,10 +857,11 @@ class CatalogMixin:
         """Every part in every component category, small enough to search all at once from the
         Components tab: name, maker, size, grade, its category and (for guns) what kind it is."""
         def run():
-            cats = self.uex_component_categories()
+            cats = self.uex_component_categories(include_empty=True)
             if not cats.get("ok"):
                 return cats
             out, at = [], None
+            failed = set()
             for c in cats["items"]:
                 if str(c["id"]).startswith("wiki:"):
                     rows = []
@@ -749,6 +869,7 @@ class CatalogMixin:
                     try:
                         rows, at = self._uex.get("items", {"id_category": int(c["id"])})
                     except uex.UexError:
+                        failed.add(str(c["id"]))          # couldn't look: not the same as empty
                         continue
                 n0 = len(out)
                 for i in rows:
@@ -768,9 +889,10 @@ class CatalogMixin:
                     out.append(row)
                 mine = out[n0:]
                 del out[n0:]
-                out.extend(self._with_wiki_parts(mine, c.get("name") if not str(c["id"]).startswith("wiki:")
-                                                 else ("flight blade" if "Flight" in c["id"] else "mining laser"),
-                                                 c["id"], index=True))
+                wiki_only = str(c["id"]).startswith("wiki:")
+                out.extend(self._with_wiki_parts(mine, c.get("uex_name") or c.get("name"), c["id"], index=True,
+                                                 kind=self._wiki_kind_of(str(c["id"])[5:]) if wiki_only else None))
+                out[n0:] = self._drop_misfiled(c.get("uex_name") or c.get("name"), out[n0:])
                 for r in out[n0:]:
                     r["cat_name"] = c.get("name")
                 if c.get("slot"):                          # parts in the game files that UEX and the wiki don't list yet
@@ -781,16 +903,23 @@ class CatalogMixin:
                         if c["slot"] == "WeaponGun":
                             row["wtype"] = self.weapon_type(g["name"], g)
                         out.append(row)
-            return {"ok": True, "items": out, "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]],
+            # categories with nothing in them are hidden from now on, until a look like this one finds something there
+            have = {str(r["cat"]) for r in out}
+            empty = sorted(str(c["id"]) for c in cats["items"] if str(c["id"]) not in have and str(c["id"]) not in failed)
+            if any(str(c["id"]).startswith("wiki:") for c in cats["items"] if str(c["id"]) in empty) and not any(
+                    str(r["cat"]).startswith("wiki:") for r in out):
+                empty = [e for e in empty if not e.startswith("wiki:")]   # the wiki couldn't be reached: don't hide its kinds
+            if empty != sorted(str(x) for x in self._cp_empty_ids()):
+                self._cp_empty_save(empty)
+            return {"ok": True, "items": out, "empty": empty, "types": [[k, label] for k, label, _ in self.WEAPON_TYPES] + [["other", "Other guns"]],
                     "at": at}
         return self._uex_call(run)
 
     def uex_components(self, id_category):
         """Items in one category with where to buy them and for how much."""
         if str(id_category).startswith("wiki:"):            # a kind only the wiki has (flight blades...)
-            wtype = str(id_category)[5:]
-            test = next((t for _, w, t in self.WIKI_KINDS if w == wtype), None)
-            items = self._wiki_parts(wtype, test)
+            wtype, test = self._wiki_kind_of(str(id_category)[5:])
+            items = self._wiki_parts_all(wtype, test)
             items.sort(key=lambda x: (x.get("vehicle") or "", str(x["size"] or ""), x["name"] or ""))
             if not items:
                 return {"ok": False, "error": "Couldn't reach the Star Citizen Wiki for these parts. Try again in a minute"}
@@ -817,7 +946,7 @@ class CatalogMixin:
             cat_name = next((c.get("name") for c in self._uex.get("categories")[0]
                              if str(c.get("id")) == str(id_category)), "")
             slot = self._slot_type_for(cat_name)
-            out = self._with_wiki_parts(out, cat_name)
+            out = self._with_wiki_parts(self._drop_misfiled(cat_name, out), cat_name)
             guns = slot == "WeaponGun"
             if slot:                                      # every part in the game files, even ones UEX and the wiki
                 have = {(x.get("uuid") or "").lower() for x in out} | {(x["name"] or "").lower() for x in out}
@@ -886,7 +1015,7 @@ class CatalogMixin:
             "roles": self._vehicle_roles(v, self._wikiapi.vehicle_summary()),
             "career": d.get("career") or d.get("role"),
             "description": (self._vehicle_desc(d, v.get("name_full") or name) if d or not v.get("desc") else None) or v.get("desc"),
-            "crew_min": g("crew", "min") or v.get("crew"), "crew_max": g("crew", "max"),
+            **_crew_range(g("crew", "min"), g("crew", "max"), v.get("crew")),
             "seats": seat.get("crew_stations"), "beds": seat.get("beds"), "medical_beds": _bed_count(seat.get("medical_beds")),
             "medical_tier": _tier(d.get("max_medical_tier")), "ejection": seat.get("ejection_seats"), "escape_pods": seat.get("escape_pods"),
             "jump_seats": seat.get("jump_seats"),

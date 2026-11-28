@@ -61,6 +61,41 @@ class NavGuideMixin:
             out["turn"] = round(((heading - out["ship"] + 540) % 360) - 180, 1)     # + right, - left
         return out
 
+    def _nav_landed_at(self, L):
+        """The log has you landed or docked at L, or anywhere in L's city (a hangar at Teasa Spaceport when you're
+        guided to Teasa, or to Lorville): you're there, whatever the dead reckoning says. The same rule ticks off a
+        route stop (_auto_arrive). A city's spaceport is only placed to within a few km, so the 150 m rule alone
+        never saw you arrive at one."""
+        cur = self._tracker.cur or {}
+        if L is None or not cur.get("landing") or not cur.get("place"):
+            return False
+        here = self._db.locations.get(cur["place"])
+        if cur["place"] == L.name or L.name in place_group(cur["place"]):
+            return True
+        return bool(here and L.body and here.body == L.body and here.pos is not None and L.pos is not None
+                    and classify(here.name, here.category) == "city" and dist(here.pos, L.pos) < 30_000)
+
+    HANGAR_NEAR_M = 30_000    # a hangar request this close to where you're guided (a city's traffic control answers
+                              # from about 10-15 km out) means you've made it
+    HANGAR_FRESH_S = 600      # ...and only a request in the last 10 minutes
+
+    def _nav_hangar_at(self, L, nav, now):
+        """The game gave you a hangar ("Hangar Request Completed" in Game.log) near L since you were guided there:
+        you've made it, so the guide stops then rather than once you've landed."""
+        h = getattr(self._tracker, "hangar_at", None)
+        if L is None or not h or not (0 <= now - h <= self.HANGAR_FRESH_S):
+            return False
+        if h < (getattr(self, "_guide_since", 0) or 0) and self._guide == L.name:
+            return False                                  # that request was before you asked to be guided here
+        if nav is not None:
+            return nav["ground"] < self.HANGAR_NEAR_M
+        # no position to go by: where the log last named you (the city whose traffic control you talked to)
+        w = self._tracker.where or {}
+        wp = self._tracker.place_for_code(w["code"]) if w.get("code") else None
+        here = self._db.locations.get(wp or "")
+        return bool(here is not None and here.pos is not None and L.pos is not None and here.body == L.body
+                    and (wp == L.name or L.name in place_group(wp) or dist(here.pos, L.pos) < self.HANGAR_NEAR_M))
+
     def _nav_target(self):
         """Where the guide points: your Guide me target, else the first stop of your route."""
         if self._guide and self._guide in self._db.locations:
@@ -188,7 +223,21 @@ class NavGuideMixin:
                 elif c["on"] and self._game_on():
                     with self._lock:
                         L = self._nav_target()
-                        nav = self._nav_from_here(L, now) if L is not None else None
+                        arrived = self._nav_landed_at(L)
+                        if arrived and L is not None and self._guide == L.name:
+                            # Guide me is done: you've landed there (the city clock says so too)
+                            self._guide = None
+                            self._save_settings()
+                        nav = self._nav_from_here(L, now) if L is not None and not arrived else None
+                        if not arrived and self._nav_hangar_at(L, nav, now):
+                            arrived, nav = True, None     # your hangar's assigned: the guide's job is done
+                            if self._guide == L.name:
+                                self._guide = None
+                                self._save_settings()
+                    tel = getattr(self, "_tel", None)
+                    v = (tel.state().get("vehicle") or {}) if tel is not None and tel.enabled else {}
+                    if v.get("landed"):
+                        nav = None                        # sat on the ground (a pad, a hangar): nothing to steer
                     # only flying (a heading from the ship), in the air over the place's planet or moon, and not there yet
                     if nav and nav["turn"] is not None and nav["in_air"] and nav["ground"] > NAV_ARRIVED_M:
                         info = {"name": L.name, "dist": nav["ground"], "turn": nav["turn"], "heading": nav["heading"],

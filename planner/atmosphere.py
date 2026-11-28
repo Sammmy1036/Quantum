@@ -79,12 +79,46 @@ def _props(f):
 # 68% CO2 and 9% oxygen, which its breathing rules call unbreathable, yet you breathe fine there. So what players
 # see in game wins over the files; your own telemetry reading (on foot, outside) wins over this list.
 # Add a body here once it's confirmed: True = breathable without a helmet, False = you need one.
-CONFIRMED = {"Hurston": True, "Bloom": True, "ArcCorp": True}   # ArcCorp: Area18 is all city, never 1.5 km from a place
+CONFIRMED = {"Hurston": True, "Bloom": True, "ArcCorp": True,  # ArcCorp: Area18 is all city, never 1.5 km from a place
+             "Arial": False, "Ariel": False}   # no air at all (Sam, in game): the "breathable" it once showed was his ship's cabin
 
 STALE_S = 15          # a telemetry reading older than this isn't "now"
 AWAY_M = 1500         # this far from every known place on the body, you're outside, not in a building
 HOLD_S = 8            # the same answer this long, on foot, before it counts: spawning, a lift or a loading
                       # screen can say "not breathable" for a moment (Lorville once came out Not breathable)
+HOLD_BREATHABLE_S = 45  # "breathable" has to hold longer: walking about inside your ship, its cabin air reads
+                        # breathable too, and that's the mistake that's easy to make (Ariel came out Breathable)
+
+
+def _atm(p):
+    """The telemetry's pressure in atm (it may come in kPa)."""
+    try:
+        p = float(p)
+    except (TypeError, ValueError):
+        return None
+    return p / 101.325 if p > 20 else p
+
+
+def cabin_air(body, f, actor) -> str | None:
+    """Why a "breathable" reading on foot is the air of a ship, hab or room rather than the planet's, or None.
+    The game's breathable flag is about the air around you, and indoors that's the room's: walking about your
+    landed ship on an airless moon reads breathable. Told apart by what the reading says next to what's known
+    of the body: a moon's low gravity (a ship's or building's gravity generator gives a full 1 g), the game
+    files' surface pressure (a cabin is ~1 atm), or an airless body."""
+    if CONFIRMED.get(body.name) is False:
+        return "confirmed not breathable"
+    g = (actor or {}).get("gravity")
+    if body.kind == "moon" and isinstance(g, (int, float)) and g >= 0.85:
+        return f"{g:.2f} g on a moon: a gravity generator, so indoors"
+    pa = (f or {}).get("pressure_atm")
+    if isinstance(pa, (int, float)) and pa < 0.05:
+        return "no atmosphere in the game files"
+    if f and "gases" in f and not any((x or 0) > 0 for x in (f.get("gases") or {}).values()):
+        return "no air in the game files"
+    rp = _atm((actor or {}).get("pressure"))
+    if isinstance(pa, (int, float)) and rp is not None and abs(rp - pa) > max(0.3, pa * 0.5):
+        return f"{rp:.2f} atm around you, {pa:.2f} atm outside: indoors"
+    return None
 
 
 class Atmosphere:
@@ -109,11 +143,19 @@ class Atmosphere:
             self.seen = {}
         self._pend = None                                 # (body, answer, since): a reading not held long enough yet
         # A reading that says a hand-confirmed body is the opposite (Hurston "not breathable") was a glitch: drop it
-        bad = [b for b, r in self.seen.items() if b in CONFIRMED and bool(r.get("breathable")) != CONFIRMED[b]]
+        # and a "breathable" kept from before cabin_air existed, on a body whose files say it has no air
+        bad = [b for b, r in self.seen.items() if (b in CONFIRMED and bool(r.get("breathable")) != CONFIRMED[b])
+               or (r.get("breathable") and self._airless(b))]
         for b in bad:
             del self.seen[b]
         if bad:
             self._save()
+
+    def _airless(self, name) -> bool:
+        f = self.files.get(name) or {}
+        pa = f.get("pressure_atm")
+        return (isinstance(pa, (int, float)) and pa < 0.05) or ("gases" in f and not any(
+            (x or 0) > 0 for x in (f.get("gases") or {}).values()))
 
     def _save(self):
         try:
@@ -146,11 +188,14 @@ class Atmosphere:
         from planner.nav_core import dist
         ok = bool(actor["breathable"])
         now = time.time()
+        if ok and cabin_air(db.bodies[body], self.files.get(body), actor):
+            self._pend = None                             # the cabin's air, not the planet's: not a reading of it
+            return False
         if not self._pend or self._pend[0] != body or self._pend[1] != ok or now - self._pend[3] > STALE_S:
             self._pend = [body, ok, now, now]             # a new answer: it has to hold for HOLD_S first
             return False
         self._pend[3] = now
-        if now - self._pend[2] < HOLD_S:
+        if now - self._pend[2] < (HOLD_BREATHABLE_S if ok else HOLD_S):
             return False
         near = any(l.body == body and l.kind == "surface" and l.pos is not None and dist(tuple(l.pos), tuple(local)) < AWAY_M
                    for l in db.locations.values())

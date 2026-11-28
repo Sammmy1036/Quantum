@@ -278,7 +278,7 @@ async function grDetail(kind){ const st=grState(kind), G=GEAR[kind], L=st.data.i
       <div class="vd-grid vd-flat"><div class="vd-sec" style="grid-column:1/-1"><div class="mk-h">The pieces</div>
         ${s.pieces.map(p=>`<div class="mk-row gr-piece"><div class="w"><a data-gi="${esc(p.uuid)}">${esc(p.name)}</a><div class="m">${esc(p.slot)}${p.stats?.dr!=null?` · ${nf(p.stats.dr)}% damage reduction`:""}${p.stats?.carry?` · ${Math.round(p.stats.carry).toLocaleString()} µSCU`:""}</div></div>
           <div class="p">${grPrice(p)!=null?money(grPrice(p)):'<span class="noshop">Not in shops</span>'}</div><span></span>
-          <div class="m">${p.buy?.[0]?`${p.buy[0].place?`<a data-open="${esc(p.buy[0].place)}">${esc(p.buy[0].where)}</a>`:esc(p.buy[0].where)}${p.buy[0].shop?` · ${esc(p.buy[0].shop)}`:""}`:"Loot, rewards or crafting"}</div></div>`).join("")}</div></div>
+          <div class="m">${p.buy?.[0]?`${p.buy[0].place?`<a data-open="${esc(p.buy[0].place)}">${esc(p.buy[0].where)}</a>`:esc(p.buy[0].where)}${p.buy[0].shop&&p.buy[0].shop!==p.buy[0].where?` · <span class="shop-tag" title="The shop that sells it here">${SHOP_IC}${esc(p.buy[0].shop)}</span>`:""}`:"Loot, rewards or crafting"}</div></div>`).join("")}</div></div>
       <div class="uex-credit">From the Star Citizen Wiki; prices from UEX. Sets are put together from the pieces' names.</div>`;
     const img=await api().gear_image(s.pieces.find(p=>p.slot==="Core")?.name||s.pieces[0].name); if(st.sel!=="set:"+name) return;
     const box=$("grd-img"); if(box) box.innerHTML=picShown(img,"component",s.name,"armor"); return; }

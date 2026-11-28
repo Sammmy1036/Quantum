@@ -1254,7 +1254,7 @@ function renderStatus(){ contactsAlert(); const p=S.live.player, pd=$("pos-dot")
     pt.innerHTML=tv.place?`Arrived near <b>${esc(tv.place)}</b> <span class="muted">(jump, ${ago(tv.at)})</span>`:`Arrived at an unknown spot <span class="muted">(${ago(tv.at)}). A /showlocation here teaches it to Quantum</span>`; }
   else if(tv.state==="flying" && (!p || (p.t||0) < tv.at)){ pd.className="dot on"; pt.innerHTML=`<b>In flight</b>${tv.left?`, left ${esc(tv.left)}`:""} <span class="muted">(${ago(tv.at)})</span>`; }
   else if(p&&p.approx){ pd.className="dot on"; const how={left:"took off",log:"from the game log",landed:"from the game log",jump:"quantum arrival"}[p.approx_how]||"from the game log";
-    pt.innerHTML=`${p.approx_how==="left"||p.approx_how==="log"?"Near":"At"} <b>${esc(p.approx)}</b> <span class="muted">(${how}, ${ago(S.live.now-p.age)})</span>`; }
+    pt.innerHTML=`${p.approx_how==="left"||p.approx_how==="log"||p.approx_how==="jump"?"Near":"At"} <b>${esc(p.approx)}</b> <span class="muted">(${how}, ${ago(S.live.now-p.age)})</span>`; }
   else
   if(!p){ pd.className="dot"; pt.innerHTML="Type <b>/showlocation</b> in game chat to share your position"; }
   else { const age=p.age<60?`${Math.round(p.age)} s ago`:`${Math.round(p.age/60)} min ago`; pd.className="dot"+(p.age<120?" on":"");

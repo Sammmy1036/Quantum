@@ -28,6 +28,7 @@ class TelemetryMixin:
         self._sess = session_mod.SessionStats(HERE / "earnings.json", lambda: getattr(self, "_tracker", None),
                                               ctype_fn=self._contract_type)
         self._tel.on_frame = self._tel_frame
+        threading.Thread(target=self._auto_showloc_loop, daemon=True, name="auto-showlocation").start()
         threading.Thread(target=self._stats_sync_loop, daemon=True, name="stats-sync").start()   # api_jobs.py
         self._tel.start()
         self._tel.set_enabled(bool(self._settings.get("telemetry_on", True)))
@@ -35,6 +36,9 @@ class TelemetryMixin:
     def _tel_frame(self, d, now):
         """Every telemetry frame: session stats, and your estimated position between readings (deadreckon.py)."""
         try:
+            v = (d or {}).get("vehicle") or {}
+            if v.get("altitude") is not None and not v.get("landed"):
+                self._alt_seen = now                       # in a planet's or moon's atmosphere, flying (Auto /showlocation)
             self._sess.frame(d, now)
         finally:
             dr, qt = self._dr_objs()
@@ -61,7 +65,7 @@ class TelemetryMixin:
         spot, spot_at, how = getattr(self, "_spot_now", None) or (None, 0, None)
         if p and not approx and info.get("body") and info.get("local"):
             key, at = (info["t"], info["body"]), info["t"]
-        elif p and approx and approx == spot and how in ("landed", "left") and info.get("body") and info.get("local"):
+        elif p and approx and approx == spot and how in ("landed", "left", "jump") and info.get("body") and info.get("local"):
             key, at = ("spot", spot, spot_at), spot_at
         else:
             key = at = None
@@ -69,7 +73,8 @@ class TelemetryMixin:
             if getattr(self, "_dr_fix", None) != key:
                 self._dr_fix = key
                 b = self._db.bodies[info["body"]]
-                dr.anchor(b.name, b.radius_m, tuple(info["local"]), at)
+                # a quantum arrival is above the place at a guessed height: telemetry's altitude takes over
+                dr.anchor(b.name, b.radius_m, tuple(info["local"]), at, abs_alt=bool(key[0] == "spot" and how == "jump"))
         else:
             if dr.body:
                 dr.drop()
@@ -84,7 +89,7 @@ class TelemetryMixin:
                 qtk.begin(q["selected"], start, psys)
             L = self._db.locations.get(q.get("place") or "")
             if L is not None and L.system == psys:
-                e = qtk.estimate(self._db.global_pos(L, t), t)
+                e = qtk.estimate(self._db.qt_arrival_pos(L, t), t)   # above a city, not on it
                 if e:
                     body = self._db.body_near(e["pos"], psys)
                     out = {"how": "qt", "to": L.name, **e, "body": None}
@@ -99,6 +104,68 @@ class TelemetryMixin:
         b = self._db.bodies[e["body"]]
         lat, lon, alt = b.lat_lon_alt(e["local"])
         return {"how": "dr", "system": psys, "pos": b.to_global(e["local"], t), "lat": lat, "lon": lon, "alt": alt, **e}
+
+    # ---- Auto /showlocation (Settings > Hotkeys): typed for you once a quantum jump ends, and once when you come
+    # into a planet's or moon's atmosphere (telemetry starts reporting your altitude and heading), so the map knows
+    # where you are without a key press. Each is sent once per event, only with the game focused (keysender.send).
+    AUTO_LOC_QT_DELAY = 1          # s after the jump ends (was 4): as soon as you're out of the quantum tunnel
+    AUTO_LOC_ATMO_DELAY = 3        # s after altitude first shows: the readings have settled
+    AUTO_LOC_ATMO_GAP = 30         # s without altitude before a new atmosphere entry counts (not a flicker)
+
+    def _auto_loc_cfg(self):
+        a = self._settings.get("auto_showloc") or {}
+        return {"after_qt": bool(a.get("after_qt")), "atmo": bool(a.get("atmo"))}
+
+    def set_auto_showloc(self, after_qt=None, atmo=None):
+        """Settings > Hotkeys > Automatic /showlocation: after a quantum jump, on entering an atmosphere."""
+        a = self._settings.setdefault("auto_showloc", {})
+        if after_qt is not None:
+            a["after_qt"] = bool(after_qt)
+        if atmo is not None:
+            a["atmo"] = bool(atmo)
+        self._save_settings()
+        return {"ok": True, **self._auto_loc_cfg()}
+
+    def _auto_showloc_loop(self):
+        st = {"qt": None, "atmo_in": False, "atmo_since": None, "sent_at": 0.0}
+        while True:
+            time.sleep(0.25)               # checked 4 times a second, so the 1 s after a jump isn't stretched to 2
+            try:
+                self._auto_showloc_tick(st, time.time())
+            except Exception as e:
+                print("auto showlocation:", e, flush=True)
+
+    def _auto_showloc_tick(self, st, now):
+        cfg = self._auto_loc_cfg()
+        tr = getattr(self, "_tracker", None)
+        if not tr or not (cfg["after_qt"] or cfg["atmo"]) or not self._game_on():
+            st.update(atmo_in=False, atmo_since=None)
+            return
+        q = tr.qt or {}
+        arrived = q.get("arrived")
+        if st["qt"] is None:
+            st["qt"] = arrived                                    # a jump that ended before Quantum started: not new
+        elif cfg["after_qt"] and arrived and arrived != st["qt"] and now - arrived >= self.AUTO_LOC_QT_DELAY:
+            st["qt"] = arrived
+            if now - arrived < 120:                               # (the log read late, from an old session: skip)
+                st["sent_at"] = now
+                self._sender.send("auto: quantum jump ended")
+        elif not cfg["after_qt"]:
+            st["qt"] = arrived
+        seen = getattr(self, "_alt_seen", 0) or 0
+        if now - seen <= 2:
+            if not st["atmo_in"]:
+                st["atmo_since"] = st["atmo_since"] or now
+                if now - st["atmo_since"] >= self.AUTO_LOC_ATMO_DELAY:
+                    st["atmo_in"] = True
+                    # just typed for the jump's end (a jump to a city ends in its air): once is enough
+                    if cfg["atmo"] and now - st["sent_at"] > 20:
+                        st["sent_at"] = now
+                        self._sender.send("auto: entered atmosphere")
+        elif now - seen > self.AUTO_LOC_ATMO_GAP:
+            st["atmo_in"], st["atmo_since"] = False, None
+        elif not st["atmo_in"]:
+            st["atmo_since"] = None
 
     def _estimate_beats_log(self, how, t):
         """A place the log puts you at doesn't replace a live dead-reckoned position while telemetry still has you
