@@ -25,8 +25,6 @@
 
 Get `Quantum.exe` from [Releases](https://github.com/Sammmy1036/Quantum/releases/latest). Windows 10 or 11. Quantum updates itself and only installs releases signed with its release key.
 
-## Update 11/27 - I've been releasing nightly updates for a while now. However, introducing two new complex systems which require a bit more time in the oven before I can release an update. Also, now having to do some backend work to resolve an email verification issue with Microsoft for our verification service through Quantum. So an update will likely not be coming until 11/30 at this point. Stay tuned! 
-
 ## What it does
 
 | | |
